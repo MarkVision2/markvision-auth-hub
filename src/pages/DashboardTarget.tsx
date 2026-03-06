@@ -175,24 +175,7 @@ export default function DashboardTarget() {
             <Rocket className="h-3.5 w-3.5" />
             Создать кампанию
           </Button>
-        </FadeUpItem>
 
-        {/* ── KPI Cards ── */}
-        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {kpis.map((k) => (
-            <Card key={k.label} className="bg-card border-border">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <k.icon className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{k.label}</p>
-                  <p className="text-lg font-bold font-mono tabular-nums text-foreground">{k.value}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </FadeUpItem>
 
         {/* ── Expandable Account Table ── */}
         <FadeUpItem>
