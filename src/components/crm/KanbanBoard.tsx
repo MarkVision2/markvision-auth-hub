@@ -273,21 +273,15 @@ export default function KanbanBoard() {
                                 <div
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
-                                  className={`group bg-card border rounded-xl p-3 cursor-pointer transition-all duration-200 ${
+                                  {...dragProvided.dragHandleProps}
+                                  className={`group bg-card border rounded-xl p-3 cursor-grab active:cursor-grabbing ${
                                     dragSnapshot.isDragging
-                                      ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02]"
-                                      : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5"
+                                      ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
+                                      : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
                                   }`}
                                 >
                                   {/* Top row */}
                                   <div className="flex items-start gap-2.5">
-                                    {/* Drag handle */}
-                                    <div
-                                      {...dragProvided.dragHandleProps}
-                                      className="mt-1.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
-                                    >
-                                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                                    </div>
                                     <Avatar className="h-8 w-8 shrink-0" onClick={() => handleCardClick(lead)}>
                                       <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
                                         {getInitials(lead.name)}
