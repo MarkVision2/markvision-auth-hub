@@ -30,12 +30,33 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [account, setAccount] = useState("");
   const [objective, setObjective] = useState<Objective>("whatsapp");
   const [utmTags, setUtmTags] = useState("?utm_source=meta&utm_medium=cpc&utm_campaign=");
+  const [siteUrl, setSiteUrl] = useState("");
+  const [pixel, setPixel] = useState("");
+  const [pixelEvent, setPixelEvent] = useState("");
   const [budgetType, setBudgetType] = useState<"daily" | "lifetime">("daily");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [launchTime, setLaunchTime] = useState<"now" | "midnight">("now");
   const [creativeTab, setCreativeTab] = useState<"feed" | "stories">("feed");
+
+  const pixels = [
+    { id: "px_1", name: "AIVA — Основной пиксель" },
+    { id: "px_2", name: "NeoVision — Сайт" },
+    { id: "px_3", name: "Дентал Тайм — Landing" },
+  ];
+
+  const pixelEvents = [
+    { id: "Purchase", name: "Purchase" },
+    { id: "Lead", name: "Lead" },
+    { id: "CompleteRegistration", name: "CompleteRegistration" },
+    { id: "ViewContent", name: "ViewContent" },
+    { id: "AddToCart", name: "AddToCart" },
+    { id: "InitiateCheckout", name: "InitiateCheckout" },
+    { id: "Schedule", name: "Schedule" },
+    { id: "Contact", name: "Contact" },
+    { id: "SubmitApplication", name: "SubmitApplication" },
+  ];
 
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
