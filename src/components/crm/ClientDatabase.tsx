@@ -65,9 +65,9 @@ export default function ClientDatabase() {
                 <TableCell className="text-sm text-muted-foreground">{client.phone}</TableCell>
                 <TableCell>
                   {client.source === "whatsapp" ? (
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-400"><MessageCircle className="h-3 w-3" /> WhatsApp</div>
+                    <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--status-good))]"><MessageCircle className="h-3 w-3" /> WhatsApp</div>
                   ) : (
-                    <div className="flex items-center gap-1.5 text-xs text-pink-400"><Instagram className="h-3 w-3" /> Instagram</div>
+                    <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--status-critical))]"><Instagram className="h-3 w-3" /> Instagram</div>
                   )}
                 </TableCell>
                 <TableCell className="text-sm font-semibold text-primary text-right">{client.ltv.toLocaleString("ru-RU")} ₸</TableCell>
