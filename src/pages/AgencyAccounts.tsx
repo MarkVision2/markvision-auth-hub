@@ -100,7 +100,7 @@ function FactPlan({ fact, plan, suffix = "" }: { fact: number; plan: number; suf
   return (
     <div>
       <p className="text-sm font-semibold text-foreground tabular-nums">{formatNum(fact)}{suffix}</p>
-      <p className="text-xs text-zinc-600 tabular-nums">План: {formatNum(plan)}{suffix}</p>
+      <p className="text-xs text-muted-foreground tabular-nums">План: {formatNum(plan)}{suffix}</p>
     </div>
   );
 }
