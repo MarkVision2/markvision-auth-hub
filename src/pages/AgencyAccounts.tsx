@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Loader2, Pencil, Check, X, Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { startOfMonth, endOfMonth } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -45,56 +45,8 @@ const statusCfg = {
   paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
 };
 
-function EditableBudget({ value, clientId, onSaved }: { value: number; clientId: string; onSaved: () => void }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value.toString());
-  const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    const { error } = await supabase
-      .from("clients_config")
-      .update({ daily_budget: Number(draft) || 0 })
-      .eq("id", clientId);
-    setSaving(false);
-    if (error) {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-      return;
-    }
-    setEditing(false);
-    onSaved();
-  };
-
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1">
-        <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          className="h-7 w-24 text-xs bg-secondary border-border"
-          autoFocus
-          onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
-        />
-        <button onClick={save} disabled={saving} className="text-primary hover:text-primary/80">
-          <Check className="h-3.5 w-3.5" />
-        </button>
-        <button onClick={() => setEditing(false)} className="text-muted-foreground hover:text-foreground">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={() => { setDraft(value.toString()); setEditing(true); }}
-      className="group flex items-center gap-1.5 text-sm font-semibold text-foreground tabular-nums hover:text-primary transition-colors"
-    >
-      {value > 0 ? fmt(value, " ₸") : "—"}
-      <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-    </button>
-  );
-}
+type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "romi";
+type SortDir = "asc" | "desc";
 
 function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string; clientId: string; onDeleted: () => void }) {
   const [deleting, setDeleting] = useState(false);
@@ -136,11 +88,21 @@ function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string;
   );
 }
 
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <ArrowUpDown className="h-3 w-3 ml-1 text-muted-foreground/50" />;
+  return dir === "desc"
+    ? <ArrowDown className="h-3 w-3 ml-1 text-primary" />
+    : <ArrowUp className="h-3 w-3 ml-1 text-primary" />;
+}
+
 export default function AgencyAccounts() {
   const [metrics, setMetrics] = useState<MetricsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("spend");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [period, setPeriod] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
@@ -160,23 +122,100 @@ export default function AgencyAccounts() {
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
-  // Realtime: listen to both clients_config AND leads changes to re-fetch view
   useEffect(() => {
     const channel = supabase
       .channel("agency_metrics_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "clients_config" }, () => { fetchMetrics(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => { fetchMetrics(); })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [fetchMetrics]);
 
-  const filtered =
-    filter === "all"
-      ? metrics
-      : filter === "paused"
-      ? metrics.filter((c) => !c.is_active)
-      : metrics.filter((c) => c.is_active && (c.meta_leads ?? 0) === 0);
+  const avgCpl = useMemo(() => {
+    const withLeads = metrics.filter(m => (m.meta_leads ?? 0) > 0 && (m.cpl ?? 0) > 0);
+    if (!withLeads.length) return 0;
+    return withLeads.reduce((s, m) => s + (m.cpl ?? 0), 0) / withLeads.length;
+  }, [metrics]);
+
+  const needsAttention = useCallback((c: MetricsRow) => {
+    if (c.is_active === false) return false;
+    const spend = Number(c.spend) || 0;
+    const leads = Number(c.meta_leads) || 0;
+    const romi = Number(c.romi) || 0;
+    const cpl = Number(c.cpl) || 0;
+    if (spend > 0 && leads === 0) return true;
+    if (romi < 0) return true;
+    if (avgCpl > 0 && cpl > avgCpl * 2) return true;
+    return false;
+  }, [avgCpl]);
+
+  const filtered = useMemo(() => {
+    let list = metrics;
+
+    // search
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(c => c.client_name.toLowerCase().includes(q));
+    }
+
+    // tab filter
+    if (filter === "attention") {
+      list = list.filter(needsAttention);
+    } else if (filter === "effective") {
+      list = list.filter(c => c.is_active !== false && (c.romi ?? 0) > 0 && (c.meta_leads ?? 0) > 0);
+    } else if (filter === "inactive") {
+      list = list.filter(c => c.is_active === false);
+    }
+
+    // sort
+    list = [...list].sort((a, b) => {
+      const av = Number((a as any)[sortKey]) || 0;
+      const bv = Number((b as any)[sortKey]) || 0;
+      return sortDir === "desc" ? bv - av : av - bv;
+    });
+
+    return list;
+  }, [metrics, search, filter, sortKey, sortDir, needsAttention]);
+
+  const attentionCount = useMemo(() => metrics.filter(needsAttention).length, [metrics, needsAttention]);
+  const effectiveCount = useMemo(() => metrics.filter(c => c.is_active !== false && (c.romi ?? 0) > 0 && (c.meta_leads ?? 0) > 0).length, [metrics]);
+  const inactiveCount = useMemo(() => metrics.filter(c => c.is_active === false).length, [metrics]);
+
+  // Summary KPIs for filtered set
+  const summary = useMemo(() => {
+    const totalSpend = filtered.reduce((s, c) => s + (Number(c.spend) || 0), 0);
+    const totalLeads = filtered.reduce((s, c) => s + (Number(c.meta_leads) || 0), 0);
+    const avgCplFiltered = totalLeads > 0 ? totalSpend / totalLeads : 0;
+    const romiValues = filtered.filter(c => (c.romi ?? 0) !== 0);
+    const avgRomi = romiValues.length > 0 ? romiValues.reduce((s, c) => s + (Number(c.romi) || 0), 0) / romiValues.length : 0;
+    return { totalSpend, totalLeads, avgCpl: avgCplFiltered, avgRomi };
+  }, [filtered]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortKey(key); setSortDir("desc"); }
+  };
+
+  const SortableHead = ({ label, sortField }: { label: string; sortField: SortKey }) => (
+    <TableHead
+      className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+      onClick={() => toggleSort(sortField)}
+    >
+      <span className="flex items-center">
+        {label}
+        <SortIcon active={sortKey === sortField} dir={sortDir} />
+      </span>
+    </TableHead>
+  );
+
+  function getRowIndicator(c: MetricsRow) {
+    const spend = Number(c.spend) || 0;
+    const leads = Number(c.meta_leads) || 0;
+    const romi = Number(c.romi) || 0;
+    if (romi > 0) return "border-l-2 border-l-emerald-500/70";
+    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-red-500/70";
+    return "border-l-2 border-l-transparent";
+  }
 
   return (
     <DashboardLayout breadcrumb="Агентские кабинеты">
@@ -188,27 +227,65 @@ export default function AgencyAccounts() {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="bg-secondary border border-border">
-            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Все ({metrics.length})</TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Без лидов</TabsTrigger>
-            <TabsTrigger value="paused" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Остановлены</TabsTrigger>
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
+              Все ({metrics.length})
+            </TabsTrigger>
+            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
+              ⚠️ Внимание ({attentionCount})
+            </TabsTrigger>
+            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
+              ✅ Эффективные ({effectiveCount})
+            </TabsTrigger>
+            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
+              Неактивные ({inactiveCount})
+            </TabsTrigger>
           </TabsList>
         </Tabs>
-        <PeriodPicker value={period} onChange={setPeriod} />
+
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Поиск..."
+              className="h-8 w-48 pl-8 text-xs bg-secondary border-border"
+            />
+          </div>
+          <PeriodPicker value={period} onChange={setPeriod} />
+        </div>
       </div>
+
+      {/* Summary KPIs */}
+      {!loading && filtered.length > 0 && (
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { label: "Расходы", value: fmt(summary.totalSpend, " ₸") },
+            { label: "Лиды", value: summary.totalLeads.toString() },
+            { label: "Ср. CPL", value: summary.avgCpl > 0 ? fmt(summary.avgCpl, " ₸") : "—" },
+            { label: "Ср. ROMI", value: summary.avgRomi !== 0 ? `${summary.avgRomi > 0 ? "+" : ""}${Math.round(summary.avgRomi)}%` : "—", color: summary.avgRomi > 0 ? "text-emerald-400" : summary.avgRomi < 0 ? "text-red-400" : "" },
+          ].map(kpi => (
+            <div key={kpi.label} className="rounded-lg border border-border bg-card px-4 py-3">
+              <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
+              <p className={`text-lg font-bold tabular-nums ${(kpi as any).color || "text-foreground"}`}>{kpi.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
               <TableHead className="text-xs font-medium text-muted-foreground w-[180px]">Кабинет</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Расходы</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Лиды</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Визиты</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Продажи / Выручка</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">ROMI / CAC</TableHead>
+              <SortableHead label="Расходы" sortField="spend" />
+              <SortableHead label="Лиды" sortField="meta_leads" />
+              <SortableHead label="Визиты" sortField="visits" />
+              <SortableHead label="Продажи" sortField="sales" />
+              <SortableHead label="ROMI" sortField="romi" />
               <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
             </TableRow>
           </TableHeader>
@@ -240,8 +317,7 @@ export default function AgencyAccounts() {
                 const cac = Number(c.cac) || 0;
 
                 return (
-                  <TableRow key={c.client_id} className="group/row border-b border-border hover:bg-accent/50 transition-colors">
-                    {/* Кабинет */}
+                  <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
                       <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
@@ -250,28 +326,20 @@ export default function AgencyAccounts() {
                       </span>
                     </TableCell>
 
-                    {/* Расходы */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
                     </TableCell>
 
-                    {/* Лиды + CPL */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{leads || "—"}</p>
-                      {cpl > 0 && (
-                        <p className="text-[11px] text-muted-foreground tabular-nums">CPL: {fmt(cpl, " ₸")}</p>
-                      )}
+                      {cpl > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPL: {fmt(cpl, " ₸")}</p>}
                     </TableCell>
 
-                    {/* Визиты + CPV */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
-                      {cpv > 0 && (
-                        <p className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</p>
-                      )}
+                      {cpv > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</p>}
                     </TableCell>
 
-                    {/* Продажи / Выручка */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">
                         {sales > 0 ? `${sales} шт.` : "—"}
@@ -279,17 +347,13 @@ export default function AgencyAccounts() {
                       </p>
                     </TableCell>
 
-                    {/* ROMI / CAC */}
                     <TableCell className="py-4">
                       <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-emerald-400" : romi < 0 ? "text-red-400" : "text-foreground"}`}>
                         {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
                       </p>
-                      {cac > 0 && (
-                        <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>
-                      )}
+                      {cac > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>}
                     </TableCell>
 
-                    {/* Delete */}
                     <TableCell className="py-4">
                       <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
                     </TableCell>
