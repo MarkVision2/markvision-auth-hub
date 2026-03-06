@@ -100,7 +100,7 @@ function FactPlan({ fact, plan, suffix = "" }: { fact: number; plan: number; suf
   return (
     <div>
       <p className="text-sm font-semibold text-foreground tabular-nums">{formatNum(fact)}{suffix}</p>
-      <p className="text-xs text-zinc-600 tabular-nums">План: {formatNum(plan)}{suffix}</p>
+      <p className="text-xs text-muted-foreground tabular-nums">План: {formatNum(plan)}{suffix}</p>
     </div>
   );
 }
@@ -129,37 +129,37 @@ export default function AgencyAccounts() {
 
       <div className="flex items-center justify-between mb-6 gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="bg-white/[0.03] border border-white/[0.04]">
-            <TabsTrigger value="all" className="data-[state=active]:bg-white/[0.06] text-xs">Все кабинеты</TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-white/[0.06] text-xs">Требуют внимания</TabsTrigger>
-            <TabsTrigger value="paused" className="data-[state=active]:bg-white/[0.06] text-xs">Остановлены</TabsTrigger>
+          <TabsList className="bg-secondary border border-border">
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Все кабинеты</TabsTrigger>
+            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Требуют внимания</TabsTrigger>
+            <TabsTrigger value="paused" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Остановлены</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button variant="outline" className="gap-2 text-xs border-white/[0.06] bg-transparent text-zinc-400 hover:text-foreground">
+        <Button variant="outline" className="gap-2 text-xs border-border bg-secondary text-secondary-foreground hover:text-foreground">
           <CalendarDays className="h-3.5 w-3.5" />
           За 30 дней
         </Button>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-white/[0.06] hover:bg-transparent">
-              <TableHead className="text-xs font-medium text-zinc-500 w-[200px]">Кабинет</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Расходы</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Лиды</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">CPL</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Подписчики</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Визиты</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Продажи</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500 text-right">Конверсии</TableHead>
+            <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
+              <TableHead className="text-xs font-medium text-muted-foreground w-[200px]">Кабинет</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Расходы</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Лиды</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">CPL</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Подписчики</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Визиты</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Продажи</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Конверсии</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((c) => {
               const s = statusConfig[c.status];
               return (
-                <TableRow key={c.id} className="border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors cursor-pointer">
+                <TableRow key={c.id} className="border-b border-border hover:bg-accent/50 transition-colors cursor-pointer">
                   <TableCell className="py-4">
                     <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
                     <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
@@ -191,9 +191,9 @@ export default function AgencyAccounts() {
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <div className="space-y-0.5">
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Клик → Лид: <span className="text-zinc-400">{c.convClickLead}%</span></p>
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Лид → Визит: <span className="text-zinc-400">{c.convLeadVisit}%</span></p>
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Визит → Продажа: <span className="text-zinc-400">{c.convVisitSale}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Клик → Лид: <span className="text-secondary-foreground">{c.convClickLead}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Лид → Визит: <span className="text-secondary-foreground">{c.convLeadVisit}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Визит → Продажа: <span className="text-secondary-foreground">{c.convVisitSale}%</span></p>
                     </div>
                   </TableCell>
                 </TableRow>
