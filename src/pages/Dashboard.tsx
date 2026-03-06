@@ -1,15 +1,8 @@
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
   AreaChart,
   Area,
@@ -20,349 +13,316 @@ import {
   CartesianGrid,
 } from "recharts";
 import {
-  RefreshCw,
-  TrendingUp,
-  TrendingDown,
+  FolderKanban,
+  DollarSign,
+  HeartPulse,
+  Cpu,
+  AlertTriangle,
   Sparkles,
-  MessageSquare,
-  Target,
-  Video,
-  Activity,
+  ExternalLink,
+  ArrowUpRight,
+  ArrowDownRight,
+  Pause,
+  Clock,
 } from "lucide-react";
-import SparklineChart from "@/components/agency/SparklineChart";
 
-/* ── mock data ── */
-const kpiCards = [
+/* ── KPI data ── */
+const kpis = [
   {
-    title: "Выручка",
-    value: "3 450 000 ₸",
-    trend: "+15%",
-    trendDir: "up" as const,
-    spark: [20, 35, 28, 45, 52, 60, 72],
+    title: "Активные проекты",
+    value: "14",
+    sub: "2 на паузе",
+    icon: FolderKanban,
+    accent: "text-foreground",
+    subIcon: Pause,
   },
   {
-    title: "Расходы (Ads)",
-    value: "450 000 ₸",
-    trend: "+2%",
-    trendDir: "neutral" as const,
-    spark: [30, 32, 31, 34, 33, 35, 36],
+    title: "MRR Агентства",
+    value: "4 200 000 ₸",
+    sub: "+5% к прошлому мес.",
+    icon: DollarSign,
+    accent: "text-emerald-400",
+    subIcon: ArrowUpRight,
+    subColor: "text-emerald-400",
   },
   {
-    title: "ROMI",
-    value: "766%",
-    trend: "+120%",
-    trendDir: "up" as const,
-    spark: [200, 350, 400, 500, 620, 700, 766],
+    title: "Health Score",
+    value: "85%",
+    sub: "3 проекта в жёлтой зоне",
+    icon: HeartPulse,
+    accent: "text-emerald-400",
+    progress: 85,
+    subIcon: AlertTriangle,
+    subColor: "text-amber-400",
   },
   {
-    title: "Средний CAC",
-    value: "12 500 ₸",
-    trend: "-5%",
-    trendDir: "down_good" as const,
-    spark: [18, 16, 15, 14, 13.5, 13, 12.5],
+    title: "AI-Операций за 24ч",
+    value: "342",
+    sub: "Сэкономлено ~28ч",
+    icon: Cpu,
+    accent: "text-orange-400",
+    subIcon: Clock,
+    subColor: "text-orange-400",
   },
 ];
 
-const revenueChartData = [
-  { day: "Пн", revenue: 420000, spend: 58000 },
-  { day: "Вт", revenue: 510000, spend: 62000 },
-  { day: "Ср", revenue: 480000, spend: 55000 },
-  { day: "Чт", revenue: 620000, spend: 70000 },
-  { day: "Пт", revenue: 550000, spend: 65000 },
-  { day: "Сб", revenue: 470000, spend: 60000 },
-  { day: "Вс", revenue: 400000, spend: 80000 },
-];
-
-const activityFeed = [
+/* ── Red zone alerts ── */
+const alerts = [
   {
-    time: "08:15",
-    color: "bg-emerald-500",
-    icon: MessageSquare,
-    text: "AI-Агент (WhatsApp): Успешно записан пациент Иван на 15:00.",
+    project: "Технология позвоночника",
+    severity: "critical" as const,
+    badge: "Отвал карты (Meta)",
+    action: "Написать клиенту",
   },
   {
-    time: "04:30",
-    color: "bg-blue-500",
-    icon: Target,
-    text: "AI-Таргетолог: Бюджет кампании 'Брекеты' увеличен на 20% из-за высокого CTR.",
+    project: "Дентал Тайм",
+    severity: "warning" as const,
+    badge: "ROMI упал < 100%",
+    action: "Обновить креативы",
   },
   {
-    time: "02:10",
-    color: "bg-purple-500",
-    icon: Video,
-    text: "Контент-Завод: Сгенерировано 3 новых видео-креатива.",
-  },
-  {
-    time: "00:45",
-    color: "bg-emerald-500",
-    icon: Activity,
-    text: "AI-Агент: Отправлено 8 follow-up сообщений по неотвеченным лидам.",
+    project: "Kitarov Clinic",
+    severity: "warning" as const,
+    badge: "Выгорание аудитории",
+    action: "Запустить Контент-Завод",
   },
 ];
 
-function TrendBadge({ trend, dir }: { trend: string; dir: string }) {
-  const isPositive = dir === "up" || dir === "down_good";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs font-medium ${
-        isPositive ? "text-emerald-400" : "text-muted-foreground"
-      }`}
-    >
-      {dir === "down_good" ? (
-        <TrendingDown className="h-3 w-3" />
-      ) : (
-        <TrendingUp className="h-3 w-3" />
-      )}
-      {trend}
-    </span>
-  );
-}
+/* ── Lead flow chart ── */
+const leadFlowData = [
+  { day: "Пн", leads: 42, aiClosed: 18 },
+  { day: "Вт", leads: 56, aiClosed: 24 },
+  { day: "Ср", leads: 38, aiClosed: 16 },
+  { day: "Чт", leads: 64, aiClosed: 30 },
+  { day: "Пт", leads: 51, aiClosed: 22 },
+  { day: "Сб", leads: 33, aiClosed: 14 },
+  { day: "Вс", leads: 28, aiClosed: 12 },
+];
+
+const severityConfig = {
+  critical: {
+    dot: "bg-rose-500",
+    badgeCls: "border-rose-500/30 bg-rose-500/10 text-rose-400",
+  },
+  warning: {
+    dot: "bg-amber-500",
+    badgeCls: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+  },
+};
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState("7d");
-
   return (
-    <DashboardLayout breadcrumb="Командный центр">
-      <div className="space-y-6">
+    <DashboardLayout breadcrumb="Штаб-квартира">
+      <div className="space-y-5">
         {/* ── Header ── */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">
-              Командный центр
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Сводка по всем системам MarkVision
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-[180px] bg-card border-white/10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Сегодня</SelectItem>
-                <SelectItem value="7d">Последние 7 дней</SelectItem>
-                <SelectItem value="30d">Месяц</SelectItem>
-                <SelectItem value="90d">Квартал</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" className="border-white/10">
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Штаб-квартира
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Внутренний контроль проектов и AI-инфраструктуры
+          </p>
         </div>
 
         {/* ── KPI Row ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kpiCards.map((kpi) => (
-            <Card
-              key={kpi.title}
-              className="bg-[#0a0a0a] border-white/10 relative overflow-hidden group hover:border-white/20 transition-colors"
-            >
-              <div className="absolute bottom-0 left-0 right-0 opacity-30 group-hover:opacity-50 transition-opacity">
-                <SparklineChart
-                  data={kpi.spark}
-                  color={
-                    kpi.trendDir === "neutral"
-                      ? "hsl(0 0% 50%)"
-                      : "hsl(160 84% 39%)"
-                  }
-                />
-              </div>
-              <CardContent className="p-5 relative z-10">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  {kpi.title}
-                </p>
-                <div className="flex items-end justify-between mt-2">
-                  <span
-                    className={`text-2xl font-bold tracking-tight ${
-                      kpi.title === "ROMI"
-                        ? "text-emerald-400"
-                        : "text-foreground"
-                    }`}
-                  >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {kpis.map((kpi) => {
+            const Icon = kpi.icon;
+            const SubIcon = kpi.subIcon;
+            return (
+              <Card
+                key={kpi.title}
+                className="bg-[#0f0f11] border-white/[0.08] hover:border-white/[0.15] transition-colors"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-widest">
+                      {kpi.title}
+                    </span>
+                    <div className="h-7 w-7 rounded-md bg-white/[0.04] flex items-center justify-center">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <p className={`text-2xl font-bold tracking-tight ${kpi.accent}`}>
                     {kpi.value}
-                  </span>
-                  <TrendBadge trend={kpi.trend} dir={kpi.trendDir} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </p>
+                  {kpi.progress !== undefined && (
+                    <div className="mt-2.5 mb-1">
+                      <Progress value={kpi.progress} className="h-1.5 bg-white/[0.06]" />
+                    </div>
+                  )}
+                  <div className={`flex items-center gap-1 mt-1.5 text-xs ${kpi.subColor || "text-muted-foreground"}`}>
+                    {SubIcon && <SubIcon className="h-3 w-3" />}
+                    <span>{kpi.sub}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* ── Middle Row ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Financial Chart */}
-          <Card className="lg:col-span-2 bg-[#0a0a0a] border-white/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Динамика прибыли
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-[280px] pr-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueChartData}>
-                  <defs>
-                    <linearGradient id="gRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stopColor="hsl(160 84% 39%)"
-                        stopOpacity={0.35}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="hsl(160 84% 39%)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                    <linearGradient id="gSpend" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="0%"
-                        stopColor="hsl(0 0% 50%)"
-                        stopOpacity={0.2}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor="hsl(0 0% 50%)"
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(0 0% 100% / 0.04)"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "hsl(0 0% 55%)", fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "hsl(0 0% 55%)", fontSize: 11 }}
-                    tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
-                    width={48}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "hsl(0 0% 6%)",
-                      border: "1px solid hsl(0 0% 100% / 0.1)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      color: "hsl(0 0% 95%)",
-                    }}
-                    formatter={(value: number) =>
-                      `${value.toLocaleString("ru-RU")} ₸`
-                    }
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="hsl(160 84% 39%)"
-                    strokeWidth={2}
-                    fill="url(#gRevenue)"
-                    name="Выручка"
-                    dot={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="spend"
-                    stroke="hsl(0 0% 45%)"
-                    strokeWidth={1.5}
-                    fill="url(#gSpend)"
-                    name="Расходы"
-                    dot={false}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* AI Director Card */}
-          <Card className="bg-[#0a0a0a] border-white/10 relative overflow-hidden">
-            {/* Glow effect */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-16 -left-16 w-32 h-32 rounded-full bg-emerald-500/5 blur-2xl pointer-events-none" />
-
-            <CardHeader className="pb-3 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+          {/* Red Zone */}
+          <Card className="lg:col-span-3 bg-[#0f0f11] border-white/[0.08]">
+            <CardHeader className="pb-3 pt-4 px-4">
               <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-md bg-emerald-500/15 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-emerald-400" />
-                </div>
-                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  AI-Директор · Утренняя сводка
+                <AlertTriangle className="h-4 w-4 text-rose-400" />
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Красная зона · Требуют внимания
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="relative z-10 space-y-4">
-              <p className="text-sm text-foreground/85 leading-relaxed">
-                Доброе утро! За последние 24 часа{" "}
-                <span className="text-emerald-400 font-semibold">
-                  ROMI вырос на 15%
-                </span>
-                . Я автоматически отключил{" "}
-                <span className="text-foreground font-medium">
-                  2 убыточных объявления
-                </span>{" "}
-                в Meta, сэкономив{" "}
-                <span className="text-emerald-400 font-semibold">
-                  14 500 ₸
-                </span>
-                . ИИ-агенты обработали 12 новых лидов и назначили{" "}
-                <span className="text-foreground font-medium">4 визита</span>.
-                Рекомендую запустить новые креативы из Контент-Завода.
+            <CardContent className="px-4 pb-4">
+              <div className="space-y-0">
+                {alerts.map((alert, i) => {
+                  const cfg = severityConfig[alert.severity];
+                  return (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 py-3 border-b border-white/[0.05] last:border-0 group"
+                    >
+                      <div className={`h-2 w-2 rounded-full ${cfg.dot} shrink-0`} />
+                      <span className="text-sm font-medium text-foreground/90 min-w-[160px]">
+                        {alert.project}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-medium ${cfg.badgeCls}`}
+                      >
+                        {alert.badge}
+                      </Badge>
+                      <div className="flex-1" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground hover:text-foreground h-7 px-2.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {alert.action}
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Director */}
+          <Card className="lg:col-span-2 bg-[#0f0f11] border-orange-500/[0.15] relative overflow-hidden">
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-orange-500/[0.06] blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-28 h-28 rounded-full bg-orange-500/[0.04] blur-2xl pointer-events-none" />
+
+            <CardHeader className="pb-2 pt-4 px-4 relative z-10">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md bg-orange-500/10 flex items-center justify-center">
+                  <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+                </div>
+                <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Отчет ИИ-Директора
+                </CardTitle>
+                <span className="text-[10px] text-orange-400/60 font-mono ml-auto">10:00</span>
+              </div>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 relative z-10 space-y-3">
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
+                <span className="text-orange-400 font-medium">Сводка:</span>{" "}
+                Контент-Завод завершил рендер{" "}
+                <span className="text-foreground font-medium">12 видео</span>.
+                ИИ-агенты успешно закрыли{" "}
+                <span className="text-emerald-400 font-semibold">4 сделки</span>{" "}
+                в CRM ночью. Выручка агентства выросла на{" "}
+                <span className="text-emerald-400 font-semibold">+5%</span>{" "}
+                с начала месяца. Рекомендую перераспределить бюджеты в проекте{" "}
+                <span className="text-foreground font-medium">'Avicenna'</span>.
               </p>
               <Button
                 size="sm"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white border-0"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white border-0 h-8 text-xs"
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                <Sparkles className="h-3 w-3 mr-1.5" />
                 Принять рекомендации
               </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* ── Bottom Row: Activity Feed ── */}
-        <Card className="bg-[#0a0a0a] border-white/10">
-          <CardHeader className="pb-3">
+        {/* ── Bottom Row: Infrastructure chart ── */}
+        <Card className="bg-[#0f0f11] border-white/[0.08]">
+          <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Живая лента · Действия системы
+              <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Мониторинг · Поток лидов по всем проектам (7д)
               </CardTitle>
-              <Badge
-                variant="outline"
-                className="border-emerald-500/30 text-emerald-400 text-[10px] gap-1"
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live
-              </Badge>
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-orange-400" /> Входящие
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" /> Обработано AI
+                </span>
+              </div>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-0">
-              {activityFeed.map((event, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0"
-                >
-                  <div className="flex flex-col items-center gap-1 pt-0.5">
-                    <div
-                      className={`h-2 w-2 rounded-full ${event.color} shrink-0`}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-foreground/90">{event.text}</p>
-                  </div>
-                  <span className="text-[11px] text-muted-foreground font-mono shrink-0">
-                    {event.time}
-                  </span>
-                </div>
-              ))}
-            </div>
+          <CardContent className="h-[220px] px-4 pb-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={leadFlowData}>
+                <defs>
+                  <linearGradient id="gLeads" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f97316" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gAiClosed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(0 0% 100% / 0.03)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="day"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "hsl(0 0% 45%)", fontSize: 11 }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "hsl(0 0% 40%)", fontSize: 11 }}
+                  width={32}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(0 0% 6%)",
+                    border: "1px solid hsl(0 0% 100% / 0.08)",
+                    borderRadius: 6,
+                    fontSize: 12,
+                    color: "hsl(0 0% 90%)",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="leads"
+                  stroke="#f97316"
+                  strokeWidth={1.5}
+                  fill="url(#gLeads)"
+                  name="Входящие лиды"
+                  dot={false}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="aiClosed"
+                  stroke="#10b981"
+                  strokeWidth={1.5}
+                  fill="url(#gAiClosed)"
+                  name="Обработано AI"
+                  dot={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
