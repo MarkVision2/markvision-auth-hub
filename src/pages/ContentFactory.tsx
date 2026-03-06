@@ -235,7 +235,7 @@ export default function ContentFactory() {
             <div className="flex gap-3 pt-2">
               <Button
                 onClick={handleDownloadAll}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Download className="h-4 w-4" />
                 📥 Скачать всё
