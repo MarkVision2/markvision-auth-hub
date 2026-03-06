@@ -1,67 +1,106 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
-import SalesLeadDetailSheet from "@/components/sheets/LeadDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Phone,
-  MessageSquare,
-  ChevronRight,
-  Bot,
-  UserCheck,
-  Handshake,
-  DollarSign,
-  TrendingUp,
-  Eye,
-  Users,
-} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, ChevronRight, Handshake, MessageSquare, Phone, Bot, UserCheck, DollarSign, TrendingUp, Eye, ShoppingCart, Users } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Send, Clock, User } from "lucide-react";
 
-/* ── Funnel Stages ── */
-interface Stage {
-  name: string;
-  count: number;
-  color: string;
-  icon: typeof Phone;
-}
-
-const stages: Stage[] = [
-  { name: "Новые заявки", count: 18, color: "text-blue-400", icon: MessageSquare },
-  { name: "Квалификация", count: 12, color: "text-[hsl(var(--status-warning))]", icon: UserCheck },
-  { name: "Встреча", count: 8, color: "text-[hsl(var(--status-ai))]", icon: Handshake },
-  { name: "КП отправлено", count: 5, color: "text-purple-400", icon: DollarSign },
-  { name: "Оплата", count: 3, color: "text-[hsl(var(--status-good))]", icon: TrendingUp },
+/* ── Same 8 stages as CRM Kanban ── */
+const STAGES = [
+  "Новая заявка",
+  "Без ответа",
+  "В работе",
+  "Счет выставлен",
+  "Записан",
+  "Визит совершен",
+  "Оплачен",
+  "Отказ",
 ];
 
-/* ── Leads Queue ── */
+const stageIcons = [MessageSquare, Phone, UserCheck, DollarSign, Users, Eye, TrendingUp, ShoppingCart];
+const stageColors = [
+  "text-blue-400",
+  "text-[hsl(var(--status-warning))]",
+  "text-[hsl(var(--status-ai))]",
+  "text-purple-400",
+  "text-cyan-400",
+  "text-[hsl(var(--status-ai))]",
+  "text-[hsl(var(--status-good))]",
+  "text-[hsl(var(--status-critical))]",
+];
+
 interface Lead {
+  id: string;
   name: string;
-  project: string;
-  source: string;
-  time: string;
-  phone: string;
-  assignedTo: "ai" | "manager";
+  phone: string | null;
+  status: string | null;
+  source: string | null;
+  created_at: string | null;
+  amount: number | null;
+  ai_score: number | null;
+  client_config_id: string | null;
 }
-
-const leadsQueue: Lead[] = [
-  { name: "Асель Тұрсынова", project: "Avicenna Clinic", source: "Instagram", time: "3 мин", phone: "+7 707 ***", assignedTo: "ai" },
-  { name: "Ержан Қасымов", project: "Beauty Lab", source: "Meta Ads", time: "12 мин", phone: "+7 747 ***", assignedTo: "manager" },
-  { name: "Дина Ахметова", project: "NeoVision Eye", source: "Google Ads", time: "25 мин", phone: "+7 701 ***", assignedTo: "ai" },
-  { name: "Марат Сериков", project: "Kitarov Clinic", source: "Сайт", time: "1ч", phone: "+7 778 ***", assignedTo: "manager" },
-  { name: "Айгуль Нурланова", project: "Avicenna Clinic", source: "WhatsApp", time: "5 мин", phone: "+7 702 ***", assignedTo: "ai" },
-  { name: "Болат Жумабаев", project: "Дентал Тайм", source: "Instagram", time: "2ч", phone: "+7 771 ***", assignedTo: "manager" },
-];
-
-/* ── KPIs ── */
-const salesKpis = [
-  { label: "Конверсия", value: "18%", sub: "из лида в оплату", color: "text-[hsl(var(--status-good))]" },
-  { label: "Визиты", value: "1 240", sub: "за месяц", color: "text-[hsl(var(--status-ai))]" },
-  { label: "Новых лидов", value: "46", sub: "за месяц", color: "text-foreground" },
-  { label: "План/Факт", value: "72%", sub: "до конца месяца", color: "text-[hsl(var(--status-warning))]" },
-];
 
 export default function DashboardSales() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    const { data } = await (supabase as any)
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setLeads((data as Lead[]) ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+
+  // Realtime
+  useEffect(() => {
+    const channel = supabase
+      .channel("sales_leads_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchLeads]);
+
+  /* ── KPIs from real data ── */
+  const kpis = useMemo(() => {
+    const total = leads.length;
+    const paid = leads.filter((l) => l.status === "Оплачен").length;
+    const visits = leads.filter((l) => l.status === "Визит совершен").length;
+    const conversion = total > 0 ? Math.round((paid / total) * 100) : 0;
+    return [
+      { label: "Конверсия", value: `${conversion}%`, sub: "лид → оплата", color: "text-[hsl(var(--status-good))]" },
+      { label: "Визиты", value: String(visits), sub: "Визит совершен", color: "text-[hsl(var(--status-ai))]" },
+      { label: "Всего лидов", value: String(total), sub: "в системе", color: "text-foreground" },
+      { label: "Оплачено", value: String(paid), sub: "продажи", color: "text-[hsl(var(--status-good))]" },
+    ];
+  }, [leads]);
+
+  /* ── Funnel counts ── */
+  const funnelCounts = useMemo(() => {
+    return STAGES.map((stage) => leads.filter((l) => (l.status || "Новая заявка") === stage).length);
+  }, [leads]);
+
+  if (loading) {
+    return (
+      <DashboardLayout breadcrumb="Отдел продаж">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout breadcrumb="Отдел продаж">
       <StaggerContainer className="space-y-5">
@@ -72,13 +111,13 @@ export default function DashboardSales() {
             Отдел продаж
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Воронка · Лиды · Конверсии
+            Воронка · Лиды · Конверсии — данные из CRM
           </p>
         </FadeUpItem>
 
-        {/* Sales KPIs */}
+        {/* KPIs */}
         <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {salesKpis.map((kpi) => (
+          {kpis.map((kpi) => (
             <Card key={kpi.label} className="bg-card border-border">
               <CardContent className="p-4">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-[0.08em] font-medium">{kpi.label}</p>
@@ -94,23 +133,26 @@ export default function DashboardSales() {
           <Card className="bg-card border-border">
             <CardHeader className="pb-2 pt-4 px-5">
               <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                Воронка продаж
+                Воронка продаж · {STAGES.length} этапов
               </CardTitle>
             </CardHeader>
             <CardContent className="px-5 pb-4">
-              <div className="flex items-center gap-1">
-                {stages.map((stage, i) => (
-                  <div key={stage.name} className="flex items-center gap-1 flex-1 min-w-0">
-                    <div className="flex-1 rounded-md border border-border bg-secondary/30 p-3 text-center">
-                      <stage.icon className={`h-4 w-4 mx-auto mb-1.5 ${stage.color}`} />
-                      <p className="text-[10px] text-muted-foreground truncate">{stage.name}</p>
-                      <p className={`text-lg font-bold mt-0.5 ${stage.color}`}>{stage.count}</p>
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {STAGES.map((stage, i) => {
+                  const Icon = stageIcons[i];
+                  return (
+                    <div key={stage} className="flex items-center gap-1 flex-1 min-w-0">
+                      <div className="flex-1 rounded-md border border-border bg-secondary/30 p-3 text-center min-w-[80px]">
+                        <Icon className={`h-4 w-4 mx-auto mb-1.5 ${stageColors[i]}`} />
+                        <p className="text-[10px] text-muted-foreground truncate">{stage}</p>
+                        <p className={`text-lg font-bold mt-0.5 ${stageColors[i]}`}>{funnelCounts[i]}</p>
+                      </div>
+                      {i < STAGES.length - 1 && (
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/30 shrink-0" />
+                      )}
                     </div>
-                    {i < stages.length - 1 && (
-                      <ChevronRight className="h-3 w-3 text-muted-foreground/30 shrink-0" />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -123,10 +165,10 @@ export default function DashboardSales() {
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
                 <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                  Лиды на обработку
+                  Последние лиды
                 </CardTitle>
                 <Badge variant="outline" className="ml-auto text-[10px] font-mono border-border text-muted-foreground">
-                  {leadsQueue.length} всего
+                  {leads.length} всего
                 </Badge>
               </div>
             </CardHeader>
@@ -134,7 +176,7 @@ export default function DashboardSales() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border">
-                    {["Имя", "Проект", "Источник", "Время", "Кто ведёт"].map((h) => (
+                    {["Имя", "Источник", "Статус", "Время"].map((h) => (
                       <th key={h} className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left whitespace-nowrap">
                         {h}
                       </th>
@@ -142,25 +184,20 @@ export default function DashboardSales() {
                   </tr>
                 </thead>
                 <tbody>
-                  {leadsQueue.map((lead, i) => (
-                    <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                  {leads.slice(0, 20).map((lead) => (
+                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
                       <td className="px-5 py-2.5">
                         <p className="font-medium text-foreground/90">{lead.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">{lead.phone}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono">{lead.phone || "—"}</p>
                       </td>
-                      <td className="px-5 py-2.5 text-foreground/70">{lead.project}</td>
-                      <td className="px-5 py-2.5 text-muted-foreground">{lead.source}</td>
-                      <td className="px-5 py-2.5 font-mono tabular-nums text-muted-foreground">{lead.time}</td>
+                      <td className="px-5 py-2.5 text-muted-foreground">{lead.source || "—"}</td>
                       <td className="px-5 py-2.5">
-                        {lead.assignedTo === "ai" ? (
-                          <Badge variant="outline" className="text-[10px] font-mono border-[hsl(var(--status-ai)/0.3)] bg-[hsl(var(--status-ai)/0.1)] text-[hsl(var(--status-ai))]">
-                            <Bot className="h-2.5 w-2.5 mr-1" />AI
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
-                            <Phone className="h-2.5 w-2.5 mr-1" />Менеджер
-                          </Badge>
-                        )}
+                        <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground">
+                          {lead.status || "Новая заявка"}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-2.5 font-mono tabular-nums text-muted-foreground text-[10px]">
+                        {lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
                       </td>
                     </tr>
                   ))}
@@ -171,7 +208,46 @@ export default function DashboardSales() {
         </FadeUpItem>
       </StaggerContainer>
 
-      <SalesLeadDetailSheet lead={selectedLead} open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)} />
+      {/* Lead Detail Sheet */}
+      <Sheet open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <SheetContent className="sm:max-w-md bg-card border-border overflow-y-auto">
+          {selectedLead && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle className="text-base font-semibold">{selectedLead.name}</SheetTitle>
+                <SheetDescription className="text-xs text-muted-foreground">
+                  {selectedLead.source || "—"} · {selectedLead.status || "Новая заявка"}
+                </SheetDescription>
+              </SheetHeader>
+              <Separator className="bg-border" />
+              <div className="py-4 space-y-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Контакт</h3>
+                {[
+                  { icon: Phone, label: "Телефон", value: selectedLead.phone || "—" },
+                  { icon: MessageSquare, label: "Источник", value: selectedLead.source || "—" },
+                  { icon: Clock, label: "Создан", value: selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleString("ru-RU") : "—" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between py-1.5">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <item.icon className="h-3 w-3" />
+                      <span className="text-xs">{item.label}</span>
+                    </div>
+                    <span className="text-xs font-mono text-foreground/80">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+              <Separator className="bg-border" />
+              <div className="py-4 space-y-2">
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3">Действия</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" className="text-xs border-border"><Phone className="h-3 w-3 mr-1.5" />Позвонить</Button>
+                  <Button variant="outline" size="sm" className="text-xs border-border"><Send className="h-3 w-3 mr-1.5" />WhatsApp</Button>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }
