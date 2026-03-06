@@ -273,7 +273,7 @@ export default function ContentFactory() {
                     opacity: [0.6, 1, 0.6],
                   }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                  className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center"
                 >
                   <motion.div
                     animate={{
