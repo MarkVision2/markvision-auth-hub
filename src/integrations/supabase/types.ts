@@ -201,6 +201,123 @@ export type Database = {
           },
         ]
       }
+      crm_automations: {
+        Row: {
+          action_detail: string | null
+          action_type: string
+          created_at: string
+          icon: string | null
+          id: string
+          is_enabled: boolean
+          project_id: string | null
+          trigger_type: string
+          trigger_value: string
+        }
+        Insert: {
+          action_detail?: string | null
+          action_type: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          project_id?: string | null
+          trigger_type: string
+          trigger_value: string
+        }
+        Update: {
+          action_detail?: string | null
+          action_type?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_enabled?: boolean
+          project_id?: string | null
+          trigger_type?: string
+          trigger_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_automations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_messages: {
+        Row: {
+          body: string
+          channel: string | null
+          created_at: string
+          direction: string
+          id: string
+          lead_id: string
+          read: boolean
+          sender_type: string
+        }
+        Insert: {
+          body: string
+          channel?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          lead_id: string
+          read?: boolean
+          sender_type?: string
+        }
+        Update: {
+          body?: string
+          channel?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          lead_id?: string
+          read?: boolean
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_notes: {
+        Row: {
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          author_name?: string
+          body: string
+          created_at?: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          author_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           ai_score: number | null
