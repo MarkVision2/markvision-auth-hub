@@ -202,15 +202,16 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             {objective === "whatsapp" && (
               <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <Label className="text-xs text-foreground/70">Привязанный WhatsApp</Label>
-                <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
-                  {whatsappNumbers.map((w) => (
-                    <div key={w.number} className="flex items-center justify-between">
-                      <span className="text-[11px] text-muted-foreground">{w.account}</span>
-                      <span className="text-xs font-mono text-foreground/80">{w.number}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted-foreground/60">Номер привязан к выбранному кабинету</p>
+                {account ? (
+                  <div className="rounded-lg border border-border bg-secondary/20 p-3 flex items-center justify-between">
+                    <span className="text-[11px] text-muted-foreground">{accounts.find(a => a.id === account)?.name}</span>
+                    <span className="text-xs font-mono text-primary">{whatsappByAccount[account] || "—"}</span>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground/60 rounded-lg border border-dashed border-border p-3 text-center">
+                    Сначала выберите кабинет
+                  </p>
+                )}
               </div>
             )}
           </section>
