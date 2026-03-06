@@ -28,6 +28,7 @@ const GENERATION_STEPS = [
 export default function ContentFactory() {
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
+  const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
   const [photoFormat, setPhotoFormat] = useState("banner");
   const [aspectRatio, setAspectRatio] = useState("1:1");
   const [designTab, setDesignTab] = useState<"ready" | "my">("ready");
