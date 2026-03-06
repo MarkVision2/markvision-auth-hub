@@ -434,12 +434,16 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
         {/* ── Fixed footer ── */}
         <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-4 space-y-2">
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 text-sm font-semibold">
-            <Rocket className="h-4 w-4 mr-2" />
-            Отправить на запуск AI
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 text-sm font-semibold"
+            disabled={launching}
+            onClick={handleLaunch}
+          >
+            {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
+            {launching ? "Загрузка..." : "Отправить на запуск AI"}
           </Button>
           <p className="text-[10px] text-center text-muted-foreground/60">
-            Данные будут отправлены в n8n webhook для автоматического запуска
+            Креатив загружается в Storage, данные отправляются в n8n webhook
           </p>
         </div>
       </SheetContent>
