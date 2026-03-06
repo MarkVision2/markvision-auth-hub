@@ -6,7 +6,7 @@ import { Target, Handshake, Activity, ChevronRight } from "lucide-react";
 const roles = [
   {
     title: "Таргетолог",
-    description: "Кампании, бюджеты, креативы, алерты по кабинетам",
+    description: "Кампании, бюджеты, алерты",
     icon: Target,
     path: "/dashboard/target",
     color: "text-[hsl(var(--status-ai))]",
@@ -14,7 +14,7 @@ const roles = [
   },
   {
     title: "Отдел продаж",
-    description: "Воронка лидов, AI-скоринг, конверсии, план/факт",
+    description: "Воронка лидов, конверсии, план/факт",
     icon: Handshake,
     path: "/dashboard/sales",
     color: "text-[hsl(var(--status-good))]",
@@ -22,7 +22,7 @@ const roles = [
   },
   {
     title: "Управляющий / PM",
-    description: "Обзор проектов, команда, финансы, ИИ-сводка",
+    description: "Проекты, визиты, продажи, задачи команды",
     icon: Activity,
     path: "/dashboard/pm",
     color: "text-primary",
