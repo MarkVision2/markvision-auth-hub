@@ -73,9 +73,9 @@ export default function DashboardTarget() {
 
   return (
     <DashboardLayout breadcrumb="Таргетолог">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div className="flex items-end justify-between">
+        <FadeUpItem className="flex items-end justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Target className="h-5 w-5 text-[hsl(var(--status-ai))]" />
