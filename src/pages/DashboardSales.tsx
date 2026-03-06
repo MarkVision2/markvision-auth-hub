@@ -63,6 +63,7 @@ const salesKpis = [
 ];
 
 export default function DashboardSales() {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   return (
     <DashboardLayout breadcrumb="Отдел продаж">
       <div className="space-y-5">
