@@ -1,4 +1,6 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import ProjectDetailSheet from "@/components/sheets/ProjectDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
