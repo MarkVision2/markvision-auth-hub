@@ -165,7 +165,7 @@ export default function DashboardTarget() {
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-2 border-b border-border bg-secondary/20">
+            <div className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-2 border-b border-border bg-secondary/20">
               {columns.map((h, i) => (
                 <span key={i} className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">
                   {h}
