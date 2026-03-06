@@ -134,8 +134,8 @@ export default function ContentFactory() {
       };
 
       const { data, error } = await supabase
-        .from("content_tasks")
-        .insert(payload)
+        .from("content_tasks" as any)
+        .insert(payload as any)
         .select("id, status, progress_text, result_urls, content_type")
         .single();
 
