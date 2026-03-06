@@ -67,9 +67,9 @@ export default function DashboardSales() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   return (
     <DashboardLayout breadcrumb="Отдел продаж">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div>
+        <FadeUpItem>
           <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Handshake className="h-5 w-5 text-[hsl(var(--status-good))]" />
             Отдел продаж
