@@ -228,7 +228,7 @@ export default function ContentFactory() {
                       htmlFor={opt.value}
                       className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
                         photoFormat === opt.value
-                          ? "border-emerald-500/60 bg-emerald-500/[0.06]"
+                          ? "border-primary/60 bg-primary/[0.06]"
                           : "border-border bg-secondary/20 hover:bg-secondary/40"
                       }`}
                     >
