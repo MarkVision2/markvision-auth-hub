@@ -10,7 +10,7 @@ interface Props {
   clients: ClientMetric[];
 }
 
-export default function HqRevenueChart({ clients }: Props) {
+export default function HqRevenueChart({ clients = [] }: Props) {
   const data = clients
     .filter((c) => c.client_name)
     .map((c) => ({
