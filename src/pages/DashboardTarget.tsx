@@ -33,7 +33,8 @@ interface Campaign {
   budgetPct: number;
   cpl: string;
   leads: number;
-  ctr: string;
+  visits: number;
+  sales: number;
   objective: string;
 }
 
@@ -41,6 +42,8 @@ interface AdAccount {
   name: string;
   totalSpend: string;
   totalLeads: number;
+  totalVisits: number;
+  totalSales: number;
   avgCpl: string;
   campaigns: Campaign[];
 }
@@ -51,37 +54,45 @@ const adAccounts: AdAccount[] = [
     name: "Клиника AIVA",
     totalSpend: "227K ₸",
     totalLeads: 83,
+    totalVisits: 142,
+    totalSales: 18,
     avgCpl: "2 735 ₸",
     campaigns: [
-      { name: "Имплантация_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "82K ₸", budget: "180K ₸", budgetPct: 46, cpl: "2 158 ₸", leads: 38, ctr: "3.2%", objective: "WhatsApp" },
-      { name: "Виниры_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "145K ₸", budget: "200K ₸", budgetPct: 73, cpl: "3 222 ₸", leads: 45, ctr: "2.8%", objective: "Лид-форма" },
+      { name: "Имплантация_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "82K ₸", budget: "180K ₸", budgetPct: 46, cpl: "2 158 ₸", leads: 38, visits: 64, sales: 9, objective: "WhatsApp" },
+      { name: "Виниры_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "145K ₸", budget: "200K ₸", budgetPct: 73, cpl: "3 222 ₸", leads: 45, visits: 78, sales: 9, objective: "Лид-форма" },
     ],
   },
   {
     name: "NeoVision Eye",
     totalSpend: "98K ₸",
     totalLeads: 28,
+    totalVisits: 41,
+    totalSales: 6,
     avgCpl: "3 500 ₸",
     campaigns: [
-      { name: "Лазерная_коррекция_Март", project: "NeoVision Eye", status: "active", spend: "98K ₸", budget: "140K ₸", budgetPct: 70, cpl: "3 500 ₸", leads: 28, ctr: "2.1%", objective: "WhatsApp" },
+      { name: "Лазерная_коррекция_Март", project: "NeoVision Eye", status: "active", spend: "98K ₸", budget: "140K ₸", budgetPct: 70, cpl: "3 500 ₸", leads: 28, visits: 41, sales: 6, objective: "WhatsApp" },
     ],
   },
   {
     name: "Дентал Тайм",
     totalSpend: "95K ₸",
     totalLeads: 12,
+    totalVisits: 15,
+    totalSales: 2,
     avgCpl: "7 917 ₸",
     campaigns: [
-      { name: "Протезирование_Конверсии", project: "Дентал Тайм", status: "error", spend: "95K ₸", budget: "95K ₸", budgetPct: 100, cpl: "7 917 ₸", leads: 12, ctr: "1.4%", objective: "Лиды с сайта" },
+      { name: "Протезирование_Конверсии", project: "Дентал Тайм", status: "error", spend: "95K ₸", budget: "95K ₸", budgetPct: 100, cpl: "7 917 ₸", leads: 12, visits: 15, sales: 2, objective: "Лиды с сайта" },
     ],
   },
   {
     name: "Технология позвоночника",
     totalSpend: "60K ₸",
     totalLeads: 4,
+    totalVisits: 5,
+    totalSales: 0,
     avgCpl: "15 000 ₸",
     campaigns: [
-      { name: "Осмотр_позвоночника_Февр", project: "Технология позвоночника", status: "paused", spend: "60K ₸", budget: "150K ₸", budgetPct: 40, cpl: "15 000 ₸", leads: 4, ctr: "0.8%", objective: "Лид-форма" },
+      { name: "Осмотр_позвоночника_Февр", project: "Технология позвоночника", status: "paused", spend: "60K ₸", budget: "150K ₸", budgetPct: 40, cpl: "15 000 ₸", leads: 4, visits: 5, sales: 0, objective: "Лид-форма" },
     ],
   },
 ];
@@ -92,7 +103,7 @@ const statusBadge = {
   paused: { label: "Пауза", cls: "border-border bg-secondary/30 text-muted-foreground" },
 };
 
-const columns = ["", "Кампания", "Цель", "Расход", "Лиды", "CPL", "CTR", ""];
+const columns = ["", "Кампания", "Цель", "Расход", "Лиды", "Визиты", "Продажи", ""];
 
 export default function DashboardTarget() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -154,7 +165,7 @@ export default function DashboardTarget() {
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-2 border-b border-border bg-secondary/20">
+            <div className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-2 border-b border-border bg-secondary/20">
               {columns.map((h, i) => (
                 <span key={i} className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">
                   {h}
@@ -169,7 +180,7 @@ export default function DashboardTarget() {
                 <Collapsible key={account.name} open={isOpen} onOpenChange={() => toggleAccount(account.name)}>
                   {/* Account row */}
                   <CollapsibleTrigger asChild>
-                    <div className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
+                    <div className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
                       <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                       <div>
                         <p className="text-xs font-semibold text-foreground">{account.name}</p>
@@ -178,8 +189,8 @@ export default function DashboardTarget() {
                       <span className="text-[10px] text-muted-foreground/60">—</span>
                       <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalSpend}</span>
                       <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalLeads}</span>
-                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.avgCpl}</span>
-                      <span className="text-[10px] text-muted-foreground/60">—</span>
+                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalVisits}</span>
+                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalSales}</span>
                       <span />
                     </div>
                   </CollapsibleTrigger>
@@ -193,7 +204,7 @@ export default function DashboardTarget() {
                       return (
                         <div
                           key={c.name}
-                          className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors"
+                          className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors"
                         >
                           {/* Toggle */}
                           <div className="pl-1">
@@ -222,13 +233,11 @@ export default function DashboardTarget() {
                           {/* Leads */}
                           <span className="text-xs font-mono tabular-nums text-foreground/80">{c.leads}</span>
 
-                          {/* CPL */}
-                          <span className={`text-xs font-mono tabular-nums ${cplNum > 5000 ? "text-[hsl(var(--status-critical))]" : "text-foreground/80"}`}>
-                            {c.cpl}
-                          </span>
+                          {/* Visits */}
+                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.visits}</span>
 
-                          {/* CTR */}
-                          <span className="text-xs font-mono tabular-nums text-foreground/70">{c.ctr}</span>
+                          {/* Sales */}
+                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.sales}</span>
 
                           {/* Menu */}
                           <DropdownMenu>
