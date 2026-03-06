@@ -195,7 +195,7 @@ export default function ContentFactory() {
             className="rounded-xl border border-border bg-card p-6 space-y-6"
           >
             <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
               <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
             </div>
 
