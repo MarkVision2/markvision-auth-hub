@@ -191,9 +191,9 @@ export default function AgencyAccounts() {
                   </TableCell>
                   <TableCell className="py-4 text-right">
                     <div className="space-y-0.5">
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Клик → Лид: <span className="text-zinc-400">{c.convClickLead}%</span></p>
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Лид → Визит: <span className="text-zinc-400">{c.convLeadVisit}%</span></p>
-                      <p className="text-[11px] text-zinc-500 tabular-nums">Визит → Продажа: <span className="text-zinc-400">{c.convVisitSale}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Клик → Лид: <span className="text-secondary-foreground">{c.convClickLead}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Лид → Визит: <span className="text-secondary-foreground">{c.convLeadVisit}%</span></p>
+                      <p className="text-[11px] text-muted-foreground tabular-nums">Визит → Продажа: <span className="text-secondary-foreground">{c.convVisitSale}%</span></p>
                     </div>
                   </TableCell>
                 </TableRow>
