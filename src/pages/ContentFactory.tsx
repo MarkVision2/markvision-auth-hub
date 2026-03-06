@@ -159,6 +159,55 @@ export default function ContentFactory() {
           {/* Photo mode */}
           {mainType === "photo" && (
             <div className="space-y-8">
+              {/* Source: link or description */}
+              <Tabs
+                value={photoMode}
+                onValueChange={(v) => setPhotoMode(v as "link" | "description")}
+              >
+                <TabsList className="h-9 bg-secondary/40">
+                  <TabsTrigger
+                    value="link"
+                    className="text-xs data-[state=active]:bg-background"
+                  >
+                    <Link className="mr-1.5 h-3.5 w-3.5" />
+                    По ссылке
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="description"
+                    className="text-xs data-[state=active]:bg-background"
+                  >
+                    <FileText className="mr-1.5 h-3.5 w-3.5" />
+                    По описанию
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {photoMode === "link" ? (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">
+                    Ссылка на референс
+                  </Label>
+                  <Input
+                    type="url"
+                    placeholder="Вставьте ссылку на пример дизайна, пост или рекламу"
+                    className="h-11 bg-secondary/30 border-border"
+                  />
+                  <p className="text-xs text-muted-foreground/70">
+                    AI проанализирует пример и создаст уникальный аналог в выбранном формате.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">
+                    Описание визуала
+                  </Label>
+                  <Textarea
+                    placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…"
+                    className="min-h-[100px] bg-secondary/30 border-border resize-none"
+                  />
+                </div>
+              )}
+
               {/* Format */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-foreground">
