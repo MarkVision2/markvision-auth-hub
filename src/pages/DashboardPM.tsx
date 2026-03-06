@@ -115,6 +115,7 @@ export default function DashboardPM() {
 
         {/* Projects Table */}
         <FadeUpItem>
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-5">
             <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
               <FolderKanban className="h-3.5 w-3.5" />
