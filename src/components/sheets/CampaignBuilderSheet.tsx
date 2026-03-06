@@ -52,6 +52,18 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     { id: "Contact", name: "Contact" },
   ];
 
+  const leadForms = [
+    { id: "form_1", name: "Запись на консультацию" },
+    { id: "form_2", name: "Обратный звонок" },
+    { id: "form_3", name: "Получить прайс" },
+  ];
+
+  const whatsappNumbers = [
+    { account: "Клиника AIVA", number: "+7 701 123-45-67" },
+    { account: "NeoVision Eye", number: "+7 702 987-65-43" },
+    { account: "Дентал Тайм", number: "+7 700 555-12-34" },
+  ];
+
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
     { value: "website", label: "Лиды с сайта" },
