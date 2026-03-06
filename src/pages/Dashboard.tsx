@@ -6,7 +6,7 @@ import { Target, Handshake, Activity, ChevronRight } from "lucide-react";
 const roles = [
   {
     title: "Таргетолог",
-    description: "Кампании, бюджеты, креативы, алерты по кабинетам",
+    description: "Кампании, бюджеты, алерты",
     icon: Target,
     path: "/dashboard/target",
     color: "text-[hsl(var(--status-ai))]",
