@@ -121,14 +121,55 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             </div>
 
             {objective === "website" && (
-              <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
-                <Label className="text-xs text-foreground/70">UTM-метки</Label>
-                <Input
-                  value={utmTags}
-                  onChange={(e) => setUtmTags(e.target.value)}
-                  className="bg-secondary/30 border-border text-xs h-9 font-mono"
-                  placeholder="?utm_source=meta..."
-                />
+              <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">Ссылка на сайт</Label>
+                  <Input
+                    value={siteUrl}
+                    onChange={(e) => setSiteUrl(e.target.value)}
+                    className="bg-secondary/30 border-border text-xs h-9"
+                    placeholder="https://example.com/landing"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">Пиксель Meta</Label>
+                  <Select value={pixel} onValueChange={setPixel}>
+                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                      <SelectValue placeholder="Выберите пиксель" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pixels.map((p) => (
+                        <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">Событие оптимизации</Label>
+                  <Select value={pixelEvent} onValueChange={setPixelEvent}>
+                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                      <SelectValue placeholder="Выберите событие" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pixelEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground/60">Список событий синхронизируется с Meta Pixel</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">UTM-метки</Label>
+                  <Input
+                    value={utmTags}
+                    onChange={(e) => setUtmTags(e.target.value)}
+                    className="bg-secondary/30 border-border text-xs h-9 font-mono"
+                    placeholder="?utm_source=meta..."
+                  />
+                </div>
               </div>
             )}
           </section>
