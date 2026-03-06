@@ -1,4 +1,6 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import SalesLeadDetailSheet from "@/components/sheets/LeadDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +63,7 @@ const salesKpis = [
 ];
 
 export default function DashboardSales() {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   return (
     <DashboardLayout breadcrumb="Отдел продаж">
       <div className="space-y-5">
@@ -140,7 +143,7 @@ export default function DashboardSales() {
               </thead>
               <tbody>
                 {leadsQueue.map((lead, i) => (
-                  <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                  <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
                     <td className="px-5 py-2.5">
                       <p className="font-medium text-foreground/90">{lead.name}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">{lead.phone}</p>
@@ -174,6 +177,8 @@ export default function DashboardSales() {
           </CardContent>
         </Card>
       </div>
+
+      <SalesLeadDetailSheet lead={selectedLead} open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)} />
     </DashboardLayout>
   );
 }

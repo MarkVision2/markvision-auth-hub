@@ -1,8 +1,10 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import CampaignDetailSheet from "@/components/sheets/CampaignDetailSheet";
 import {
   Rocket,
   AlertTriangle,
@@ -65,6 +67,7 @@ const alertColors = {
 };
 
 export default function DashboardTarget() {
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const activeCampaigns = campaigns.filter(c => c.status === "active").length;
 
   return (
@@ -134,7 +137,7 @@ export default function DashboardTarget() {
                   {campaigns.map((c) => {
                     const st = statusMap[c.status];
                     return (
-                      <tr key={c.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                      <tr key={c.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedCampaign(c)}>
                         <td className="px-5 py-2.5">
                           <p className="font-medium text-foreground/90 whitespace-nowrap">{c.name}</p>
                           <p className="text-[10px] text-muted-foreground">{c.project}</p>
@@ -188,6 +191,8 @@ export default function DashboardTarget() {
           </Card>
         </div>
       </div>
+
+      <CampaignDetailSheet campaign={selectedCampaign} open={!!selectedCampaign} onOpenChange={(open) => !open && setSelectedCampaign(null)} />
     </DashboardLayout>
   );
 }

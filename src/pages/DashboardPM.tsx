@@ -1,4 +1,6 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import ProjectDetailSheet from "@/components/sheets/ProjectDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -78,6 +80,7 @@ const aiBriefing = [
 const priorityColor = { high: "text-[hsl(var(--status-critical))]", medium: "text-[hsl(var(--status-warning))]" };
 
 export default function DashboardPM() {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   return (
     <DashboardLayout breadcrumb="Управляющий">
       <div className="space-y-5">
@@ -130,7 +133,7 @@ export default function DashboardPM() {
                 {projects.map((p) => {
                   const h = healthMap[p.health];
                   return (
-                    <tr key={p.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                    <tr key={p.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedProject(p)}>
                       <td className="px-5 py-2.5 font-medium text-foreground/90 whitespace-nowrap">{p.name}</td>
                       <td className="px-5 py-2.5">
                         <span className="inline-flex items-center gap-1.5">
@@ -237,6 +240,8 @@ export default function DashboardPM() {
           </Card>
         </div>
       </div>
+
+      <ProjectDetailSheet project={selectedProject} open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)} />
     </DashboardLayout>
   );
 }
