@@ -4,51 +4,45 @@ import { Sparkles } from "lucide-react";
 
 export default function AiBriefing() {
   return (
-    <Card className="bg-[#0f0f11] border-orange-500/[0.15] relative overflow-hidden h-full">
-      <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-orange-500/[0.06] blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-12 -left-12 w-28 h-28 rounded-full bg-orange-500/[0.04] blur-2xl pointer-events-none" />
+    <Card className="bg-card border-[hsl(var(--status-ai)/0.15)] relative overflow-hidden h-full">
+      <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-[hsl(var(--status-ai)/0.05)] blur-3xl pointer-events-none" />
 
-      <CardHeader className="pb-2 pt-4 px-4 relative z-10">
+      <CardHeader className="pb-2 pt-4 px-5 relative z-10">
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-md bg-orange-500/10 flex items-center justify-center">
-            <Sparkles className="h-3.5 w-3.5 text-orange-400" />
+          <div className="h-5 w-5 rounded bg-[hsl(var(--status-ai)/0.1)] flex items-center justify-center">
+            <Sparkles className="h-3 w-3 text-[hsl(var(--status-ai))]" />
           </div>
-          <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             ИИ-Директор
           </CardTitle>
-          <span className="text-[10px] text-orange-400/60 font-mono ml-auto">10:00</span>
+          <span className="text-[10px] text-[hsl(var(--status-ai)/0.5)] font-mono ml-auto">10:00</span>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4 relative z-10 space-y-3">
-        <p className="text-[13px] text-foreground/80 leading-relaxed">
-          <span className="text-orange-400 font-medium">Утренняя сводка:</span>{" "}
-          Контент-Завод завершил рендер{" "}
-          <span className="text-foreground font-medium">12 видео</span>.
-          ИИ-агенты закрыли{" "}
-          <span className="text-emerald-400 font-semibold">4 сделки</span>{" "}
-          в CRM ночью. MRR вырос на{" "}
-          <span className="text-emerald-400 font-semibold">+5%</span>.
+      <CardContent className="px-5 pb-4 relative z-10 space-y-3">
+        <p className="text-xs text-foreground/75 leading-relaxed">
+          <span className="text-[hsl(var(--status-ai))] font-medium">Сводка:</span>{" "}
+          Контент-Завод — <span className="text-foreground font-medium">12 видео</span> отрендерено.
+          CRM — <span className="text-[hsl(var(--status-good))] font-semibold">4 сделки</span> закрыты ИИ ночью.
+          MRR — <span className="text-[hsl(var(--status-good))] font-semibold">+5%</span>.
         </p>
-        <div className="text-[13px] text-foreground/80 leading-relaxed">
-          <span className="text-orange-400 font-medium">Рекомендации:</span>
-          <ul className="mt-1.5 space-y-1 text-foreground/70">
-            <li className="flex items-start gap-1.5">
-              <span className="text-orange-400 mt-0.5">→</span>
-              Перераспределить бюджет в проекте «Avicenna»
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="text-rose-400 mt-0.5">→</span>
-              Срочно решить вопрос карты в «Технология позвоночника»
-            </li>
-            <li className="flex items-start gap-1.5">
-              <span className="text-amber-400 mt-0.5">→</span>
-              Обновить креативы для «Дентал Тайм»
-            </li>
-          </ul>
+        <div className="text-xs text-foreground/70 leading-relaxed space-y-1">
+          <p className="text-[hsl(var(--status-ai))] font-medium text-[10px] uppercase tracking-wider">Рекомендации</p>
+          <div className="flex items-start gap-1.5">
+            <span className="text-[hsl(var(--status-ai))] mt-px text-[10px]">→</span>
+            <span>Перераспределить бюджет «Avicenna»</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <span className="text-[hsl(var(--status-critical))] mt-px text-[10px]">→</span>
+            <span>Решить карту в «Технология позвоночника»</span>
+          </div>
+          <div className="flex items-start gap-1.5">
+            <span className="text-[hsl(var(--status-warning))] mt-px text-[10px]">→</span>
+            <span>Обновить креативы «Дентал Тайм»</span>
+          </div>
         </div>
         <Button
           size="sm"
-          className="w-full bg-orange-600 hover:bg-orange-700 text-white border-0 h-8 text-xs"
+          className="w-full bg-[hsl(var(--status-ai))] hover:bg-[hsl(25_95%_46%)] text-white border-0 h-7 text-[11px] font-medium"
         >
           <Sparkles className="h-3 w-3 mr-1.5" />
           Принять рекомендации

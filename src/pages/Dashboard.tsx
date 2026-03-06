@@ -9,15 +9,20 @@ import DualCharts from "@/components/dashboard/DualCharts";
 export default function Dashboard() {
   return (
     <DashboardLayout breadcrumb="Штаб-квартира">
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Штаб-квартира
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Внутренний контроль проектов и AI-инфраструктуры
-          </p>
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground tracking-tight">
+              Штаб-квартира
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5 tracking-wide">
+              Внутренний контроль проектов · AI-инфраструктура · Финансы
+            </p>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+            UPD 10:04 · 06.03.2026
+          </span>
         </div>
 
         {/* KPI Row */}
@@ -27,7 +32,7 @@ export default function Dashboard() {
         <ProjectHealthTable />
 
         {/* Alerts + AI Briefing */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-3">
             <AlertsPanel />
           </div>

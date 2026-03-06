@@ -6,7 +6,7 @@ import {
   HeartPulse,
   Cpu,
   Pause,
-  ArrowUpRight,
+  TrendingUp,
   AlertTriangle,
   Clock,
 } from "lucide-react";
@@ -17,68 +17,68 @@ const kpis = [
     value: "14",
     sub: "2 на паузе",
     icon: FolderKanban,
-    accent: "text-foreground",
+    valueColor: "text-foreground",
     subIcon: Pause,
   },
   {
     title: "MRR Агентства",
-    value: "4 200 000 ₸",
-    sub: "+5% к прошлому мес.",
+    value: "4.2M ₸",
+    sub: "+5% к пред. мес.",
     icon: DollarSign,
-    accent: "text-emerald-400",
-    subIcon: ArrowUpRight,
-    subColor: "text-emerald-400",
+    valueColor: "text-[hsl(var(--status-good))]",
+    subIcon: TrendingUp,
+    subColor: "text-[hsl(var(--status-good))]",
   },
   {
     title: "Health Score",
     value: "85%",
-    sub: "3 проекта в жёлтой зоне",
+    sub: "3 в жёлтой зоне",
     icon: HeartPulse,
-    accent: "text-emerald-400",
+    valueColor: "text-[hsl(var(--status-good))]",
     progress: 85,
     subIcon: AlertTriangle,
-    subColor: "text-amber-400",
+    subColor: "text-[hsl(var(--status-warning))]",
   },
   {
     title: "AI-Операций / 24ч",
     value: "342",
-    sub: "Сэкономлено ~28ч",
+    sub: "≈ 28ч сэкономлено",
     icon: Cpu,
-    accent: "text-orange-400",
+    valueColor: "text-[hsl(var(--status-ai))]",
     subIcon: Clock,
-    subColor: "text-orange-400",
+    subColor: "text-[hsl(var(--status-ai))]",
   },
 ];
 
 export default function KpiCards() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {kpis.map((kpi) => {
         const Icon = kpi.icon;
         const SubIcon = kpi.subIcon;
         return (
           <Card
             key={kpi.title}
-            className="bg-[#0f0f11] border-white/[0.08] hover:border-white/[0.15] transition-colors"
+            className="bg-card border-border hover:border-muted transition-colors"
           >
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-widest">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.08em]">
                   {kpi.title}
                 </span>
-                <div className="h-7 w-7 rounded-md bg-white/[0.04] flex items-center justify-center">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                <div className="h-6 w-6 rounded bg-secondary/60 flex items-center justify-center">
+                  <Icon className="h-3 w-3 text-muted-foreground" />
                 </div>
               </div>
-              <p className={`text-2xl font-bold tracking-tight ${kpi.accent}`}>
+              <p className={`text-[22px] font-bold tracking-tight leading-none ${kpi.valueColor}`}>
                 {kpi.value}
               </p>
               {kpi.progress !== undefined && (
-                <div className="mt-2.5 mb-1">
-                  <Progress value={kpi.progress} className="h-1.5 bg-white/[0.06]" />
+                <div className="mt-2">
+                  <Progress value={kpi.progress} className="h-1 bg-secondary" />
                 </div>
               )}
-              <div className={`flex items-center gap-1 mt-1.5 text-xs ${kpi.subColor || "text-muted-foreground"}`}>
+              <div className={`flex items-center gap-1 mt-2 text-[11px] ${kpi.subColor || "text-muted-foreground"}`}>
                 {SubIcon && <SubIcon className="h-3 w-3" />}
                 <span>{kpi.sub}</span>
               </div>
