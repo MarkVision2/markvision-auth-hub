@@ -293,7 +293,7 @@ export default function ContentFactory() {
             <div className="space-y-3">
               <Progress
                 value={progressPercent}
-                className="h-2.5 bg-secondary/40 [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-1000"
+                className="h-2.5 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-1000"
               />
               <div className="flex items-center justify-between">
                 <AnimatePresence mode="wait">
