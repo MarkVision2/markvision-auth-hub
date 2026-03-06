@@ -31,6 +31,7 @@ const App = () => (
           <Route path="/accounts" element={<AgencyAccounts />} />
           <Route path="/content" element={<ContentFactory />} />
           <Route path="/crm" element={<CrmSystem />} />
+          <Route path="/ai-rop" element={<AiRopPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -20,6 +20,7 @@ const moduleNav = [
   { title: "Кабинеты", path: "/accounts", icon: Briefcase },
   { title: "Контент-Завод", path: "/content", icon: Factory },
   { title: "CRM", path: "/crm", icon: Users },
+  { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
 ];
 
 interface DashboardLayoutProps {
