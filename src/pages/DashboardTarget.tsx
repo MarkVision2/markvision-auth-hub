@@ -13,51 +13,21 @@ import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  Rocket,
-  ChevronDown,
-  MoreHorizontal,
-  Copy,
-  Pencil,
-  Megaphone,
-  Search,
-  AlertTriangle,
-  TrendingDown,
-  CreditCard,
-  Play,
-  Pause,
-  Download,
-  Loader2,
+  Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
+  AlertTriangle, TrendingDown, CreditCard, Download, Loader2,
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/* ── Types ── */
 interface Campaign {
-  name: string;
-  project: string;
-  status: "active" | "error" | "paused";
-  spend: string;
-  budget: string;
-  budgetPct: number;
-  cpl: string;
-  leads: number;
-  visits: number;
-  sales: number;
-  objective: string;
-  sparkline: number[];
+  name: string; project: string; status: "active" | "error" | "paused";
+  spend: string; budget: string; budgetPct: number; cpl: string;
+  leads: number; visits: number; sales: number; objective: string; sparkline: number[];
 }
 
-interface ClientAccount {
-  id: string;
-  name: string;
-  campaigns: Campaign[];
-}
+interface ClientAccount { id: string; name: string; campaigns: Campaign[]; }
 
-/* ── Alerts (mock — later from DB/edge function) ── */
 const alerts = [
   { account: "Дентал Тайм", campaign: "Протезирование_Конверсии", issue: "Бюджет исчерпан на 100%", icon: CreditCard, severity: "critical" as const },
   { account: "Технология позвоночника", campaign: "Осмотр_позвоночника_Февр", issue: "CPL ×3 выше нормы", icon: TrendingDown, severity: "warning" as const },
@@ -68,7 +38,6 @@ const alertSeverityColor = {
   warning: "text-[hsl(var(--status-warning))]",
 };
 
-/* ── Mock campaigns per client (later from Meta API) ── */
 const mockCampaigns: Record<string, Campaign[]> = {
   "Клиника AIVA": [
     { name: "Имплантация_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "82K ₸", budget: "180K ₸", budgetPct: 46, cpl: "2 158 ₸", leads: 38, visits: 64, sales: 9, objective: "WhatsApp", sparkline: [3, 5, 4, 7, 6, 8, 5] },
@@ -87,17 +56,9 @@ const mockCampaigns: Record<string, Campaign[]> = {
 
 function generatePlaceholderCampaign(clientName: string): Campaign {
   return {
-    name: `${clientName}_Основная`,
-    project: clientName,
-    status: "paused",
-    spend: "0 ₸",
-    budget: "0 ₸",
-    budgetPct: 0,
-    cpl: "—",
-    leads: 0,
-    visits: 0,
-    sales: 0,
-    objective: "Не настроена",
+    name: `${clientName}_Основная`, project: clientName, status: "paused",
+    spend: "0 ₸", budget: "0 ₸", budgetPct: 0, cpl: "—",
+    leads: 0, visits: 0, sales: 0, objective: "Не настроена",
     sparkline: [0, 0, 0, 0, 0, 0, 0],
   };
 }
@@ -120,33 +81,19 @@ export default function DashboardTarget() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [campaignStates, setCampaignStates] = useState<Record<string, boolean>>({});
 
-  // Fetch ALL real client accounts from Supabase
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
     const { data } = await (supabase as any)
-      .from("clients_config")
-      .select("id, client_name, is_active")
-      .eq("is_active", true)
-      .order("client_name");
-
+      .from("clients_config").select("id, client_name, is_active").eq("is_active", true).order("client_name");
     if (data) {
       const mapped: ClientAccount[] = (data as any[]).map((c) => ({
-        id: c.id,
-        name: c.client_name,
+        id: c.id, name: c.client_name,
         campaigns: mockCampaigns[c.client_name] ?? [generatePlaceholderCampaign(c.client_name)],
       }));
-
       setAccounts(mapped);
       setExpandedAccounts(new Set(mapped.map((a) => a.name)));
-
       const states: Record<string, boolean> = {};
-      mapped.forEach((acc) =>
-        acc.campaigns.forEach((c) => {
-          if (!(c.name in campaignStates)) {
-            states[c.name] = c.status === "active";
-          }
-        })
-      );
+      mapped.forEach((acc) => acc.campaigns.forEach((c) => { if (!(c.name in campaignStates)) states[c.name] = c.status === "active"; }));
       setCampaignStates((prev) => ({ ...states, ...prev }));
     }
     setLoading(false);
@@ -154,7 +101,6 @@ export default function DashboardTarget() {
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
-  /* ── Filtered data ── */
   const filteredAccounts = useMemo(() => {
     return accounts
       .map((acc) => ({
@@ -172,11 +118,7 @@ export default function DashboardTarget() {
   const totalActive = Object.values(campaignStates).filter(Boolean).length;
 
   const toggleAccount = (name: string) => {
-    setExpandedAccounts((prev) => {
-      const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
-      return next;
-    });
+    setExpandedAccounts((prev) => { const next = new Set(prev); next.has(name) ? next.delete(name) : next.add(name); return next; });
   };
 
   const toggleCampaign = (name: string) => {
@@ -185,15 +127,6 @@ export default function DashboardTarget() {
       toast(next[name] ? "Кампания включена" : "Кампания на паузе", { description: name });
       return next;
     });
-  };
-
-  const bulkToggleAll = (on: boolean) => {
-    setCampaignStates((prev) => {
-      const next = { ...prev };
-      filteredAccounts.forEach((acc) => acc.campaigns.forEach((c) => { next[c.name] = on; }));
-      return next;
-    });
-    toast(on ? "Все кампании включены" : "Все кампании на паузе");
   };
 
   if (loading) {
@@ -209,33 +142,28 @@ export default function DashboardTarget() {
   return (
     <DashboardLayout breadcrumb="Таргетолог">
       <StaggerContainer className="space-y-4">
-        {/* Header */}
         <FadeUpItem className="flex items-end justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Megaphone className="h-5 w-5 text-primary" />
               Центр управления рекламой
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {accounts.length} кабинетов · {totalCampaigns} кампаний · {totalActive} активных
             </p>
           </div>
-          <Button
-            onClick={() => setBuilderOpen(true)}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-xs font-semibold gap-1.5"
-          >
-            <Rocket className="h-3.5 w-3.5" />
+          <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-semibold gap-1.5">
+            <Rocket className="h-4 w-4" />
             Создать кампанию
           </Button>
         </FadeUpItem>
 
-        {/* Alerts */}
         {alerts.length > 0 && (
           <FadeUpItem>
             <Card className="bg-card border-border">
               <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="h-3 w-3 text-[hsl(var(--status-critical))]" />
+                <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--status-critical))]" />
                   Алерты · {alerts.length}
                 </CardTitle>
               </CardHeader>
@@ -243,11 +171,11 @@ export default function DashboardTarget() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {alerts.map((a, i) => (
                     <div key={i} className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/10 p-2.5">
-                      <a.icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${alertSeverityColor[a.severity]}`} />
+                      <a.icon className={`h-4 w-4 mt-0.5 shrink-0 ${alertSeverityColor[a.severity]}`} />
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium text-foreground/90 truncate">{a.campaign}</p>
-                        <p className="text-[10px] text-muted-foreground">{a.issue}</p>
-                        <p className="text-[9px] text-muted-foreground/60 mt-0.5">{a.account}</p>
+                        <p className="text-sm font-medium text-foreground/90 truncate">{a.campaign}</p>
+                        <p className="text-xs text-muted-foreground">{a.issue}</p>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">{a.account}</p>
                       </div>
                     </div>
                   ))}
@@ -257,18 +185,11 @@ export default function DashboardTarget() {
           </FadeUpItem>
         )}
 
-        {/* Filters */}
         <FadeUpItem className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Поиск кампании..."
-              className="pl-8 h-8 text-xs bg-secondary/30 border-border"
-            />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Поиск кампании..." className="pl-8 h-9 text-sm bg-secondary/30 border-border" />
           </div>
-
           <div className="flex items-center gap-1">
             {([
               { value: "all" as StatusFilter, label: "Все" },
@@ -279,7 +200,7 @@ export default function DashboardTarget() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-all ${
+                className={`text-sm font-medium px-2.5 py-1 rounded-md transition-all ${
                   statusFilter === f.value
                     ? "bg-primary/15 text-primary"
                     : "text-muted-foreground hover:text-foreground/70 hover:bg-secondary/30"
@@ -289,35 +210,23 @@ export default function DashboardTarget() {
               </button>
             ))}
           </div>
-
-          <div className="flex items-center gap-1 ml-auto">
-            <Button variant="outline" size="sm" className="h-7 text-[10px] border-border gap-1" onClick={() => bulkToggleAll(true)}>
-              <Play className="h-3 w-3" /> Вкл. все
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px] border-border gap-1" onClick={() => bulkToggleAll(false)}>
-              <Pause className="h-3 w-3" /> Выкл. все
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-[10px] border-border gap-1" onClick={() => toast("Экспорт данных", { description: "CSV файл скачивается" })}>
-              <Download className="h-3 w-3" /> Экспорт
+          <div className="ml-auto">
+            <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1" onClick={() => toast("Экспорт данных", { description: "CSV файл скачивается" })}>
+              <Download className="h-3.5 w-3.5" /> Экспорт
             </Button>
           </div>
         </FadeUpItem>
 
-        {/* Campaign Table */}
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
               {["", "Кампания", "Цель", "Бюджет", "Лиды", "Визиты", "7д", ""].map((h, i) => (
-                <span key={i} className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">
-                  {h}
-                </span>
+                <span key={i} className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">{h}</span>
               ))}
             </div>
 
             {filteredAccounts.length === 0 && (
-              <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                Ничего не найдено
-              </div>
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">Ничего не найдено</div>
             )}
 
             {filteredAccounts.map((account) => {
@@ -326,66 +235,48 @@ export default function DashboardTarget() {
                 <Collapsible key={account.name} open={isOpen} onOpenChange={() => toggleAccount(account.name)}>
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
-                      <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                       <div>
-                        <p className="text-xs font-semibold text-foreground">{account.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{account.campaigns.length} кампаний</p>
+                        <p className="text-sm font-semibold text-foreground">{account.name}</p>
+                        <p className="text-xs text-muted-foreground">{account.campaigns.length} кампаний</p>
                       </div>
                     </div>
                   </CollapsibleTrigger>
-
                   <CollapsibleContent>
                     {account.campaigns.map((c) => {
                       const st = statusBadge[c.status];
                       const isOn = campaignStates[c.name] ?? false;
                       return (
-                        <div
-                          key={c.name}
-                          className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors"
-                        >
+                        <div key={c.name} className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors">
                           <div className="pl-1">
-                            <Switch
-                              checked={isOn}
-                              onCheckedChange={() => toggleCampaign(c.name)}
-                              className="scale-75 origin-left"
-                            />
+                            <Switch checked={isOn} onCheckedChange={() => toggleCampaign(c.name)} className="scale-75 origin-left" />
                           </div>
-
-                          <button
-                            onClick={() => setSelectedCampaign(c)}
-                            className="text-left hover:underline underline-offset-2"
-                          >
-                            <p className="text-xs font-medium text-foreground/90 truncate">{c.name}</p>
-                            <Badge variant="outline" className={`text-[9px] font-mono mt-0.5 ${st.cls}`}>{st.label}</Badge>
+                          <button onClick={() => setSelectedCampaign(c)} className="text-left hover:underline underline-offset-2">
+                            <p className="text-sm font-medium text-foreground/90 truncate">{c.name}</p>
+                            <Badge variant="outline" className={`text-xs font-mono mt-0.5 ${st.cls}`}>{st.label}</Badge>
                           </button>
-
-                          <span className="text-[11px] text-muted-foreground">{c.objective}</span>
+                          <span className="text-xs text-muted-foreground">{c.objective}</span>
                           <div>
-                            <span className="text-xs font-mono tabular-nums text-foreground/80">{c.spend}</span>
-                            <p className="text-[9px] text-muted-foreground">/ {c.budget}</p>
+                            <span className="text-sm font-mono tabular-nums text-foreground/80">{c.spend}</span>
+                            <p className="text-xs text-muted-foreground">/ {c.budget}</p>
                           </div>
-                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.leads}</span>
-                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.visits}</span>
-
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{c.leads}</span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{c.visits}</span>
                           <div className="w-14">
-                            <SparklineChart
-                              data={c.sparkline}
-                              color={c.status === "error" ? "hsl(350 89% 60%)" : "hsl(160 84% 39%)"}
-                            />
+                            <SparklineChart data={c.sparkline} color={c.status === "error" ? "hsl(350 89% 60%)" : "hsl(160 84% 39%)"} />
                           </div>
-
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                <MoreHorizontal className="h-3.5 w-3.5" />
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-36">
-                              <DropdownMenuItem className="text-xs gap-2" onClick={() => toast("Редактирование", { description: c.name })}>
-                                <Pencil className="h-3 w-3" /> Редактировать
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast("Редактирование", { description: c.name })}>
+                                <Pencil className="h-3.5 w-3.5" /> Редактировать
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs gap-2" onClick={() => toast("Дублировано", { description: c.name })}>
-                                <Copy className="h-3 w-3" /> Дублировать
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast("Дублировано", { description: c.name })}>
+                                <Copy className="h-3.5 w-3.5" /> Дублировать
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

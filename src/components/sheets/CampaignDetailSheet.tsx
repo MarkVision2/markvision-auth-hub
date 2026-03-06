@@ -6,16 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw, TrendingUp, TrendingDown, Eye, MousePointerClick } from "lucide-react";
 
 interface Campaign {
-  name: string;
-  project: string;
-  status: "active" | "error" | "paused";
-  spend: string;
-  budget: string;
-  budgetPct: number;
-  cpl: string;
-  leads: number;
-  visits: number;
-  sales: number;
+  name: string; project: string; status: "active" | "error" | "paused";
+  spend: string; budget: string; budgetPct: number; cpl: string;
+  leads: number; visits: number; sales: number;
 }
 
 const statusMap = {
@@ -24,11 +17,7 @@ const statusMap = {
   paused: { label: "Пауза", cls: "border-border bg-secondary/40 text-muted-foreground" },
 };
 
-interface Props {
-  campaign: Campaign | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+interface Props { campaign: Campaign | null; open: boolean; onOpenChange: (open: boolean) => void; }
 
 export default function CampaignDetailSheet({ campaign, open, onOpenChange }: Props) {
   if (!campaign) return null;
@@ -40,32 +29,30 @@ export default function CampaignDetailSheet({ campaign, open, onOpenChange }: Pr
       <SheetContent className="sm:max-w-md bg-card border-border overflow-y-auto">
         <SheetHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className={`text-[10px] font-mono ${st.cls}`}>{st.label}</Badge>
+            <Badge variant="outline" className={`text-xs font-mono ${st.cls}`}>{st.label}</Badge>
           </div>
           <SheetTitle className="text-base font-semibold">{campaign.name}</SheetTitle>
-          <SheetDescription className="text-xs text-muted-foreground">{campaign.project}</SheetDescription>
+          <SheetDescription className="text-sm text-muted-foreground">{campaign.project}</SheetDescription>
         </SheetHeader>
 
         <Separator className="bg-border" />
 
-        {/* Budget */}
         <div className="py-4 space-y-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Бюджет</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Бюджет</h3>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Расход / Бюджет</span>
+            <span className="text-sm text-muted-foreground">Расход / Бюджет</span>
             <span className="text-sm font-mono font-semibold tabular-nums">{campaign.spend} / {campaign.budget}</span>
           </div>
           <Progress value={campaign.budgetPct} className="h-2 bg-secondary" />
-          <p className={`text-right text-[10px] font-mono ${campaign.budgetPct >= 90 ? "text-[hsl(var(--status-critical))]" : campaign.budgetPct >= 70 ? "text-[hsl(var(--status-warning))]" : "text-muted-foreground"}`}>
+          <p className={`text-right text-xs font-mono ${campaign.budgetPct >= 90 ? "text-[hsl(var(--status-critical))]" : campaign.budgetPct >= 70 ? "text-[hsl(var(--status-warning))]" : "text-muted-foreground"}`}>
             {campaign.budgetPct}% использовано
           </p>
         </div>
 
         <Separator className="bg-border" />
 
-        {/* Metrics */}
         <div className="py-4 space-y-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Метрики</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">Метрики</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
               { label: "CPL", value: campaign.cpl, icon: cplNum > 5000 ? TrendingDown : TrendingUp, color: cplNum > 5000 ? "text-[hsl(var(--status-critical))]" : "text-[hsl(var(--status-good))]" },
@@ -75,8 +62,8 @@ export default function CampaignDetailSheet({ campaign, open, onOpenChange }: Pr
             ].map((m) => (
               <div key={m.label} className="rounded-lg border border-border bg-secondary/20 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <m.icon className={`h-3 w-3 ${m.color}`} />
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</span>
+                  <m.icon className={`h-3.5 w-3.5 ${m.color}`} />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">{m.label}</span>
                 </div>
                 <p className={`text-lg font-bold font-mono tabular-nums ${m.color}`}>{m.value}</p>
               </div>
@@ -86,16 +73,15 @@ export default function CampaignDetailSheet({ campaign, open, onOpenChange }: Pr
 
         <Separator className="bg-border" />
 
-        {/* Actions */}
         <div className="py-4 space-y-2">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3">Действия</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground mb-3">Действия</h3>
           <div className="grid grid-cols-2 gap-2">
             {campaign.status === "active" ? (
-              <Button variant="outline" size="sm" className="text-xs border-border"><Pause className="h-3 w-3 mr-1.5" />Пауза</Button>
+              <Button variant="outline" size="sm" className="text-sm border-border"><Pause className="h-3.5 w-3.5 mr-1.5" />Пауза</Button>
             ) : (
-              <Button variant="outline" size="sm" className="text-xs border-border"><Play className="h-3 w-3 mr-1.5" />Запуск</Button>
+              <Button variant="outline" size="sm" className="text-sm border-border"><Play className="h-3.5 w-3.5 mr-1.5" />Запуск</Button>
             )}
-            <Button variant="outline" size="sm" className="text-xs border-border"><RefreshCw className="h-3 w-3 mr-1.5" />Обновить</Button>
+            <Button variant="outline" size="sm" className="text-sm border-border"><RefreshCw className="h-3.5 w-3.5 mr-1.5" />Обновить</Button>
           </div>
         </div>
       </SheetContent>

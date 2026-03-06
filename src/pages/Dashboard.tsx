@@ -53,12 +53,12 @@ export default function Dashboard() {
               className={`bg-card border-border ${role.border} transition-all cursor-pointer group`}
             >
               <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                <div className={`h-12 w-12 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-secondary transition-colors`}>
+                <div className="h-12 w-12 rounded-xl bg-secondary/60 flex items-center justify-center group-hover:bg-secondary transition-colors">
                   <role.icon className={`h-6 w-6 ${role.color}`} />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{role.title}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{role.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{role.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
               </CardContent>

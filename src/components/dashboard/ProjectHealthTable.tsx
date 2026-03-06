@@ -6,13 +6,7 @@ import { Activity } from "lucide-react";
 type HealthStatus = "green" | "yellow" | "red";
 
 interface Project {
-  name: string;
-  health: HealthStatus;
-  romi: number;
-  leads: number;
-  spend: string;
-  aiTasks: number;
-  manager: string;
+  name: string; health: HealthStatus; romi: number; leads: number; spend: string; aiTasks: number; manager: string;
 }
 
 const projects: Project[] = [
@@ -36,23 +30,21 @@ export default function ProjectHealthTable() {
       <CardHeader className="pb-2 pt-4 px-5">
         <div className="flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-          <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Здоровье проектов
           </CardTitle>
-          <Badge variant="outline" className="ml-auto text-[10px] border-border text-muted-foreground font-mono">
+          <Badge variant="outline" className="ml-auto text-xs border-border text-muted-foreground font-mono">
             {projects.length}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="px-0 pb-1">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 {["Проект", "Статус", "ROMI %", "Лиды", "Расход", "AI", "PM"].map((h) => (
-                  <th key={h} className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left whitespace-nowrap">
-                    {h}
-                  </th>
+                  <th key={h} className="text-xs text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -64,7 +56,7 @@ export default function ProjectHealthTable() {
                     <td className="px-5 py-2.5 font-medium text-foreground/90 whitespace-nowrap">{p.name}</td>
                     <td className="px-5 py-2.5">
                       <span className="inline-flex items-center gap-1.5">
-                        <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+                        <span className={`h-2 w-2 rounded-full ${cfg.dot}`} />
                         <span className="text-muted-foreground">{cfg.label}</span>
                       </span>
                     </td>

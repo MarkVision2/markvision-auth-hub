@@ -3,13 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Users, Clock } from "lucide-react";
 
-interface Task {
-  title: string;
-  project: string;
-  initials: string;
-  deadline: string;
-  status: "overdue" | "today" | "upcoming";
-}
+interface Task { title: string; project: string; initials: string; deadline: string; status: "overdue" | "today" | "upcoming"; }
 
 const tasks: Task[] = [
   { title: "Подготовить отчет для клиента", project: "Avicenna Clinic", initials: "АГ", deadline: "Просрочено", status: "overdue" },
@@ -31,10 +25,10 @@ export default function TeamTasks() {
       <CardHeader className="pb-2 pt-4 px-5">
         <div className="flex items-center gap-2">
           <Users className="h-3.5 w-3.5 text-muted-foreground" />
-          <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             Задачи команды
           </CardTitle>
-          <Badge variant="outline" className="ml-auto border-[hsl(var(--status-critical)/0.2)] text-[hsl(var(--status-critical))] text-[10px] font-mono">
+          <Badge variant="outline" className="ml-auto border-[hsl(var(--status-critical)/0.2)] text-[hsl(var(--status-critical))] text-xs font-mono">
             1 просрочена
           </Badge>
         </div>
@@ -42,21 +36,16 @@ export default function TeamTasks() {
       <CardContent className="px-5 pb-4">
         <div className="space-y-0">
           {tasks.map((task, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-3 py-2 border-b border-border last:border-0"
-            >
-              <Avatar className="h-6 w-6 shrink-0">
-                <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-mono">
-                  {task.initials}
-                </AvatarFallback>
+            <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarFallback className="bg-secondary text-muted-foreground text-xs font-mono">{task.initials}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-foreground/90 truncate leading-tight">{task.title}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{task.project}</p>
+                <p className="text-sm text-foreground/90 truncate leading-tight">{task.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{task.project}</p>
               </div>
-              <Badge variant="outline" className={`text-[10px] shrink-0 font-mono ${statusColors[task.status]}`}>
-                <Clock className="h-2.5 w-2.5 mr-1" />
+              <Badge variant="outline" className={`text-xs shrink-0 font-mono ${statusColors[task.status]}`}>
+                <Clock className="h-3 w-3 mr-1" />
                 {task.deadline}
               </Badge>
             </div>
