@@ -77,10 +77,10 @@ export default function DashboardSales() {
           <p className="text-xs text-muted-foreground mt-0.5">
             Воронка · Лиды · Конверсии
           </p>
-        </div>
+        </FadeUpItem>
 
         {/* Sales KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {salesKpis.map((kpi) => (
             <Card key={kpi.label} className="bg-card border-border">
               <CardContent className="p-4">
