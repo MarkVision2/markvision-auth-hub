@@ -3,10 +3,37 @@ import { Plus, CalendarDays } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ClientCard, { type ClientAccount } from "@/components/agency/ClientCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
+import type { ClientAccount } from "@/components/agency/ClientCard";
 
-const initialClients: ClientAccount[] = [
+function formatNum(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return new Intl.NumberFormat("ru-RU").format(n);
+  return n.toString();
+}
+
+type StatusType = "active" | "paused" | "error";
+
+interface TableClient extends Omit<ClientAccount, "status"> {
+  status: StatusType;
+  cpl: number;
+}
+
+const statusConfig: Record<StatusType, { label: string; dot: string; text: string }> = {
+  active: { label: "Активен", dot: "bg-emerald-400", text: "text-emerald-400" },
+  error: { label: "Ошибка оплаты", dot: "bg-red-500", text: "text-red-400" },
+  paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
+};
+
+const initialClients: TableClient[] = [
   {
     id: "1",
     client_name: "TechFlow Solutions",
@@ -16,12 +43,11 @@ const initialClients: ClientAccount[] = [
     visits: { fact: 48, plan: 80 },
     sales: { fact: 29, plan: 50 },
     clicks: 3420,
-    followers: 1250,
+    followers: 350,
+    cpl: 2016,
     convClickLead: 5,
     convLeadVisit: 40,
     convVisitSale: 60,
-    sparkSpend: [18000, 32000, 28000, 42000, 38000, 45000, 47000],
-    sparkLeads: [12, 18, 14, 22, 19, 21, 18],
   },
   {
     id: "2",
@@ -32,41 +58,67 @@ const initialClients: ClientAccount[] = [
     visits: { fact: 35, plan: 60 },
     sales: { fact: 18, plan: 35 },
     clicks: 2100,
-    followers: 870,
+    followers: 210,
+    cpl: 2022,
     convClickLead: 4.2,
     convLeadVisit: 39,
     convVisitSale: 51,
-    sparkSpend: [22000, 25000, 20000, 30000, 28000, 32000, 23000],
-    sparkLeads: [10, 13, 11, 16, 14, 13, 12],
   },
   {
     id: "3",
     client_name: "Astana Motors",
-    status: "paused",
+    status: "error",
     spend: { fact: 95000, plan: 200000 },
     leads: { fact: 42, plan: 100 },
     visits: { fact: 15, plan: 40 },
     sales: { fact: 7, plan: 25 },
     clicks: 1800,
-    followers: 540,
+    followers: 120,
+    cpl: 2262,
     convClickLead: 2.3,
     convLeadVisit: 36,
     convVisitSale: 47,
-    sparkSpend: [15000, 18000, 12000, 14000, 16000, 10000, 10000],
-    sparkLeads: [8, 7, 5, 6, 7, 5, 4],
+  },
+  {
+    id: "4",
+    client_name: "Almaty Digital Hub",
+    status: "paused",
+    spend: { fact: 0, plan: 150000 },
+    leads: { fact: 0, plan: 80 },
+    visits: { fact: 0, plan: 30 },
+    sales: { fact: 0, plan: 15 },
+    clicks: 0,
+    followers: 45,
+    cpl: 0,
+    convClickLead: 0,
+    convLeadVisit: 0,
+    convVisitSale: 0,
   },
 ];
 
+function FactPlan({ fact, plan, suffix = "" }: { fact: number; plan: number; suffix?: string }) {
+  return (
+    <div>
+      <p className="text-sm font-semibold text-foreground tabular-nums">{formatNum(fact)}{suffix}</p>
+      <p className="text-xs text-zinc-600 tabular-nums">План: {formatNum(plan)}{suffix}</p>
+    </div>
+  );
+}
+
 export default function AgencyAccounts() {
-  const [clients, setClients] = useState<ClientAccount[]>(initialClients);
+  const [clients, setClients] = useState<TableClient[]>(initialClients);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState("all");
 
-  const filtered = filter === "all" ? clients : filter === "paused" ? clients.filter((c) => c.status === "paused") : clients.filter((c) => c.status === "active" && c.leads.fact < c.leads.plan * 0.5);
+  const filtered =
+    filter === "all"
+      ? clients
+      : filter === "paused"
+      ? clients.filter((c) => c.status === "paused")
+      : clients.filter((c) => c.status === "error" || (c.status === "active" && c.leads.fact < c.leads.plan * 0.5));
 
   return (
     <DashboardLayout breadcrumb="Агентские кабинеты">
-      {/* Page header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Агентские кабинеты</h1>
         <Button onClick={() => setSheetOpen(true)} className="gap-2">
@@ -75,7 +127,6 @@ export default function AgencyAccounts() {
         </Button>
       </div>
 
-      {/* Control bar */}
       <div className="flex items-center justify-between mb-6 gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="bg-white/[0.03] border border-white/[0.04]">
@@ -90,14 +141,69 @@ export default function AgencyAccounts() {
         </Button>
       </div>
 
-      {/* Bento grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {filtered.map((c) => (
-          <ClientCard key={c.id} client={c} />
-        ))}
+      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-white/[0.06] hover:bg-transparent">
+              <TableHead className="text-xs font-medium text-zinc-500 w-[200px]">Кабинет</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">Расходы</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">Лиды</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">CPL</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">Подписчики</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">Визиты</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500">Продажи</TableHead>
+              <TableHead className="text-xs font-medium text-zinc-500 text-right">Конверсии</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((c) => {
+              const s = statusConfig[c.status];
+              return (
+                <TableRow key={c.id} className="border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors cursor-pointer">
+                  <TableCell className="py-4">
+                    <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                      {s.label}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <FactPlan fact={c.spend.fact} plan={c.spend.plan} suffix=" ₸" />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <FactPlan fact={c.leads.fact} plan={c.leads.plan} />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <p className="text-sm font-semibold text-foreground tabular-nums">
+                      {c.cpl > 0 ? formatNum(c.cpl) + " ₸" : "—"}
+                    </p>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <p className="text-sm font-semibold text-foreground tabular-nums">
+                      {c.followers > 0 ? `+${formatNum(c.followers)}` : "—"}
+                    </p>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <FactPlan fact={c.visits.fact} plan={c.visits.plan} />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <FactPlan fact={c.sales.fact} plan={c.sales.plan} />
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] text-zinc-500 tabular-nums">Клик → Лид: <span className="text-zinc-400">{c.convClickLead}%</span></p>
+                      <p className="text-[11px] text-zinc-500 tabular-nums">Лид → Визит: <span className="text-zinc-400">{c.convLeadVisit}%</span></p>
+                      <p className="text-[11px] text-zinc-500 tabular-nums">Визит → Продажа: <span className="text-zinc-400">{c.convVisitSale}%</span></p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </div>
 
-      <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onAdd={(client) => setClients((prev) => [client, ...prev])} />
+      <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onAdd={(client) => setClients((prev) => [{ ...client, cpl: 0, status: "active" as StatusType } as TableClient, ...prev])} />
     </DashboardLayout>
   );
 }
