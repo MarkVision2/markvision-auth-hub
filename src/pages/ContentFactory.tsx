@@ -133,16 +133,16 @@ export default function ContentFactory() {
         custom_logo_url: customLogoUrl,
       };
 
-      const { data, error } = await supabase
-        .from("content_tasks" as any)
-        .insert(payload as any)
+      const { data, error } = await (supabase as any)
+        .from("content_tasks")
+        .insert(payload)
         .select("id, status, progress_text, result_urls, content_type")
         .single();
 
       if (error) throw error;
 
       setTask(data as ContentTask);
-      setTaskId(data!.id);
+      setTaskId(data.id);
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
