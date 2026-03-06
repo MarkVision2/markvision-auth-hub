@@ -47,15 +47,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   ];
 
   const pixelEvents = [
-    { id: "Purchase", name: "Purchase" },
     { id: "Lead", name: "Lead" },
-    { id: "CompleteRegistration", name: "CompleteRegistration" },
-    { id: "ViewContent", name: "ViewContent" },
-    { id: "AddToCart", name: "AddToCart" },
-    { id: "InitiateCheckout", name: "InitiateCheckout" },
-    { id: "Schedule", name: "Schedule" },
     { id: "Contact", name: "Contact" },
-    { id: "SubmitApplication", name: "SubmitApplication" },
   ];
 
   const objectiveOptions: { value: Objective; label: string }[] = [
