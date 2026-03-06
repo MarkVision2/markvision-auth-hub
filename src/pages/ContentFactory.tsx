@@ -366,7 +366,7 @@ export default function ContentFactory() {
               <div className="space-y-3">
                 <Progress
                   value={GENERATION_STEPS[genStep].progress}
-                  className="h-2 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
+                  className="h-2 bg-secondary/40 [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-700"
                 />
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
