@@ -54,6 +54,33 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     setCreativePreview(url);
   };
 
+  const [launching, setLaunching] = useState(false);
+  const { toast } = useToast();
+
+  const handleLaunch = async () => {
+    if (!creativeFile) {
+      toast({ title: "Загрузите креатив", description: "Выберите фото или видео перед запуском", variant: "destructive" });
+      return;
+    }
+    setLaunching(true);
+    try {
+      const ext = creativeFile.name.split(".").pop();
+      const filePath = `uploads/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("content_assets").upload(filePath, creativeFile, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      toast({ title: "Креатив загружен ✓", description: "Кампания отправлена на запуск" });
+      onOpenChange(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Ошибка загрузки";
+      toast({ title: "Ошибка", description: msg, variant: "destructive" });
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   const pixels = [
     { id: "px_1", name: "AIVA — Основной пиксель" },
     { id: "px_2", name: "NeoVision — Сайт" },
