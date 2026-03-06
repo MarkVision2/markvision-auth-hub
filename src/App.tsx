@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/hooks/useAuthReady";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import DashboardTarget from "./pages/DashboardTarget";
@@ -24,14 +25,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AuthPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dashboard/target" element={<DashboardTarget />} />
-          <Route path="/dashboard/sales" element={<DashboardSales />} />
-          <Route path="/dashboard/pm" element={<DashboardPM />} />
-          <Route path="/accounts" element={<AgencyAccounts />} />
-          <Route path="/content" element={<ContentFactory />} />
-          <Route path="/crm" element={<CrmSystem />} />
-          <Route path="/ai-rop" element={<AiRopPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/target" element={<ProtectedRoute><DashboardTarget /></ProtectedRoute>} />
+          <Route path="/dashboard/sales" element={<ProtectedRoute><DashboardSales /></ProtectedRoute>} />
+          <Route path="/dashboard/pm" element={<ProtectedRoute><DashboardPM /></ProtectedRoute>} />
+          <Route path="/accounts" element={<ProtectedRoute><AgencyAccounts /></ProtectedRoute>} />
+          <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+          <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
+          <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
