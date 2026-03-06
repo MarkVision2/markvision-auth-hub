@@ -177,6 +177,8 @@ export default function DashboardSales() {
           </CardContent>
         </Card>
       </div>
+
+      <SalesLeadDetailSheet lead={selectedLead} open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)} />
     </DashboardLayout>
   );
 }

@@ -191,6 +191,8 @@ export default function DashboardTarget() {
           </Card>
         </div>
       </div>
+
+      <CampaignDetailSheet campaign={selectedCampaign} open={!!selectedCampaign} onOpenChange={(open) => !open && setSelectedCampaign(null)} />
     </DashboardLayout>
   );
 }

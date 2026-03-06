@@ -240,6 +240,8 @@ export default function DashboardPM() {
           </Card>
         </div>
       </div>
+
+      <ProjectDetailSheet project={selectedProject} open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)} />
     </DashboardLayout>
   );
 }
