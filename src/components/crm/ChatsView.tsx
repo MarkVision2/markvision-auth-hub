@@ -12,7 +12,7 @@ import {
   DollarSign, Clock, FileText, Plus, Copy, Sparkles,
   Globe, Hash, Search, Check, CheckCheck, ChevronRight,
   ArrowRight, Zap, Eye, CreditCard, MapPin, Ban,
-  CircleDot, Bell, Paperclip,
+  CircleDot, Bell, Paperclip, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -30,12 +30,23 @@ interface Lead {
   created_at: string | null;
 }
 
-interface ChatMessage {
-  id: number;
-  from: "client" | "ai" | "manager";
-  text: string;
-  time: string;
+interface CrmMessage {
+  id: string;
+  lead_id: string;
+  direction: string;
+  sender_type: string;
+  body: string;
+  channel: string | null;
   read: boolean;
+  created_at: string;
+}
+
+interface CrmNote {
+  id: string;
+  lead_id: string;
+  author_name: string;
+  body: string;
+  created_at: string;
 }
 
 const STAGES = [
@@ -60,25 +71,6 @@ const stageColorMap: Record<string, { bg: string; text: string; dot: string }> =
   "Отказ": { bg: "bg-[hsl(var(--status-critical)/0.1)]", text: "text-[hsl(var(--status-critical))]", dot: "bg-[hsl(var(--status-critical))]" },
 };
 
-const MOCK_CHATS: Record<string, ChatMessage[]> = {
-  default: [
-    { id: 1, from: "client", text: "Здравствуйте! Хочу узнать подробнее", time: "14:20", read: true },
-    { id: 2, from: "ai", text: "Добрый день! Подскажите, что именно вас интересует?", time: "14:21", read: true },
-    { id: 3, from: "client", text: "Сколько стоит консультация?", time: "14:23", read: true },
-    { id: 4, from: "ai", text: "Первичная консультация бесплатная! Хотите записаться на удобное время?", time: "14:24", read: false },
-  ],
-};
-
-function getLastMessage(leadName: string): ChatMessage {
-  const msgs = MOCK_CHATS[leadName] || MOCK_CHATS.default;
-  return msgs[msgs.length - 1];
-}
-
-function getUnreadCount(leadName: string): number {
-  const msgs = MOCK_CHATS[leadName] || MOCK_CHATS.default;
-  return msgs.filter((m) => !m.read && m.from === "client").length;
-}
-
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -87,6 +79,10 @@ function timeAgo(dateStr: string | null) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}ч`;
   return `${Math.floor(hours / 24)}д`;
+}
+
+function formatTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
 function getInitials(name: string) {
@@ -102,16 +98,41 @@ export default function ChatsView() {
   const [message, setMessage] = useState("");
   const [aiMode, setAiMode] = useState(true);
   const [note, setNote] = useState("");
-  const [notes, setNotes] = useState<{ id: number; text: string; author: string; time: string }[]>([]);
+  const [notes, setNotes] = useState<CrmNote[]>([]);
+  const [messages, setMessages] = useState<CrmMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [rightPanel, setRightPanel] = useState<"chat" | "info">("chat");
+  const [lastMessages, setLastMessages] = useState<Record<string, CrmMessage>>({});
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     const { data } = await (supabase as any)
       .from("leads").select("*").order("created_at", { ascending: false });
-    setLeads((data as Lead[]) ?? []);
+    const leadsData = (data as Lead[]) ?? [];
+    setLeads(leadsData);
     setLoading(false);
+
+    // Fetch last messages and unread counts for all leads
+    if (leadsData.length > 0) {
+      const leadIds = leadsData.map(l => l.id);
+      const { data: allMsgs } = await (supabase as any)
+        .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
+      
+      if (allMsgs) {
+        const lastMap: Record<string, CrmMessage> = {};
+        const unreadMap: Record<string, number> = {};
+        for (const msg of allMsgs) {
+          if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
+          if (!msg.read && msg.sender_type === "client") {
+            unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+          }
+        }
+        setLastMessages(lastMap);
+        setUnreadCounts(unreadMap);
+      }
+    }
   }, []);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
@@ -120,17 +141,54 @@ export default function ChatsView() {
     const channel = supabase
       .channel("chats_leads_rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_messages" }, (payload: any) => {
+        const newMsg = payload.new as CrmMessage;
+        // Update messages if viewing this lead
+        if (selectedLead && newMsg.lead_id === selectedLead.id) {
+          setMessages(prev => [...prev, newMsg]);
+        }
+        // Update last message and unread
+        setLastMessages(prev => ({ ...prev, [newMsg.lead_id]: newMsg }));
+        if (!newMsg.read && newMsg.sender_type === "client") {
+          setUnreadCounts(prev => ({ ...prev, [newMsg.lead_id]: (prev[newMsg.lead_id] || 0) + 1 }));
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchLeads]);
+  }, [fetchLeads, selectedLead]);
+
+  // Fetch messages for selected lead
+  const fetchMessages = useCallback(async (leadId: string) => {
+    setMessagesLoading(true);
+    const { data } = await (supabase as any)
+      .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+    setMessages((data as CrmMessage[]) ?? []);
+    setMessagesLoading(false);
+    // Mark as read
+    await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
+    setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
+  }, []);
+
+  // Fetch notes for selected lead
+  const fetchNotes = useCallback(async (leadId: string) => {
+    const { data } = await (supabase as any)
+      .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+    setNotes((data as CrmNote[]) ?? []);
+  }, []);
+
+  useEffect(() => {
+    if (selectedLead) {
+      fetchMessages(selectedLead.id);
+      fetchNotes(selectedLead.id);
+    }
+  }, [selectedLead, fetchMessages, fetchNotes]);
 
   useEffect(() => {
     if (selectedLead && rightPanel === "chat") {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
-  }, [selectedLead, rightPanel]);
+  }, [selectedLead, rightPanel, messages]);
 
-  // Keep selectedLead in sync with fetched data
   useEffect(() => {
     if (selectedLead) {
       const updated = leads.find(l => l.id === selectedLead.id);
@@ -158,7 +216,6 @@ export default function ChatsView() {
   }, [leads, search, filterStage]);
 
   const handleStageChange = async (leadId: string, newStage: string) => {
-    // Optimistic update
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStage } : l));
     const { error } = await (supabase as any)
       .from("leads").update({ status: newStage }).eq("id", leadId);
@@ -170,14 +227,32 @@ export default function ChatsView() {
     toast({ title: "Этап обновлён", description: newStage });
   };
 
-  const currentMessages = selectedLead
-    ? (MOCK_CHATS[selectedLead.name] || MOCK_CHATS.default)
-    : [];
+  const handleSendMessage = async () => {
+    if (!message.trim() || !selectedLead) return;
+    const body = message.trim();
+    setMessage("");
+    const { error } = await (supabase as any).from("crm_messages").insert({
+      lead_id: selectedLead.id,
+      direction: "outbound",
+      sender_type: "manager",
+      body,
+      channel: "web",
+      read: true,
+    });
+    if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+  };
 
-  const addNote = () => {
-    if (!note.trim()) return;
-    setNotes(prev => [{ id: Date.now(), text: note.trim(), author: "Вы", time: new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) }, ...prev]);
+  const addNote = async () => {
+    if (!note.trim() || !selectedLead) return;
+    const body = note.trim();
     setNote("");
+    const { error } = await (supabase as any).from("crm_notes").insert({
+      lead_id: selectedLead.id,
+      author_name: "Менеджер",
+      body,
+    });
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    fetchNotes(selectedLead.id);
   };
 
   const currentStageIndex = selectedLead
@@ -237,7 +312,6 @@ export default function ChatsView() {
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT — Chat list */}
         <div className="w-[320px] shrink-0 border-r border-border flex flex-col">
-          {/* Search */}
           <div className="p-2.5 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -250,18 +324,17 @@ export default function ChatsView() {
             </div>
           </div>
 
-          {/* Chat list */}
           <ScrollArea className="flex-1">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
             ) : filteredLeads.length === 0 ? (
               <div className="text-center py-12 text-sm text-muted-foreground">Нет чатов</div>
             ) : (
               filteredLeads.map((lead) => {
-                const lastMsg = getLastMessage(lead.name);
-                const unread = getUnreadCount(lead.name);
+                const lastMsg = lastMessages[lead.id];
+                const unread = unreadCounts[lead.id] || 0;
                 const isActive = selectedLead?.id === lead.id;
                 const score = lead.ai_score ?? 0;
                 const colors = stageColorMap[lead.status || "Новая заявка"];
@@ -286,11 +359,20 @@ export default function ChatsView() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium truncate text-foreground">{lead.name}</p>
-                        <span className="text-[10px] text-muted-foreground shrink-0 ml-1">{timeAgo(lead.created_at)}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0 ml-1">
+                          {lastMsg ? timeAgo(lastMsg.created_at) : timeAgo(lead.created_at)}
+                        </span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate mt-0.5">
-                        {lastMsg.from === "ai" && <Bot className="inline h-3 w-3 mr-0.5 -mt-0.5" />}
-                        {lastMsg.text}
+                        {lastMsg ? (
+                          <>
+                            {lastMsg.sender_type === "ai" && <Bot className="inline h-3 w-3 mr-0.5 -mt-0.5" />}
+                            {lastMsg.sender_type === "manager" && <User className="inline h-3 w-3 mr-0.5 -mt-0.5" />}
+                            {lastMsg.body}
+                          </>
+                        ) : (
+                          "Нет сообщений"
+                        )}
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`text-[9px] font-medium px-1.5 py-px rounded ${colors.bg} ${colors.text}`}>
@@ -355,7 +437,7 @@ export default function ChatsView() {
               </div>
             </div>
 
-            {/* Stage pipeline — clickable stages */}
+            {/* Stage pipeline */}
             <div className="flex items-center gap-0 px-3 py-1.5 border-b border-border bg-secondary/10 overflow-x-auto">
               {STAGES.map((s, i) => {
                 const isCurrent = s.key === (selectedLead.status || "Новая заявка");
@@ -390,48 +472,61 @@ export default function ChatsView() {
               <div className="flex-1 flex flex-col">
                 <ScrollArea className="flex-1 px-4 py-3">
                   <div className="space-y-2.5">
-                    <div className="flex items-center gap-3 py-1">
-                      <Separator className="flex-1" />
-                      <span className="text-[10px] text-muted-foreground bg-card px-2">Сегодня</span>
-                      <Separator className="flex-1" />
-                    </div>
-
-                    {currentMessages.map((msg) => (
-                      <div key={msg.id} className={`flex ${msg.from === "client" ? "justify-start" : "justify-end"}`}>
-                        <div className="flex items-end gap-1.5 max-w-[75%]">
-                          {msg.from === "client" && (
-                            <Avatar className="h-6 w-6 shrink-0">
-                              <AvatarFallback className="bg-secondary text-muted-foreground text-[9px]">
-                                {getInitials(selectedLead.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                          <div
-                            className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                              msg.from === "client"
-                                ? "bg-secondary text-foreground rounded-bl-md"
-                                : "bg-primary/10 text-foreground rounded-br-md"
-                            }`}
-                          >
-                            <p>{msg.text}</p>
-                            <div className={`flex items-center gap-1 mt-1 justify-end ${msg.from === "client" ? "text-muted-foreground/40" : "text-primary/40"}`}>
-                              {msg.from === "ai" && <Bot className="h-2.5 w-2.5" />}
-                              <span className="text-[10px]">{msg.time}</span>
-                              {msg.from !== "client" && (
-                                msg.read ? <CheckCheck className="h-2.5 w-2.5 text-primary/60" /> : <Check className="h-2.5 w-2.5" />
-                              )}
-                            </div>
-                          </div>
-                          {msg.from === "ai" && (
-                            <Avatar className="h-6 w-6 shrink-0">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
-                                <Bot className="h-3 w-3" />
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                        </div>
+                    {messagesLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                       </div>
-                    ))}
+                    ) : messages.length === 0 ? (
+                      <div className="text-center py-12 text-sm text-muted-foreground">Нет сообщений. Начните диалог.</div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 py-1">
+                          <Separator className="flex-1" />
+                          <span className="text-[10px] text-muted-foreground bg-card px-2">Диалог</span>
+                          <Separator className="flex-1" />
+                        </div>
+                        {messages.map((msg) => {
+                          const isClient = msg.sender_type === "client";
+                          return (
+                            <div key={msg.id} className={`flex ${isClient ? "justify-start" : "justify-end"}`}>
+                              <div className="flex items-end gap-1.5 max-w-[75%]">
+                                {isClient && (
+                                  <Avatar className="h-6 w-6 shrink-0">
+                                    <AvatarFallback className="bg-secondary text-muted-foreground text-[9px]">
+                                      {getInitials(selectedLead.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
+                                <div
+                                  className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                                    isClient
+                                      ? "bg-secondary text-foreground rounded-bl-md"
+                                      : "bg-primary/10 text-foreground rounded-br-md"
+                                  }`}
+                                >
+                                  <p>{msg.body}</p>
+                                  <div className={`flex items-center gap-1 mt-1 justify-end ${isClient ? "text-muted-foreground/40" : "text-primary/40"}`}>
+                                    {msg.sender_type === "ai" && <Bot className="h-2.5 w-2.5" />}
+                                    {msg.sender_type === "manager" && <User className="h-2.5 w-2.5" />}
+                                    <span className="text-[10px]">{formatTime(msg.created_at)}</span>
+                                    {!isClient && (
+                                      msg.read ? <CheckCheck className="h-2.5 w-2.5 text-primary/60" /> : <Check className="h-2.5 w-2.5" />
+                                    )}
+                                  </div>
+                                </div>
+                                {msg.sender_type === "ai" && (
+                                  <Avatar className="h-6 w-6 shrink-0">
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                                      <Bot className="h-3 w-3" />
+                                    </AvatarFallback>
+                                  </Avatar>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
                     <div ref={chatEndRef} />
                   </div>
                 </ScrollArea>
@@ -445,8 +540,9 @@ export default function ChatsView() {
                       onChange={(e) => setMessage(e.target.value)}
                       disabled={aiMode}
                       className="bg-secondary/30 border-border text-sm flex-1 h-9"
+                      onKeyDown={(e) => { if (e.key === "Enter" && !aiMode) handleSendMessage(); }}
                     />
-                    <Button size="sm" className="shrink-0 h-9 w-9 p-0" disabled={aiMode || !message.trim()}>
+                    <Button size="sm" className="shrink-0 h-9 w-9 p-0" disabled={aiMode || !message.trim()} onClick={handleSendMessage}>
                       <Send className="h-4 w-4" />
                     </Button>
                   </div>
@@ -458,10 +554,9 @@ export default function ChatsView() {
                 </div>
               </div>
 
-              {/* Right info panel (togglable) */}
+              {/* Right info panel */}
               {rightPanel === "info" && (
                 <div className="w-[280px] shrink-0 border-l border-border overflow-y-auto bg-background">
-                  {/* Quick actions */}
                   <div className="p-3 border-b border-border">
                     <div className="grid grid-cols-3 gap-1.5">
                       <Button variant="outline" size="sm" className="text-[10px] border-border h-7 gap-1 px-2">
@@ -476,7 +571,6 @@ export default function ChatsView() {
                     </div>
                   </div>
 
-                  {/* Details */}
                   <div className="p-3 border-b border-border space-y-1.5">
                     <label className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">Детали</label>
                     {[
@@ -495,7 +589,6 @@ export default function ChatsView() {
                     ))}
                   </div>
 
-                  {/* AI Analysis */}
                   <div className="p-3 border-b border-border">
                     <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 space-y-2">
                       <div className="flex items-center gap-1.5">
@@ -505,17 +598,6 @@ export default function ChatsView() {
                       <p className="text-[11px] text-foreground/70 leading-relaxed">
                         {selectedLead.ai_summary || "Анализ появится после диалога."}
                       </p>
-                      {(selectedLead.ai_score ?? 0) > 0 && (
-                        <div className="flex items-center gap-2 pt-0.5">
-                          <div className="flex-1 h-1 rounded-full bg-secondary overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${(selectedLead.ai_score ?? 0) >= 80 ? "bg-[hsl(var(--status-critical))]" : (selectedLead.ai_score ?? 0) >= 50 ? "bg-[hsl(var(--status-warning))]" : "bg-primary"}`}
-                              style={{ width: `${selectedLead.ai_score}%` }}
-                            />
-                          </div>
-                          <span className="text-[9px] font-mono text-muted-foreground">{selectedLead.ai_score}%</span>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -536,8 +618,8 @@ export default function ChatsView() {
                     <div className="space-y-1.5 mt-2">
                       {notes.map((n) => (
                         <div key={n.id} className="rounded border border-border bg-secondary/20 p-2">
-                          <p className="text-[11px] text-foreground/90">{n.text}</p>
-                          <span className="text-[9px] text-muted-foreground">{n.author} · {n.time}</span>
+                          <p className="text-[11px] text-foreground/90">{n.body}</p>
+                          <span className="text-[9px] text-muted-foreground">{n.author_name} · {formatTime(n.created_at)}</span>
                         </div>
                       ))}
                     </div>
