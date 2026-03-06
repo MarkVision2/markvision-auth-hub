@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"; // v2
+import { useState, useRef } from "react"; // v3
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Upload, Scissors, Rocket } from "lucide-react";
+import { CalendarIcon, Upload, Scissors, Rocket, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
@@ -50,6 +52,33 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     setCreativeFile(file);
     const url = URL.createObjectURL(file);
     setCreativePreview(url);
+  };
+
+  const [launching, setLaunching] = useState(false);
+  const { toast } = useToast();
+
+  const handleLaunch = async () => {
+    if (!creativeFile) {
+      toast({ title: "Загрузите креатив", description: "Выберите фото или видео перед запуском", variant: "destructive" });
+      return;
+    }
+    setLaunching(true);
+    try {
+      const ext = creativeFile.name.split(".").pop();
+      const filePath = `uploads/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("content_assets").upload(filePath, creativeFile, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      toast({ title: "Креатив загружен ✓", description: "Кампания отправлена на запуск" });
+      onOpenChange(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Ошибка загрузки";
+      toast({ title: "Ошибка", description: msg, variant: "destructive" });
+    } finally {
+      setLaunching(false);
+    }
   };
 
   const pixels = [
@@ -432,12 +461,16 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
         {/* ── Fixed footer ── */}
         <div className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-4 space-y-2">
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 text-sm font-semibold">
-            <Rocket className="h-4 w-4 mr-2" />
-            Отправить на запуск AI
+          <Button
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-10 text-sm font-semibold"
+            disabled={launching}
+            onClick={handleLaunch}
+          >
+            {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
+            {launching ? "Загрузка..." : "Отправить на запуск AI"}
           </Button>
           <p className="text-[10px] text-center text-muted-foreground/60">
-            Данные будут отправлены в n8n webhook для автоматического запуска
+            Креатив загружается в Storage, данные отправляются в n8n webhook
           </p>
         </div>
       </SheetContent>
