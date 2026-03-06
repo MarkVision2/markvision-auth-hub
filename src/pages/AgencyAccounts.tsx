@@ -1,18 +1,16 @@
-import { useState } from "react";
-import { Plus, CalendarDays } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Plus, CalendarDays, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
-import type { ClientAccount } from "@/components/agency/ClientCard";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+
+type ClientRow = Tables<"clients_config">;
 
 function formatNum(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
@@ -20,102 +18,35 @@ function formatNum(n: number): string {
   return n.toString();
 }
 
-type StatusType = "active" | "paused" | "error";
-
-interface TableClient extends Omit<ClientAccount, "status"> {
-  status: StatusType;
-  cpl: number;
-}
-
-const statusConfig: Record<StatusType, { label: string; dot: string; text: string }> = {
+const statusConfig = {
   active: { label: "Активен", dot: "bg-emerald-400", text: "text-emerald-400" },
-  error: { label: "Ошибка оплаты", dot: "bg-red-500", text: "text-red-400" },
   paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
 };
 
-const initialClients: TableClient[] = [
-  {
-    id: "1",
-    client_name: "TechFlow Solutions",
-    status: "active",
-    spend: { fact: 250000, plan: 500000 },
-    leads: { fact: 124, plan: 200 },
-    visits: { fact: 48, plan: 80 },
-    sales: { fact: 29, plan: 50 },
-    clicks: 3420,
-    followers: 350,
-    cpl: 2016,
-    convClickLead: 5,
-    convLeadVisit: 40,
-    convVisitSale: 60,
-  },
-  {
-    id: "2",
-    client_name: "GreenMart Kazakhstan",
-    status: "active",
-    spend: { fact: 180000, plan: 300000 },
-    leads: { fact: 89, plan: 150 },
-    visits: { fact: 35, plan: 60 },
-    sales: { fact: 18, plan: 35 },
-    clicks: 2100,
-    followers: 210,
-    cpl: 2022,
-    convClickLead: 4.2,
-    convLeadVisit: 39,
-    convVisitSale: 51,
-  },
-  {
-    id: "3",
-    client_name: "Astana Motors",
-    status: "error",
-    spend: { fact: 95000, plan: 200000 },
-    leads: { fact: 42, plan: 100 },
-    visits: { fact: 15, plan: 40 },
-    sales: { fact: 7, plan: 25 },
-    clicks: 1800,
-    followers: 120,
-    cpl: 2262,
-    convClickLead: 2.3,
-    convLeadVisit: 36,
-    convVisitSale: 47,
-  },
-  {
-    id: "4",
-    client_name: "Almaty Digital Hub",
-    status: "paused",
-    spend: { fact: 0, plan: 150000 },
-    leads: { fact: 0, plan: 80 },
-    visits: { fact: 0, plan: 30 },
-    sales: { fact: 0, plan: 15 },
-    clicks: 0,
-    followers: 45,
-    cpl: 0,
-    convClickLead: 0,
-    convLeadVisit: 0,
-    convVisitSale: 0,
-  },
-];
-
-function FactPlan({ fact, plan, suffix = "" }: { fact: number; plan: number; suffix?: string }) {
-  return (
-    <div>
-      <p className="text-sm font-semibold text-foreground tabular-nums">{formatNum(fact)}{suffix}</p>
-      <p className="text-xs text-muted-foreground tabular-nums">План: {formatNum(plan)}{suffix}</p>
-    </div>
-  );
-}
-
 export default function AgencyAccounts() {
-  const [clients, setClients] = useState<TableClient[]>(initialClients);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+
+  const fetchClients = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("clients_config")
+      .select("*")
+      .order("created_at", { ascending: false });
+    setClients(data ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
   const filtered =
     filter === "all"
       ? clients
       : filter === "paused"
-      ? clients.filter((c) => c.status === "paused")
-      : clients.filter((c) => c.status === "error" || (c.status === "active" && c.leads.fact < c.leads.plan * 0.5));
+      ? clients.filter((c) => !c.is_active)
+      : clients.filter((c) => c.is_active && (c.meta_leads ?? 0) === 0);
 
   return (
     <DashboardLayout breadcrumb="Агентские кабинеты">
@@ -149,61 +80,75 @@ export default function AgencyAccounts() {
               <TableHead className="text-xs font-medium text-muted-foreground">Расходы</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Лиды</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">CPL</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Подписчики</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Визиты</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Продажи</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground text-right">Конверсии</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Город</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Бюджет/день</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Статус</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((c) => {
-              const s = statusConfig[c.status];
-              return (
-                <TableRow key={c.id} className="border-b border-border hover:bg-accent/50 transition-colors cursor-pointer">
-                  <TableCell className="py-4">
-                    <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
-                    <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                      {s.label}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <FactPlan fact={c.spend.fact} plan={c.spend.plan} suffix=" ₸" />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <FactPlan fact={c.leads.fact} plan={c.leads.plan} />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className="text-sm font-semibold text-foreground tabular-nums">
-                      {c.cpl > 0 ? formatNum(c.cpl) + " ₸" : "—"}
-                    </p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <p className="text-sm font-semibold text-foreground tabular-nums">
-                      {c.followers > 0 ? `+${formatNum(c.followers)}` : "—"}
-                    </p>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <FactPlan fact={c.visits.fact} plan={c.visits.plan} />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <FactPlan fact={c.sales.fact} plan={c.sales.plan} />
-                  </TableCell>
-                  <TableCell className="py-4 text-right">
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] text-muted-foreground tabular-nums">Клик → Лид: <span className="text-secondary-foreground">{c.convClickLead}%</span></p>
-                      <p className="text-[11px] text-muted-foreground tabular-nums">Лид → Визит: <span className="text-secondary-foreground">{c.convLeadVisit}%</span></p>
-                      <p className="text-[11px] text-muted-foreground tabular-nums">Визит → Продажа: <span className="text-secondary-foreground">{c.convVisitSale}%</span></p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12">
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : clients.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  Нет кабинетов. Добавьте первый!
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((c) => {
+                const active = c.is_active !== false;
+                const s = active ? statusConfig.active : statusConfig.paused;
+                const spend = Number(c.spend) || 0;
+                const leads = c.meta_leads ?? 0;
+                const cpl = leads > 0 ? Math.round(spend / leads) : 0;
+
+                return (
+                  <TableRow key={c.id} className="border-b border-border hover:bg-accent/50 transition-colors cursor-pointer">
+                    <TableCell className="py-4">
+                      <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                        {s.label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <p className="text-sm font-semibold text-foreground tabular-nums">{formatNum(spend)} ₸</p>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <p className="text-sm font-semibold text-foreground tabular-nums">{leads}</p>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <p className="text-sm font-semibold text-foreground tabular-nums">
+                        {cpl > 0 ? formatNum(cpl) + " ₸" : "—"}
+                      </p>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <p className="text-sm text-foreground">{c.city || "—"}</p>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <p className="text-sm font-semibold text-foreground tabular-nums">
+                        {Number(c.daily_budget) > 0 ? formatNum(Number(c.daily_budget)) + " ₸" : "—"}
+                      </p>
+                    </TableCell>
+                    <TableCell className="py-4 text-right">
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] ${s.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                        {s.label}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>
 
-      <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onAdd={(client) => setClients((prev) => [{ ...client, cpl: 0, status: "active" as StatusType } as TableClient, ...prev])} />
+      <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onSaved={fetchClients} />
     </DashboardLayout>
   );
 }
