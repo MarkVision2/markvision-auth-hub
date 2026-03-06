@@ -11,6 +11,7 @@ import DashboardPM from "./pages/DashboardPM";
 import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
+import AiRopPage from "./pages/AiRopPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
