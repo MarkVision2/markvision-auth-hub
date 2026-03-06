@@ -14,7 +14,7 @@ const roles = [
   },
   {
     title: "Отдел продаж",
-    description: "Воронка лидов, AI-скоринг, конверсии, план/факт",
+    description: "Воронка лидов, конверсии, план/факт",
     icon: Handshake,
     path: "/dashboard/sales",
     color: "text-[hsl(var(--status-good))]",
