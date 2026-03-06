@@ -77,7 +77,7 @@ export default function ContentFactory() {
             <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
               <TabsTrigger
                 value="video"
-                className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
               >
                 <Video className="mr-2 h-4 w-4" />
                 Видео (Sora 2)
