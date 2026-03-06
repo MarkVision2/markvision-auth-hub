@@ -332,7 +332,7 @@ export default function AgencyAccounts() {
                     </TableCell>
 
                     <TableCell className="py-4">
-                      <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-emerald-400" : romi < 0 ? "text-red-400" : "text-foreground"}`}>
+                      <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
                         {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
                       </p>
                       {cac > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>}

@@ -17,11 +17,11 @@ const STAGES = [
 
 const stageIcons = [MessageSquare, Phone, UserCheck, DollarSign, Users, Eye, TrendingUp, ShoppingCart];
 const stageColors = [
-  "text-blue-400",
+  "text-primary",
   "text-[hsl(var(--status-warning))]",
   "text-[hsl(var(--status-ai))]",
-  "text-purple-400",
-  "text-cyan-400",
+  "text-[hsl(var(--status-warning))]",
+  "text-primary",
   "text-[hsl(var(--status-ai))]",
   "text-[hsl(var(--status-good))]",
   "text-[hsl(var(--status-critical))]",
