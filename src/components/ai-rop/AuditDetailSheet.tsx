@@ -146,12 +146,13 @@ export default function AuditDetailSheet({ item, open, onOpenChange }: Props) {
                   </Button>
                   {/* Waveform */}
                   <div className="flex-1 flex items-center gap-[2px] h-9">
-                    {Array.from({ length: 70 }).map((_, i) => {
-                      const h = 15 + Math.sin(i * 0.3) * 35 + Math.random() * 30;
-                      const isPlayed = i < 22;
+                    {Array.from({ length: 70 }).map((_, idx) => {
+                      // Deterministic pseudo-random based on index
+                      const h = 15 + Math.sin(idx * 0.3) * 35 + ((idx * 7 + 13) % 30);
+                      const isPlayed = idx < 22;
                       return (
                         <div
-                          key={i}
+                          key={idx}
                           className={`w-[2px] rounded-full transition-colors ${isPlayed ? "bg-primary" : "bg-muted-foreground/20"}`}
                           style={{ height: `${Math.min(100, Math.max(10, h))}%` }}
                         />
@@ -241,6 +242,3 @@ export default function AuditDetailSheet({ item, open, onOpenChange }: Props) {
     </Sheet>
   );
 }
-
-// Helper - initials reference for non-AI managers
-const initials = "МН"; // fallback, actual is computed per-item
