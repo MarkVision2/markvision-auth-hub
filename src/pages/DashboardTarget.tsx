@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,9 +73,9 @@ export default function DashboardTarget() {
 
   return (
     <DashboardLayout breadcrumb="Таргетолог">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div className="flex items-end justify-between">
+        <FadeUpItem className="flex items-end justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Target className="h-5 w-5 text-[hsl(var(--status-ai))]" />
@@ -92,10 +93,10 @@ export default function DashboardTarget() {
               {alerts.length} алертов
             </Badge>
           </div>
-        </div>
+        </FadeUpItem>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActions.map((a) => (
             <Button
               key={a.label}
@@ -108,10 +109,10 @@ export default function DashboardTarget() {
               <span className="text-[11px] font-medium text-foreground/80">{a.label}</span>
             </Button>
           ))}
-        </div>
+        </FadeUpItem>
 
         {/* Campaigns Table + Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <FadeUpItem className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Campaigns */}
           <Card className="bg-card border-border lg:col-span-3">
             <CardHeader className="pb-2 pt-4 px-5">
@@ -189,8 +190,8 @@ export default function DashboardTarget() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </FadeUpItem>
+      </StaggerContainer>
 
       <CampaignDetailSheet campaign={selectedCampaign} open={!!selectedCampaign} onOpenChange={(open) => !open && setSelectedCampaign(null)} />
     </DashboardLayout>

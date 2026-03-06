@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import SalesLeadDetailSheet from "@/components/sheets/LeadDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,9 +67,9 @@ export default function DashboardSales() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   return (
     <DashboardLayout breadcrumb="Отдел продаж">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div>
+        <FadeUpItem>
           <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Handshake className="h-5 w-5 text-[hsl(var(--status-good))]" />
             Отдел продаж
@@ -76,10 +77,10 @@ export default function DashboardSales() {
           <p className="text-xs text-muted-foreground mt-0.5">
             Воронка · Лиды · Конверсии
           </p>
-        </div>
+        </FadeUpItem>
 
         {/* Sales KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {salesKpis.map((kpi) => (
             <Card key={kpi.label} className="bg-card border-border">
               <CardContent className="p-4">
@@ -89,9 +90,10 @@ export default function DashboardSales() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </FadeUpItem>
 
         {/* Funnel */}
+        <FadeUpItem>
         <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-5">
             <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -116,8 +118,10 @@ export default function DashboardSales() {
             </div>
           </CardContent>
         </Card>
+        </FadeUpItem>
 
         {/* Leads Queue */}
+        <FadeUpItem>
         <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-5">
             <div className="flex items-center gap-2">
@@ -176,7 +180,8 @@ export default function DashboardSales() {
             </table>
           </CardContent>
         </Card>
-      </div>
+        </FadeUpItem>
+      </StaggerContainer>
 
       <SalesLeadDetailSheet lead={selectedLead} open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)} />
     </DashboardLayout>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import ProjectDetailSheet from "@/components/sheets/ProjectDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,9 +84,9 @@ export default function DashboardPM() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   return (
     <DashboardLayout breadcrumb="Управляющий">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div>
+        <FadeUpItem>
           <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
             Панель управляющего
@@ -93,10 +94,10 @@ export default function DashboardPM() {
           <p className="text-xs text-muted-foreground mt-0.5">
             Проекты · Команда · Финансы · ИИ-сводка
           </p>
-        </div>
+        </FadeUpItem>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map((kpi) => (
             <Card key={kpi.title} className="bg-card border-border">
               <CardContent className="p-4">
@@ -110,9 +111,10 @@ export default function DashboardPM() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </FadeUpItem>
 
         {/* Projects Table */}
+        <FadeUpItem>
         <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-5">
             <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-2">
@@ -167,9 +169,10 @@ export default function DashboardPM() {
             </table>
           </CardContent>
         </Card>
+        </FadeUpItem>
 
         {/* Team + AI Briefing */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <FadeUpItem className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Team */}
           <Card className="bg-card border-border lg:col-span-3">
             <CardHeader className="pb-2 pt-4 px-5">
@@ -238,8 +241,8 @@ export default function DashboardPM() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </FadeUpItem>
+      </StaggerContainer>
 
       <ProjectDetailSheet project={selectedProject} open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)} />
     </DashboardLayout>
