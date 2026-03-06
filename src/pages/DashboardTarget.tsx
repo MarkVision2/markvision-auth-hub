@@ -180,7 +180,7 @@ export default function DashboardTarget() {
                 <Collapsible key={account.name} open={isOpen} onOpenChange={() => toggleAccount(account.name)}>
                   {/* Account row */}
                   <CollapsibleTrigger asChild>
-                    <div className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
+                    <div className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
                       <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                       <div>
                         <p className="text-xs font-semibold text-foreground">{account.name}</p>
@@ -189,8 +189,8 @@ export default function DashboardTarget() {
                       <span className="text-[10px] text-muted-foreground/60">—</span>
                       <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalSpend}</span>
                       <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalLeads}</span>
-                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.avgCpl}</span>
-                      <span className="text-[10px] text-muted-foreground/60">—</span>
+                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalVisits}</span>
+                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalSales}</span>
                       <span />
                     </div>
                   </CollapsibleTrigger>
