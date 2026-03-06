@@ -109,10 +109,10 @@ export default function DashboardTarget() {
               <span className="text-[11px] font-medium text-foreground/80">{a.label}</span>
             </Button>
           ))}
-        </div>
+        </FadeUpItem>
 
         {/* Campaigns Table + Alerts */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <FadeUpItem className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Campaigns */}
           <Card className="bg-card border-border lg:col-span-3">
             <CardHeader className="pb-2 pt-4 px-5">
