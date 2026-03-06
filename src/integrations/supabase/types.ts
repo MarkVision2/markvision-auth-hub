@@ -133,6 +133,74 @@ export type Database = {
           },
         ]
       }
+      content_tasks: {
+        Row: {
+          aspect_ratio: string | null
+          content_type: string
+          created_at: string | null
+          custom_font_url: string | null
+          custom_logo_url: string | null
+          design_template: string | null
+          format: string | null
+          id: string
+          main_text: string | null
+          progress_text: string | null
+          project_id: string | null
+          result_urls: Json | null
+          source_type: string | null
+          source_url: string | null
+          status: string | null
+          updated_at: string | null
+          visual_style: string | null
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          content_type: string
+          created_at?: string | null
+          custom_font_url?: string | null
+          custom_logo_url?: string | null
+          design_template?: string | null
+          format?: string | null
+          id?: string
+          main_text?: string | null
+          progress_text?: string | null
+          project_id?: string | null
+          result_urls?: Json | null
+          source_type?: string | null
+          source_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          visual_style?: string | null
+        }
+        Update: {
+          aspect_ratio?: string | null
+          content_type?: string
+          created_at?: string | null
+          custom_font_url?: string | null
+          custom_logo_url?: string | null
+          design_template?: string | null
+          format?: string | null
+          id?: string
+          main_text?: string | null
+          progress_text?: string | null
+          project_id?: string | null
+          result_urls?: Json | null
+          source_type?: string | null
+          source_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          visual_style?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
