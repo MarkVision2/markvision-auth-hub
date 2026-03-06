@@ -41,8 +41,8 @@ function fmt(n: number, suffix = ""): string {
 }
 
 const statusCfg = {
-  active: { label: "Активен", dot: "bg-emerald-400", text: "text-emerald-400" },
-  paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
+  active: { label: "Активен", dot: "bg-[hsl(var(--status-good))]", text: "text-[hsl(var(--status-good))]" },
+  paused: { label: "Остановлен", dot: "bg-muted-foreground", text: "text-muted-foreground" },
 };
 
 type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "romi";
