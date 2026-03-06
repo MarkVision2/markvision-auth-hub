@@ -178,7 +178,40 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 </div>
               </div>
             )}
-          </section>
+
+            {objective === "leadform" && (
+              <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">Лид-форма Meta</Label>
+                  <Select value={leadForm} onValueChange={setLeadForm}>
+                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                      <SelectValue placeholder="Выберите форму" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadForms.map((f) => (
+                        <SelectItem key={f.id} value={f.id} className="text-xs">{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground/60">Формы синхронизируются из Meta Business Suite</p>
+                </div>
+              </div>
+            )}
+
+            {objective === "whatsapp" && (
+              <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <Label className="text-xs text-foreground/70">Привязанный WhatsApp</Label>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
+                  {whatsappNumbers.map((w) => (
+                    <div key={w.number} className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground">{w.account}</span>
+                      <span className="text-xs font-mono text-foreground/80">{w.number}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60">Номер привязан к выбранному кабинету</p>
+              </div>
+            )}
 
           <Separator className="bg-border" />
 
