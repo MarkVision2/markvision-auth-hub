@@ -239,8 +239,8 @@ export default function DashboardPM() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </FadeUpItem>
+      </StaggerContainer>
 
       <ProjectDetailSheet project={selectedProject} open={!!selectedProject} onOpenChange={(open) => !open && setSelectedProject(null)} />
     </DashboardLayout>

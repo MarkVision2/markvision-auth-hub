@@ -190,8 +190,8 @@ export default function DashboardTarget() {
               </Button>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </FadeUpItem>
+      </StaggerContainer>
 
       <CampaignDetailSheet campaign={selectedCampaign} open={!!selectedCampaign} onOpenChange={(open) => !open && setSelectedCampaign(null)} />
     </DashboardLayout>
