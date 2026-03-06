@@ -14,7 +14,8 @@ interface Campaign {
   budgetPct: number;
   cpl: string;
   leads: number;
-  ctr: string;
+  visits: number;
+  sales: number;
 }
 
 const statusMap = {
