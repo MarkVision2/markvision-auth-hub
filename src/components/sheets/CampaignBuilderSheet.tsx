@@ -212,6 +212,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 <p className="text-[10px] text-muted-foreground/60">Номер привязан к выбранному кабинету</p>
               </div>
             )}
+          </section>
 
           <Separator className="bg-border" />
 
