@@ -7,6 +7,7 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
+import CrmSystem from "./pages/CrmSystem";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/accounts" element={<AgencyAccounts />} />
           <Route path="/content" element={<ContentFactory />} />
+          <Route path="/crm" element={<CrmSystem />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
