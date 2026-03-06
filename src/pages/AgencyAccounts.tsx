@@ -135,7 +135,7 @@ export default function AgencyAccounts() {
             <TabsTrigger value="paused" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Остановлены</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button variant="outline" className="gap-2 text-xs border-white/[0.06] bg-transparent text-zinc-400 hover:text-foreground">
+        <Button variant="outline" className="gap-2 text-xs border-border bg-secondary text-secondary-foreground hover:text-foreground">
           <CalendarDays className="h-3.5 w-3.5" />
           За 30 дней
         </Button>
