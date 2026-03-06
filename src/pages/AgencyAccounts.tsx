@@ -159,7 +159,7 @@ export default function AgencyAccounts() {
             {filtered.map((c) => {
               const s = statusConfig[c.status];
               return (
-                <TableRow key={c.id} className="border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors cursor-pointer">
+                <TableRow key={c.id} className="border-b border-border hover:bg-accent/50 transition-colors cursor-pointer">
                   <TableCell className="py-4">
                     <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
                     <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
