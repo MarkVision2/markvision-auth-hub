@@ -103,7 +103,7 @@ const statusBadge = {
   paused: { label: "Пауза", cls: "border-border bg-secondary/30 text-muted-foreground" },
 };
 
-const columns = ["", "Кампания", "Цель", "Расход", "Лиды", "CPL", "CTR", ""];
+const columns = ["", "Кампания", "Цель", "Расход", "Лиды", "Визиты", "Продажи", ""];
 
 export default function DashboardTarget() {
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
