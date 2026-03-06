@@ -281,9 +281,9 @@ export default function ContentFactory() {
                       opacity: [0.8, 1, 0.8],
                     }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-16 h-16 rounded-full bg-emerald-500/40 flex items-center justify-center"
+                    className="w-16 h-16 rounded-full bg-primary/40 flex items-center justify-center"
                   >
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.6)]" />
+                    <div className="w-8 h-8 rounded-full bg-primary shadow-[0_0_30px_hsl(var(--primary)/0.5)]" />
                   </motion.div>
                 </motion.div>
               </div>
