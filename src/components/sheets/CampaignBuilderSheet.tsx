@@ -1,4 +1,4 @@
-import { useState } from "react"; // v2
+import { useState, useRef } from "react"; // v2
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
