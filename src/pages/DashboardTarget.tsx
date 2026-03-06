@@ -42,6 +42,8 @@ interface AdAccount {
   name: string;
   totalSpend: string;
   totalLeads: number;
+  totalVisits: number;
+  totalSales: number;
   avgCpl: string;
   campaigns: Campaign[];
 }
