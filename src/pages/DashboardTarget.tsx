@@ -1,6 +1,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +16,10 @@ import {
   Copy,
   Pencil,
   Megaphone,
+  DollarSign,
+  Users,
+  Eye,
+  ShoppingCart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -121,6 +126,17 @@ export default function DashboardTarget() {
 
   const totalActive = Object.values(campaignStates).filter(Boolean).length;
   const totalCampaigns = adAccounts.reduce((s, a) => s + a.campaigns.length, 0);
+  const totalSpend = adAccounts.reduce((s, a) => s + parseInt(a.totalSpend.replace(/\D/g, "")), 0);
+  const totalLeads = adAccounts.reduce((s, a) => s + a.totalLeads, 0);
+  const totalVisits = adAccounts.reduce((s, a) => s + a.totalVisits, 0);
+  const totalSales = adAccounts.reduce((s, a) => s + a.totalSales, 0);
+
+  const kpis = [
+    { label: "Расход", value: `${totalSpend}K ₸`, icon: DollarSign },
+    { label: "Лиды", value: String(totalLeads), icon: Users },
+    { label: "Визиты", value: String(totalVisits), icon: Eye },
+    { label: "Продажи", value: String(totalSales), icon: ShoppingCart },
+  ];
 
   const toggleAccount = (name: string) => {
     setExpandedAccounts((prev) => {
@@ -159,6 +175,23 @@ export default function DashboardTarget() {
             <Rocket className="h-3.5 w-3.5" />
             Создать кампанию
           </Button>
+        </FadeUpItem>
+
+        {/* ── KPI Cards ── */}
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {kpis.map((k) => (
+            <Card key={k.label} className="bg-card border-border">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <k.icon className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{k.label}</p>
+                  <p className="text-lg font-bold font-mono tabular-nums text-foreground">{k.value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </FadeUpItem>
 
         {/* ── Expandable Account Table ── */}
