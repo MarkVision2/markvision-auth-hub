@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, CalendarDays, Loader2, Pencil, Check, X } from "lucide-react";
+import { Plus, Loader2, Pencil, Check, X, Trash2 } from "lucide-react";
+import { startOfMonth, endOfMonth } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
+import PeriodPicker from "@/components/agency/PeriodPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import type { DateRange } from "react-day-picker";
 
 type ClientRow = Tables<"clients_config">;
 
@@ -55,7 +63,7 @@ function EditableBudget({ value, clientId, onSaved }: { value: number; clientId:
           autoFocus
           onKeyDown={(e) => { if (e.key === "Enter") save(); if (e.key === "Escape") setEditing(false); }}
         />
-        <button onClick={save} disabled={saving} className="text-emerald-400 hover:text-emerald-300">
+        <button onClick={save} disabled={saving} className="text-primary hover:text-primary/80">
           <Check className="h-3.5 w-3.5" />
         </button>
         <button onClick={() => setEditing(false)} className="text-muted-foreground hover:text-foreground">
@@ -76,11 +84,55 @@ function EditableBudget({ value, clientId, onSaved }: { value: number; clientId:
   );
 }
 
+function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string; clientId: string; onDeleted: () => void }) {
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    const { error } = await supabase.from("clients_config").delete().eq("id", clientId);
+    setDeleting(false);
+    if (error) {
+      toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Удалено", description: clientName });
+    onDeleted();
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover/row:opacity-100">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="border-border bg-card">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-foreground">Удалить кабинет?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Кабинет «{clientName}» будет удалён навсегда. Это действие нельзя отменить.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="border-border">Отмена</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Удалить"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function AgencyAccounts() {
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [period, setPeriod] = useState<DateRange>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -119,10 +171,7 @@ export default function AgencyAccounts() {
             <TabsTrigger value="paused" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Остановлены</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button variant="outline" className="gap-2 text-xs border-border bg-secondary text-secondary-foreground hover:text-foreground">
-          <CalendarDays className="h-3.5 w-3.5" />
-          За 30 дней
-        </Button>
+        <PeriodPicker value={period} onChange={setPeriod} />
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -133,21 +182,22 @@ export default function AgencyAccounts() {
               <TableHead className="text-xs font-medium text-muted-foreground">Расходы</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">Лиды</TableHead>
               <TableHead className="text-xs font-medium text-muted-foreground">CPL</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Бюджет/день ✏️</TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Визиты <span className="text-muted-foreground/60">(стоим.)</span></TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">Продажи <span className="text-muted-foreground/60">(CAC)</span></TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Бюджет/день</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Визиты</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Продажи</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
+                <TableCell colSpan={8} className="text-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                   Нет кабинетов
                 </TableCell>
               </TableRow>
@@ -159,15 +209,13 @@ export default function AgencyAccounts() {
                 const leads = c.meta_leads ?? 0;
                 const cpl = leads > 0 ? spend / leads : 0;
                 const budget = Number(c.daily_budget) || 0;
-                // Визиты и продажи пока нет в БД — placeholder
                 const visits = 0;
                 const sales = 0;
                 const costPerVisit = visits > 0 ? spend / visits : 0;
                 const cac = sales > 0 ? spend / sales : 0;
 
                 return (
-                  <TableRow key={c.id} className="border-b border-border hover:bg-accent/50 transition-colors">
-                    {/* Кабинет */}
+                  <TableRow key={c.id} className="group/row border-b border-border hover:bg-accent/50 transition-colors">
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
                       <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
@@ -175,37 +223,34 @@ export default function AgencyAccounts() {
                         {s.label}
                       </span>
                     </TableCell>
-                    {/* Расходы */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(spend, " ₸")}</p>
                     </TableCell>
-                    {/* Лиды */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{leads}</p>
                     </TableCell>
-                    {/* CPL */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">
                         {cpl > 0 ? fmt(cpl, " ₸") : "—"}
                       </p>
                     </TableCell>
-                    {/* Бюджет/день — editable */}
                     <TableCell className="py-4">
                       <EditableBudget value={budget} clientId={c.id} onSaved={fetchClients} />
                     </TableCell>
-                    {/* Визиты (стоимость визита) */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
                       {costPerVisit > 0 && (
-                        <p className="text-[11px] text-muted-foreground tabular-nums">{fmt(costPerVisit, " ₸")}</p>
+                        <p className="text-[11px] text-muted-foreground tabular-nums">{fmt(costPerVisit, " ₸/визит")}</p>
                       )}
                     </TableCell>
-                    {/* Продажи (CAC) */}
                     <TableCell className="py-4">
                       <p className="text-sm font-semibold text-foreground tabular-nums">{sales || "—"}</p>
                       {cac > 0 && (
-                        <p className="text-[11px] text-muted-foreground tabular-nums">{fmt(cac, " ₸")}</p>
+                        <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>
                       )}
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <DeleteButton clientName={c.client_name} clientId={c.id} onDeleted={fetchClients} />
                     </TableCell>
                   </TableRow>
                 );
