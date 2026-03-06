@@ -137,7 +137,7 @@ export default function DashboardTarget() {
                   {campaigns.map((c) => {
                     const st = statusMap[c.status];
                     return (
-                      <tr key={c.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                      <tr key={c.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedCampaign(c)}>
                         <td className="px-5 py-2.5">
                           <p className="font-medium text-foreground/90 whitespace-nowrap">{c.name}</p>
                           <p className="text-[10px] text-muted-foreground">{c.project}</p>
