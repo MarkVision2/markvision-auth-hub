@@ -212,8 +212,8 @@ export default function AgencyAccounts() {
     const spend = Number(c.spend) || 0;
     const leads = Number(c.meta_leads) || 0;
     const romi = Number(c.romi) || 0;
-    if (romi > 0) return "border-l-2 border-l-emerald-500/70";
-    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-red-500/70";
+    if (romi > 0) return "border-l-2 border-l-[hsl(var(--status-good))]";
+    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-[hsl(var(--status-critical))]";
     return "border-l-2 border-l-transparent";
   }
 
