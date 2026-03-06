@@ -1,25 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Zap, Bell, MessageCircle, CreditCard, Calendar,
-  MapPin, Check, Ban, Phone, DollarSign, Globe, Sparkles,
-  GripVertical, ChevronDown, ChevronUp, MoreHorizontal, Plus,
-  ArrowRight, TrendingUp,
+  MapPin, Check, Ban, Phone, DollarSign, Globe,
+  ChevronDown, TrendingUp, GripVertical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import LeadDetailSheet from "./LeadDetailSheet";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuTrigger, DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
 } from "@/components/ui/tooltip";
@@ -123,6 +114,16 @@ export default function KanbanBoard() {
     }
   };
 
+  const onDragEnd = (result: DropResult) => {
+    const { draggableId, destination } = result;
+    if (!destination) return;
+    const newStage = destination.droppableId;
+    const lead = leads.find(l => l.id === draggableId);
+    if (!lead || (lead.status || "Новая заявка") === newStage) return;
+    handleMoveStage(draggableId, newStage);
+    toast({ title: "Перемещено", description: `${lead.name} → ${newStage}` });
+  };
+
   const handleCardClick = (lead: Lead) => {
     setSelectedLead(lead);
     setSheetOpen(true);
@@ -136,7 +137,6 @@ export default function KanbanBoard() {
     });
   };
 
-  // Summary stats
   const totalAmount = useMemo(() => leads.reduce((s, l) => s + (Number(l.amount) || 0), 0), [leads]);
   const avgScore = useMemo(() => {
     const scored = leads.filter(l => (l.ai_score ?? 0) > 0);
@@ -175,7 +175,6 @@ export default function KanbanBoard() {
           <p className="text-sm font-bold text-foreground tabular-nums">{avgScore}%</p>
         </div>
         <div className="flex-1" />
-        {/* Conversion mini-bars */}
         <div className="hidden lg:flex items-center gap-1">
           {STAGES.map(s => {
             const count = leads.filter(l => (l.status || "Новая заявка") === s.key).length;
@@ -195,168 +194,196 @@ export default function KanbanBoard() {
         </div>
       </div>
 
-      {/* Kanban columns */}
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-6 px-6">
-        {STAGES.map((stage) => {
-          const stageLeads = leads.filter(l => (l.status || "Новая заявка") === stage.key);
-          const stageAmount = stageLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
-          const collapsed = collapsedCols.has(stage.key);
-          const Icon = stage.icon;
+      {/* Kanban with DnD */}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-3 overflow-x-auto pb-4 -mx-6 px-6">
+          {STAGES.map((stage) => {
+            const stageLeads = leads.filter(l => (l.status || "Новая заявка") === stage.key);
+            const stageAmount = stageLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+            const collapsed = collapsedCols.has(stage.key);
+            const Icon = stage.icon;
 
-          return (
-            <div key={stage.key} className={`shrink-0 flex flex-col transition-all duration-300 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[290px] w-[290px]"}`}>
-              {/* Column header */}
-              <div
-                className={`rounded-xl p-3 mb-2 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none`}
-                onClick={() => collapsed && toggleCollapse(stage.key)}
-              >
-                {collapsed ? (
-                  <div className="flex flex-col items-center gap-2 py-2">
-                    <Icon className={`h-4 w-4 ${accentTextMap[stage.accent]}`} />
-                    <span className={`text-[10px] font-bold ${accentTextMap[stage.accent]} [writing-mode:vertical-lr]`}>
-                      {stage.label}
-                    </span>
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-border">
-                      {stageLeads.length}
-                    </Badge>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-6 w-6 rounded-lg ${accentBgMap[stage.accent]} flex items-center justify-center`}>
-                          <Icon className={`h-3.5 w-3.5 ${accentTextMap[stage.accent]}`} />
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">{stage.label}</span>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background/50">
-                          {stageLeads.length}
-                        </Badge>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleCollapse(stage.key); }}
-                        className="h-6 w-6 rounded-md hover:bg-secondary/80 flex items-center justify-center text-muted-foreground"
-                      >
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      </button>
+            return (
+              <div key={stage.key} className={`shrink-0 flex flex-col transition-all duration-300 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[290px] w-[290px]"}`}>
+                {/* Column header */}
+                <div
+                  className={`rounded-xl p-3 mb-2 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none`}
+                  onClick={() => collapsed && toggleCollapse(stage.key)}
+                >
+                  {collapsed ? (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <Icon className={`h-4 w-4 ${accentTextMap[stage.accent]}`} />
+                      <span className={`text-[10px] font-bold ${accentTextMap[stage.accent]} [writing-mode:vertical-lr]`}>
+                        {stage.label}
+                      </span>
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-border">
+                        {stageLeads.length}
+                      </Badge>
                     </div>
-                    {stageAmount > 0 && (
-                      <p className="text-[11px] text-muted-foreground mt-1.5 tabular-nums">
-                        <DollarSign className="inline h-3 w-3 -mt-0.5" /> {fmt(stageAmount)} ₸
-                      </p>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-6 w-6 rounded-lg ${accentBgMap[stage.accent]} flex items-center justify-center`}>
+                            <Icon className={`h-3.5 w-3.5 ${accentTextMap[stage.accent]}`} />
+                          </div>
+                          <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background/50">
+                            {stageLeads.length}
+                          </Badge>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleCollapse(stage.key); }}
+                          className="h-6 w-6 rounded-md hover:bg-secondary/80 flex items-center justify-center text-muted-foreground"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {stageAmount > 0 && (
+                        <p className="text-[11px] text-muted-foreground mt-1.5 tabular-nums">
+                          <DollarSign className="inline h-3 w-3 -mt-0.5" /> {fmt(stageAmount)} ₸
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Droppable column */}
+                {!collapsed && (
+                  <Droppable droppableId={stage.key}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`flex-1 min-h-[80px] max-h-[calc(100vh-16rem)] overflow-y-auto space-y-2 p-1 rounded-xl transition-colors duration-200 ${
+                          snapshot.isDraggingOver
+                            ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
+                            : ""
+                        }`}
+                      >
+                        {stageLeads.map((lead, index) => {
+                          const score = lead.ai_score ?? 0;
+                          const badge = getScoreBadge(score);
+                          const amount = Number(lead.amount) || 0;
+                          const currentIdx = STAGES.findIndex(s => s.key === stage.key);
+
+                          return (
+                            <Draggable key={lead.id} draggableId={lead.id} index={index}>
+                              {(dragProvided, dragSnapshot) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  className={`group bg-card border rounded-xl p-3 cursor-pointer transition-all duration-200 ${
+                                    dragSnapshot.isDragging
+                                      ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02]"
+                                      : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5"
+                                  }`}
+                                >
+                                  {/* Top row */}
+                                  <div className="flex items-start gap-2.5">
+                                    {/* Drag handle */}
+                                    <div
+                                      {...dragProvided.dragHandleProps}
+                                      className="mt-1.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing shrink-0"
+                                    >
+                                      <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                                    </div>
+                                    <Avatar className="h-8 w-8 shrink-0" onClick={() => handleCardClick(lead)}>
+                                      <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
+                                        {getInitials(lead.name)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 min-w-0" onClick={() => handleCardClick(lead)}>
+                                      <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        {lead.phone && (
+                                          <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+                                            <Phone className="h-2.5 w-2.5" />{lead.phone}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(lead.created_at)}</span>
+                                  </div>
+
+                                  {/* Tags row */}
+                                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap pl-6" onClick={() => handleCardClick(lead)}>
+                                    {lead.source && (
+                                      <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+                                        <Globe className="h-2.5 w-2.5" /> {lead.source}
+                                      </span>
+                                    )}
+                                    {lead.utm_campaign && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-[120px]">
+                                        {lead.utm_campaign}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Bottom row */}
+                                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50 pl-6" onClick={() => handleCardClick(lead)}>
+                                    <span className={`text-sm font-bold tabular-nums ${amount > 0 ? accentTextMap[stage.accent] : "text-muted-foreground"}`}>
+                                      {amount > 0 ? `${fmt(amount)} ₸` : "—"}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      {score > 0 && (
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.bg} ${badge.color}`}>
+                                              {badge.emoji} {score}
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="top" className="text-xs">{badge.label} лид — {score}%</TooltipContent>
+                                        </Tooltip>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Quick move — shows on hover */}
+                                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 pl-6">
+                                    {currentIdx > 0 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
+                                        onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx - 1].key); }}
+                                      >
+                                        ← {STAGES[currentIdx - 1].label}
+                                      </Button>
+                                    )}
+                                    {currentIdx < STAGES.length - 1 && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[STAGES[currentIdx + 1].accent]}`}
+                                        onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx + 1].key); }}
+                                      >
+                                        {STAGES[currentIdx + 1].label} →
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        {provided.placeholder}
+
+                        {stageLeads.length === 0 && !snapshot.isDraggingOver && (
+                          <div className="border border-dashed border-border/60 rounded-xl h-28 flex flex-col items-center justify-center gap-1.5">
+                            <Icon className={`h-5 w-5 ${accentTextMap[stage.accent]} opacity-30`} />
+                            <span className="text-[11px] text-muted-foreground">Пусто</span>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </>
+                  </Droppable>
                 )}
               </div>
-
-              {/* Cards */}
-              {!collapsed && (
-                <ScrollArea className="flex-1 max-h-[calc(100vh-16rem)]">
-                  <div className="space-y-2 pr-1">
-                    {stageLeads.map((lead) => {
-                      const score = lead.ai_score ?? 0;
-                      const badge = getScoreBadge(score);
-                      const amount = Number(lead.amount) || 0;
-                      const currentIdx = STAGES.findIndex(s => s.key === stage.key);
-
-                      return (
-                        <div
-                          key={lead.id}
-                          onClick={() => handleCardClick(lead)}
-                          className="group bg-card border border-border rounded-xl p-3 cursor-pointer transition-all duration-200 hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5"
-                        >
-                          {/* Top row */}
-                          <div className="flex items-start gap-2.5">
-                            <Avatar className="h-8 w-8 shrink-0">
-                              <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
-                                {getInitials(lead.name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                {lead.phone && (
-                                  <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-                                    <Phone className="h-2.5 w-2.5" />{lead.phone}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(lead.created_at)}</span>
-                          </div>
-
-                          {/* Tags row */}
-                          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                            {lead.source && (
-                              <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                                <Globe className="h-2.5 w-2.5" /> {lead.source}
-                              </span>
-                            )}
-                            {lead.utm_campaign && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-[120px]">
-                                {lead.utm_campaign}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Bottom row */}
-                          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50">
-                            <span className={`text-sm font-bold tabular-nums ${amount > 0 ? accentTextMap[stage.accent] : "text-muted-foreground"}`}>
-                              {amount > 0 ? `${fmt(amount)} ₸` : "—"}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              {score > 0 && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.bg} ${badge.color}`}>
-                                      {badge.emoji} {score}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">{badge.label} лид — {score}%</TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Quick move — shows on hover */}
-                          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-                            {currentIdx > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
-                                onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx - 1].key); }}
-                              >
-                                ← {STAGES[currentIdx - 1].label}
-                              </Button>
-                            )}
-                            {currentIdx < STAGES.length - 1 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[STAGES[currentIdx + 1].accent]} hover:${accentBgMap[STAGES[currentIdx + 1].accent]}`}
-                                onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx + 1].key); }}
-                              >
-                                {STAGES[currentIdx + 1].label} →
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {stageLeads.length === 0 && (
-                      <div className="border border-dashed border-border/60 rounded-xl h-28 flex flex-col items-center justify-center gap-1.5">
-                        <Icon className={`h-5 w-5 ${accentTextMap[stage.accent]} opacity-30`} />
-                        <span className="text-[11px] text-muted-foreground">Пусто</span>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
 
       <LeadDetailSheet
         lead={selectedLead}
