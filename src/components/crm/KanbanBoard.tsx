@@ -282,7 +282,7 @@ export default function KanbanBoard() {
                                 >
                                   {/* Top row */}
                                   <div className="flex items-start gap-2.5">
-                                    <Avatar className="h-8 w-8 shrink-0" onClick={() => handleCardClick(lead)}>
+                                    <Avatar className="h-8 w-8 shrink-0">
                                       <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
                                         {getInitials(lead.name)}
                                       </AvatarFallback>
