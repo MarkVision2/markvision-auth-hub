@@ -201,6 +201,69 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          ai_score: number | null
+          ai_summary: string | null
+          amount: number | null
+          client_config_id: string | null
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          project_id: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+          utm_campaign: string | null
+        }
+        Insert: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          amount?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          project_id?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+        }
+        Update: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          amount?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          project_id?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          utm_campaign?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
