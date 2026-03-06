@@ -17,7 +17,7 @@ interface Props {
   clients: ClientMetric[];
 }
 
-export default function HqAnomalyRadar({ clients }: Props) {
+export default function HqAnomalyRadar({ clients = [] }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
