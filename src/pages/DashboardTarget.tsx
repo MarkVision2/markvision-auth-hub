@@ -67,6 +67,7 @@ const alertColors = {
 };
 
 export default function DashboardTarget() {
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const activeCampaigns = campaigns.filter(c => c.status === "active").length;
 
   return (
