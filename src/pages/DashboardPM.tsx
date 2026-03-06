@@ -84,9 +84,9 @@ export default function DashboardPM() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   return (
     <DashboardLayout breadcrumb="Управляющий">
-      <div className="space-y-5">
+      <StaggerContainer className="space-y-5">
         {/* Header */}
-        <div>
+        <FadeUpItem>
           <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
             Панель управляющего
