@@ -146,6 +146,20 @@ export default function AgencyAccounts() {
 
   useEffect(() => { fetchClients(); }, [fetchClients]);
 
+  // Realtime: auto-sync INSERT/UPDATE/DELETE
+  useEffect(() => {
+    const channel = supabase
+      .channel("clients_config_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "clients_config" },
+        () => { fetchClients(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchClients]);
+
   const filtered =
     filter === "all"
       ? clients
