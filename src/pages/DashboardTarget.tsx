@@ -233,13 +233,11 @@ export default function DashboardTarget() {
                           {/* Leads */}
                           <span className="text-xs font-mono tabular-nums text-foreground/80">{c.leads}</span>
 
-                          {/* CPL */}
-                          <span className={`text-xs font-mono tabular-nums ${cplNum > 5000 ? "text-[hsl(var(--status-critical))]" : "text-foreground/80"}`}>
-                            {c.cpl}
-                          </span>
+                          {/* Visits */}
+                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.visits}</span>
 
-                          {/* CTR */}
-                          <span className="text-xs font-mono tabular-nums text-foreground/70">{c.ctr}</span>
+                          {/* Sales */}
+                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.sales}</span>
 
                           {/* Menu */}
                           <DropdownMenu>

@@ -70,8 +70,8 @@ export default function CampaignDetailSheet({ campaign, open, onOpenChange }: Pr
             {[
               { label: "CPL", value: campaign.cpl, icon: cplNum > 5000 ? TrendingDown : TrendingUp, color: cplNum > 5000 ? "text-[hsl(var(--status-critical))]" : "text-[hsl(var(--status-good))]" },
               { label: "Лиды", value: String(campaign.leads), icon: MousePointerClick, color: "text-foreground" },
-              { label: "CTR", value: campaign.ctr, icon: Eye, color: parseFloat(campaign.ctr) >= 2 ? "text-[hsl(var(--status-good))]" : "text-[hsl(var(--status-warning))]" },
-              { label: "Бюджет %", value: `${campaign.budgetPct}%`, icon: TrendingUp, color: "text-foreground" },
+              { label: "Визиты", value: String(campaign.visits ?? 0), icon: Eye, color: "text-foreground" },
+              { label: "Продажи", value: String(campaign.sales ?? 0), icon: TrendingUp, color: "text-foreground" },
             ].map((m) => (
               <div key={m.label} className="rounded-lg border border-border bg-secondary/20 p-3">
                 <div className="flex items-center gap-1.5 mb-1">
