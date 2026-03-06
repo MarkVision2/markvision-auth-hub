@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Zap, LayoutDashboard, Briefcase, Factory, Users, Target, Handshake, Activity, Sun, Moon } from "lucide-react";
+import { Zap, LayoutDashboard, Briefcase, Factory, Users, Target, Handshake, Activity, Sun, Moon, ShieldCheck } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +20,7 @@ const moduleNav = [
   { title: "Кабинеты", path: "/accounts", icon: Briefcase },
   { title: "Контент-Завод", path: "/content", icon: Factory },
   { title: "CRM", path: "/crm", icon: Users },
+  { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
 ];
 
 interface DashboardLayoutProps {

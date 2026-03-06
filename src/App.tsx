@@ -11,6 +11,7 @@ import DashboardPM from "./pages/DashboardPM";
 import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
+import AiRopPage from "./pages/AiRopPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/accounts" element={<AgencyAccounts />} />
           <Route path="/content" element={<ContentFactory />} />
           <Route path="/crm" element={<CrmSystem />} />
+          <Route path="/ai-rop" element={<AiRopPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
