@@ -59,19 +59,6 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin + "/dashboard" },
-      });
-      if (error) {
-        toast({ title: "Ошибка Google", description: error.message, variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
-    }
-  };
 
   if (!isReady) {
     return (
