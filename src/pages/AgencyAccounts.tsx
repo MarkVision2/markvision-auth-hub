@@ -28,7 +28,7 @@ interface TableClient extends Omit<ClientAccount, "status"> {
 }
 
 const statusConfig: Record<StatusType, { label: string; dot: string; text: string }> = {
-  active: { label: "Активен", dot: "bg-emerald-400", text: "text-emerald-400" },
+  active: { label: "Активен", dot: "bg-primary", text: "text-primary" },
   error: { label: "Ошибка оплаты", dot: "bg-red-500", text: "text-red-400" },
   paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
 };

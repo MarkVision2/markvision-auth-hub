@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import { Zap, LayoutDashboard, Briefcase, Factory, Users } from "lucide-react";
+import { LayoutDashboard, Briefcase, Factory, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import logo from "@/assets/logo.png";
 
 const navItems = [
   { title: "Дашборд", path: "/dashboard", icon: LayoutDashboard },
@@ -20,8 +21,8 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 shrink-0 bg-background border-r border-border flex flex-col">
-        <div className="h-14 flex items-center gap-2 px-5 border-b border-border">
-          <Zap className="h-5 w-5 text-primary" />
+        <div className="h-14 flex items-center gap-2.5 px-5 border-b border-border">
+          <img src={logo} alt="MarkVision AI" className="h-7 w-7 object-contain" />
           <span className="text-lg font-bold text-foreground tracking-tight">MarkVision</span>
         </div>
 
