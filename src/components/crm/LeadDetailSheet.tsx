@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -7,22 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Brain, Send, MessageCircle, Bot, User } from "lucide-react";
-
-interface Lead {
-  id: string;
-  name: string;
-  phone: string;
-  amount: number;
-  quality: "hot" | "warm" | "cold";
-  qualityScore: number;
-  source: "whatsapp" | "instagram";
-  date: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import type { Lead } from "./KanbanBoard";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onLeadUpdated?: () => void;
 }
 
 const MOCK_MESSAGES = [
@@ -38,26 +31,51 @@ const STAGES = [
   "Записан", "Визит совершен", "Оплачен", "Отказ",
 ];
 
-export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetProps) {
-  const [stage, setStage] = useState("В работе");
+function getScoreLabel(score: number) {
+  if (score >= 80) return { label: "🔥 Горячий", className: "bg-red-500/15 text-red-400 border-red-500/20" };
+  if (score >= 50) return { label: "🌤 Тёплый", className: "bg-amber-500/15 text-amber-400 border-amber-500/20" };
+  return { label: "❄️ Холодный", className: "bg-blue-500/15 text-blue-400 border-blue-500/20" };
+}
+
+export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) {
+  const [stage, setStage] = useState("");
   const [aiMode, setAiMode] = useState(true);
   const [message, setMessage] = useState("");
-  const [rejectReason, setRejectReason] = useState("");
+
+  useEffect(() => {
+    if (lead) setStage(lead.status || "Новая заявка");
+  }, [lead]);
 
   if (!lead) return null;
 
-  const initials = lead.name.split(" ").map((w) => w[0]).join("");
+  const initials = lead.name.split(" ").map((w) => w[0]).join("").slice(0, 2);
+  const amount = Number(lead.amount) || 0;
+  const score = lead.ai_score ?? 0;
+  const scoreBadge = getScoreLabel(score);
+
+  const handleStageChange = async (newStage: string) => {
+    setStage(newStage);
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ status: newStage })
+      .eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      return;
+    }
+    onLeadUpdated?.();
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="!max-w-4xl !w-3/4 p-0 bg-[#0a0a0a] border-white/[0.06] flex flex-col">
-        <SheetHeader className="px-6 py-4 border-b border-white/[0.06]">
+      <SheetContent side="right" className="!max-w-4xl !w-3/4 p-0 bg-background border-border flex flex-col">
+        <SheetHeader className="px-6 py-4 border-b border-border">
           <SheetTitle className="text-foreground">Карточка клиента</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* LEFT COLUMN — Dossier */}
-          <div className="w-[40%] border-r border-white/[0.06] p-5 overflow-y-auto space-y-5">
+          {/* LEFT — Dossier */}
+          <div className="w-[40%] border-r border-border p-5 overflow-y-auto space-y-5">
             {/* Profile */}
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
@@ -65,15 +83,15 @@ export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetail
               </Avatar>
               <div>
                 <p className="text-sm font-semibold text-foreground">{lead.name}</p>
-                <p className="text-xs text-muted-foreground">{lead.phone}</p>
+                <p className="text-xs text-muted-foreground">{lead.phone || "—"}</p>
               </div>
             </div>
 
             {/* Status */}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Статус</label>
-              <Select value={stage} onValueChange={setStage}>
-                <SelectTrigger className="bg-secondary border-white/[0.06] text-sm">
+              <Select value={stage} onValueChange={handleStageChange}>
+                <SelectTrigger className="bg-secondary border-border text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -82,14 +100,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetail
                   ))}
                 </SelectContent>
               </Select>
-              {stage === "Отказ" && (
-                <Input
-                  placeholder="Укажите причину отказа..."
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  className="bg-secondary border-white/[0.06] text-sm mt-2"
-                />
-              )}
             </div>
 
             {/* Deal info */}
@@ -97,10 +107,10 @@ export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetail
               <label className="text-xs text-muted-foreground">Детали сделки</label>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Сумма", value: `${lead.amount.toLocaleString("ru-RU")} ₸` },
-                  { label: "Источник", value: lead.source === "whatsapp" ? "WhatsApp" : "Instagram" },
-                  { label: "UTM Source", value: "instagram_ads" },
-                  { label: "Дата", value: new Date(lead.date).toLocaleDateString("ru-RU") },
+                  { label: "Сумма", value: amount > 0 ? `${new Intl.NumberFormat("ru-RU").format(amount)} ₸` : "—" },
+                  { label: "Источник", value: lead.source || "—" },
+                  { label: "UTM Campaign", value: lead.utm_campaign || "—" },
+                  { label: "Дата", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU") : "—" },
                 ].map((item) => (
                   <div key={item.label} className="bg-secondary/50 rounded-md px-3 py-2">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.label}</p>
@@ -110,39 +120,30 @@ export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetail
               </div>
             </div>
 
-            {/* AI Analysis */}
-            <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-4 space-y-2">
+            {/* AI Analysis — glowing glass block */}
+            <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-4 space-y-2 shadow-[0_0_20px_rgba(16,185,129,0.08)]">
               <div className="flex items-center gap-2">
                 <Brain className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Анализ качества</span>
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">🧠 AI Анализ клиента</span>
               </div>
               <p className="text-xs text-foreground/80 leading-relaxed">
-                Лид заинтересован в брекетах, высокая вероятность визита. Рекомендуется предложить рассрочку на 12 месяцев.
+                {lead.ai_summary || "AI-анализ ещё не выполнен для данного клиента."}
               </p>
-              <Badge variant="outline" className="bg-red-500/15 text-red-400 border-red-500/20 text-[10px]">
-                🔥 Горячий ({lead.qualityScore}%)
-              </Badge>
-            </div>
-
-            {/* Manager */}
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Ответственный менеджер</label>
-              <div className="flex items-center gap-2 bg-secondary/50 rounded-md px-3 py-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-[10px] bg-accent">АК</AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-foreground">Анна Кузнецова</span>
-              </div>
+              {score > 0 && (
+                <Badge variant="outline" className={`text-[10px] ${scoreBadge.className}`}>
+                  {scoreBadge.label} ({score}%)
+                </Badge>
+              )}
             </div>
           </div>
 
-          {/* RIGHT COLUMN — Chat */}
+          {/* RIGHT — Chat */}
           <div className="w-[60%] flex flex-col">
             {/* Chat header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
               <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-emerald-500" />
-                <span className="text-sm font-medium text-foreground">История диалога (WhatsApp)</span>
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">История диалога</span>
               </div>
               <div className="flex items-center gap-2">
                 {aiMode ? <Bot className="h-3.5 w-3.5 text-primary" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
@@ -172,13 +173,13 @@ export default function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetail
             </div>
 
             {/* Input */}
-            <div className="px-5 py-3 border-t border-white/[0.06]">
+            <div className="px-5 py-3 border-t border-border">
               <div className="flex gap-2">
                 <Input
                   placeholder="Написать сообщение..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="bg-secondary border-white/[0.06] text-sm flex-1"
+                  className="bg-secondary border-border text-sm flex-1"
                 />
                 <Button size="sm" className="shrink-0 gap-1.5">
                   <Send className="h-3.5 w-3.5" />
