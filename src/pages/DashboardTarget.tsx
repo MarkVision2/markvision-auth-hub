@@ -93,10 +93,10 @@ export default function DashboardTarget() {
               {alerts.length} алертов
             </Badge>
           </div>
-        </div>
+        </FadeUpItem>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActions.map((a) => (
             <Button
               key={a.label}
