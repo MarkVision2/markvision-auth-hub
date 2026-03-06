@@ -16,9 +16,9 @@ const MOCK_CLIENTS = [
 ];
 
 function ratingBadge(rating: number) {
-  if (rating >= 80) return <Badge variant="outline" className="bg-red-500/15 text-red-400 border-red-500/20 text-[10px]">🔥 {rating}%</Badge>;
-  if (rating >= 50) return <Badge variant="outline" className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[10px]">🌤 {rating}%</Badge>;
-  return <Badge variant="outline" className="bg-blue-500/15 text-blue-400 border-blue-500/20 text-[10px]">❄️ {rating}%</Badge>;
+  if (rating >= 80) return <Badge variant="outline" className="bg-[hsl(var(--status-critical)/0.15)] text-[hsl(var(--status-critical))] border-[hsl(var(--status-critical)/0.2)] text-[10px]">🔥 {rating}%</Badge>;
+  if (rating >= 50) return <Badge variant="outline" className="bg-[hsl(var(--status-warning)/0.15)] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.2)] text-[10px]">🌤 {rating}%</Badge>;
+  return <Badge variant="outline" className="bg-primary/15 text-primary border-primary/20 text-[10px]">❄️ {rating}%</Badge>;
 }
 
 export default function ClientDatabase() {
