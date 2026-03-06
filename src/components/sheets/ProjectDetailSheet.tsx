@@ -4,16 +4,15 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { FolderKanban, DollarSign, TrendingUp, Users, BarChart3, FileText } from "lucide-react";
+import { FolderKanban, Eye, ShoppingCart, Users, FileText } from "lucide-react";
 
 type Health = "green" | "yellow" | "red";
 
 interface Project {
   name: string;
   health: Health;
-  mrr: string;
-  romi: number;
-  leads: number;
+  visits: number;
+  sales: number;
   tasks: { done: number; total: number };
   manager: string;
   initials: string;
@@ -57,25 +56,23 @@ export default function ProjectDetailSheet({ project, open, onOpenChange }: Prop
 
         <Separator className="bg-border" />
 
-        {/* Financials */}
+        {/* Metrics */}
         <div className="py-4 space-y-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Финансы</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Показатели</h3>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-border bg-secondary/20 p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <DollarSign className="h-3 w-3 text-[hsl(var(--status-good))]" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">MRR</span>
+                <Eye className="h-3 w-3 text-[hsl(var(--status-ai))]" />
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Визиты</span>
               </div>
-              <p className="text-lg font-bold font-mono tabular-nums">{project.mrr} ₸</p>
+              <p className="text-lg font-bold font-mono tabular-nums">{project.visits}</p>
             </div>
             <div className="rounded-lg border border-border bg-secondary/20 p-3">
               <div className="flex items-center gap-1.5 mb-1">
-                <TrendingUp className="h-3 w-3 text-[hsl(var(--status-good))]" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">ROMI</span>
+                <ShoppingCart className="h-3 w-3 text-[hsl(var(--status-good))]" />
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Продажи</span>
               </div>
-              <p className={`text-lg font-bold font-mono tabular-nums ${project.romi >= 200 ? "text-[hsl(var(--status-good))]" : project.romi >= 100 ? "text-[hsl(var(--status-warning))]" : "text-[hsl(var(--status-critical))]"}`}>
-                {project.romi}%
-              </p>
+              <p className="text-lg font-bold font-mono tabular-nums text-[hsl(var(--status-good))]">{project.sales}</p>
             </div>
           </div>
         </div>
@@ -93,27 +90,6 @@ export default function ProjectDetailSheet({ project, open, onOpenChange }: Prop
           <p className={`text-right text-[10px] font-mono ${taskPct >= 80 ? "text-[hsl(var(--status-good))]" : taskPct >= 50 ? "text-[hsl(var(--status-warning))]" : "text-[hsl(var(--status-critical))]"}`}>
             {taskPct}%
           </p>
-        </div>
-
-        <Separator className="bg-border" />
-
-        {/* Leads & Team */}
-        <div className="py-4 space-y-3">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Показатели</h3>
-          <div className="space-y-2">
-            {[
-              { icon: BarChart3, label: "Лиды за месяц", value: String(project.leads) },
-              { icon: Users, label: "Менеджер", value: project.manager },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between py-1.5">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <item.icon className="h-3 w-3" />
-                  <span className="text-xs">{item.label}</span>
-                </div>
-                <span className="text-xs font-mono text-foreground/80">{item.value}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <Separator className="bg-border" />

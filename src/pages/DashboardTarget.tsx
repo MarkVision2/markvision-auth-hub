@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,26 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import CampaignDetailSheet from "@/components/sheets/CampaignDetailSheet";
+import { toast } from "sonner";
 import {
   Rocket,
   AlertTriangle,
-  Palette,
   Play,
-  RefreshCw,
   TrendingDown,
   CreditCard,
   Users,
   Zap,
   Target,
-  BarChart3,
+  FolderOpen,
 } from "lucide-react";
 
 /* ── Quick Actions ── */
 const quickActions = [
-  { label: "Создать кампанию", icon: Rocket, color: "text-[hsl(var(--status-good))]", bg: "bg-[hsl(var(--status-good)/0.1)]" },
-  { label: "Обновить креативы", icon: Palette, color: "text-[hsl(var(--status-ai))]", bg: "bg-[hsl(var(--status-ai)/0.1)]" },
-  { label: "Контент-Завод", icon: Zap, color: "text-[hsl(var(--status-warning))]", bg: "bg-[hsl(var(--status-warning)/0.1)]" },
-  { label: "A/B Тест", icon: BarChart3, color: "text-blue-400", bg: "bg-blue-500/10" },
+  { label: "Создать кампанию", icon: Rocket, color: "text-[hsl(var(--status-good))]", bg: "bg-[hsl(var(--status-good)/0.1)]", action: "toast" as const },
+  { label: "Контент-Завод", icon: Zap, color: "text-[hsl(var(--status-ai))]", bg: "bg-[hsl(var(--status-ai)/0.1)]", action: "/content" as const },
+  { label: "CRM", icon: Users, color: "text-[hsl(var(--status-warning))]", bg: "bg-[hsl(var(--status-warning)/0.1)]", action: "/crm" as const },
+  { label: "Кабинеты", icon: FolderOpen, color: "text-blue-400", bg: "bg-blue-500/10", action: "/accounts" as const },
 ];
 
 /* ── Campaigns ── */
@@ -68,8 +68,17 @@ const alertColors = {
 };
 
 export default function DashboardTarget() {
+  const navigate = useNavigate();
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const activeCampaigns = campaigns.filter(c => c.status === "active").length;
+
+  const handleAction = (action: string) => {
+    if (action === "toast") {
+      toast("В разработке", { description: "Эта функция скоро будет доступна" });
+    } else {
+      navigate(action);
+    }
+  };
 
   return (
     <DashboardLayout breadcrumb="Таргетолог">
@@ -102,6 +111,7 @@ export default function DashboardTarget() {
               key={a.label}
               variant="outline"
               className={`h-auto py-3 flex-col gap-2 border-border hover:border-muted bg-card ${a.color}`}
+              onClick={() => handleAction(a.action)}
             >
               <div className={`h-8 w-8 rounded-lg ${a.bg} flex items-center justify-center`}>
                 <a.icon className={`h-4 w-4 ${a.color}`} />
@@ -184,8 +194,12 @@ export default function DashboardTarget() {
                   </div>
                 </div>
               ))}
-              <Button variant="ghost" size="sm" className="w-full text-[10px] text-muted-foreground h-7">
-                <RefreshCw className="h-3 w-3 mr-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-[10px] text-muted-foreground h-7"
+                onClick={() => toast("Статусы обновлены", { description: "Все алерты актуальны" })}
+              >
                 Обновить статусы
               </Button>
             </CardContent>

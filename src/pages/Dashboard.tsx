@@ -22,7 +22,7 @@ const roles = [
   },
   {
     title: "Управляющий / PM",
-    description: "Обзор проектов, команда, финансы, ИИ-сводка",
+    description: "Проекты, визиты, продажи, задачи команды",
     icon: Activity,
     path: "/dashboard/pm",
     color: "text-primary",
