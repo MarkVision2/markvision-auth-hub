@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
+import DashboardTarget from "./pages/DashboardTarget";
+import DashboardSales from "./pages/DashboardSales";
+import DashboardPM from "./pages/DashboardPM";
 import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
@@ -21,10 +24,12 @@ const App = () => (
         <Routes>
           <Route path="/" element={<AuthPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/target" element={<DashboardTarget />} />
+          <Route path="/dashboard/sales" element={<DashboardSales />} />
+          <Route path="/dashboard/pm" element={<DashboardPM />} />
           <Route path="/accounts" element={<AgencyAccounts />} />
           <Route path="/content" element={<ContentFactory />} />
           <Route path="/crm" element={<CrmSystem />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
