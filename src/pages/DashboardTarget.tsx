@@ -175,7 +175,7 @@ export default function DashboardTarget() {
             <Rocket className="h-3.5 w-3.5" />
             Создать кампанию
           </Button>
-
+        </FadeUpItem>
 
         {/* ── Expandable Account Table ── */}
         <FadeUpItem>
