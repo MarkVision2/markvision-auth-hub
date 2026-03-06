@@ -1,4 +1,6 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import SalesLeadDetailSheet from "@/components/sheets/LeadDetailSheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
