@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuthReady } from "@/hooks/useAuthReady";
 
 const AuthPage = () => {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
@@ -11,6 +12,14 @@ const AuthPage = () => {
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, isReady } = useAuthReady();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isReady && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isReady, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +72,16 @@ const AuthPage = () => {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     }
   };
+
+  if (!isReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (user) return null; // Will redirect via useEffect
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
