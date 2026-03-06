@@ -259,22 +259,6 @@ export default function AgencyAccounts() {
         </div>
       </div>
 
-      {/* Summary KPIs */}
-      {!loading && filtered.length > 0 && (
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { label: "Расходы", value: fmt(summary.totalSpend, " ₸") },
-            { label: "Лиды", value: summary.totalLeads.toString() },
-            { label: "Ср. CPL", value: summary.avgCpl > 0 ? fmt(summary.avgCpl, " ₸") : "—" },
-            { label: "Ср. ROMI", value: summary.avgRomi !== 0 ? `${summary.avgRomi > 0 ? "+" : ""}${Math.round(summary.avgRomi)}%` : "—", color: summary.avgRomi > 0 ? "text-emerald-400" : summary.avgRomi < 0 ? "text-red-400" : "" },
-          ].map(kpi => (
-            <div key={kpi.label} className="rounded-lg border border-border bg-card px-4 py-3">
-              <p className="text-[11px] text-muted-foreground">{kpi.label}</p>
-              <p className={`text-lg font-bold tabular-nums ${(kpi as any).color || "text-foreground"}`}>{kpi.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
