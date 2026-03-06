@@ -358,7 +358,7 @@ export default function ContentFactory() {
             {!isGenerating ? (
               <Button
                 onClick={handleGenerate}
-                className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 🚀 Запустить генерацию
               </Button>
