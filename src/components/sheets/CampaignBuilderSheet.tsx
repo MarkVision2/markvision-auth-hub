@@ -1,4 +1,4 @@
-import { useState } from "react"; // v2
+import { useState, useRef } from "react"; // v2
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,17 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [endDate, setEndDate] = useState<Date>();
   const [launchTime, setLaunchTime] = useState<"now" | "midnight">("now");
   const [creativeTab, setCreativeTab] = useState<"feed" | "stories">("feed");
+  const [creativeFile, setCreativeFile] = useState<File | null>(null);
+  const [creativePreview, setCreativePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCreativeFile(file);
+    const url = URL.createObjectURL(file);
+    setCreativePreview(url);
+  };
 
   const pixels = [
     { id: "px_1", name: "AIVA — Основной пиксель" },
@@ -326,10 +337,33 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             </h3>
 
             {/* Upload zone */}
-            <div className="rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 transition-colors bg-secondary/10 p-6 text-center cursor-pointer">
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-xs text-muted-foreground">Перетащите фото или видео сюда</p>
-              <p className="text-[10px] text-muted-foreground/50 mt-1">JPG, PNG, MP4 · до 30 МБ</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 transition-colors bg-secondary/10 p-6 text-center cursor-pointer"
+            >
+              {creativePreview ? (
+                <div className="space-y-2">
+                  {creativeFile?.type.startsWith("video/") ? (
+                    <video src={creativePreview} className="mx-auto max-h-32 rounded" muted autoPlay loop />
+                  ) : (
+                    <img src={creativePreview} alt="Превью" className="mx-auto max-h-32 rounded object-contain" />
+                  )}
+                  <p className="text-[10px] text-muted-foreground">{creativeFile?.name} · Нажмите чтобы заменить</p>
+                </div>
+              ) : (
+                <>
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-xs text-muted-foreground">Нажмите или перетащите фото/видео сюда</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-1">JPG, PNG, MP4 · до 30 МБ</p>
+                </>
+              )}
             </div>
 
             {/* Preview tabs */}
@@ -375,7 +409,15 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     ))}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground/40">Превью</span>
+                    {creativePreview ? (
+                      creativeFile?.type.startsWith("video/") ? (
+                        <video src={creativePreview} className="w-full h-full object-cover" muted autoPlay loop />
+                      ) : (
+                        <img src={creativePreview} alt="Превью" className="w-full h-full object-cover" />
+                      )
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/40">Превью</span>
+                    )}
                   </div>
                 </div>
               </div>
