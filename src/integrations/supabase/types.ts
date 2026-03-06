@@ -252,6 +252,13 @@ export type Database = {
             foreignKeyName: "leads_client_config_id_fkey"
             columns: ["client_config_id"]
             isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "leads_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
             referencedRelation: "clients_config"
             referencedColumns: ["id"]
           },
@@ -332,7 +339,23 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      agency_metrics_view: {
+        Row: {
+          cac: number | null
+          client_id: string | null
+          client_name: string | null
+          cpl: number | null
+          cpv: number | null
+          is_active: boolean | null
+          meta_leads: number | null
+          revenue: number | null
+          romi: number | null
+          sales: number | null
+          spend: number | null
+          visits: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
