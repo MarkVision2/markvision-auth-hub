@@ -4,11 +4,11 @@ import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronRight, Handshake, MessageSquare, Phone, UserCheck, DollarSign, TrendingUp, Eye, ShoppingCart, Users } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { Loader2, ChevronRight, Handshake, MessageSquare, Phone, UserCheck, DollarSign, TrendingUp, Eye, ShoppingCart, Users, Send, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Send, Clock } from "lucide-react";
 
 const STAGES = [
   "Новая заявка", "Без ответа", "В работе", "Счет выставлен",
@@ -24,7 +24,7 @@ const stageColors = [
   "text-primary",
   "text-[hsl(var(--status-ai))]",
   "text-[hsl(var(--status-good))]",
-  "text-[hsl(var(--status-critical))]",
+  "text-destructive",
 ];
 
 interface Lead {
@@ -46,12 +46,18 @@ export default function DashboardSales() {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("leads")
-      .select("*")
-      .order("created_at", { ascending: false });
-    setLeads((data as Lead[]) ?? []);
-    setLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("leads")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setLeads((data as Lead[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
@@ -159,36 +165,44 @@ export default function DashboardSales() {
               </div>
             </CardHeader>
             <CardContent className="px-0 pb-1">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    {["Имя", "Источник", "Статус", "Время"].map((h) => (
-                      <th key={h} className="text-xs text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.slice(0, 20).map((lead) => (
-                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
-                      <td className="px-5 py-2.5">
-                        <p className="font-medium text-foreground/90">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{lead.phone || "—"}</p>
-                      </td>
-                      <td className="px-5 py-2.5 text-muted-foreground">{lead.source || "—"}</td>
-                      <td className="px-5 py-2.5">
-                        <Badge variant="outline" className="text-xs font-mono border-border text-muted-foreground">
-                          {lead.status || "Новая заявка"}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-2.5 font-mono tabular-nums text-muted-foreground text-xs">
-                        {lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
-                      </td>
+              {leads.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <Users className="h-8 w-8 mx-auto text-muted-foreground/20 mb-3" />
+                  <p className="text-sm text-muted-foreground">Нет лидов</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Лиды появятся после запуска рекламных кампаний</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      {["Имя", "Источник", "Статус", "Время"].map((h) => (
+                        <th key={h} className="text-xs text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {leads.slice(0, 20).map((lead) => (
+                      <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        <td className="px-5 py-2.5">
+                          <p className="font-medium text-foreground/90">{lead.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{lead.phone || "—"}</p>
+                        </td>
+                        <td className="px-5 py-2.5 text-muted-foreground">{lead.source || "—"}</td>
+                        <td className="px-5 py-2.5">
+                          <Badge variant="outline" className="text-xs font-mono border-border text-muted-foreground">
+                            {lead.status || "Новая заявка"}
+                          </Badge>
+                        </td>
+                        <td className="px-5 py-2.5 font-mono tabular-nums text-muted-foreground text-xs">
+                          {lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </CardContent>
           </Card>
         </FadeUpItem>

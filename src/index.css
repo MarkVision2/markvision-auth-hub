@@ -40,6 +40,14 @@
     --status-critical: 350 89% 55%;
     --status-ai: 25 95% 50%;
 
+    /* Glass tokens */
+    --glass-bg: 0 0% 100% / 0.04;
+    --glass-border: 0 0% 0% / 0.08;
+    --glass-blur: 16px;
+
+    /* Overlay */
+    --overlay: 0 0% 0% / 0.6;
+
     --sidebar-background: 0 0% 97%;
     --sidebar-foreground: 0 0% 25%;
     --sidebar-primary: 160 84% 36%;
@@ -54,29 +62,29 @@
     --background: 0 0% 2%;
     --foreground: 0 0% 95%;
 
-    --card: 240 6% 5%;
+    --card: 240 6% 4%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 6%;
+    --popover: 240 6% 4%;
     --popover-foreground: 0 0% 95%;
 
     --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 10%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 85%;
 
-    --muted: 0 0% 14%;
+    --muted: 0 0% 12%;
     --muted-foreground: 0 0% 50%;
 
-    --accent: 0 0% 12%;
+    --accent: 0 0% 10%;
     --accent-foreground: 0 0% 93%;
 
     --destructive: 350 89% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 16%;
-    --input: 0 0% 14%;
+    --border: 0 0% 14%;
+    --input: 0 0% 12%;
     --ring: 160 84% 39%;
 
     /* Status tokens */
@@ -85,13 +93,21 @@
     --status-critical: 350 89% 60%;
     --status-ai: 25 95% 53%;
 
-    --sidebar-background: 0 0% 4%;
+    /* Glass tokens */
+    --glass-bg: 0 0% 100% / 0.02;
+    --glass-border: 0 0% 100% / 0.06;
+    --glass-blur: 20px;
+
+    /* Overlay */
+    --overlay: 0 0% 0% / 0.8;
+
+    --sidebar-background: 0 0% 3%;
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 93%;
-    --sidebar-border: 0 0% 16%;
+    --sidebar-border: 0 0% 14%;
     --sidebar-ring: 160 84% 39%;
   }
 }
@@ -138,4 +154,12 @@ aside,
 header,
 main {
   transition: background-color 0.3s ease, color 0.2s ease;
+}
+
+/* Glass utility */
+.glass {
+  background: hsl(var(--glass-bg));
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid hsl(var(--glass-border));
 }

@@ -11,7 +11,7 @@ import SparklineChart from "@/components/agency/SparklineChart";
 import CampaignDetailSheet from "@/components/sheets/CampaignDetailSheet";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2,
@@ -34,7 +34,7 @@ const alerts = [
 ];
 
 const alertSeverityColor = {
-  critical: "text-[hsl(var(--status-critical))]",
+  critical: "text-destructive",
   warning: "text-[hsl(var(--status-warning))]",
 };
 
@@ -65,7 +65,7 @@ function generatePlaceholderCampaign(clientName: string): Campaign {
 
 const statusBadge = {
   active: { label: "Активна", cls: "border-[hsl(var(--status-good)/0.3)] bg-[hsl(var(--status-good)/0.08)] text-[hsl(var(--status-good))]" },
-  error: { label: "Ошибка", cls: "border-[hsl(var(--status-critical)/0.3)] bg-[hsl(var(--status-critical)/0.08)] text-[hsl(var(--status-critical))]" },
+  error: { label: "Ошибка", cls: "border-destructive/30 bg-destructive/8 text-destructive" },
   paused: { label: "Пауза", cls: "border-border bg-secondary/30 text-muted-foreground" },
 };
 
@@ -83,20 +83,26 @@ export default function DashboardTarget() {
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("clients_config").select("id, client_name, is_active").eq("is_active", true).order("client_name");
-    if (data) {
-      const mapped: ClientAccount[] = (data as any[]).map((c) => ({
-        id: c.id, name: c.client_name,
-        campaigns: mockCampaigns[c.client_name] ?? [generatePlaceholderCampaign(c.client_name)],
-      }));
-      setAccounts(mapped);
-      setExpandedAccounts(new Set(mapped.map((a) => a.name)));
-      const states: Record<string, boolean> = {};
-      mapped.forEach((acc) => acc.campaigns.forEach((c) => { if (!(c.name in campaignStates)) states[c.name] = c.status === "active"; }));
-      setCampaignStates((prev) => ({ ...states, ...prev }));
+    try {
+      const { data, error } = await (supabase as any)
+        .from("clients_config").select("id, client_name, is_active").eq("is_active", true).order("client_name");
+      if (error) throw error;
+      if (data) {
+        const mapped: ClientAccount[] = (data as any[]).map((c) => ({
+          id: c.id, name: c.client_name,
+          campaigns: mockCampaigns[c.client_name] ?? [generatePlaceholderCampaign(c.client_name)],
+        }));
+        setAccounts(mapped);
+        setExpandedAccounts(new Set(mapped.map((a) => a.name)));
+        const states: Record<string, boolean> = {};
+        mapped.forEach((acc) => acc.campaigns.forEach((c) => { if (!(c.name in campaignStates)) states[c.name] = c.status === "active"; }));
+        setCampaignStates((prev) => ({ ...states, ...prev }));
+      }
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
@@ -124,7 +130,7 @@ export default function DashboardTarget() {
   const toggleCampaign = (name: string) => {
     setCampaignStates((prev) => {
       const next = { ...prev, [name]: !prev[name] };
-      toast(next[name] ? "Кампания включена" : "Кампания на паузе", { description: name });
+      toast({ title: next[name] ? "Кампания включена" : "Кампания на паузе", description: name });
       return next;
     });
   };
@@ -163,7 +169,7 @@ export default function DashboardTarget() {
             <Card className="bg-card border-border">
               <CardHeader className="pb-2 pt-3 px-4">
                 <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--status-critical))]" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                   Алерты · {alerts.length}
                 </CardTitle>
               </CardHeader>
@@ -211,7 +217,7 @@ export default function DashboardTarget() {
             ))}
           </div>
           <div className="ml-auto">
-            <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1" onClick={() => toast("Экспорт данных", { description: "CSV файл скачивается" })}>
+            <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1" onClick={() => toast({ title: "Экспорт данных", description: "CSV файл скачивается" })}>
               <Download className="h-3.5 w-3.5" /> Экспорт
             </Button>
           </div>
@@ -226,7 +232,11 @@ export default function DashboardTarget() {
             </div>
 
             {filteredAccounts.length === 0 && (
-              <div className="px-4 py-8 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+              <div className="px-4 py-12 text-center">
+                <Megaphone className="h-8 w-8 mx-auto text-muted-foreground/20 mb-3" />
+                <p className="text-sm text-muted-foreground">Ничего не найдено</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Попробуйте изменить фильтры</p>
+              </div>
             )}
 
             {filteredAccounts.map((account) => {
@@ -272,10 +282,10 @@ export default function DashboardTarget() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-36">
-                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast("Редактирование", { description: c.name })}>
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Редактирование", description: c.name })}>
                                 <Pencil className="h-3.5 w-3.5" /> Редактировать
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast("Дублировано", { description: c.name })}>
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Дублировано", description: c.name })}>
                                 <Copy className="h-3.5 w-3.5" /> Дублировать
                               </DropdownMenuItem>
                             </DropdownMenuContent>
