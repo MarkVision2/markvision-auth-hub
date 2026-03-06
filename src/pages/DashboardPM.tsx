@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import ProjectDetailSheet from "@/components/sheets/ProjectDetailSheet";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Activity,
   FolderKanban,
@@ -18,37 +19,31 @@ import {
   ListChecks,
   Plus,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-/* ── KPIs ── */
-const kpis = [
-  { title: "Проекты", value: "6", sub: "активных", icon: FolderKanban, color: "text-foreground" },
-  { title: "Визиты", value: "1 240", sub: "за месяц", icon: Eye, color: "text-[hsl(var(--status-ai))]" },
-  { title: "Продажи", value: "87", sub: "за месяц", icon: ShoppingCart, color: "text-[hsl(var(--status-good))]" },
-  { title: "Задачи", value: "35/58", sub: "выполнено", icon: ListChecks, color: "text-foreground" },
-];
+/* ── Types ── */
+interface ClientProject {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
 
-/* ── Projects ── */
+interface Lead {
+  id: string;
+  status: string | null;
+  client_config_id: string | null;
+}
+
 type Health = "green" | "yellow" | "red";
-interface Project {
+
+interface ProjectRow {
   name: string;
   health: Health;
   visits: number;
   sales: number;
-  tasks: { done: number; total: number };
-  manager: string;
-  initials: string;
+  totalLeads: number;
 }
-
-const projects: Project[] = [
-  { name: "Avicenna Clinic", health: "green", visits: 320, sales: 24, tasks: { done: 12, total: 14 }, manager: "Айгерим", initials: "АГ" },
-  { name: "Beauty Lab", health: "green", visits: 280, sales: 19, tasks: { done: 8, total: 10 }, manager: "Данияр", initials: "ДН" },
-  { name: "NeoVision Eye", health: "green", visits: 210, sales: 15, tasks: { done: 6, total: 9 }, manager: "Мария", initials: "МР" },
-  { name: "Kitarov Clinic", health: "yellow", visits: 180, sales: 12, tasks: { done: 5, total: 11 }, manager: "Мария", initials: "МР" },
-  { name: "Дентал Тайм", health: "yellow", visits: 150, sales: 10, tasks: { done: 3, total: 8 }, manager: "Данияр", initials: "ДН" },
-  { name: "Технология позвоночника", health: "red", visits: 100, sales: 7, tasks: { done: 1, total: 6 }, manager: "Айгерим", initials: "АГ" },
-];
 
 const healthMap: Record<Health, { dot: string; label: string }> = {
   green: { dot: "bg-[hsl(var(--status-good))]", label: "OK" },
@@ -56,7 +51,7 @@ const healthMap: Record<Health, { dot: string; label: string }> = {
   red: { dot: "bg-[hsl(var(--status-critical))]", label: "SOS" },
 };
 
-/* ── Team Tasks ── */
+/* ── Team Tasks (local state — no tasks table yet) ── */
 interface Task {
   id: string;
   text: string;
@@ -67,21 +62,75 @@ interface Task {
 const teamMembers = ["Айгерим", "Данияр", "Мария", "Алексей"];
 
 export default function DashboardPM() {
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [clients, setClients] = useState<ClientProject[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null);
+
   const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", text: "Подготовить отчёт по Avicenna", assignee: "Айгерим", done: false },
-    { id: "2", text: "Обновить креативы Beauty Lab", assignee: "Данияр", done: true },
-    { id: "3", text: "Созвон с NeoVision Eye", assignee: "Мария", done: false },
+    { id: "1", text: "Подготовить отчёт по клиентам", assignee: "Айгерим", done: false },
+    { id: "2", text: "Обновить креативы", assignee: "Данияр", done: true },
+    { id: "3", text: "Созвон с клиентом", assignee: "Мария", done: false },
   ]);
   const [newTaskText, setNewTaskText] = useState("");
   const [newTaskAssignee, setNewTaskAssignee] = useState("");
 
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const [clientsRes, leadsRes] = await Promise.all([
+      (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
+      (supabase as any).from("leads").select("id, status, client_config_id"),
+    ]);
+    setClients(
+      ((clientsRes.data as any[]) ?? []).map((c) => ({ id: c.id, name: c.client_name, is_active: c.is_active }))
+    );
+    setLeads((leadsRes.data as Lead[]) ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Realtime on leads
+  useEffect(() => {
+    const channel = supabase
+      .channel("pm_leads_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchData())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchData]);
+
+  /* ── Derive project rows from real data ── */
+  const projects = useMemo<ProjectRow[]>(() => {
+    return clients.map((client) => {
+      const clientLeads = leads.filter((l) => l.client_config_id === client.id);
+      const visits = clientLeads.filter((l) => l.status === "Визит совершен").length;
+      const sales = clientLeads.filter((l) => l.status === "Оплачен").length;
+      const total = clientLeads.length;
+
+      let health: Health = "red";
+      if (sales > 0) health = "green";
+      else if (total > 0) health = "yellow";
+
+      return { name: client.name, health, visits, sales, totalLeads: total };
+    });
+  }, [clients, leads]);
+
+  /* ── KPIs ── */
+  const kpis = useMemo(() => {
+    const totalVisits = leads.filter((l) => l.status === "Визит совершен").length;
+    const totalSales = leads.filter((l) => l.status === "Оплачен").length;
+    const doneTasks = tasks.filter((t) => t.done).length;
+    return [
+      { title: "Проекты", value: String(clients.length), sub: "активных", icon: FolderKanban, color: "text-foreground" },
+      { title: "Визиты", value: String(totalVisits), sub: "Визит совершен", icon: Eye, color: "text-[hsl(var(--status-ai))]" },
+      { title: "Продажи", value: String(totalSales), sub: "Оплачен", icon: ShoppingCart, color: "text-[hsl(var(--status-good))]" },
+      { title: "Задачи", value: `${doneTasks}/${tasks.length}`, sub: "выполнено", icon: ListChecks, color: "text-foreground" },
+    ];
+  }, [clients, leads, tasks]);
+
   const addTask = () => {
     if (!newTaskText.trim() || !newTaskAssignee) return;
-    setTasks((prev) => [
-      ...prev,
-      { id: Date.now().toString(), text: newTaskText.trim(), assignee: newTaskAssignee, done: false },
-    ]);
+    setTasks((prev) => [...prev, { id: Date.now().toString(), text: newTaskText.trim(), assignee: newTaskAssignee, done: false }]);
     setNewTaskText("");
     setNewTaskAssignee("");
   };
@@ -89,6 +138,16 @@ export default function DashboardPM() {
   const toggleTask = (id: string) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout breadcrumb="Управляющий">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout breadcrumb="Управляющий">
@@ -100,7 +159,7 @@ export default function DashboardPM() {
             Панель управляющего
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Проекты · Визиты · Продажи · Задачи
+            Проекты · Визиты · Продажи · Задачи — данные из CRM
           </p>
         </FadeUpItem>
 
@@ -133,7 +192,7 @@ export default function DashboardPM() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-border">
-                    {["Проект", "Статус", "Визиты", "Продажи", "Задачи", "PM"].map((h) => (
+                    {["Проект", "Статус", "Лиды", "Визиты", "Продажи"].map((h) => (
                       <th key={h} className="text-[10px] text-muted-foreground font-medium uppercase tracking-[0.08em] px-5 py-2 text-left">{h}</th>
                     ))}
                   </tr>
@@ -150,25 +209,15 @@ export default function DashboardPM() {
                             <span className="text-muted-foreground">{h.label}</span>
                           </span>
                         </td>
+                        <td className="px-5 py-2.5 font-mono tabular-nums text-foreground/80">{p.totalLeads}</td>
                         <td className="px-5 py-2.5 font-mono tabular-nums text-foreground/80">{p.visits}</td>
                         <td className="px-5 py-2.5 font-mono tabular-nums text-foreground/80">{p.sales}</td>
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <Progress value={p.tasks.done / p.tasks.total * 100} className="h-1 w-10 bg-secondary" />
-                            <span className="font-mono tabular-nums text-muted-foreground">{p.tasks.done}/{p.tasks.total}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <Avatar className="h-5 w-5">
-                              <AvatarFallback className="bg-secondary text-[8px] font-mono text-muted-foreground">{p.initials}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-muted-foreground">{p.manager}</span>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })}
+                  {projects.length === 0 && (
+                    <tr><td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">Нет активных проектов</td></tr>
+                  )}
                 </tbody>
               </table>
             </CardContent>
@@ -191,7 +240,6 @@ export default function DashboardPM() {
               </div>
             </CardHeader>
             <CardContent className="px-5 pb-4 space-y-3">
-              {/* Add task form */}
               <div className="flex gap-2">
                 <Input
                   placeholder="Новая задача..."
@@ -215,21 +263,12 @@ export default function DashboardPM() {
                 </Button>
               </div>
 
-              {/* Task list */}
               <div className="space-y-0">
                 {tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-3 py-2.5 border-b border-border last:border-0"
-                  >
-                    <Checkbox
-                      checked={task.done}
-                      onCheckedChange={() => toggleTask(task.id)}
-                    />
+                  <div key={task.id} className="flex items-center gap-3 py-2.5 border-b border-border last:border-0">
+                    <Checkbox checked={task.done} onCheckedChange={() => toggleTask(task.id)} />
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs ${task.done ? "line-through text-muted-foreground" : "text-foreground/90"}`}>
-                        {task.text}
-                      </p>
+                      <p className={`text-xs ${task.done ? "line-through text-muted-foreground" : "text-foreground/90"}`}>{task.text}</p>
                     </div>
                     <Badge variant="outline" className="text-[10px] font-mono border-border text-muted-foreground shrink-0">
                       <Users className="h-2.5 w-2.5 mr-1" />

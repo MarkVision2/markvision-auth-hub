@@ -26,6 +26,7 @@ import {
   Play,
   Pause,
   Download,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -60,7 +61,6 @@ interface ClientAccount {
 const alerts = [
   { account: "Дентал Тайм", campaign: "Протезирование_Конверсии", issue: "Бюджет исчерпан на 100%", icon: CreditCard, severity: "critical" as const },
   { account: "Технология позвоночника", campaign: "Осмотр_позвоночника_Февр", issue: "CPL ×3 выше нормы", icon: TrendingDown, severity: "warning" as const },
-  { account: "Клиника AIVA", campaign: "Виниры_Алматы_Март", issue: "73% бюджета за 10 дней", icon: AlertTriangle, severity: "warning" as const },
 ];
 
 const alertSeverityColor = {
@@ -85,6 +85,23 @@ const mockCampaigns: Record<string, Campaign[]> = {
   ],
 };
 
+function generatePlaceholderCampaign(clientName: string): Campaign {
+  return {
+    name: `${clientName}_Основная`,
+    project: clientName,
+    status: "paused",
+    spend: "0 ₸",
+    budget: "0 ₸",
+    budgetPct: 0,
+    cpl: "—",
+    leads: 0,
+    visits: 0,
+    sales: 0,
+    objective: "Не настроена",
+    sparkline: [0, 0, 0, 0, 0, 0, 0],
+  };
+}
+
 const statusBadge = {
   active: { label: "Активна", cls: "border-[hsl(var(--status-good)/0.3)] bg-[hsl(var(--status-good)/0.08)] text-[hsl(var(--status-good))]" },
   error: { label: "Ошибка", cls: "border-[hsl(var(--status-critical)/0.3)] bg-[hsl(var(--status-critical)/0.08)] text-[hsl(var(--status-critical))]" },
@@ -95,6 +112,7 @@ type StatusFilter = "all" | "active" | "error" | "paused";
 
 export default function DashboardTarget() {
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
@@ -102,26 +120,27 @@ export default function DashboardTarget() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [campaignStates, setCampaignStates] = useState<Record<string, boolean>>({});
 
-  // Fetch real client accounts from Supabase, attach mock campaigns
+  // Fetch ALL real client accounts from Supabase
   const fetchAccounts = useCallback(async () => {
+    setLoading(true);
     const { data } = await (supabase as any)
       .from("clients_config")
       .select("id, client_name, is_active")
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .order("client_name");
 
     if (data) {
       const mapped: ClientAccount[] = (data as any[]).map((c) => ({
         id: c.id,
         name: c.client_name,
-        campaigns: mockCampaigns[c.client_name] ?? [],
-      })).filter((a: ClientAccount) => a.campaigns.length > 0);
+        campaigns: mockCampaigns[c.client_name] ?? [generatePlaceholderCampaign(c.client_name)],
+      }));
 
       setAccounts(mapped);
-      setExpandedAccounts(new Set(mapped.map((a: ClientAccount) => a.name)));
+      setExpandedAccounts(new Set(mapped.map((a) => a.name)));
 
-      // Init campaign states
       const states: Record<string, boolean> = {};
-      mapped.forEach((acc: ClientAccount) =>
+      mapped.forEach((acc) =>
         acc.campaigns.forEach((c) => {
           if (!(c.name in campaignStates)) {
             states[c.name] = c.status === "active";
@@ -130,6 +149,7 @@ export default function DashboardTarget() {
       );
       setCampaignStates((prev) => ({ ...states, ...prev }));
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
@@ -176,10 +196,20 @@ export default function DashboardTarget() {
     toast(on ? "Все кампании включены" : "Все кампании на паузе");
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout breadcrumb="Таргетолог">
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout breadcrumb="Таргетолог">
       <StaggerContainer className="space-y-4">
-        {/* ── Header ── */}
+        {/* Header */}
         <FadeUpItem className="flex items-end justify-between">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
@@ -199,7 +229,7 @@ export default function DashboardTarget() {
           </Button>
         </FadeUpItem>
 
-        {/* ── Alerts ── */}
+        {/* Alerts */}
         {alerts.length > 0 && (
           <FadeUpItem>
             <Card className="bg-card border-border">
@@ -210,7 +240,7 @@ export default function DashboardTarget() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {alerts.map((a, i) => (
                     <div key={i} className="flex items-start gap-2.5 rounded-lg border border-border bg-secondary/10 p-2.5">
                       <a.icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${alertSeverityColor[a.severity]}`} />
@@ -227,7 +257,7 @@ export default function DashboardTarget() {
           </FadeUpItem>
         )}
 
-        {/* ── Filters + Search + Bulk Actions ── */}
+        {/* Filters */}
         <FadeUpItem className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -273,10 +303,9 @@ export default function DashboardTarget() {
           </div>
         </FadeUpItem>
 
-        {/* ── Campaign Table ── */}
+        {/* Campaign Table */}
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            {/* Table header */}
             <div className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
               {["", "Кампания", "Цель", "Бюджет", "Лиды", "Визиты", "7д", ""].map((h, i) => (
                 <span key={i} className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">
