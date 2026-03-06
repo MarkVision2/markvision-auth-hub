@@ -94,10 +94,10 @@ export default function DashboardPM() {
           <p className="text-xs text-muted-foreground mt-0.5">
             Проекты · Команда · Финансы · ИИ-сводка
           </p>
-        </div>
+        </FadeUpItem>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <FadeUpItem className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map((kpi) => (
             <Card key={kpi.title} className="bg-card border-border">
               <CardContent className="p-4">
