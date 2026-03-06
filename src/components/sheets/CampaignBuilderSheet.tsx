@@ -58,11 +58,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     { id: "form_3", name: "Получить прайс" },
   ];
 
-  const whatsappNumbers = [
-    { account: "Клиника AIVA", number: "+7 701 123-45-67" },
-    { account: "NeoVision Eye", number: "+7 702 987-65-43" },
-    { account: "Дентал Тайм", number: "+7 700 555-12-34" },
-  ];
+  const whatsappByAccount: Record<string, string> = {
+    "1": "+7 701 123-45-67",
+    "2": "+7 702 987-65-43",
+    "3": "+7 700 555-12-34",
+    "4": "+7 700 333-22-11",
+  };
 
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
