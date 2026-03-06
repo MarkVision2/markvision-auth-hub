@@ -129,10 +129,10 @@ export default function AgencyAccounts() {
 
       <div className="flex items-center justify-between mb-6 gap-4">
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="bg-white/[0.03] border border-white/[0.04]">
-            <TabsTrigger value="all" className="data-[state=active]:bg-white/[0.06] text-xs">Все кабинеты</TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-white/[0.06] text-xs">Требуют внимания</TabsTrigger>
-            <TabsTrigger value="paused" className="data-[state=active]:bg-white/[0.06] text-xs">Остановлены</TabsTrigger>
+          <TabsList className="bg-secondary border border-border">
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Все кабинеты</TabsTrigger>
+            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Требуют внимания</TabsTrigger>
+            <TabsTrigger value="paused" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">Остановлены</TabsTrigger>
           </TabsList>
         </Tabs>
         <Button variant="outline" className="gap-2 text-xs border-white/[0.06] bg-transparent text-zinc-400 hover:text-foreground">
