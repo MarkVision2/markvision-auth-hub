@@ -133,7 +133,7 @@ export default function DashboardPM() {
                 {projects.map((p) => {
                   const h = healthMap[p.health];
                   return (
-                    <tr key={p.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                    <tr key={p.name} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedProject(p)}>
                       <td className="px-5 py-2.5 font-medium text-foreground/90 whitespace-nowrap">{p.name}</td>
                       <td className="px-5 py-2.5">
                         <span className="inline-flex items-center gap-1.5">
