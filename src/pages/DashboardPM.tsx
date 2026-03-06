@@ -80,6 +80,7 @@ const aiBriefing = [
 const priorityColor = { high: "text-[hsl(var(--status-critical))]", medium: "text-[hsl(var(--status-warning))]" };
 
 export default function DashboardPM() {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   return (
     <DashboardLayout breadcrumb="Управляющий">
       <div className="space-y-5">
