@@ -33,6 +33,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [siteUrl, setSiteUrl] = useState("");
   const [pixel, setPixel] = useState("");
   const [pixelEvent, setPixelEvent] = useState("");
+  const [leadForm, setLeadForm] = useState("");
   const [budgetType, setBudgetType] = useState<"daily" | "lifetime">("daily");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [startDate, setStartDate] = useState<Date>();
@@ -49,6 +50,18 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const pixelEvents = [
     { id: "Lead", name: "Lead" },
     { id: "Contact", name: "Contact" },
+  ];
+
+  const leadForms = [
+    { id: "form_1", name: "Запись на консультацию" },
+    { id: "form_2", name: "Обратный звонок" },
+    { id: "form_3", name: "Получить прайс" },
+  ];
+
+  const whatsappNumbers = [
+    { account: "Клиника AIVA", number: "+7 701 123-45-67" },
+    { account: "NeoVision Eye", number: "+7 702 987-65-43" },
+    { account: "Дентал Тайм", number: "+7 700 555-12-34" },
   ];
 
   const objectiveOptions: { value: Objective; label: string }[] = [
@@ -163,6 +176,40 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     placeholder="?utm_source=meta..."
                   />
                 </div>
+              </div>
+            )}
+
+            {objective === "leadform" && (
+              <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <div className="space-y-2">
+                  <Label className="text-xs text-foreground/70">Лид-форма Meta</Label>
+                  <Select value={leadForm} onValueChange={setLeadForm}>
+                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                      <SelectValue placeholder="Выберите форму" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadForms.map((f) => (
+                        <SelectItem key={f.id} value={f.id} className="text-xs">{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground/60">Формы синхронизируются из Meta Business Suite</p>
+                </div>
+              </div>
+            )}
+
+            {objective === "whatsapp" && (
+              <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
+                <Label className="text-xs text-foreground/70">Привязанный WhatsApp</Label>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3 space-y-2">
+                  {whatsappNumbers.map((w) => (
+                    <div key={w.number} className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground">{w.account}</span>
+                      <span className="text-xs font-mono text-foreground/80">{w.number}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60">Номер привязан к выбранному кабинету</p>
               </div>
             )}
           </section>
