@@ -7,6 +7,7 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
+import CrmSystem from "./pages/CrmSystem";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
