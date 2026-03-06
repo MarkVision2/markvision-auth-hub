@@ -126,6 +126,17 @@ export default function DashboardTarget() {
 
   const totalActive = Object.values(campaignStates).filter(Boolean).length;
   const totalCampaigns = adAccounts.reduce((s, a) => s + a.campaigns.length, 0);
+  const totalSpend = adAccounts.reduce((s, a) => s + parseInt(a.totalSpend.replace(/\D/g, "")), 0);
+  const totalLeads = adAccounts.reduce((s, a) => s + a.totalLeads, 0);
+  const totalVisits = adAccounts.reduce((s, a) => s + a.totalVisits, 0);
+  const totalSales = adAccounts.reduce((s, a) => s + a.totalSales, 0);
+
+  const kpis = [
+    { label: "Расход", value: `${totalSpend}K ₸`, icon: DollarSign },
+    { label: "Лиды", value: String(totalLeads), icon: Users },
+    { label: "Визиты", value: String(totalVisits), icon: Eye },
+    { label: "Продажи", value: String(totalSales), icon: ShoppingCart },
+  ];
 
   const toggleAccount = (name: string) => {
     setExpandedAccounts((prev) => {
