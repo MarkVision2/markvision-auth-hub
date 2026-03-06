@@ -77,14 +77,14 @@ export default function ContentFactory() {
             <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
               <TabsTrigger
                 value="video"
-                className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+                className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Video className="mr-2 h-4 w-4" />
                 Видео (Sora 2)
               </TabsTrigger>
               <TabsTrigger
                 value="photo"
-                className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
+                className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Image className="mr-2 h-4 w-4" />
                 Фото / Карусель
@@ -228,7 +228,7 @@ export default function ContentFactory() {
                       htmlFor={opt.value}
                       className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
                         photoFormat === opt.value
-                          ? "border-emerald-500/60 bg-emerald-500/[0.06]"
+                          ? "border-primary/60 bg-primary/[0.06]"
                           : "border-border bg-secondary/20 hover:bg-secondary/40"
                       }`}
                     >
@@ -358,7 +358,7 @@ export default function ContentFactory() {
             {!isGenerating ? (
               <Button
                 onClick={handleGenerate}
-                className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 🚀 Запустить генерацию
               </Button>
@@ -366,7 +366,7 @@ export default function ContentFactory() {
               <div className="space-y-3">
                 <Progress
                   value={GENERATION_STEPS[genStep].progress}
-                  className="h-2 bg-secondary/40 [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-700"
+                  className="h-2 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-700"
                 />
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
