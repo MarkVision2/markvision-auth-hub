@@ -143,7 +143,7 @@ export default function DashboardSales() {
               </thead>
               <tbody>
                 {leadsQueue.map((lead, i) => (
-                  <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer">
+                  <tr key={i} className="border-b border-border last:border-0 hover:bg-accent/40 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
                     <td className="px-5 py-2.5">
                       <p className="font-medium text-foreground/90">{lead.name}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">{lead.phone}</p>
