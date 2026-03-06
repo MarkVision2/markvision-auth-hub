@@ -41,8 +41,8 @@ function fmt(n: number, suffix = ""): string {
 }
 
 const statusCfg = {
-  active: { label: "Активен", dot: "bg-emerald-400", text: "text-emerald-400" },
-  paused: { label: "Остановлен", dot: "bg-zinc-500", text: "text-zinc-500" },
+  active: { label: "Активен", dot: "bg-[hsl(var(--status-good))]", text: "text-[hsl(var(--status-good))]" },
+  paused: { label: "Остановлен", dot: "bg-muted-foreground", text: "text-muted-foreground" },
 };
 
 type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "romi";
@@ -212,8 +212,8 @@ export default function AgencyAccounts() {
     const spend = Number(c.spend) || 0;
     const leads = Number(c.meta_leads) || 0;
     const romi = Number(c.romi) || 0;
-    if (romi > 0) return "border-l-2 border-l-emerald-500/70";
-    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-red-500/70";
+    if (romi > 0) return "border-l-2 border-l-[hsl(var(--status-good))]";
+    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-[hsl(var(--status-critical))]";
     return "border-l-2 border-l-transparent";
   }
 
@@ -332,7 +332,7 @@ export default function AgencyAccounts() {
                     </TableCell>
 
                     <TableCell className="py-4">
-                      <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-emerald-400" : romi < 0 ? "text-red-400" : "text-foreground"}`}>
+                      <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
                         {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
                       </p>
                       {cac > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>}

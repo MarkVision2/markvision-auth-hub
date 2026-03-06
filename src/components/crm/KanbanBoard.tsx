@@ -31,9 +31,9 @@ const STAGES = [
 ];
 
 function getScoreBadge(score: number) {
-  if (score >= 80) return { label: `🔥 ${score}`, className: "bg-red-500/15 text-red-400 border-red-500/20" };
-  if (score >= 50) return { label: `🌤 ${score}`, className: "bg-amber-500/15 text-amber-400 border-amber-500/20" };
-  return { label: `❄️ ${score}`, className: "bg-blue-500/15 text-blue-400 border-blue-500/20" };
+  if (score >= 80) return { label: `🔥 ${score}`, className: "bg-[hsl(var(--status-critical)/0.15)] text-[hsl(var(--status-critical))] border-[hsl(var(--status-critical)/0.2)]" };
+  if (score >= 50) return { label: `🌤 ${score}`, className: "bg-[hsl(var(--status-warning)/0.15)] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.2)]" };
+  return { label: `❄️ ${score}`, className: "bg-primary/15 text-primary border-primary/20" };
 }
 
 function fmt(n: number): string {

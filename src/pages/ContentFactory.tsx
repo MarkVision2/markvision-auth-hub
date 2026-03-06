@@ -195,7 +195,7 @@ export default function ContentFactory() {
             className="rounded-xl border border-border bg-card p-6 space-y-6"
           >
             <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
               <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
             </div>
 
@@ -235,7 +235,7 @@ export default function ContentFactory() {
             <div className="flex gap-3 pt-2">
               <Button
                 onClick={handleDownloadAll}
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Download className="h-4 w-4" />
                 📥 Скачать всё
@@ -273,7 +273,7 @@ export default function ContentFactory() {
                     opacity: [0.6, 1, 0.6],
                   }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                  className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center"
                 >
                   <motion.div
                     animate={{
@@ -281,9 +281,9 @@ export default function ContentFactory() {
                       opacity: [0.8, 1, 0.8],
                     }}
                     transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-16 h-16 rounded-full bg-emerald-500/40 flex items-center justify-center"
+                    className="w-16 h-16 rounded-full bg-primary/40 flex items-center justify-center"
                   >
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.6)]" />
+                    <div className="w-8 h-8 rounded-full bg-primary shadow-[0_0_30px_hsl(var(--primary)/0.5)]" />
                   </motion.div>
                 </motion.div>
               </div>
@@ -293,7 +293,7 @@ export default function ContentFactory() {
             <div className="space-y-3">
               <Progress
                 value={progressPercent}
-                className="h-2.5 bg-secondary/40 [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-1000"
+                className="h-2.5 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-1000"
               />
               <div className="flex items-center justify-between">
                 <AnimatePresence mode="wait">
@@ -356,11 +356,11 @@ export default function ContentFactory() {
           {/* Type toggle */}
           <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
             <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
-              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Video className="mr-2 h-4 w-4" />
                 Видео (Sora 2)
               </TabsTrigger>
-              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Image className="mr-2 h-4 w-4" />
                 Фото / Карусель
               </TabsTrigger>
@@ -470,7 +470,7 @@ export default function ContentFactory() {
                       htmlFor={opt.value}
                       className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
                         photoFormat === opt.value
-                          ? "border-emerald-500/60 bg-emerald-500/[0.06]"
+                          ? "border-primary/60 bg-primary/[0.06]"
                           : "border-border bg-secondary/20 hover:bg-secondary/40"
                       }`}
                     >
@@ -561,7 +561,7 @@ export default function ContentFactory() {
             <Button
               onClick={handleGenerate}
               disabled={submitting}
-              className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+              className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
             >
               {submitting ? (
                 <>

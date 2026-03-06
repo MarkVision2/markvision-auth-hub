@@ -34,7 +34,7 @@ const NavSection = ({ items }: { items: typeof mainNav }) => (
         key={item.path}
         to={item.path}
         end
-        className="flex items-center gap-2.5 px-2.5 py-2 rounded text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="flex items-center gap-2.5 px-2.5 py-2 rounded text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
         activeClassName="bg-accent text-primary font-medium"
       >
         <item.icon className="h-4 w-4" />
@@ -49,8 +49,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <aside className="w-52 shrink-0 border-r border-border flex flex-col bg-[hsl(var(--sidebar-background))]">
+      <aside className="w-52 shrink-0 border-r border-border flex flex-col bg-sidebar-background">
         <div className="h-12 flex items-center gap-2 px-4 border-b border-border">
           <Zap className="h-4 w-4 text-primary" />
           <span className="text-sm font-bold text-foreground tracking-tight">MarkVision</span>
@@ -60,20 +59,19 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
           <NavSection items={mainNav} />
           
           <div className="py-2">
-            <Separator className="bg-border" />
+            <Separator />
           </div>
           <p className="px-2.5 text-[11px] text-muted-foreground uppercase tracking-[0.12em] font-medium mb-1">Панели</p>
           <NavSection items={roleNav} />
 
           <div className="py-2">
-            <Separator className="bg-border" />
+            <Separator />
           </div>
           <p className="px-2.5 text-[11px] text-muted-foreground uppercase tracking-[0.12em] font-medium mb-1">Модули</p>
           <NavSection items={moduleNav} />
         </nav>
       </aside>
 
-      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-12 shrink-0 flex items-center justify-between px-6 border-b border-border">
           <div className="text-sm text-muted-foreground font-mono tracking-wide">
