@@ -53,6 +53,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_rop_audits: {
+        Row: {
+          ai_score: number | null
+          ai_summary: string | null
+          audio_url: string | null
+          checklist: Json | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          interaction_type: string
+          lead_id: string | null
+          manager_name: string
+          project_id: string | null
+          transcript: Json | null
+        }
+        Insert: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          audio_url?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          interaction_type: string
+          lead_id?: string | null
+          manager_name: string
+          project_id?: string | null
+          transcript?: Json | null
+        }
+        Update: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          audio_url?: string | null
+          checklist?: Json | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          interaction_type?: string
+          lead_id?: string | null
+          manager_name?: string
+          project_id?: string | null
+          transcript?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_rop_audits_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_rop_audits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients_config: {
         Row: {
           ad_account_id: string | null
