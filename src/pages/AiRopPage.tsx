@@ -1,9 +1,9 @@
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PhoneCall, MessageSquare, Trophy } from "lucide-react";
 import AiRopKpiCards from "@/components/ai-rop/AiRopKpiCards";
-import AuditFeed from "@/components/ai-rop/AuditFeed";
+import AuditCallsFeed from "@/components/ai-rop/AuditCallsFeed";
+import AuditChatsFeed from "@/components/ai-rop/AuditChatsFeed";
 import ManagerRating from "@/components/ai-rop/ManagerRating";
 
 export default function AiRopPage() {
@@ -17,11 +17,15 @@ export default function AiRopPage() {
 
         <AiRopKpiCards />
 
-        <Tabs defaultValue="feed" className="space-y-4">
+        <Tabs defaultValue="calls" className="space-y-4">
           <TabsList className="bg-secondary/50 border border-border">
-            <TabsTrigger value="feed" className="gap-1.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="calls" className="gap-1.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <PhoneCall className="h-4 w-4" />
-              Аудит звонков и чатов
+              Аудит звонков
+            </TabsTrigger>
+            <TabsTrigger value="chats" className="gap-1.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <MessageSquare className="h-4 w-4" />
+              Аудит чатов
             </TabsTrigger>
             <TabsTrigger value="rating" className="gap-1.5 text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Trophy className="h-4 w-4" />
@@ -29,7 +33,8 @@ export default function AiRopPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="feed"><AuditFeed /></TabsContent>
+          <TabsContent value="calls"><AuditCallsFeed /></TabsContent>
+          <TabsContent value="chats"><AuditChatsFeed /></TabsContent>
           <TabsContent value="rating"><ManagerRating /></TabsContent>
         </Tabs>
       </div>
