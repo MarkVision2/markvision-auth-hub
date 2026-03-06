@@ -141,18 +141,18 @@ export default function AgencyAccounts() {
         </Button>
       </div>
 
-      <div className="rounded-xl border border-white/[0.06] overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-white/[0.06] hover:bg-transparent">
-              <TableHead className="text-xs font-medium text-zinc-500 w-[200px]">Кабинет</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Расходы</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Лиды</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">CPL</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Подписчики</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Визиты</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500">Продажи</TableHead>
-              <TableHead className="text-xs font-medium text-zinc-500 text-right">Конверсии</TableHead>
+            <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
+              <TableHead className="text-xs font-medium text-muted-foreground w-[200px]">Кабинет</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Расходы</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Лиды</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">CPL</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Подписчики</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Визиты</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">Продажи</TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground text-right">Конверсии</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
