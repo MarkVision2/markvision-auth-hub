@@ -16,6 +16,10 @@ import {
   Copy,
   Pencil,
   Megaphone,
+  DollarSign,
+  Users,
+  Eye,
+  ShoppingCart,
 } from "lucide-react";
 import {
   DropdownMenu,
