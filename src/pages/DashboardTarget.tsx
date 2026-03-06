@@ -204,7 +204,7 @@ export default function DashboardTarget() {
                       return (
                         <div
                           key={c.name}
-                          className="grid grid-cols-[40px_1fr_100px_90px_70px_90px_70px_40px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors"
+                          className="grid grid-cols-[40px_1fr_100px_90px_70px_70px_70px_40px] items-center px-4 py-2.5 border-b border-border last:border-0 bg-secondary/5 hover:bg-accent/20 transition-colors"
                         >
                           {/* Toggle */}
                           <div className="pl-1">
