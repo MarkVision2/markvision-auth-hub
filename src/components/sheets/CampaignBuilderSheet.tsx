@@ -40,6 +40,17 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [endDate, setEndDate] = useState<Date>();
   const [launchTime, setLaunchTime] = useState<"now" | "midnight">("now");
   const [creativeTab, setCreativeTab] = useState<"feed" | "stories">("feed");
+  const [creativeFile, setCreativeFile] = useState<File | null>(null);
+  const [creativePreview, setCreativePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCreativeFile(file);
+    const url = URL.createObjectURL(file);
+    setCreativePreview(url);
+  };
 
   const pixels = [
     { id: "px_1", name: "AIVA — Основной пиксель" },
