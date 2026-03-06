@@ -84,7 +84,7 @@ export default function ContentFactory() {
               </TabsTrigger>
               <TabsTrigger
                 value="photo"
-                className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white"
               >
                 <Image className="mr-2 h-4 w-4" />
                 Фото / Карусель
