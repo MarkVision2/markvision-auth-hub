@@ -409,7 +409,15 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     ))}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground/40">Превью</span>
+                    {creativePreview ? (
+                      creativeFile?.type.startsWith("video/") ? (
+                        <video src={creativePreview} className="w-full h-full object-cover" muted autoPlay loop />
+                      ) : (
+                        <img src={creativePreview} alt="Превью" className="w-full h-full object-cover" />
+                      )
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground/40">Превью</span>
+                    )}
                   </div>
                 </div>
               </div>
