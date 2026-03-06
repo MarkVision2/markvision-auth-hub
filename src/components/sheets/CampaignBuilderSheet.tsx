@@ -33,6 +33,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [siteUrl, setSiteUrl] = useState("");
   const [pixel, setPixel] = useState("");
   const [pixelEvent, setPixelEvent] = useState("");
+  const [leadForm, setLeadForm] = useState("");
   const [budgetType, setBudgetType] = useState<"daily" | "lifetime">("daily");
   const [budgetAmount, setBudgetAmount] = useState("");
   const [startDate, setStartDate] = useState<Date>();
