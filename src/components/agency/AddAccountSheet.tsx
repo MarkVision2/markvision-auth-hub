@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
-import type { ClientAccount } from "./ClientCard";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const emptyForm = {
   client_name: "",
@@ -28,12 +29,12 @@ const emptyForm = {
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-zinc-500">{label}</Label>
+      <Label className="text-xs text-muted-foreground">{label}</Label>
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-white/[0.03] border-white/[0.06] text-foreground placeholder:text-zinc-700 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+        className="bg-white/[0.03] border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
       />
     </div>
   );
@@ -42,50 +43,60 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
 interface AddAccountSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (client: ClientAccount) => void;
+  onSaved: () => void;
 }
 
-export default function AddAccountSheet({ open, onOpenChange, onAdd }: AddAccountSheetProps) {
+export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAccountSheetProps) {
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
   const updateField = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name.trim()) return;
 
-    const newClient: ClientAccount = {
-      id: Date.now().toString(),
-      client_name: form.client_name,
-      status: "active",
-      spend: { fact: 0, plan: Number(form.daily_budget) * 30 || 0 },
-      leads: { fact: 0, plan: 0 },
-      visits: { fact: 0, plan: 0 },
-      sales: { fact: 0, plan: 0 },
-      clicks: 0,
-      followers: 0,
-      convClickLead: 0,
-      convLeadVisit: 0,
-      convVisitSale: 0,
-      sparkSpend: [0, 0, 0, 0, 0, 0, 0],
-      sparkLeads: [0, 0, 0, 0, 0, 0, 0],
-    };
+    setSaving(true);
 
-    onAdd(newClient);
+    const row: Record<string, unknown> = { client_name: form.client_name };
+    if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
+    if (form.city) row.city = form.city;
+    if (form.region_key) row.region_key = form.region_key;
+    if (form.brief) row.brief = form.brief;
+    if (form.ad_account_id) row.ad_account_id = form.ad_account_id;
+    if (form.page_id) row.page_id = form.page_id;
+    if (form.page_name) row.page_name = form.page_name;
+    if (form.instagram_user_id) row.instagram_user_id = form.instagram_user_id;
+    if (form.telegram_group_id) row.telegram_group_id = form.telegram_group_id;
+    if (form.whatsapp_number) row.whatsapp_number = form.whatsapp_number;
+    if (form.fb_pixel_id) row.fb_pixel_id = form.fb_pixel_id;
+    if (form.pixel_event) row.pixel_event = form.pixel_event;
+    if (form.website_url) row.website_url = form.website_url;
+
+    const { error } = await supabase.from("clients_config").insert(row as any);
+
+    setSaving(false);
+
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Кабинет добавлен!", description: form.client_name });
     setForm(emptyForm);
     onOpenChange(false);
-    toast({ title: "Кабинет успешно добавлен!", description: form.client_name });
+    onSaved();
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto border-white/[0.04] bg-[#0a0a0c]">
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto border-border bg-card">
         <SheetHeader>
           <SheetTitle className="text-foreground">Добавить кабинет</SheetTitle>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-2">
           <Accordion type="multiple" defaultValue={["general", "meta", "tracking"]} className="space-y-2">
-            <AccordionItem value="general" className="border border-white/[0.04] rounded-xl px-4 bg-white/[0.01]">
+            <AccordionItem value="general" className="border border-border rounded-xl px-4 bg-secondary/30">
               <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
                 Основная информация
               </AccordionTrigger>
@@ -95,18 +106,18 @@ export default function AddAccountSheet({ open, onOpenChange, onAdd }: AddAccoun
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-zinc-500">Информация о клиенте</Label>
+                  <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
                   <Textarea
                     value={form.brief}
                     onChange={(e) => updateField("brief", e.target.value)}
-                    className="bg-white/[0.03] border-white/[0.06] text-foreground resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="bg-white/[0.03] border-border text-foreground resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                     rows={3}
                   />
                 </div>
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="meta" className="border border-white/[0.04] rounded-xl px-4 bg-white/[0.01]">
+            <AccordionItem value="meta" className="border border-border rounded-xl px-4 bg-secondary/30">
               <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
                 Интеграция Meta
               </AccordionTrigger>
@@ -118,7 +129,7 @@ export default function AddAccountSheet({ open, onOpenChange, onAdd }: AddAccoun
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="tracking" className="border border-white/[0.04] rounded-xl px-4 bg-white/[0.01]">
+            <AccordionItem value="tracking" className="border border-border rounded-xl px-4 bg-secondary/30">
               <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
                 Трекинг и Связь
               </AccordionTrigger>
@@ -133,7 +144,8 @@ export default function AddAccountSheet({ open, onOpenChange, onAdd }: AddAccoun
           </Accordion>
 
           <div className="pt-4">
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               Создать аккаунт
             </Button>
           </div>
