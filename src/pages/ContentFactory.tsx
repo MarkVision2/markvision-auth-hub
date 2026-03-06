@@ -356,11 +356,11 @@ export default function ContentFactory() {
           {/* Type toggle */}
           <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
             <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
-              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Video className="mr-2 h-4 w-4" />
                 Видео (Sora 2)
               </TabsTrigger>
-              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Image className="mr-2 h-4 w-4" />
                 Фото / Карусель
               </TabsTrigger>
