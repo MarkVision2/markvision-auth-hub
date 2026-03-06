@@ -167,10 +167,10 @@ export default function DashboardPM() {
               </tbody>
             </table>
           </CardContent>
-        </Card>
+        </FadeUpItem>
 
         {/* Team + AI Briefing */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <FadeUpItem className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Team */}
           <Card className="bg-card border-border lg:col-span-3">
             <CardHeader className="pb-2 pt-4 px-5">
