@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import SparklineChart from "@/components/agency/SparklineChart";
 import CampaignDetailSheet from "@/components/sheets/CampaignDetailSheet";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Rocket,
@@ -22,7 +23,6 @@ import {
   AlertTriangle,
   TrendingDown,
   CreditCard,
-  Users,
   Play,
   Pause,
   Download,
@@ -50,17 +50,13 @@ interface Campaign {
   sparkline: number[];
 }
 
-interface AdAccount {
+interface ClientAccount {
+  id: string;
   name: string;
-  totalSpend: string;
-  totalLeads: number;
-  totalVisits: number;
-  totalSales: number;
-  avgCpl: string;
   campaigns: Campaign[];
 }
 
-/* ── Alerts ── */
+/* ── Alerts (mock — later from DB/edge function) ── */
 const alerts = [
   { account: "Дентал Тайм", campaign: "Протезирование_Конверсии", issue: "Бюджет исчерпан на 100%", icon: CreditCard, severity: "critical" as const },
   { account: "Технология позвоночника", campaign: "Осмотр_позвоночника_Февр", issue: "CPL ×3 выше нормы", icon: TrendingDown, severity: "warning" as const },
@@ -72,54 +68,22 @@ const alertSeverityColor = {
   warning: "text-[hsl(var(--status-warning))]",
 };
 
-/* ── Data ── */
-const adAccounts: AdAccount[] = [
-  {
-    name: "Клиника AIVA",
-    totalSpend: "227K ₸",
-    totalLeads: 83,
-    totalVisits: 142,
-    totalSales: 18,
-    avgCpl: "2 735 ₸",
-    campaigns: [
-      { name: "Имплантация_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "82K ₸", budget: "180K ₸", budgetPct: 46, cpl: "2 158 ₸", leads: 38, visits: 64, sales: 9, objective: "WhatsApp", sparkline: [3, 5, 4, 7, 6, 8, 5] },
-      { name: "Виниры_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "145K ₸", budget: "200K ₸", budgetPct: 73, cpl: "3 222 ₸", leads: 45, visits: 78, sales: 9, objective: "Лид-форма", sparkline: [6, 8, 7, 9, 5, 4, 6] },
-    ],
-  },
-  {
-    name: "NeoVision Eye",
-    totalSpend: "98K ₸",
-    totalLeads: 28,
-    totalVisits: 41,
-    totalSales: 6,
-    avgCpl: "3 500 ₸",
-    campaigns: [
-      { name: "Лазерная_коррекция_Март", project: "NeoVision Eye", status: "active", spend: "98K ₸", budget: "140K ₸", budgetPct: 70, cpl: "3 500 ₸", leads: 28, visits: 41, sales: 6, objective: "WhatsApp", sparkline: [2, 4, 3, 5, 6, 4, 4] },
-    ],
-  },
-  {
-    name: "Дентал Тайм",
-    totalSpend: "95K ₸",
-    totalLeads: 12,
-    totalVisits: 15,
-    totalSales: 2,
-    avgCpl: "7 917 ₸",
-    campaigns: [
-      { name: "Протезирование_Конверсии", project: "Дентал Тайм", status: "error", spend: "95K ₸", budget: "95K ₸", budgetPct: 100, cpl: "7 917 ₸", leads: 12, visits: 15, sales: 2, objective: "Лиды с сайта", sparkline: [1, 2, 1, 2, 3, 1, 2] },
-    ],
-  },
-  {
-    name: "Технология позвоночника",
-    totalSpend: "60K ₸",
-    totalLeads: 4,
-    totalVisits: 5,
-    totalSales: 0,
-    avgCpl: "15 000 ₸",
-    campaigns: [
-      { name: "Осмотр_позвоночника_Февр", project: "Технология позвоночника", status: "paused", spend: "60K ₸", budget: "150K ₸", budgetPct: 40, cpl: "15 000 ₸", leads: 4, visits: 5, sales: 0, objective: "Лид-форма", sparkline: [1, 0, 1, 0, 1, 1, 0] },
-    ],
-  },
-];
+/* ── Mock campaigns per client (later from Meta API) ── */
+const mockCampaigns: Record<string, Campaign[]> = {
+  "Клиника AIVA": [
+    { name: "Имплантация_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "82K ₸", budget: "180K ₸", budgetPct: 46, cpl: "2 158 ₸", leads: 38, visits: 64, sales: 9, objective: "WhatsApp", sparkline: [3, 5, 4, 7, 6, 8, 5] },
+    { name: "Виниры_Алматы_Март", project: "Клиника AIVA", status: "active", spend: "145K ₸", budget: "200K ₸", budgetPct: 73, cpl: "3 222 ₸", leads: 45, visits: 78, sales: 9, objective: "Лид-форма", sparkline: [6, 8, 7, 9, 5, 4, 6] },
+  ],
+  "NeoVision Eye": [
+    { name: "Лазерная_коррекция_Март", project: "NeoVision Eye", status: "active", spend: "98K ₸", budget: "140K ₸", budgetPct: 70, cpl: "3 500 ₸", leads: 28, visits: 41, sales: 6, objective: "WhatsApp", sparkline: [2, 4, 3, 5, 6, 4, 4] },
+  ],
+  "Дентал Тайм": [
+    { name: "Протезирование_Конверсии", project: "Дентал Тайм", status: "error", spend: "95K ₸", budget: "95K ₸", budgetPct: 100, cpl: "7 917 ₸", leads: 12, visits: 15, sales: 2, objective: "Лиды с сайта", sparkline: [1, 2, 1, 2, 3, 1, 2] },
+  ],
+  "Технология позвоночника": [
+    { name: "Осмотр_позвоночника_Февр", project: "Технология позвоночника", status: "paused", spend: "60K ₸", budget: "150K ₸", budgetPct: 40, cpl: "15 000 ₸", leads: 4, visits: 5, sales: 0, objective: "Лид-форма", sparkline: [1, 0, 1, 0, 1, 1, 0] },
+  ],
+};
 
 const statusBadge = {
   active: { label: "Активна", cls: "border-[hsl(var(--status-good)/0.3)] bg-[hsl(var(--status-good)/0.08)] text-[hsl(var(--status-good))]" },
@@ -129,27 +93,50 @@ const statusBadge = {
 
 type StatusFilter = "all" | "active" | "error" | "paused";
 
-const columns = ["", "Кампания", "Цель", "Расход", "Лиды", "Визиты", "7д", ""];
-
 export default function DashboardTarget() {
+  const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [builderOpen, setBuilderOpen] = useState(false);
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set(adAccounts.map((a) => a.name)));
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [campaignStates, setCampaignStates] = useState<Record<string, boolean>>(() => {
-    const states: Record<string, boolean> = {};
-    adAccounts.forEach((acc) =>
-      acc.campaigns.forEach((c) => {
-        states[c.name] = c.status === "active";
-      })
-    );
-    return states;
-  });
+  const [campaignStates, setCampaignStates] = useState<Record<string, boolean>>({});
+
+  // Fetch real client accounts from Supabase, attach mock campaigns
+  const fetchAccounts = useCallback(async () => {
+    const { data } = await (supabase as any)
+      .from("clients_config")
+      .select("id, client_name, is_active")
+      .eq("is_active", true);
+
+    if (data) {
+      const mapped: ClientAccount[] = (data as any[]).map((c) => ({
+        id: c.id,
+        name: c.client_name,
+        campaigns: mockCampaigns[c.client_name] ?? [],
+      })).filter((a: ClientAccount) => a.campaigns.length > 0);
+
+      setAccounts(mapped);
+      setExpandedAccounts(new Set(mapped.map((a: ClientAccount) => a.name)));
+
+      // Init campaign states
+      const states: Record<string, boolean> = {};
+      mapped.forEach((acc: ClientAccount) =>
+        acc.campaigns.forEach((c) => {
+          if (!(c.name in campaignStates)) {
+            states[c.name] = c.status === "active";
+          }
+        })
+      );
+      setCampaignStates((prev) => ({ ...states, ...prev }));
+    }
+  }, []);
+
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
   /* ── Filtered data ── */
   const filteredAccounts = useMemo(() => {
-    return adAccounts
+    return accounts
       .map((acc) => ({
         ...acc,
         campaigns: acc.campaigns.filter((c) => {
@@ -159,10 +146,10 @@ export default function DashboardTarget() {
         }),
       }))
       .filter((acc) => acc.campaigns.length > 0);
-  }, [searchQuery, statusFilter]);
+  }, [accounts, searchQuery, statusFilter]);
 
+  const totalCampaigns = accounts.reduce((s, a) => s + a.campaigns.length, 0);
   const totalActive = Object.values(campaignStates).filter(Boolean).length;
-  const totalCampaigns = adAccounts.reduce((s, a) => s + a.campaigns.length, 0);
 
   const toggleAccount = (name: string) => {
     setExpandedAccounts((prev) => {
@@ -180,7 +167,6 @@ export default function DashboardTarget() {
     });
   };
 
-  /* ── Bulk actions ── */
   const bulkToggleAll = (on: boolean) => {
     setCampaignStates((prev) => {
       const next = { ...prev };
@@ -198,10 +184,10 @@ export default function DashboardTarget() {
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Megaphone className="h-5 w-5 text-primary" />
-              Управление рекламой
+              Центр управления рекламой
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {adAccounts.length} кабинетов · {totalCampaigns} кампаний · {totalActive} активных
+              {accounts.length} кабинетов · {totalCampaigns} кампаний · {totalActive} активных
             </p>
           </div>
           <Button
@@ -243,7 +229,6 @@ export default function DashboardTarget() {
 
         {/* ── Filters + Search + Bulk Actions ── */}
         <FadeUpItem className="flex flex-wrap items-center gap-2">
-          {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -254,7 +239,6 @@ export default function DashboardTarget() {
             />
           </div>
 
-          {/* Status filters */}
           <div className="flex items-center gap-1">
             {([
               { value: "all" as StatusFilter, label: "Все" },
@@ -276,7 +260,6 @@ export default function DashboardTarget() {
             ))}
           </div>
 
-          {/* Bulk actions */}
           <div className="flex items-center gap-1 ml-auto">
             <Button variant="outline" size="sm" className="h-7 text-[10px] border-border gap-1" onClick={() => bulkToggleAll(true)}>
               <Play className="h-3 w-3" /> Вкл. все
@@ -290,19 +273,18 @@ export default function DashboardTarget() {
           </div>
         </FadeUpItem>
 
-        {/* ── Expandable Account Table ── */}
+        {/* ── Campaign Table ── */}
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             {/* Table header */}
             <div className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
-              {columns.map((h, i) => (
+              {["", "Кампания", "Цель", "Бюджет", "Лиды", "Визиты", "7д", ""].map((h, i) => (
                 <span key={i} className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">
                   {h}
                 </span>
               ))}
             </div>
 
-            {/* Accounts */}
             {filteredAccounts.length === 0 && (
               <div className="px-4 py-8 text-center text-xs text-muted-foreground">
                 Ничего не найдено
@@ -314,18 +296,12 @@ export default function DashboardTarget() {
               return (
                 <Collapsible key={account.name} open={isOpen} onOpenChange={() => toggleAccount(account.name)}>
                   <CollapsibleTrigger asChild>
-                    <div className="grid grid-cols-[40px_1fr_90px_80px_60px_60px_64px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer group">
                       <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isOpen ? "" : "-rotate-90"}`} />
                       <div>
                         <p className="text-xs font-semibold text-foreground">{account.name}</p>
                         <p className="text-[10px] text-muted-foreground">{account.campaigns.length} кампаний</p>
                       </div>
-                      <span className="text-[10px] text-muted-foreground/60">—</span>
-                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalSpend}</span>
-                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalLeads}</span>
-                      <span className="text-xs font-mono tabular-nums text-foreground/80">{account.totalVisits}</span>
-                      <span />
-                      <span />
                     </div>
                   </CollapsibleTrigger>
 
@@ -355,11 +331,13 @@ export default function DashboardTarget() {
                           </button>
 
                           <span className="text-[11px] text-muted-foreground">{c.objective}</span>
-                          <span className="text-xs font-mono tabular-nums text-foreground/80">{c.spend}</span>
+                          <div>
+                            <span className="text-xs font-mono tabular-nums text-foreground/80">{c.spend}</span>
+                            <p className="text-[9px] text-muted-foreground">/ {c.budget}</p>
+                          </div>
                           <span className="text-xs font-mono tabular-nums text-foreground/80">{c.leads}</span>
                           <span className="text-xs font-mono tabular-nums text-foreground/80">{c.visits}</span>
 
-                          {/* Sparkline */}
                           <div className="w-14">
                             <SparklineChart
                               data={c.sparkline}
