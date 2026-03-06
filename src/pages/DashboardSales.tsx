@@ -94,6 +94,7 @@ export default function DashboardSales() {
 
         {/* Funnel */}
         <FadeUpItem>
+        <Card className="bg-card border-border">
           <CardHeader className="pb-2 pt-4 px-5">
             <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               Воронка продаж
