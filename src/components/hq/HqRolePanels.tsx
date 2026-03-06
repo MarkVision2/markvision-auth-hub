@@ -8,7 +8,7 @@ const roles = [
     icon: Target,
     path: "/dashboard/target",
     color: "text-[hsl(var(--status-ai))]",
-    border: "border-[hsl(var(--status-ai)/0.1)] hover:border-[hsl(var(--status-ai)/0.3)]",
+    border: "border-border hover:border-[hsl(var(--status-ai)/0.3)]",
   },
   {
     title: "Отдел продаж",
@@ -16,7 +16,7 @@ const roles = [
     icon: Handshake,
     path: "/dashboard/sales",
     color: "text-primary",
-    border: "border-primary/10 hover:border-primary/30",
+    border: "border-border hover:border-primary/30",
   },
   {
     title: "Управляющий / PM",
@@ -24,7 +24,7 @@ const roles = [
     icon: Activity,
     path: "/dashboard/pm",
     color: "text-primary",
-    border: "border-primary/10 hover:border-primary/30",
+    border: "border-border hover:border-primary/30",
   },
 ];
 
@@ -39,9 +39,9 @@ export default function HqRolePanels() {
           <div
             key={role.path}
             onClick={() => navigate(role.path)}
-            className={`rounded-xl border ${role.border} bg-white/[0.02] backdrop-blur-xl p-4 flex items-center gap-3 cursor-pointer group transition-colors hover:bg-white/[0.04]`}
+            className={`rounded-xl border ${role.border} bg-card p-4 flex items-center gap-3 cursor-pointer group transition-colors hover:bg-accent/30`}
           >
-            <div className="h-10 w-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-secondary border border-border flex items-center justify-center">
               <role.icon className={`h-5 w-5 ${role.color}`} />
             </div>
             <div className="flex-1 min-w-0">

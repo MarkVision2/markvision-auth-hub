@@ -34,11 +34,11 @@ const anomalies = [
 
 function severityStyles(severity: "critical" | "warning") {
   if (severity === "critical") return {
-    dot: "bg-[hsl(var(--status-critical))]",
-    ping: "bg-[hsl(var(--status-critical))]",
-    border: "border-[hsl(var(--status-critical)/0.15)]",
-    bg: "bg-[hsl(var(--status-critical)/0.03)]",
-    btn: "border-[hsl(var(--status-critical)/0.4)] text-[hsl(var(--status-critical))] hover:bg-[hsl(var(--status-critical)/0.1)]",
+    dot: "bg-destructive",
+    ping: "bg-destructive",
+    border: "border-destructive/15",
+    bg: "bg-destructive/[0.03]",
+    btn: "border-destructive/40 text-destructive hover:bg-destructive/10",
   };
   return {
     dot: "bg-[hsl(var(--status-warning))]",
@@ -51,16 +51,16 @@ function severityStyles(severity: "critical" | "warning") {
 
 export default function HqAnomalyRadar() {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5 h-full">
+    <div className="rounded-2xl border border-border bg-card p-5 h-full">
       <div className="flex items-center gap-2 mb-4">
-        <div className="h-8 w-8 rounded-lg bg-[hsl(var(--status-critical)/0.1)] flex items-center justify-center">
-          <AlertTriangle className="h-4 w-4 text-[hsl(var(--status-critical))]" />
+        <div className="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
         </div>
         <div>
           <h3 className="text-sm font-bold text-foreground">Радар Аномалий</h3>
           <p className="text-[10px] text-muted-foreground">Требуют немедленного внимания</p>
         </div>
-        <span className="ml-auto text-[10px] font-mono text-[hsl(var(--status-critical))] bg-[hsl(var(--status-critical)/0.1)] px-2 py-0.5 rounded-full tabular-nums">
+        <span className="ml-auto text-[10px] font-mono text-destructive bg-destructive/10 px-2 py-0.5 rounded-full tabular-nums">
           {anomalies.filter(a => a.severity === "critical").length} крит.
         </span>
       </div>
@@ -69,8 +69,7 @@ export default function HqAnomalyRadar() {
         {anomalies.map((a, i) => {
           const s = severityStyles(a.severity);
           return (
-            <div key={i} className={`rounded-xl border ${s.border} ${s.bg} p-3.5 flex items-center gap-3 group hover:border-white/[0.1] transition-colors`}>
-              {/* Pulsing dot */}
+            <div key={i} className={`rounded-xl border ${s.border} ${s.bg} p-3.5 flex items-center gap-3 group hover:border-border transition-colors`}>
               <div className="relative shrink-0">
                 <span className={`absolute inline-flex h-3 w-3 rounded-full ${s.ping} opacity-75 animate-ping`} />
                 <span className={`relative inline-flex h-3 w-3 rounded-full ${s.dot}`} />

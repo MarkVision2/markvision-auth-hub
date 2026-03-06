@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import {
   Activity, FolderKanban, Users, Eye, ShoppingCart, ListChecks, Plus, CheckCircle2, Loader2,
 } from "lucide-react";
@@ -42,13 +43,20 @@ export default function DashboardPM() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [clientsRes, leadsRes] = await Promise.all([
-      (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
-      (supabase as any).from("leads").select("id, status, client_config_id"),
-    ]);
-    setClients(((clientsRes.data as any[]) ?? []).map((c) => ({ id: c.id, name: c.client_name, is_active: c.is_active })));
-    setLeads((leadsRes.data as Lead[]) ?? []);
-    setLoading(false);
+    try {
+      const [clientsRes, leadsRes] = await Promise.all([
+        (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
+        (supabase as any).from("leads").select("id, status, client_config_id"),
+      ]);
+      if (clientsRes.error) throw clientsRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+      setClients(((clientsRes.data as any[]) ?? []).map((c) => ({ id: c.id, name: c.client_name, is_active: c.is_active })));
+      setLeads((leadsRes.data as Lead[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -166,7 +174,13 @@ export default function DashboardPM() {
                     );
                   })}
                   {projects.length === 0 && (
-                    <tr><td colSpan={5} className="px-5 py-8 text-center text-muted-foreground">Нет активных проектов</td></tr>
+                    <tr>
+                      <td colSpan={5} className="px-5 py-12 text-center">
+                        <FolderKanban className="h-8 w-8 mx-auto text-muted-foreground/20 mb-3" />
+                        <p className="text-sm text-muted-foreground">Нет активных проектов</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Добавьте клиентов в разделе «Кабинеты»</p>
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
