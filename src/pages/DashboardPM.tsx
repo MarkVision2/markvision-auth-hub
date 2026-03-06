@@ -168,6 +168,7 @@ export default function DashboardPM() {
               </tbody>
             </table>
           </CardContent>
+        </Card>
         </FadeUpItem>
 
         {/* Team + AI Briefing */}
