@@ -1,14 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  BarChart,
-  Bar,
+  AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar,
 } from "recharts";
 import { TrendingUp, Zap } from "lucide-react";
 
@@ -34,25 +26,24 @@ const leadFlowData = [
 ];
 
 const tooltipStyle = {
-  background: "hsl(0 0% 4%)",
-  border: "1px solid hsl(0 0% 100% / 0.06)",
+  background: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
   borderRadius: 4,
-  fontSize: 11,
-  color: "hsl(0 0% 85%)",
+  fontSize: 12,
+  color: "hsl(var(--foreground))",
   padding: "6px 10px",
 };
 
-const tick = { fill: "hsl(0 0% 35%)", fontSize: 10 };
+const tick = { fill: "hsl(var(--muted-foreground))", fontSize: 11 };
 
 export default function DualCharts() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* MRR */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-1 pt-4 px-5">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />
-            <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               MRR · Динамика
             </CardTitle>
           </div>
@@ -66,15 +57,9 @@ export default function DualCharts() {
                   <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 100% / 0.03)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={tick} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={tick}
-                tickFormatter={(v: number) => `${(v / 1000000).toFixed(1)}M`}
-                width={36}
-              />
+              <YAxis axisLine={false} tickLine={false} tick={tick} tickFormatter={(v: number) => `${(v / 1000000).toFixed(1)}M`} width={36} />
               <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => `${(value / 1000000).toFixed(2)}M ₸`} />
               <Area type="monotone" dataKey="mrr" stroke="hsl(160 84% 39%)" strokeWidth={1.5} fill="url(#gMrr)" name="MRR" dot={false} connectNulls={false} />
               <Area type="monotone" dataKey="forecast" stroke="hsl(160 84% 39%)" strokeWidth={1} strokeDasharray="4 4" fill="none" name="Прогноз" dot={false} connectNulls={false} />
@@ -83,34 +68,29 @@ export default function DualCharts() {
         </CardContent>
       </Card>
 
-      {/* Lead Flow */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-1 pt-4 px-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 text-[hsl(var(--status-ai))]" />
-              <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 Лиды · 7 дней
               </CardTitle>
             </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-sm bg-muted" /> Все
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-sm bg-[hsl(var(--status-ai))]" /> AI
-              </span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-muted" /> Все</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-[hsl(var(--status-ai))]" /> AI</span>
             </div>
           </div>
         </CardHeader>
         <CardContent className="h-[180px] px-3 pb-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={leadFlowData} barGap={1}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 100% / 0.03)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={tick} />
               <YAxis axisLine={false} tickLine={false} tick={tick} width={24} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="incoming" fill="hsl(0 0% 100% / 0.07)" name="Входящие" radius={[2, 2, 0, 0]} />
+              <Bar dataKey="incoming" fill="hsl(var(--muted))" name="Входящие" radius={[2, 2, 0, 0]} />
               <Bar dataKey="ai" fill="hsl(25 95% 53%)" name="AI" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
