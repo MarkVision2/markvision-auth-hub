@@ -108,30 +108,36 @@ export default function ChatsView() {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("leads").select("*").order("created_at", { ascending: false });
-    const leadsData = (data as Lead[]) ?? [];
-    setLeads(leadsData);
-    setLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      const leadsData = (data as Lead[]) ?? [];
+      setLeads(leadsData);
 
-    // Fetch last messages and unread counts for all leads
-    if (leadsData.length > 0) {
-      const leadIds = leadsData.map(l => l.id);
-      const { data: allMsgs } = await (supabase as any)
-        .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
-      
-      if (allMsgs) {
-        const lastMap: Record<string, CrmMessage> = {};
-        const unreadMap: Record<string, number> = {};
-        for (const msg of allMsgs) {
-          if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
-          if (!msg.read && msg.sender_type === "client") {
-            unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+      // Fetch last messages and unread counts for all leads
+      if (leadsData.length > 0) {
+        const leadIds = leadsData.map(l => l.id);
+        const { data: allMsgs } = await (supabase as any)
+          .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
+        
+        if (allMsgs) {
+          const lastMap: Record<string, CrmMessage> = {};
+          const unreadMap: Record<string, number> = {};
+          for (const msg of allMsgs) {
+            if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
+            if (!msg.read && msg.sender_type === "client") {
+              unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+            }
           }
+          setLastMessages(lastMap);
+          setUnreadCounts(unreadMap);
         }
-        setLastMessages(lastMap);
-        setUnreadCounts(unreadMap);
       }
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
