@@ -183,9 +183,14 @@ export default function ChatsView() {
 
   // Fetch notes for selected lead
   const fetchNotes = useCallback(async (leadId: string) => {
-    const { data } = await (supabase as any)
-      .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
-    setNotes((data as CrmNote[]) ?? []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+      if (error) throw error;
+      setNotes((data as CrmNote[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки заметок", description: err.message, variant: "destructive" });
+    }
   }, []);
 
   useEffect(() => {
