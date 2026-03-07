@@ -101,14 +101,18 @@
     /* Overlay */
     --overlay: 0 0% 0% / 0.8;
 
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 0 0% 85%;
+    --sidebar-background: 0 0% 4%;
+    --sidebar-foreground: 0 0% 55%;
     --sidebar-primary: 160 84% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 93%;
-    --sidebar-border: 0 0% 14%;
+    --sidebar-border: 0 0% 100% / 0.05;
     --sidebar-ring: 160 84% 39%;
+
+    /* Nav active */
+    --nav-active: 160 84% 39%;
+    --nav-active-bg: 160 84% 39% / 0.1;
   }
 }
 
