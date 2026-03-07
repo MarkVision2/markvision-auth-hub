@@ -160,7 +160,7 @@ export default function CompetitorSpy() {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      const result = await startCompetitorScrape(search.trim());
+      const result = await startCompetitorScrape(search.trim(), "KZ");
       toast({
         title: "Парсинг завершён",
         description: `Найдено ${result.count} объявлений`,
