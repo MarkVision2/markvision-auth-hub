@@ -43,7 +43,7 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
   };
 
   const handleGenerate = () => {
-    navigate("/content-factory");
+    navigate("/content");
   };
 
   const handleClientClick = () => {
