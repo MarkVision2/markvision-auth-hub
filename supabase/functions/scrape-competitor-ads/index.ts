@@ -11,7 +11,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { url, query } = await req.json();
+    const reqBody = await req.json();
+    const { url, query } = reqBody;
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     if (!FIRECRAWL_API_KEY) {
@@ -25,12 +26,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Build search URL for Meta Ad Library
+    // Accept optional country filter, default to KZ
+    const country = reqBody.country || "KZ";
+
     let scrapeUrl = url;
     if (!scrapeUrl && query) {
-      // If user provided a query (e.g. @username), search Meta Ad Library
       const cleanQuery = query.replace("@", "").trim();
-      scrapeUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(cleanQuery)}&search_type=keyword_unordered`;
+      scrapeUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=${country}&q=${encodeURIComponent(cleanQuery)}&search_type=keyword_unordered&media_type=all`;
     }
 
     if (!scrapeUrl) {
@@ -89,11 +91,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an ad data extractor. Given scraped content from Meta Ad Library, extract individual ads into structured data. Return a JSON array of ad objects. Each ad should have: advertiser_name, ad_copy, platform (Instagram/Facebook), media_type (4:5 or 9:16), is_active (boolean). If no ads are found, return an empty array. Only return valid JSON, nothing else.`,
+            content: `You are an ad data extractor for the Kazakhstan market. Given scraped content from Meta Ad Library, extract ONLY ads that are written in Russian language and targeted at Kazakhstan. Ignore ads in other languages (English, Kazakh-only, etc). Extract individual ads into structured data. Each ad should have: advertiser_name, ad_copy (the full ad text in Russian), platform (Instagram/Facebook), media_type (4:5 or 9:16), is_active (boolean). If no Russian-language ads are found, return an empty array.`,
           },
           {
             role: "user",
-            content: `Extract ads from this scraped Meta Ad Library content:\n\n${markdown.slice(0, 8000)}`,
+            content: `Extract Russian-language ads targeted at Kazakhstan from this scraped Meta Ad Library content:\n\n${markdown.slice(0, 8000)}`,
           },
         ],
         tools: [

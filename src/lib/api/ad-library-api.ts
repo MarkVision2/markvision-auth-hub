@@ -8,11 +8,11 @@ export interface RebuildResult {
   suggested_format: string;
 }
 
-export async function startCompetitorScrape(urlOrQuery: string) {
+export async function startCompetitorScrape(urlOrQuery: string, country = "KZ") {
   const isUrl = urlOrQuery.startsWith("http");
 
   const { data, error } = await supabase.functions.invoke("scrape-competitor-ads", {
-    body: isUrl ? { url: urlOrQuery } : { query: urlOrQuery },
+    body: isUrl ? { url: urlOrQuery } : { query: urlOrQuery, country },
   });
 
   if (error) throw new Error(error.message || "Scrape failed");
