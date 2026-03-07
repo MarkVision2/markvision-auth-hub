@@ -1,28 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
-  Image, Download, Loader2, CheckCircle2, RotateCcw,
-  Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
-  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus, Video, Film,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Video, Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useNotifications } from "@/hooks/useNotifications";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router-dom";
-import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
-import AutopostSheet from "@/components/sheets/AutopostSheet";
-import { PhoneMockup } from "@/components/content/PhoneMockup";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
-type ContentMode = "photo" | "video";
 
 interface ContentTask {
   id: string;
@@ -30,810 +27,586 @@ interface ContentTask {
   progress_text: string | null;
   result_urls: string[] | null;
   content_type: string;
-  format: string | null;
-  visual_style: string | null;
-  main_text: string | null;
-  source_type: string | null;
-  aspect_ratio: string | null;
-  created_at: string | null;
 }
 
-const PHOTO_FORMAT_CARDS = [
-  { value: "single", label: "1 Картинка (Баннер)", sub: "Одно изображение", icon: "🖼" },
-  { value: "carousel-7", label: "Карусель 7 слайдов", sub: "Продающая серия", icon: "📑" },
-  { value: "carousel-10", label: "Карусель 10 слайдов", sub: "Максимум контента", icon: "📚" },
-] as const;
-
-const VIDEO_FORMAT_CARDS = [
-  { value: "reels", label: "Reels", sub: "Вертикальное видео 9:16", icon: "📱" },
-  { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
-] as const;
-
-const PHOTO_ASPECT_CARDS = [
-  { value: "1:1", label: "1:1", sub: "Квадрат" },
-  { value: "4:5", label: "4:5", sub: "Лента" },
-  { value: "9:16", label: "9:16", sub: "Stories / Reels" },
-] as const;
-
-const photoPipelineSteps = [
-  { key: "analyze", label: "Обработка запроса", icon: "🔍" },
-  { key: "generate", label: "Создание изображения", icon: "🎨" },
-  { key: "text", label: "Добавление текста", icon: "✍️" },
-  { key: "prepare", label: "Подготовка к загрузке", icon: "📦" },
-  { key: "done", label: "Отправлено в группу", icon: "✅" },
-];
-
-const videoPipelineSteps = [
-  { key: "analyze", label: "Обработка запроса", icon: "🔍" },
-  { key: "generate", label: "Генерация видео", icon: "🎬" },
-  { key: "effects", label: "Наложение эффектов и текста", icon: "✨" },
-  { key: "render", label: "Рендеринг", icon: "⚙️" },
-  { key: "done", label: "Видео готово", icon: "✅" },
-];
-
-const MOCK_AI_DESIGN = `Минималистичный дизайн на тёмном фоне (#0a0a0a). Градиентные неоновые акценты (emerald → cyan). Шрифт: Montserrat Bold для заголовков, Inter для основного текста. Геометрические линии и абстрактные формы на фоне. Фото элайнеров в центральной композиции с мягким свечением. Стиль: премиум-клиника, технологичность, доверие. Палитра: тёмный + изумрудный + белый текст.`;
-
-const MOCK_AI_TEXT = `Слайд 1: 🦷 ИДЕАЛЬНАЯ УЛЫБКА БЕЗ БРЕКЕТОВ
-Слайд 2: Элайнеры AIVA — невидимое выравнивание зубов за 6-12 месяцев
-Слайд 3: ✅ Незаметны на зубах ✅ Снимаются во время еды ✅ Без боли и дискомфорта
-Слайд 4: Технология 3D-моделирования — вы увидите результат ДО начала лечения
-Слайд 5: 🔬 Каждая капа изготавливается индивидуально по вашему слепку
-Слайд 6: АКЦИЯ -15% на полный курс лечения до конца месяца!
-Слайд 7: 📞 Запишитесь на бесплатную консультацию — ссылка в шапке профиля`;
-
-const formatLabel = (val: string | null) => {
-  const map: Record<string, string> = {
-    single: "Баннер", "carousel-7": "Карусель 7", "carousel-10": "Карусель 10",
-    "fb-target": "ADS Баннер", "insta-carousel": "Карусель", stories: "Stories",
-    "reels-cover": "Обложка Reels", "ai-photo": "AI Фото",
-    reels: "Reels", slideshow: "Слайдшоу",
-  };
-  return map[val || ""] || val || "—";
-};
-
 export default function ContentFactory() {
-  const location = useLocation();
-  const prefill = (location.state as any)?.prefill || "";
-  const { pushNotification } = useNotifications();
+  const [mainType, setMainType] = useState<"video" | "photo">("video");
+  const [videoMode, setVideoMode] = useState<"link" | "description">("link");
+  const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
+  const [photoFormat, setPhotoFormat] = useState("banner");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [designTab, setDesignTab] = useState<"ready" | "my">("ready");
+  const [designStyle, setDesignStyle] = useState("modern");
+  const [designTemplate, setDesignTemplate] = useState("tmpl1");
 
-  // Form state
-  const [contentMode, setContentMode] = useState<ContentMode>("photo");
-  const [format, setFormat] = useState("single");
-  const [aspectRatio, setAspectRatio] = useState("4:5");
-  const [designPrompt, setDesignPrompt] = useState("");
-  const [exactText, setExactText] = useState(prefill);
+  // Form field values
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [visualStyle, setVisualStyle] = useState("");
+  const [speakerText, setSpeakerText] = useState("");
+  const [mainText, setMainText] = useState("");
+
+  // File uploads
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
-  const [referenceUrl, setReferenceUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // AI Magic modal
-  const [magicOpen, setMagicOpen] = useState(false);
-  const [magicInput, setMagicInput] = useState("");
-  const [magicLoading, setMagicLoading] = useState(false);
-
-  // Task state
+  // Generation state
   const [submitting, setSubmitting] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [task, setTask] = useState<ContentTask | null>(null);
 
-  // History
-  const [history, setHistory] = useState<ContentTask[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
-  const [viewingTask, setViewingTask] = useState<ContentTask | null>(null);
-
-  // Edit feedback
-  const [editFeedback, setEditFeedback] = useState("");
-  const [showFeedbackInput, setShowFeedbackInput] = useState(false);
-
-  // Campaign builder & autopost
-  const [campaignSheetOpen, setCampaignSheetOpen] = useState(false);
-  const [autopostOpen, setAutopostOpen] = useState(false);
-  const [autopostUrls, setAutopostUrls] = useState<string[]>([]);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const refInputRef = useRef<HTMLInputElement>(null);
-
-  // Load history
-  useEffect(() => {
-    const loadHistory = async () => {
-      setLoadingHistory(true);
-      const { data } = await (supabase as any)
-        .from("content_tasks")
-        .select("id, status, progress_text, result_urls, content_type, format, visual_style, main_text, source_type, aspect_ratio, created_at")
-        .order("created_at", { ascending: false })
-        .limit(6);
-      if (data) {
-        setHistory(data);
-        const { data: allIds } = await (supabase as any)
-          .from("content_tasks").select("id").order("created_at", { ascending: false });
-        if (allIds && allIds.length > 6) {
-          const idsToDelete = allIds.slice(6).map((r: any) => r.id);
-          await (supabase as any).from("content_tasks").delete().in("id", idsToDelete);
-        }
-      }
-      setLoadingHistory(false);
-    };
-    loadHistory();
-  }, [taskId]);
 
   // Realtime subscription
   useEffect(() => {
     if (!taskId) return;
+
     const channel = supabase
       .channel(`content_task_${taskId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "content_tasks", filter: `id=eq.${taskId}` }, (payload) => {
-        const row = payload.new as any;
-        const updated: ContentTask = {
-          id: row.id, status: row.status, progress_text: row.progress_text,
-          result_urls: row.result_urls, content_type: row.content_type,
-          format: row.format, visual_style: row.visual_style, main_text: row.main_text,
-          source_type: row.source_type, aspect_ratio: row.aspect_ratio, created_at: row.created_at,
-        };
-        setTask(updated);
-        setHistory((prev) => prev.map((h) => (h.id === row.id ? updated : h)));
-      })
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "content_tasks",
+          filter: `id=eq.${taskId}`,
+        },
+        (payload) => {
+          const row = payload.new as any;
+          setTask({
+            id: row.id,
+            status: row.status,
+            progress_text: row.progress_text,
+            result_urls: row.result_urls,
+            content_type: row.content_type,
+          });
+        }
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [taskId]);
 
   const uploadFile = useCallback(async (file: File): Promise<string | null> => {
     const ext = file.name.split(".").pop();
     const path = `uploads/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("content_assets").upload(path, file, { cacheControl: "3600", upsert: false });
-    if (error) { toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" }); return null; }
+    const { error } = await supabase.storage
+      .from("content_assets")
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+    if (error) {
+      toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" });
+      return null;
+    }
     const { data } = supabase.storage.from("content_assets").getPublicUrl(path);
     return data.publicUrl;
   }, []);
 
-  const slidesCount = format === "carousel-7" ? 7 : format === "carousel-10" ? 10 : 1;
-
-  // ── AI MAGIC ──
-  const handleMagicGenerate = async () => {
-    if (!magicInput.trim()) { toast({ title: "Введите тему поста", variant: "destructive" }); return; }
-    setMagicLoading(true);
-    // Simulate AI generation (2s) — in production this would call OpenAI
-    await new Promise(r => setTimeout(r, 2000));
-    setDesignPrompt(MOCK_AI_DESIGN);
-    setExactText(MOCK_AI_TEXT);
-    setMagicLoading(false);
-    setMagicOpen(false);
-    setMagicInput("");
-    toast({ title: "✨ ТЗ сгенерировано!", description: "Проверьте и отредактируйте поля перед запуском" });
-  };
-
-  // ── SUBMIT ──
-  const handleGenerate = async (overrides?: { feedback?: string }) => {
-    if (!designPrompt.trim() && !exactText.trim() && !referenceUrl.trim() && !referenceFile) {
-      toast({ title: "Заполните ТЗ, текст или загрузите референс/ссылку", variant: "destructive" });
-      return;
-    }
+  const handleGenerate = async () => {
     setSubmitting(true);
-    setViewingTask(null);
+
     try {
+      // Upload logo if present
       let customLogoUrl: string | null = null;
-      let referenceImageUrl: string | null = null;
-
-      setUploading(true);
       if (logoFile) {
+        setUploading(true);
         customLogoUrl = await uploadFile(logoFile);
-        if (!customLogoUrl) { setSubmitting(false); setUploading(false); return; }
+        setUploading(false);
+        if (!customLogoUrl) {
+          setSubmitting(false);
+          return;
+        }
       }
-      if (referenceFile) {
-        referenceImageUrl = await uploadFile(referenceFile);
-        if (!referenceImageUrl) { setSubmitting(false); setUploading(false); return; }
-      }
-      setUploading(false);
 
-      const sourceUrl = referenceUrl.trim() || null;
-
-      const dbPayload: Record<string, any> = {
-        content_type: contentMode,
-        source_type: sourceUrl ? "link" : referenceImageUrl ? "reference" : "description",
-        source_url: sourceUrl,
-        main_text: exactText || null,
-        visual_style: designPrompt || null,
-        format,
-        aspect_ratio: aspectRatio,
+      // Build payload
+      const isVideo = mainType === "video";
+      const mode = isVideo ? videoMode : photoMode;
+      const payload: Record<string, any> = {
+        content_type: mainType,
+        source_type: mode,
+        source_url: mode === "link" ? sourceUrl : null,
+        visual_style: isVideo && mode === "description" ? visualStyle : null,
+        main_text: isVideo && mode === "description" ? speakerText : (!isVideo ? mainText : null),
+        format: isVideo ? null : photoFormat,
+        aspect_ratio: isVideo ? null : aspectRatio,
+        design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
         custom_logo_url: customLogoUrl,
       };
 
       const { data, error } = await (supabase as any)
-        .from("content_tasks").insert(dbPayload)
-        .select("id, status, progress_text, result_urls, content_type, format, visual_style, main_text, source_type, aspect_ratio, created_at")
+        .from("content_tasks")
+        .insert(payload)
+        .select("id, status, progress_text, result_urls, content_type")
         .single();
+
       if (error) throw error;
 
       setTask(data as ContentTask);
       setTaskId(data.id);
 
-      const n8nPayload = {
-        task_id: data.id,
-        content_mode: contentMode,
-        type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"),
-        slides_count: slidesCount,
-        aspect_ratio: aspectRatio,
-        design_prompt: designPrompt,
-        exact_text_slides: exactText,
-        custom_logo_url: customLogoUrl,
-        reference_image_url: referenceImageUrl,
-        source_url: sourceUrl,
-        ...(overrides?.feedback ? { edit_feedback: overrides.feedback } : {}),
+      // Map frontend format to n8n format
+      const formatMap: Record<string, string> = {
+        banner: "fb-target",
+        carousel7: "insta-carousel",
+        carousel10: "insta-carousel",
       };
 
-      console.log("📦 Webhook Payload:", JSON.stringify(n8nPayload, null, 2));
+      // Trigger n8n Content Factory workflow
+      const n8nPayload = {
+        task_id: data.id,
+        content_type: mainType,
+        source_type: payload.source_type,
+        source_url: payload.source_url,
+        format: formatMap[photoFormat] || "fb-target",
+        aspect_ratio: aspectRatio,
+        main_text: payload.main_text || "",
+        visual_style: payload.visual_style || payload.design_template || "",
+        slide_count: photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1,
+        custom_logo_url: payload.custom_logo_url,
+      };
 
-      const webhookUrl = import.meta.env.VITE_N8N_CONTENT_WEBHOOK_URL || "https://n8n.zapoinov.com/webhook/content-factory-v2";
       try {
-        const resp = await fetch(webhookUrl, {
+        await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(n8nPayload),
         });
-        if (resp.ok) {
-          toast({ title: "✅ Задание отправлено в производство" });
-          pushNotification("info", "Контент отправлен в производство", `Формат: ${format}, ${aspectRatio}`, "Контент-Завод");
-        } else {
-          toast({ title: "⚠️ Ошибка сервера", description: `Статус: ${resp.status}`, variant: "destructive" });
-          pushNotification("error", "Ошибка отправки в n8n", `HTTP ${resp.status}`, "Контент-Завод");
-        }
-      } catch {
-        toast({ title: "⚠️ Не удалось отправить на n8n", description: "Проверьте подключение", variant: "destructive" });
-        pushNotification("error", "Сбой подключения к n8n", "Контент-Завод не может связаться с сервером производства", "Контент-Завод");
+      } catch (webhookErr) {
+        console.error("n8n webhook error:", webhookErr);
+        // Don't fail — task is already created, n8n can be retriggered
       }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
-      pushNotification("error", "Ошибка создания контента", err.message, "Контент-Завод");
     } finally {
       setSubmitting(false);
-      setShowFeedbackInput(false);
-      setEditFeedback("");
     }
   };
 
   const handleReset = () => {
-    setTaskId(null); setTask(null); setViewingTask(null);
-    setDesignPrompt(""); setExactText(""); setLogoFile(null);
-    setReferenceFile(null); setReferencePreview(null); setReferenceUrl("");
-    setShowFeedbackInput(false); setEditFeedback("");
-    setContentMode("photo"); setFormat("single"); setAspectRatio("4:5");
+    setTaskId(null);
+    setTask(null);
+    setSourceUrl("");
+    setVisualStyle("");
+    setSpeakerText("");
+    setMainText("");
+    setLogoFile(null);
   };
 
-  const handleDownloadAll = async (urls: string[]) => {
-    for (const url of urls) {
-      const a = document.createElement("a"); a.href = url; a.download = ""; a.target = "_blank"; a.click();
+  const handleDownloadAll = async () => {
+    if (!task?.result_urls) return;
+    for (const url of task.result_urls) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "";
+      a.target = "_blank";
+      a.click();
     }
   };
 
-  const handleDeleteTask = async (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    await (supabase as any).from("content_tasks").delete().eq("id", id);
-    setHistory(prev => prev.filter(h => h.id !== id));
-    if (viewingTask?.id === id) setViewingTask(null);
-    toast({ title: "🗑 Контент удалён" });
-  };
+  const progressPercent =
+    !task ? 0
+    : task.status === "pending" ? 10
+    : task.status === "processing" ? 60
+    : task.status === "completed" ? 100
+    : 0;
 
-  const getActiveStep = (t: ContentTask): number => {
-    const text = (t.progress_text || "").toLowerCase();
-    if (t.status === "completed") return 4;
-    if (text.includes("отправ") || text.includes("загруз") || text.includes("готов")) return 3;
-    if (text.includes("текст") || text.includes("шрифт") || text.includes("overlay")) return 2;
-    if (text.includes("генер") || text.includes("render") || text.includes("изображ")) return 1;
-    if (t.status === "processing") return 1;
-    return 0;
-  };
+  // ---- RENDER ----
 
-  const displayTask = viewingTask || task;
-
-  // ── RESULT VIEW ──
-  const renderResultView = (t: ContentTask) => (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-      className="rounded-2xl border border-border bg-card p-6 space-y-6"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
-            <p className="text-xs text-muted-foreground">
-              {formatLabel(t.format)} • {t.aspect_ratio} • {t.created_at ? new Date(t.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
-            </p>
-          </div>
-        </div>
-        {viewingTask && (
-          <Button variant="ghost" size="sm" onClick={() => setViewingTask(null)} className="text-muted-foreground">
-            <ChevronLeft className="h-4 w-4 mr-1" /> Назад
-          </Button>
-        )}
-      </div>
-
-      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-        {(t.result_urls || []).map((url, i) => (
-          <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} className="flex-shrink-0 snap-center">
-            <img src={url} alt={`Слайд ${i + 1}`} className="rounded-xl border border-border max-h-[400px] object-contain" />
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Button onClick={() => handleDownloadAll(t.result_urls || [])} variant="outline" className="gap-2 h-11 border-border">
-          <Download className="h-4 w-4" /> Скачать
-        </Button>
-        <Button onClick={() => setCampaignSheetOpen(true)} className="gap-2 h-11 bg-primary hover:bg-primary/90 text-primary-foreground">
-          <Megaphone className="h-4 w-4" /> В рекламу
-        </Button>
-        <Button onClick={() => { setAutopostUrls(t.result_urls || []); setAutopostOpen(true); }} variant="outline" className="gap-2 h-11 border-border">
-          <CalendarClock className="h-4 w-4" /> Автопостинг
-        </Button>
-        <Button onClick={() => handleGenerate()} variant="outline" className="gap-2 h-11 border-border">
-          <RefreshCw className="h-4 w-4" /> Заново
-        </Button>
-      </div>
-
-      <div className="space-y-3">
-        {!showFeedbackInput ? (
-          <Button variant="ghost" className="w-full gap-2 text-muted-foreground hover:text-foreground border border-dashed border-border h-11" onClick={() => setShowFeedbackInput(true)}>
-            <MessageSquareText className="h-4 w-4" /> Указать правки и перегенерировать
-          </Button>
-        ) : (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3">
-            <Textarea value={editFeedback} onChange={(e) => setEditFeedback(e.target.value)}
-              placeholder="Что нужно изменить? Например: сделать текст крупнее, поменять цвет фона..."
-              className="min-h-[80px] bg-muted/30 border-border resize-none" />
-            <div className="flex gap-2">
-              <Button onClick={() => { if (!editFeedback.trim()) { toast({ title: "Укажите правки", variant: "destructive" }); return; } handleGenerate({ feedback: editFeedback }); }}
-                disabled={submitting} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Перегенерировать
-              </Button>
-              <Button variant="ghost" onClick={() => { setShowFeedbackInput(false); setEditFeedback(""); }}>Отмена</Button>
-            </div>
-          </motion.div>
-        )}
-      </div>
-    </motion.div>
-  );
-
-  // ── PROGRESS VIEW ──
-  const renderProgressView = (t: ContentTask) => {
-    const steps = t.content_type === "video" ? videoPipelineSteps : photoPipelineSteps;
-    const step = getActiveStep(t);
-    const pct = t.status === "completed" ? 100 : step >= 0 ? Math.min(95, ((step + 1) / steps.length) * 100) : 0;
+  // RESULT VIEW
+  if (task && task.status === "completed" && task.result_urls && task.result_urls.length > 0) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-8 space-y-8">
-        <div className="space-y-2">
-          <Progress value={pct} className="h-2 bg-muted/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-1000" />
-          <div className="flex justify-between">
-            <span className="text-xs text-muted-foreground">Производство</span>
-            <span className="text-xs text-muted-foreground tabular-nums font-mono">{Math.round(pct)}%</span>
-          </div>
-        </div>
-        <div className="space-y-1">
-          {steps.map((s, i) => {
-            const isDone = i < step || t.status === "completed";
-            const isActive = i === step && t.status !== "completed";
-            return (
-              <motion.div key={s.key} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${isActive ? "bg-primary/10 border border-primary/20" : isDone ? "bg-muted/30" : "opacity-40"}`}>
-                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base">
-                  {isDone ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                      <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
-                    </motion.div>
-                  ) : isActive ? (
-                    <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center">
-                      <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-                    </motion.div>
-                  ) : <span className="text-sm">{s.icon}</span>}
-                </div>
-                <span className={`text-sm font-medium ${isDone ? "text-primary" : isActive ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</span>
-                {isActive && <motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} className="ml-auto text-[10px] font-medium text-primary tracking-wider uppercase">в процессе</motion.span>}
-                {isDone && <span className="ml-auto text-[10px] font-medium text-primary/60">готово</span>}
-              </motion.div>
-            );
-          })}
-        </div>
-        <AnimatePresence mode="wait">
-          <motion.p key={t.progress_text} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-center text-xs text-muted-foreground">
-            {t.progress_text || "AI генерирует контент..."}
-          </motion.p>
-        </AnimatePresence>
-      </motion.div>
-    );
-  };
+      <DashboardLayout breadcrumb="Контент-Завод">
+        <div className="mx-auto max-w-3xl py-4">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
+          <p className="text-sm text-muted-foreground mb-8">Результат генерации</p>
 
-  // ── HISTORY ──
-  const renderHistory = () => {
-    const completedTasks = history.filter((h) => h.status === "completed" && h.result_urls && h.result_urls.length > 0).slice(0, 6);
-    if (completedTasks.length === 0) return null;
-    return (
-      <div className="space-y-4 mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">📋 Созданный контент</h2>
-          <span className="text-xs text-muted-foreground">Последние 6</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {completedTasks.map((h) => (
-            <motion.div key={h.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className="group relative rounded-xl border border-border bg-card overflow-hidden cursor-pointer hover:border-primary/40 transition-colors"
-              onClick={() => setViewingTask(h)}>
-              <div className="aspect-square overflow-hidden bg-muted/20">
-                <img src={h.result_urls![0]} alt="Контент" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              </div>
-              <div className="p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="text-[10px]">{formatLabel(h.format)}</Badge>
-                  {h.result_urls && h.result_urls.length > 1 && <span className="text-[10px] text-muted-foreground">{h.result_urls.length} шт</span>}
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-1">{h.main_text || "Без описания"}</p>
-                <p className="text-[10px] text-muted-foreground/60">
-                  {h.created_at ? new Date(h.created_at).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}
-                </p>
-              </div>
-              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button variant="secondary" size="sm" className="gap-1.5"><Eye className="h-3.5 w-3.5" /> Открыть</Button>
-                <Button variant="destructive" size="sm" className="gap-1.5" onClick={(e) => handleDeleteTask(h.id, e)}><Trash2 className="h-3.5 w-3.5" /></Button>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // ── THE PRECISION FORM ──
-  const renderForm = () => (
-    <div className="flex gap-6 items-start">
-      {/* Left: Form */}
-      <div className="flex-1 min-w-0 space-y-6">
-      {/* ✨ MAGIC AI BUTTON */}
-      <motion.button
-        onClick={() => setMagicOpen(true)}
-        className="w-full relative overflow-hidden rounded-2xl border border-primary/30 bg-primary/[0.04] p-5 flex items-center gap-4 group hover:border-primary/60 transition-all duration-300"
-        whileHover={{ scale: 1.005 }}
-        whileTap={{ scale: 0.995 }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 relative">
-          <Sparkles className="h-6 w-6 text-primary" />
-          <div className="absolute inset-0 rounded-xl bg-primary/20 animate-pulse" />
-        </div>
-        <div className="text-left relative">
-          <p className="text-sm font-semibold text-foreground">✨ Авто-генерация (Магия AI)</p>
-          <p className="text-xs text-muted-foreground mt-0.5">AI заполнит ТЗ для дизайна и текст для слайдов автоматически</p>
-        </div>
-      </motion.button>
-
-      {/* FORM PANEL */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              {contentMode === "video" ? <Film className="h-4 w-4 text-primary" /> : <Image className="h-4 w-4 text-primary" />}
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground">Точное ТЗ для производства {contentMode === "video" ? "видео" : "фото"}</h2>
-              <p className="text-[11px] text-muted-foreground">Заполните поля — AI выполнит буквально</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 space-y-8">
-          {/* 0. CONTENT MODE */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">●</div>
-              <Label className="text-sm font-semibold text-foreground">Тип контента</Label>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { setContentMode("photo"); setFormat("single"); setAspectRatio("4:5"); }}
-                className={`relative rounded-xl border p-4 flex items-center gap-3 transition-all duration-200 ${
-                  contentMode === "photo"
-                    ? "border-primary bg-primary/[0.06] shadow-[0_0_20px_-8px] shadow-primary/30"
-                    : "border-border bg-muted/10 hover:bg-muted/20"
-                }`}>
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Image className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-foreground">📸 Фото</p>
-                  <p className="text-[10px] text-muted-foreground">Баннеры, карусели</p>
-                </div>
-                {contentMode === "photo" && (
-                  <motion.div layoutId="mode-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                  </motion.div>
-                )}
-              </button>
-              <button onClick={() => { setContentMode("video"); setFormat("reels"); setAspectRatio("9:16"); }}
-                className={`relative rounded-xl border p-4 flex items-center gap-3 transition-all duration-200 ${
-                  contentMode === "video"
-                    ? "border-primary bg-primary/[0.06] shadow-[0_0_20px_-8px] shadow-primary/30"
-                    : "border-border bg-muted/10 hover:bg-muted/20"
-                }`}>
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Video className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-foreground">🎬 Видео</p>
-                  <p className="text-[10px] text-muted-foreground">Reels, Shorts, Слайдшоу</p>
-                </div>
-                {contentMode === "video" && (
-                  <motion.div layoutId="mode-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                  </motion.div>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* 1. FORMAT + ASPECT */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
-              <Label className="text-sm font-semibold text-foreground">Формат</Label>
-            </div>
-            <div className={`grid gap-3 ${contentMode === "video" ? "grid-cols-2" : "grid-cols-3"}`}>
-              {(contentMode === "video" ? VIDEO_FORMAT_CARDS : PHOTO_FORMAT_CARDS).map(f => (
-                <button key={f.value} onClick={() => setFormat(f.value)}
-                  className={`relative rounded-xl border p-4 text-left transition-all duration-200 ${
-                    format === f.value
-                      ? "border-primary bg-primary/[0.06] shadow-[0_0_20px_-8px] shadow-primary/30"
-                      : "border-border bg-muted/10 hover:bg-muted/20 hover:border-border"
-                  }`}>
-                  <span className="text-2xl mb-2 block">{f.icon}</span>
-                  <p className="text-xs font-semibold text-foreground">{f.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{f.sub}</p>
-                  {format === f.value && (
-                    <motion.div layoutId="format-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                      <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
-                    </motion.div>
-                  )}
-                </button>
-              ))}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="rounded-xl border border-border bg-card p-6 space-y-6"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
             </div>
 
-            {/* Aspect ratio — only for photo mode, video is always 9:16 */}
-            {contentMode === "photo" ? (
-              <div className="flex gap-2">
-                {PHOTO_ASPECT_CARDS.map(a => (
-                  <button key={a.value} onClick={() => setAspectRatio(a.value)}
-                    className={`flex-1 rounded-xl border px-3 py-3 text-center transition-all duration-200 ${
-                      aspectRatio === a.value
-                        ? "border-primary bg-primary/[0.06]"
-                        : "border-border bg-muted/10 hover:bg-muted/20"
-                    }`}>
-                    <p className="text-sm font-bold text-foreground tabular-nums font-mono">{a.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{a.sub}</p>
-                  </button>
+            {task.content_type === "video" ? (
+              <div className="space-y-4">
+                {task.result_urls.map((url, i) => (
+                  <div key={i} className="rounded-lg overflow-hidden border border-border bg-black">
+                    <video
+                      src={url}
+                      controls
+                      className="w-full max-h-[500px]"
+                      poster=""
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20 border border-border">
-                <Film className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Формат видео: <strong className="text-foreground font-mono">9:16</strong> (вертикальный)</span>
+              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+                {task.result_urls.map((url, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="flex-shrink-0 snap-center"
+                  >
+                    <img
+                      src={url}
+                      alt={`Слайд ${i + 1}`}
+                      className="rounded-lg border border-border max-h-[400px] object-contain"
+                    />
+                  </motion.div>
+                ))}
               </div>
             )}
-          </div>
 
-          {/* 2. DESIGN PROMPT */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">2</div>
-              <Label className="text-sm font-semibold text-foreground">Визуальный стиль и ТЗ для дизайна (Промпт)</Label>
-            </div>
-            <div className="relative">
-              <Textarea
-                value={designPrompt}
-                onChange={(e) => setDesignPrompt(e.target.value)}
-                placeholder="Например: Минимализм, темный фон, неоновые линии, шрифт Montserrat. Фото продукта в центре, градиент emerald→cyan. Стиль: премиум, технологичный..."
-                className="min-h-[120px] bg-muted/10 border-border resize-none focus:border-primary/50 focus:shadow-[0_0_15px_-5px] focus:shadow-primary/20 transition-shadow"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground/70">Чем детальнее опишете стиль — тем точнее будет результат. AI НЕ будет додумывать.</p>
-          </div>
-
-          {/* 3. EXACT TEXT */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">3</div>
-              <Label className="text-sm font-semibold text-foreground">Точный текст для слайдов (Режим диктатуры)</Label>
-            </div>
-            <Textarea
-              value={exactText}
-              onChange={(e) => setExactText(e.target.value)}
-              placeholder={`Слайд 1: Заголовок...\nСлайд 2: Текст...\nСлайд 3: ...\n\n(Нейросеть наложит этот текст слово в слово без изменений)`}
-              className="min-h-[160px] bg-muted/10 border-border resize-none font-mono text-[13px] leading-relaxed focus:border-primary/50 focus:shadow-[0_0_15px_-5px] focus:shadow-primary/20 transition-shadow"
-            />
-            <p className="text-[10px] text-muted-foreground/70">
-              Каждая строка «Слайд N:» = отдельный слайд. Текст будет наложен БЕЗ изменений.
-            </p>
-          </div>
-
-          {/* 4. REFERENCE */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">4</div>
-              <Label className="text-sm font-semibold text-foreground">Референс (необязательно)</Label>
-            </div>
-
-            {/* Reference URL */}
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                <Link className="h-4 w-4" />
-              </div>
-              <Input
-                value={referenceUrl}
-                onChange={(e) => setReferenceUrl(e.target.value)}
-                placeholder="Ссылка на пример дизайна, пост или рекламу..."
-                className="pl-10 h-11 bg-muted/10 border-border"
-              />
-            </div>
-            <p className="text-[10px] text-muted-foreground/70">AI проанализирует ссылку и создаст контент по образцу (n8n: source_url)</p>
-
-            {/* Reference Image Upload */}
-            <div className="flex items-center gap-3">
-              <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) { setReferenceFile(f); setReferencePreview(URL.createObjectURL(f)); }
-              }} />
-              <Button variant="outline" size="sm" onClick={() => refInputRef.current?.click()} className="border-border text-muted-foreground hover:text-foreground h-10 px-4 gap-2">
-                <ImagePlus className="h-3.5 w-3.5" />
-                {referenceFile ? "Изменить референс" : "Загрузить референс-фото"}
+            <div className="flex gap-3 pt-2">
+              <Button
+                onClick={handleDownloadAll}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                <Download className="h-4 w-4" />
+                📥 Скачать всё
               </Button>
-              {referenceFile && (
-                <Button variant="ghost" size="sm" onClick={() => { setReferenceFile(null); setReferencePreview(null); }} className="text-muted-foreground h-10 gap-1">
-                  <X className="h-3.5 w-3.5" /> Убрать
-                </Button>
-              )}
+              <Button onClick={handleReset} variant="outline" className="gap-2 border-border">
+                <RotateCcw className="h-4 w-4" />
+                Создать ещё
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // PROGRESS VIEW
+  if (task && (task.status === "pending" || task.status === "processing")) {
+    return (
+      <DashboardLayout breadcrumb="Контент-Завод">
+        <div className="mx-auto max-w-3xl py-4">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
+          <p className="text-sm text-muted-foreground mb-8">Генерация контента</p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-border bg-card p-8 space-y-8"
+          >
+            {/* Glowing orb animation */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.15, 1],
+                    opacity: [0.6, 1, 0.6],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-24 h-24 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                >
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.8, 1, 0.8],
+                    }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-16 h-16 rounded-full bg-emerald-500/40 flex items-center justify-center"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.6)]" />
+                  </motion.div>
+                </motion.div>
+              </div>
             </div>
 
-            {/* Reference Preview */}
-            {referencePreview && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="relative rounded-xl border border-border overflow-hidden w-fit">
-                <img src={referencePreview} alt="Референс" className="max-h-40 rounded-xl object-contain" />
-                <div className="absolute top-2 left-2">
-                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm">📌 Референс</Badge>
-                </div>
-              </motion.div>
-            )}
-          </div>
+            {/* Progress bar */}
+            <div className="space-y-3">
+              <Progress
+                value={progressPercent}
+                className="h-2.5 bg-secondary/40 [&>div]:bg-emerald-500 [&>div]:transition-all [&>div]:duration-1000"
+              />
+              <div className="flex items-center justify-between">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={task.progress_text}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="text-sm font-medium text-foreground"
+                  >
+                    {task.progress_text || "Запуск завода..."}
+                  </motion.p>
+                </AnimatePresence>
+                <span className="text-xs text-muted-foreground tabular-nums">{progressPercent}%</span>
+              </div>
+            </div>
 
-          {/* LOGO UPLOAD */}
-          <div className="flex items-center gap-3">
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)} />
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="border-border text-muted-foreground hover:text-foreground h-10 px-4 gap-2">
-              <Upload className="h-3.5 w-3.5" />
-              {logoFile ? logoFile.name : "Загрузить логотип"}
-            </Button>
-            {logoFile && (
-              <Button variant="ghost" size="sm" onClick={() => setLogoFile(null)} className="text-muted-foreground h-10 gap-1"><X className="h-3.5 w-3.5" /> Убрать</Button>
+            {task.status === "processing" && (
+              <motion.p
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-center text-sm text-muted-foreground"
+              >
+                AI рендерит материалы...
+              </motion.p>
             )}
-          </div>
-
-          {/* SUBMIT */}
-          <motion.div whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.995 }}>
-            <Button onClick={() => handleGenerate()} disabled={submitting}
-              className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground gap-3 rounded-xl shadow-[0_0_30px_-8px] shadow-primary/40 hover:shadow-primary/60 transition-shadow">
-              {submitting ? (
-                <><Loader2 className="h-5 w-5 animate-spin" /> {uploading ? "Загрузка файлов..." : "Отправка..."}</>
-              ) : (
-                <><Rocket className="h-5 w-5" /> Запустить в производство</>
-              )}
-            </Button>
           </motion.div>
-
-          {/* Payload preview */}
-          <details className="text-[10px]">
-            <summary className="text-muted-foreground/50 cursor-pointer hover:text-muted-foreground">Превью payload (для отладки)</summary>
-            <pre className="mt-2 p-3 rounded-lg bg-muted/20 border border-border text-muted-foreground overflow-x-auto font-mono">
-              {JSON.stringify({ content_mode: contentMode, type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"), slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
-            </pre>
-          </details>
         </div>
-      </div>
-      </div>
+      </DashboardLayout>
+    );
+  }
 
-      {/* Right: Phone Mockup - hidden on small screens */}
-      <div className="hidden lg:block sticky top-24 shrink-0">
-        <PhoneMockup
-          contentMode={contentMode}
-          format={format}
-          aspectRatio={aspectRatio}
-          designPrompt={designPrompt}
-          exactText={exactText}
-          referencePreview={referencePreview}
-          logoFile={logoFile}
-        />
-      </div>
-    </div>
-  );
+  // ERROR VIEW
+  if (task && task.status === "error") {
+    return (
+      <DashboardLayout breadcrumb="Контент-Завод">
+        <div className="mx-auto max-w-3xl py-4">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
+          <p className="text-sm text-muted-foreground mb-8">Ошибка генерации</p>
+          <div className="rounded-xl border border-destructive/30 bg-card p-6 space-y-4">
+            <p className="text-sm text-destructive">{task.progress_text || "Произошла ошибка"}</p>
+            <Button onClick={handleReset} variant="outline" className="gap-2 border-border">
+              <RotateCcw className="h-4 w-4" />
+              Попробовать снова
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  // ── MAIN RENDER ──
+  // FORM VIEW
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
-      <div className="mx-auto max-w-4xl py-4">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shadow-lg shadow-primary/20">
-            <Image className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-            <p className="text-sm text-muted-foreground">AI-производство точного контента для рекламы и соцсетей</p>
-          </div>
-        </div>
+      <div className="mx-auto max-w-3xl py-4">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
+        <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
 
-        {/* Viewing completed task from history */}
-        {viewingTask && viewingTask.status === "completed" && viewingTask.result_urls && viewingTask.result_urls.length > 0 && (
-          <>{renderResultView(viewingTask)}{renderHistory()}</>
-        )}
+        <div className="rounded-xl border border-border bg-card p-6 space-y-8">
+          {/* Type toggle */}
+          <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
+            <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
+              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                <Video className="mr-2 h-4 w-4" />
+                Видео (Sora 2)
+              </TabsTrigger>
+              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
+                <Image className="mr-2 h-4 w-4" />
+                Фото / Карусель
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        {/* Active task completed */}
-        {!viewingTask && task && task.status === "completed" && task.result_urls && task.result_urls.length > 0 && (
-          <>{renderResultView(task)}{renderHistory()}</>
-        )}
+          {/* VIDEO MODE */}
+          {mainType === "video" && (
+            <div className="space-y-6">
+              <Tabs value={videoMode} onValueChange={(v) => setVideoMode(v as "link" | "description")}>
+                <TabsList className="h-9 bg-secondary/40">
+                  <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background">
+                    <Link className="mr-1.5 h-3.5 w-3.5" />По ссылке
+                  </TabsTrigger>
+                  <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background">
+                    <FileText className="mr-1.5 h-3.5 w-3.5" />По описанию
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
 
-        {/* Active task in progress */}
-        {!viewingTask && task && (task.status === "pending" || task.status === "processing") && (
-          <>{renderProgressView(task)}{renderHistory()}</>
-        )}
-
-        {/* Active task error */}
-        {!viewingTask && task && task.status === "error" && (
-          <>
-            <div className="rounded-2xl border border-destructive/30 bg-card p-6 space-y-4">
-              <p className="text-sm text-destructive">{task.progress_text || "Произошла ошибка"}</p>
-              <Button onClick={handleReset} variant="outline" className="gap-2 border-border"><RotateCcw className="h-4 w-4" /> Попробовать снова</Button>
-            </div>
-            {renderHistory()}
-          </>
-        )}
-
-        {/* No active task — show form */}
-        {!viewingTask && !task && (
-          <>{renderForm()}{renderHistory()}</>
-        )}
-      </div>
-
-      {/* AI MAGIC DIALOG */}
-      <Dialog open={magicOpen} onOpenChange={setMagicOpen}>
-        <DialogContent className="sm:max-w-md border-border bg-card">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-foreground">
-              <Sparkles className="h-5 w-5 text-primary" /> Магия AI
-            </DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Опишите тему поста — AI сгенерирует полное ТЗ для дизайна и тексты для слайдов
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-sm text-foreground">О чём делаем пост?</Label>
-              <Textarea
-                value={magicInput}
-                onChange={(e) => setMagicInput(e.target.value)}
-                placeholder='Например: "Пост про элайнеры для клиники AIVA, акция 15%"'
-                className="min-h-[80px] bg-muted/10 border-border resize-none"
-              />
-            </div>
-            <Button onClick={handleMagicGenerate} disabled={magicLoading} className="w-full h-12 gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-              {magicLoading ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> AI генерирует ТЗ...</>
+              {videoMode === "link" ? (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Ссылка на видео</Label>
+                  <Input
+                    type="url"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    placeholder="Вставьте ссылку на YouTube, TikTok или Reels"
+                    className="h-11 bg-secondary/30 border-border"
+                  />
+                  <p className="text-xs text-muted-foreground/70">AI проанализирует видео и создаст уникальный аналог.</p>
+                </div>
               ) : (
-                <><Sparkles className="h-4 w-4" /> Сгенерировать ТЗ</>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Визуальный стиль и детали</Label>
+                    <Textarea
+                      value={visualStyle}
+                      onChange={(e) => setVisualStyle(e.target.value)}
+                      placeholder="Что должно происходить на экране — стиль, сцена, движение камеры…"
+                      className="min-h-[100px] bg-secondary/30 border-border resize-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Текст для AI-Спикера</Label>
+                    <Textarea
+                      value={speakerText}
+                      onChange={(e) => setSpeakerText(e.target.value)}
+                      placeholder="Точный текст, который будет озвучен (слово в слово)"
+                      className="min-h-[100px] bg-secondary/30 border-border resize-none"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* PHOTO MODE */}
+          {mainType === "photo" && (
+            <div className="space-y-8">
+              <Tabs value={photoMode} onValueChange={(v) => setPhotoMode(v as "link" | "description")}>
+                <TabsList className="h-9 bg-secondary/40">
+                  <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background">
+                    <Link className="mr-1.5 h-3.5 w-3.5" />По ссылке
+                  </TabsTrigger>
+                  <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background">
+                    <FileText className="mr-1.5 h-3.5 w-3.5" />По описанию
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {photoMode === "link" ? (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Ссылка на референс</Label>
+                  <Input
+                    type="url"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    placeholder="Вставьте ссылку на пример дизайна, пост или рекламу"
+                    className="h-11 bg-secondary/30 border-border"
+                  />
+                  <p className="text-xs text-muted-foreground/70">AI проанализирует пример и создаст уникальный аналог в выбранном формате.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Описание визуала</Label>
+                  <Textarea
+                    value={visualStyle}
+                    onChange={(e) => setVisualStyle(e.target.value)}
+                    placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…"
+                    className="min-h-[100px] bg-secondary/30 border-border resize-none"
+                  />
+                </div>
+              )}
+
+              {/* Format */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground">Формат</Label>
+                <RadioGroup value={photoFormat} onValueChange={setPhotoFormat} className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: "banner", label: "ADS Баннер", sub: "1 картинка" },
+                    { value: "carousel7", label: "Карусель", sub: "7 слайдов" },
+                    { value: "carousel10", label: "Карусель", sub: "10 слайдов" },
+                  ].map((opt) => (
+                    <Label
+                      key={opt.value}
+                      htmlFor={opt.value}
+                      className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+                        photoFormat === opt.value
+                          ? "border-emerald-500/60 bg-emerald-500/[0.06]"
+                          : "border-border bg-secondary/20 hover:bg-secondary/40"
+                      }`}
+                    >
+                      <RadioGroupItem value={opt.value} id={opt.value} className="sr-only" />
+                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                      <span className="text-xs text-muted-foreground">{opt.sub}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Aspect ratio */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground">Соотношение сторон</Label>
+                <Tabs value={aspectRatio} onValueChange={setAspectRatio}>
+                  <TabsList className="h-9 bg-secondary/40">
+                    <TabsTrigger value="1:1" className="text-xs data-[state=active]:bg-background">1:1 Квадрат</TabsTrigger>
+                    <TabsTrigger value="4:5" className="text-xs data-[state=active]:bg-background">4:5 Лента</TabsTrigger>
+                    <TabsTrigger value="9:16" className="text-xs data-[state=active]:bg-background">9:16 Stories</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+
+              {/* Slide text */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
+                <Textarea
+                  value={mainText}
+                  onChange={(e) => setMainText(e.target.value)}
+                  placeholder="Каждая новая строка — новый слайд. Для баннера — одна строка."
+                  className="min-h-[120px] bg-secondary/30 border-border resize-none"
+                />
+              </div>
+
+              {/* Design */}
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground">Дизайн и стиль</Label>
+                <Tabs value={designTab} onValueChange={(v) => setDesignTab(v as "ready" | "my")}>
+                  <TabsList className="h-9 bg-secondary/40 mb-3">
+                    <TabsTrigger value="ready" className="text-xs data-[state=active]:bg-background">Готовые стили</TabsTrigger>
+                    <TabsTrigger value="my" className="text-xs data-[state=active]:bg-background">Мои шаблоны</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {designTab === "ready" ? (
+                  <Select value={designStyle} onValueChange={setDesignStyle}>
+                    <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="modern">Современный</SelectItem>
+                      <SelectItem value="tech">Технологичный</SelectItem>
+                      <SelectItem value="stylish">Стильный</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="space-y-3">
+                    <Select value={designTemplate} onValueChange={setDesignTemplate}>
+                      <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tmpl1">Шаблон «Минимализм»</SelectItem>
+                        <SelectItem value="tmpl2">Шаблон «Премиум»</SelectItem>
+                        <SelectItem value="tmpl3">Шаблон «Яркий»</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,.woff,.woff2,.ttf,.otf"
+                      className="hidden"
+                      onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-border text-muted-foreground hover:text-foreground"
+                    >
+                      <Upload className="mr-2 h-3.5 w-3.5" />
+                      {logoFile ? logoFile.name : "Загрузить Логотип / Шрифт"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Submit button */}
+          <div className="pt-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={submitting}
+              className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {uploading ? "Загрузка файлов..." : "Отправка..."}
+                </>
+              ) : (
+                "🚀 Запустить генерацию"
               )}
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <CampaignBuilderSheet open={campaignSheetOpen} onOpenChange={setCampaignSheetOpen} />
-      <AutopostSheet open={autopostOpen} onOpenChange={setAutopostOpen} mediaUrls={autopostUrls} />
+        </div>
+      </div>
     </DashboardLayout>
   );
 }
