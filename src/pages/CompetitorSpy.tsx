@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Eye, Radio, Loader2, RefreshCw } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
-import { startCompetitorScrape, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
+import { startCompetitorScrape, rebuildAdText, fetchAdPreviews, type RebuildResult } from "@/lib/api/ad-library-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,93 +16,18 @@ export interface CompetitorAd {
   ad_copy: string | null;
   platform: string | null;
   media_type: string | null;
+  media_url: string | null;
   is_active: boolean | null;
   active_since: string | null;
   is_monitored: boolean | null;
   source_url: string | null;
 }
 
-// Keep mock data as fallback for demo
-const MOCK_ADS: CompetitorAd[] = [
-  {
-    id: "mock-1",
-    advertiser_name: "AIVA Clinic",
-    advertiser_avatar: "AC",
-    ad_copy: "Ставим брекеты недорого! Звоните по телефону и запишитесь на бесплатную консультацию. Наши специалисты помогут вам выбрать идеальный вариант лечения для вашей улыбки.",
-    platform: "Instagram",
-    media_type: "4:5",
-    is_active: true,
-    active_since: "2026-03-12T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-  {
-    id: "mock-2",
-    advertiser_name: "BeautyLab Moscow",
-    advertiser_avatar: "BL",
-    ad_copy: "Лазерная эпиляция от 990 рублей. Акция до конца месяца! Приходите к нам в салон, адрес: ул. Тверская, 15. Работаем без выходных.",
-    platform: "Instagram",
-    media_type: "9:16",
-    is_active: true,
-    active_since: "2026-03-05T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-  {
-    id: "mock-3",
-    advertiser_name: "FitPro Academy",
-    advertiser_avatar: "FP",
-    ad_copy: "Фитнес тренировки онлайн. Программы для похудения и набора массы. Опытные тренеры. Первая тренировка бесплатно.",
-    platform: "Facebook",
-    media_type: "4:5",
-    is_active: true,
-    active_since: "2026-03-01T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-  {
-    id: "mock-4",
-    advertiser_name: "Digital School Pro",
-    advertiser_avatar: "DS",
-    ad_copy: "Курсы по маркетингу. Научим настраивать рекламу в Instagram и Facebook. Диплом по окончании. Записывайтесь!",
-    platform: "Instagram",
-    media_type: "9:16",
-    is_active: true,
-    active_since: "2026-02-28T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-  {
-    id: "mock-5",
-    advertiser_name: "AutoDetailing VIP",
-    advertiser_avatar: "AD",
-    ad_copy: "Детейлинг автомобилей. Полировка, керамика, химчистка салона. Качественно и быстро. Звоните!",
-    platform: "Instagram",
-    media_type: "4:5",
-    is_active: true,
-    active_since: "2026-03-10T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-  {
-    id: "mock-6",
-    advertiser_name: "SmartHome Solutions",
-    advertiser_avatar: "SH",
-    ad_copy: "Умный дом под ключ. Установка систем автоматизации. Работаем по всей Москве.",
-    platform: "Facebook",
-    media_type: "9:16",
-    is_active: true,
-    active_since: "2026-03-07T00:00:00Z",
-    is_monitored: false,
-    source_url: null,
-  },
-];
-
 export default function CompetitorSpy() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"results" | "monitoring">("results");
-  const [ads, setAds] = useState<CompetitorAd[]>(MOCK_ADS);
+  const [ads, setAds] = useState<CompetitorAd[]>([]);
   const [scraping, setScraping] = useState(false);
   const [selectedAd, setSelectedAd] = useState<CompetitorAd | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
@@ -117,18 +42,19 @@ export default function CompetitorSpy() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        setAds([...data.map((d: any) => ({
+        setAds(data.map((d: any) => ({
           id: d.id,
           advertiser_name: d.advertiser_name,
           advertiser_avatar: d.advertiser_avatar,
           ad_copy: d.ad_copy,
           platform: d.platform,
           media_type: d.media_type,
+          media_url: d.media_url ?? null,
           is_active: d.is_active,
           active_since: d.active_since,
           is_monitored: d.is_monitored,
           source_url: d.source_url,
-        })), ...MOCK_ADS]);
+        })));
       }
     };
     loadAds();
@@ -145,6 +71,7 @@ export default function CompetitorSpy() {
           ad_copy: d.ad_copy,
           platform: d.platform,
           media_type: d.media_type,
+          media_url: d.media_url ?? null,
           is_active: d.is_active,
           active_since: d.active_since,
           is_monitored: d.is_monitored,
@@ -160,14 +87,32 @@ export default function CompetitorSpy() {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      const result = await startCompetitorScrape(search.trim());
-      toast({
-        title: "Парсинг завершён",
-        description: `Найдено ${result.count} объявлений`,
-      });
+      // Try preview endpoint first for instant results with media
+      const previews = await fetchAdPreviews(search.trim());
+      if (Array.isArray(previews) && previews.length > 0) {
+        const previewAds: CompetitorAd[] = previews.map((p, i) => ({
+          id: `preview-${Date.now()}-${i}`,
+          advertiser_name: p.advertiser_name || search.trim(),
+          advertiser_avatar: null,
+          ad_copy: p.ad_copy,
+          platform: p.platform,
+          media_type: p.media_type,
+          media_url: p.media_url,
+          is_active: p.is_active,
+          active_since: p.active_since,
+          is_monitored: false,
+          source_url: p.source_url,
+        }));
+        setAds(previewAds);
+        toast({ title: "Готово", description: `Найдено ${previewAds.length} объявлений` });
+      } else {
+        // Fallback to scrape (async, data arrives via realtime)
+        await startCompetitorScrape(search.trim());
+        toast({ title: "Парсинг запущен", description: "Данные появятся через ~60 сек" });
+      }
     } catch (e: any) {
       toast({
-        title: "Ошибка парсинга",
+        title: "Ошибка",
         description: e.message || "Не удалось получить данные",
         variant: "destructive",
       });
@@ -182,7 +127,7 @@ export default function CompetitorSpy() {
     setRebuildLoading(true);
     try {
       const result = await rebuildAdText(ad.ad_copy || "");
-      setRebuildResult(result.data);
+      setRebuildResult(result);
     } catch (e: any) {
       toast({
         title: "Ошибка AI",
@@ -195,8 +140,7 @@ export default function CompetitorSpy() {
   };
 
   const toggleMonitoring = async (ad: CompetitorAd) => {
-    // For DB ads, update is_monitored
-    if (!ad.id.startsWith("mock-")) {
+    if (!ad.id.startsWith("preview-")) {
       await supabase
         .from("competitor_ads")
         .update({ is_monitored: !ad.is_monitored })
@@ -234,35 +178,33 @@ export default function CompetitorSpy() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="Введите Instagram ник, ссылку на Ad Library или название страницы..."
-                className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
-              />
-            </div>
-            <Button
-              onClick={handleSearch}
-              disabled={scraping}
-              className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-            >
-              {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-              {scraping ? "Сканирую..." : "Найти"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => { setAds([]); setSearch(""); }}
-              className="h-12 px-4 rounded-xl border-border/50 text-muted-foreground hover:text-foreground"
-              title="Сбросить результаты"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Введите Instagram ник, ссылку на Ad Library или название страницы..."
+              className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
+            />
           </div>
+          <Button
+            onClick={handleSearch}
+            disabled={scraping}
+            className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+          >
+            {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+            {scraping ? "Сканирую..." : "Найти"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => { setAds([]); setSearch(""); }}
+            className="h-12 px-4 rounded-xl border-border/50 text-muted-foreground hover:text-foreground"
+            title="Сбросить результаты"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -308,10 +250,10 @@ export default function CompetitorSpy() {
                   media: (ad.media_type as "4:5" | "9:16") || "4:5",
                   copy: ad.ad_copy || "",
                   platform: ad.platform || "Instagram",
-                  // These are no longer needed on the card — AI generates them live
                   weaknesses: [],
                   improved: "",
                   suggestedFormat: "",
+                  media_url: ad.media_url,
                 }}
                 isMonitored={!!ad.is_monitored}
                 onToggleMonitor={() => toggleMonitoring(ad)}
@@ -333,7 +275,7 @@ export default function CompetitorSpy() {
           platform: selectedAd.platform || "Instagram",
           weaknesses: rebuildResult?.weaknesses || [],
           improved: rebuildResult?.new_script || "",
-          suggestedFormat: rebuildResult?.suggested_format || "",
+          suggestedFormat: rebuildResult?.cta || "",
         } : null}
         loading={rebuildLoading}
         onClose={() => { setSelectedAd(null); setRebuildResult(null); }}
