@@ -25,12 +25,13 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Build search URL for Meta Ad Library
+    // Accept optional country filter, default to KZ
+    const country = reqBody.country || "KZ";
+
     let scrapeUrl = url;
     if (!scrapeUrl && query) {
-      // If user provided a query (e.g. @username), search Meta Ad Library
       const cleanQuery = query.replace("@", "").trim();
-      scrapeUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(cleanQuery)}&search_type=keyword_unordered`;
+      scrapeUrl = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=${country}&q=${encodeURIComponent(cleanQuery)}&search_type=keyword_unordered&media_type=all`;
     }
 
     if (!scrapeUrl) {
