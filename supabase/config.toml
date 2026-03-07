@@ -1,1 +1,7 @@
 project_id = "iywmjdrghcbsicdwohmb"
+
+[functions.scrape-competitor-ads]
+verify_jwt = false
+
+[functions.rebuild-ad-text]
+verify_jwt = false
