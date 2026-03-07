@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Radio, Loader2 } from "lucide-react";
+import { Search, Eye, Radio, Loader2, RefreshCw } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
 import { startCompetitorScrape, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
