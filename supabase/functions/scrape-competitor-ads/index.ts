@@ -91,11 +91,11 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an ad data extractor. Given scraped content from Meta Ad Library, extract individual ads into structured data. Return a JSON array of ad objects. Each ad should have: advertiser_name, ad_copy, platform (Instagram/Facebook), media_type (4:5 or 9:16), is_active (boolean). If no ads are found, return an empty array. Only return valid JSON, nothing else.`,
+            content: `You are an ad data extractor for the Kazakhstan market. Given scraped content from Meta Ad Library, extract ONLY ads that are written in Russian language and targeted at Kazakhstan. Ignore ads in other languages (English, Kazakh-only, etc). Extract individual ads into structured data. Each ad should have: advertiser_name, ad_copy (the full ad text in Russian), platform (Instagram/Facebook), media_type (4:5 or 9:16), is_active (boolean). If no Russian-language ads are found, return an empty array.`,
           },
           {
             role: "user",
-            content: `Extract ads from this scraped Meta Ad Library content:\n\n${markdown.slice(0, 8000)}`,
+            content: `Extract Russian-language ads targeted at Kazakhstan from this scraped Meta Ad Library content:\n\n${markdown.slice(0, 8000)}`,
           },
         ],
         tools: [
