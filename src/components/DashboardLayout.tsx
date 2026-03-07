@@ -21,6 +21,7 @@ const moduleNav = [
   { title: "Контент-Завод", path: "/content", icon: Factory },
   { title: "CRM", path: "/crm", icon: Users },
   { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
+  { title: "Радар", path: "/spy", icon: Radio },
 ];
 
 interface DashboardLayoutProps {

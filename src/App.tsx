@@ -34,6 +34,7 @@ const App = () => (
           <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
           <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
           <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
+          <Route path="/spy" element={<ProtectedRoute><CompetitorSpy /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
