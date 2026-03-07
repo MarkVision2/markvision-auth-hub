@@ -13,6 +13,7 @@ import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
 import AiRopPage from "./pages/AiRopPage";
+import CompetitorSpy from "./pages/CompetitorSpy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
           <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
           <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
+          <Route path="/spy" element={<ProtectedRoute><CompetitorSpy /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
