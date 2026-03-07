@@ -1,101 +1,223 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Sparkles, Radio } from "lucide-react";
-import { CompetitorAdCard, type MockAd } from "@/components/spy/CompetitorAdCard";
+import { Search, Eye, Radio, Loader2 } from "lucide-react";
+import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
+import { startCompetitorScrape, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-const MOCK_ADS: MockAd[] = [
+export interface CompetitorAd {
+  id: string;
+  advertiser_name: string;
+  advertiser_avatar: string | null;
+  ad_copy: string | null;
+  platform: string | null;
+  media_type: string | null;
+  is_active: boolean | null;
+  active_since: string | null;
+  is_monitored: boolean | null;
+  source_url: string | null;
+}
+
+// Keep mock data as fallback for demo
+const MOCK_ADS: CompetitorAd[] = [
   {
-    id: "1",
-    advertiser: "AIVA Clinic",
-    avatar: "AC",
-    activeSince: "12 Марта",
-    media: "4:5",
-    copy: "Ставим брекеты недорого! Звоните по телефону и запишитесь на бесплатную консультацию. Наши специалисты помогут вам выбрать идеальный вариант лечения для вашей улыбки.",
+    id: "mock-1",
+    advertiser_name: "AIVA Clinic",
+    advertiser_avatar: "AC",
+    ad_copy: "Ставим брекеты недорого! Звоните по телефону и запишитесь на бесплатную консультацию. Наши специалисты помогут вам выбрать идеальный вариант лечения для вашей улыбки.",
     platform: "Instagram",
-    weaknesses: ["Нет призыва к действию", "Слабый заголовок", "Нет оффера"],
-    improved: "🔥 Мечтаете об идеальной улыбке, но пугают цены?\n\nВ AIVA Clinic мы ставим премиум-элайнеры с рассрочкой 0-0-12. Без переплат.\n\n✅ Бесплатная 3D-диагностика\n✅ План лечения за 1 визит\n✅ Гарантия результата в договоре\n\n📲 Напишите «УЛЫБКА» в Direct — и получите персональный расчёт за 2 минуты.",
-    suggestedFormat: "Instagram Reels",
+    media_type: "4:5",
+    is_active: true,
+    active_since: "2026-03-12T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
   {
-    id: "2",
-    advertiser: "BeautyLab Moscow",
-    avatar: "BL",
-    activeSince: "5 Марта",
-    media: "9:16",
-    copy: "Лазерная эпиляция от 990 рублей. Акция до конца месяца! Приходите к нам в салон, адрес: ул. Тверская, 15. Работаем без выходных.",
+    id: "mock-2",
+    advertiser_name: "BeautyLab Moscow",
+    advertiser_avatar: "BL",
+    ad_copy: "Лазерная эпиляция от 990 рублей. Акция до конца месяца! Приходите к нам в салон, адрес: ул. Тверская, 15. Работаем без выходных.",
     platform: "Instagram",
-    weaknesses: ["Нет уникальности", "Слабый CTA", "Нет социального доказательства"],
-    improved: "💎 Гладкая кожа навсегда — без боли и раздражений\n\nЛазерная эпиляция нового поколения в BeautyLab:\n\n🔬 Диодный лазер последнего поколения\n⭐ 4.9 на Яндекс Картах (2,300+ отзывов)\n💰 Первая зона — 990₽ (экономия 60%)\n\nЗаписывайтесь сейчас → ссылка в шапке профиля\n⏰ Осталось 12 мест по акции",
-    suggestedFormat: "Stories + Reels",
+    media_type: "9:16",
+    is_active: true,
+    active_since: "2026-03-05T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
   {
-    id: "3",
-    advertiser: "FitPro Academy",
-    avatar: "FP",
-    activeSince: "1 Марта",
-    media: "4:5",
-    copy: "Фитнес тренировки онлайн. Программы для похудения и набора массы. Опытные тренеры. Первая тренировка бесплатно.",
+    id: "mock-3",
+    advertiser_name: "FitPro Academy",
+    advertiser_avatar: "FP",
+    ad_copy: "Фитнес тренировки онлайн. Программы для похудения и набора массы. Опытные тренеры. Первая тренировка бесплатно.",
     platform: "Facebook",
-    weaknesses: ["Общие фразы", "Нет конкретики", "Нет эмоций"],
-    improved: "🏋️ Минус 8 кг за 8 недель — или вернём деньги\n\nПерсональная программа от тренеров, которые подготовили 500+ трансформаций:\n\n📊 AI-подбор питания под ваш метаболизм\n🎥 Живые тренировки 5 дней в неделю\n📱 Поддержка в чате 24/7\n\nПервая неделя — 0₽. Жмите «Подробнее» 👇",
-    suggestedFormat: "Carousel 7 slides",
+    media_type: "4:5",
+    is_active: true,
+    active_since: "2026-03-01T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
   {
-    id: "4",
-    advertiser: "Digital School Pro",
-    avatar: "DS",
-    activeSince: "28 Февраля",
-    media: "9:16",
-    copy: "Курсы по маркетингу. Научим настраивать рекламу в Instagram и Facebook. Диплом по окончании. Записывайтесь!",
+    id: "mock-4",
+    advertiser_name: "Digital School Pro",
+    advertiser_avatar: "DS",
+    ad_copy: "Курсы по маркетингу. Научим настраивать рекламу в Instagram и Facebook. Диплом по окончании. Записывайтесь!",
     platform: "Instagram",
-    weaknesses: ["Нет результата", "Нет дедлайна", "Скучный формат"],
-    improved: "📈 С 0 до 150К/мес на фрилансе за 3 месяца\n\nЭто не мотивашка — это статистика наших выпускников:\n\n💼 87% находят первого клиента ещё во время обучения\n🧠 Практика на реальных бюджетах (не тесты!)\n🎓 Сертификат Meta Blueprint\n\n🔥 Старт потока — 15 марта. Осталось 8 мест.\n\n→ Пройдите бесплатный тест на готовность",
-    suggestedFormat: "Instagram Reels",
+    media_type: "9:16",
+    is_active: true,
+    active_since: "2026-02-28T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
   {
-    id: "5",
-    advertiser: "AutoDetailing VIP",
-    avatar: "AD",
-    activeSince: "10 Марта",
-    media: "4:5",
-    copy: "Детейлинг автомобилей. Полировка, керамика, химчистка салона. Качественно и быстро. Звоните!",
+    id: "mock-5",
+    advertiser_name: "AutoDetailing VIP",
+    advertiser_avatar: "AD",
+    ad_copy: "Детейлинг автомобилей. Полировка, керамика, химчистка салона. Качественно и быстро. Звоните!",
     platform: "Instagram",
-    weaknesses: ["Нет визуала до/после", "Нет гарантий", "Безликий текст"],
-    improved: "🚗 Ваш автомобиль будет выглядеть дороже на 30%\n\nПремиум-детейлинг с гарантией 2 года:\n\n✨ Керамика Gyeon Q² Mohs+ (топ-1 в мире)\n📸 Фотоотчёт до/после каждого этапа\n🏆 Обслуживаем 40+ автомобилей премиум-класса в месяц\n\n📲 Отправьте фото авто в Direct — рассчитаем стоимость за 5 минут",
-    suggestedFormat: "Carousel Before/After",
+    media_type: "4:5",
+    is_active: true,
+    active_since: "2026-03-10T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
   {
-    id: "6",
-    advertiser: "SmartHome Solutions",
-    avatar: "SH",
-    activeSince: "7 Марта",
-    media: "9:16",
-    copy: "Умный дом под ключ. Установка систем автоматизации. Работаем по всей Москве.",
+    id: "mock-6",
+    advertiser_name: "SmartHome Solutions",
+    advertiser_avatar: "SH",
+    ad_copy: "Умный дом под ключ. Установка систем автоматизации. Работаем по всей Москве.",
     platform: "Facebook",
-    weaknesses: ["Нет выгоды для клиента", "Нет цены/оффера", "Холодный тон"],
-    improved: "🏠 Представьте: вы говорите «Алиса, я дома» — и всё включается\n\nУмный дом от SmartHome за 3 дня:\n\n🎛 Свет, климат, безопасность — одно приложение\n💡 Экономия на электричестве до 40%\n🔧 Установка без ремонта и пыли\n\nБесплатный выезд инженера + 3D-проект в подарок 🎁\n\n👉 Оставьте заявку — перезвоним за 15 минут",
-    suggestedFormat: "Instagram Reels",
+    media_type: "9:16",
+    is_active: true,
+    active_since: "2026-03-07T00:00:00Z",
+    is_monitored: false,
+    source_url: null,
   },
 ];
 
 export default function CompetitorSpy() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"results" | "monitoring">("results");
-  const [selectedAd, setSelectedAd] = useState<MockAd | null>(null);
-  const [monitoringIds, setMonitoringIds] = useState<string[]>([]);
+  const [ads, setAds] = useState<CompetitorAd[]>(MOCK_ADS);
+  const [scraping, setScraping] = useState(false);
+  const [selectedAd, setSelectedAd] = useState<CompetitorAd | null>(null);
+  const [rebuildLoading, setRebuildLoading] = useState(false);
+  const [rebuildResult, setRebuildResult] = useState<RebuildResult | null>(null);
 
-  const toggleMonitoring = (id: string) => {
-    setMonitoringIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+  // Load saved ads from Supabase
+  useEffect(() => {
+    const loadAds = async () => {
+      const { data } = await supabase
+        .from("competitor_ads")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        setAds([...data.map((d: any) => ({
+          id: d.id,
+          advertiser_name: d.advertiser_name,
+          advertiser_avatar: d.advertiser_avatar,
+          ad_copy: d.ad_copy,
+          platform: d.platform,
+          media_type: d.media_type,
+          is_active: d.is_active,
+          active_since: d.active_since,
+          is_monitored: d.is_monitored,
+          source_url: d.source_url,
+        })), ...MOCK_ADS]);
+      }
+    };
+    loadAds();
+
+    // Subscribe to realtime inserts
+    const channel = supabase
+      .channel("competitor_ads_realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "competitor_ads" }, (payload) => {
+        const d = payload.new as any;
+        setAds((prev) => [{
+          id: d.id,
+          advertiser_name: d.advertiser_name,
+          advertiser_avatar: d.advertiser_avatar,
+          ad_copy: d.ad_copy,
+          platform: d.platform,
+          media_type: d.media_type,
+          is_active: d.is_active,
+          active_since: d.active_since,
+          is_monitored: d.is_monitored,
+          source_url: d.source_url,
+        }, ...prev]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const handleSearch = async () => {
+    if (!search.trim()) return;
+    setScraping(true);
+    try {
+      const result = await startCompetitorScrape(search.trim());
+      toast({
+        title: "Парсинг завершён",
+        description: `Найдено ${result.count} объявлений`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Ошибка парсинга",
+        description: e.message || "Не удалось получить данные",
+        variant: "destructive",
+      });
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handleRebuild = async (ad: CompetitorAd) => {
+    setSelectedAd(ad);
+    setRebuildResult(null);
+    setRebuildLoading(true);
+    try {
+      const result = await rebuildAdText(ad.ad_copy || "", ad.advertiser_name);
+      setRebuildResult(result.data);
+    } catch (e: any) {
+      toast({
+        title: "Ошибка AI",
+        description: e.message || "Не удалось проанализировать объявление",
+        variant: "destructive",
+      });
+    } finally {
+      setRebuildLoading(false);
+    }
+  };
+
+  const toggleMonitoring = async (ad: CompetitorAd) => {
+    // For DB ads, update is_monitored
+    if (!ad.id.startsWith("mock-")) {
+      await supabase
+        .from("competitor_ads")
+        .update({ is_monitored: !ad.is_monitored })
+        .eq("id", ad.id);
+    }
+    setAds((prev) =>
+      prev.map((a) => a.id === ad.id ? { ...a, is_monitored: !a.is_monitored } : a)
     );
   };
 
+  const monitoredCount = ads.filter((a) => a.is_monitored).length;
   const displayAds = activeTab === "monitoring"
-    ? MOCK_ADS.filter((a) => monitoringIds.includes(a.id))
-    : MOCK_ADS;
+    ? ads.filter((a) => a.is_monitored)
+    : ads;
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    try {
+      return new Date(dateStr).toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    } catch { return "—"; }
+  };
 
   return (
     <DashboardLayout breadcrumb="Радар конкурентов">
@@ -119,13 +241,18 @@ export default function CompetitorSpy() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Введите Instagram ник или название страницы (например, @aivaclinic)..."
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="Введите Instagram ник, ссылку на Ad Library или название страницы..."
                 className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
               />
             </div>
-            <Button className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium">
-              <Search className="h-4 w-4 mr-2" />
-              Найти
+            <Button
+              onClick={handleSearch}
+              disabled={scraping}
+              className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+            >
+              {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+              {scraping ? "Сканирую..." : "Найти"}
             </Button>
           </div>
         </div>
@@ -150,7 +277,7 @@ export default function CompetitorSpy() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Мой мониторинг ({monitoringIds.length})
+            Мой мониторинг ({monitoredCount})
           </button>
         </div>
 
@@ -158,24 +285,51 @@ export default function CompetitorSpy() {
         {displayAds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Eye className="h-10 w-10 mb-3 opacity-30" />
-            <p className="text-sm">Нет объявлений в мониторинге</p>
+            <p className="text-sm">{activeTab === "monitoring" ? "Нет объявлений в мониторинге" : "Введите запрос для поиска рекламы конкурентов"}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {displayAds.map((ad) => (
               <CompetitorAdCard
                 key={ad.id}
-                ad={ad}
-                isMonitored={monitoringIds.includes(ad.id)}
-                onToggleMonitor={() => toggleMonitoring(ad.id)}
-                onRebuild={() => setSelectedAd(ad)}
+                ad={{
+                  id: ad.id,
+                  advertiser: ad.advertiser_name,
+                  avatar: ad.advertiser_avatar || ad.advertiser_name.slice(0, 2).toUpperCase(),
+                  activeSince: formatDate(ad.active_since),
+                  media: (ad.media_type as "4:5" | "9:16") || "4:5",
+                  copy: ad.ad_copy || "",
+                  platform: ad.platform || "Instagram",
+                  // These are no longer needed on the card — AI generates them live
+                  weaknesses: [],
+                  improved: "",
+                  suggestedFormat: "",
+                }}
+                isMonitored={!!ad.is_monitored}
+                onToggleMonitor={() => toggleMonitoring(ad)}
+                onRebuild={() => handleRebuild(ad)}
               />
             ))}
           </div>
         )}
       </div>
 
-      <AiRebuildSheet ad={selectedAd} onClose={() => setSelectedAd(null)} />
+      <AiRebuildSheet
+        ad={selectedAd ? {
+          id: selectedAd.id,
+          advertiser: selectedAd.advertiser_name,
+          avatar: selectedAd.advertiser_avatar || selectedAd.advertiser_name.slice(0, 2).toUpperCase(),
+          activeSince: formatDate(selectedAd.active_since),
+          media: (selectedAd.media_type as "4:5" | "9:16") || "4:5",
+          copy: selectedAd.ad_copy || "",
+          platform: selectedAd.platform || "Instagram",
+          weaknesses: rebuildResult?.weaknesses || [],
+          improved: rebuildResult?.new_script || "",
+          suggestedFormat: rebuildResult?.suggested_format || "",
+        } : null}
+        loading={rebuildLoading}
+        onClose={() => { setSelectedAd(null); setRebuildResult(null); }}
+      />
     </DashboardLayout>
   );
 }
