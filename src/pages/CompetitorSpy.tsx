@@ -181,7 +181,7 @@ export default function CompetitorSpy() {
     setRebuildResult(null);
     setRebuildLoading(true);
     try {
-      const result = await rebuildAdText(ad.ad_copy || "", ad.advertiser_name);
+      const result = await rebuildAdText(ad.ad_copy || "");
       setRebuildResult(result.data);
     } catch (e: any) {
       toast({
