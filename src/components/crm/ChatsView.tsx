@@ -166,13 +166,19 @@ export default function ChatsView() {
   // Fetch messages for selected lead
   const fetchMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
-    const { data } = await (supabase as any)
-      .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
-    setMessages((data as CrmMessage[]) ?? []);
-    setMessagesLoading(false);
-    // Mark as read
-    await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
-    setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+      if (error) throw error;
+      setMessages((data as CrmMessage[]) ?? []);
+      // Mark as read
+      await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
+      setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки сообщений", description: err.message, variant: "destructive" });
+    } finally {
+      setMessagesLoading(false);
+    }
   }, []);
 
   // Fetch notes for selected lead
