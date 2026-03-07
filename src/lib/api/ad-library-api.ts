@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+const N8N_BASE = "https://n8n.zapoinov.com/webhook";
 
 export interface RebuildResult {
   weaknesses: string[];
@@ -8,26 +8,40 @@ export interface RebuildResult {
   suggested_format: string;
 }
 
-export async function startCompetitorScrape(urlOrQuery: string, country = "KZ") {
-  const isUrl = urlOrQuery.startsWith("http");
-
-  const { data, error } = await supabase.functions.invoke("scrape-competitor-ads", {
-    body: isUrl ? { url: urlOrQuery } : { query: urlOrQuery, country },
+// 1. Парсинг рекламы конкурента через Apify (async)
+export async function startCompetitorScrape(competitorUrl: string) {
+  const res = await fetch(`${N8N_BASE}/ad-library-scrape`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ competitor_url: competitorUrl }),
   });
 
-  if (error) throw new Error(error.message || "Scrape failed");
-  if (!data?.success) throw new Error(data?.error || "Scrape failed");
-
-  return data;
+  if (!res.ok) throw new Error("Scrape failed");
+  return res.json();
+  // Данные появятся в таблице competitor_ads через ~60 сек
+  // Используй Supabase Realtime для отображения
 }
 
-export async function rebuildAdText(adCopy: string, advertiserName?: string) {
-  const { data, error } = await supabase.functions.invoke("rebuild-ad-text", {
-    body: { ad_copy: adCopy, advertiser_name: advertiserName },
+// 2. AI Rebuild текста конкурента (sync — ждём ответ)
+export async function rebuildAdText(originalText: string) {
+  const res = await fetch(`${N8N_BASE}/ad-library-rebuild`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ original_text: originalText }),
   });
 
-  if (error) throw new Error(error.message || "Rebuild failed");
-  if (!data?.success) throw new Error(data?.error || "Rebuild failed");
+  if (!res.ok) throw new Error("Rebuild failed");
+  return res.json() as Promise<{ success: true; data: RebuildResult }>;
+}
 
-  return data as { success: true; data: RebuildResult };
+// 3. Анализ сайта конкурента через Firecrawl (sync)
+export async function analyzeCompetitorSite(siteUrl: string) {
+  const res = await fetch(`${N8N_BASE}/ad-library-scrape-site`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ site_url: siteUrl }),
+  });
+
+  if (!res.ok) throw new Error("Site analysis failed");
+  return res.json();
 }

@@ -160,7 +160,7 @@ export default function CompetitorSpy() {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      const result = await startCompetitorScrape(search.trim(), "KZ");
+      const result = await startCompetitorScrape(search.trim());
       toast({
         title: "Парсинг завершён",
         description: `Найдено ${result.count} объявлений`,
@@ -181,7 +181,7 @@ export default function CompetitorSpy() {
     setRebuildResult(null);
     setRebuildLoading(true);
     try {
-      const result = await rebuildAdText(ad.ad_copy || "", ad.advertiser_name);
+      const result = await rebuildAdText(ad.ad_copy || "");
       setRebuildResult(result.data);
     } catch (e: any) {
       toast({
