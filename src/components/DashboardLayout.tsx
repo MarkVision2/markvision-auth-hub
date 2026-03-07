@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Zap, LayoutDashboard, Briefcase, Factory, Users, Target, Handshake, Activity, Sun, Moon, ShieldCheck } from "lucide-react";
+import { Zap, LayoutDashboard, Briefcase, Factory, Users, Target, Handshake, Activity, Sun, Moon, ShieldCheck, Radio } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
