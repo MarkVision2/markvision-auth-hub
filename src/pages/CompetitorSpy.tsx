@@ -16,6 +16,7 @@ export interface CompetitorAd {
   ad_copy: string | null;
   platform: string | null;
   media_type: string | null;
+  media_url: string | null;
   is_active: boolean | null;
   active_since: string | null;
   is_monitored: boolean | null;
