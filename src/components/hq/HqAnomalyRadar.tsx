@@ -43,11 +43,11 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
   };
 
   const handleGenerate = () => {
-    navigate("/content-factory");
+    navigate("/content");
   };
 
   const handleClientClick = () => {
-    navigate("/agency-accounts");
+    navigate("/accounts");
   };
 
   return (

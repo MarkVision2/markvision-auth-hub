@@ -87,11 +87,16 @@ export default function KanbanBoard() {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("leads").select("*").order("created_at", { ascending: false });
-    if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-    setLeads((data as Lead[]) ?? []);
-    setLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setLeads((data as Lead[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);

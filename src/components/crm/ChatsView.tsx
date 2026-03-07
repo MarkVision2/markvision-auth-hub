@@ -108,30 +108,36 @@ export default function ChatsView() {
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
-    const { data } = await (supabase as any)
-      .from("leads").select("*").order("created_at", { ascending: false });
-    const leadsData = (data as Lead[]) ?? [];
-    setLeads(leadsData);
-    setLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      const leadsData = (data as Lead[]) ?? [];
+      setLeads(leadsData);
 
-    // Fetch last messages and unread counts for all leads
-    if (leadsData.length > 0) {
-      const leadIds = leadsData.map(l => l.id);
-      const { data: allMsgs } = await (supabase as any)
-        .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
-      
-      if (allMsgs) {
-        const lastMap: Record<string, CrmMessage> = {};
-        const unreadMap: Record<string, number> = {};
-        for (const msg of allMsgs) {
-          if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
-          if (!msg.read && msg.sender_type === "client") {
-            unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+      // Fetch last messages and unread counts for all leads
+      if (leadsData.length > 0) {
+        const leadIds = leadsData.map(l => l.id);
+        const { data: allMsgs } = await (supabase as any)
+          .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
+        
+        if (allMsgs) {
+          const lastMap: Record<string, CrmMessage> = {};
+          const unreadMap: Record<string, number> = {};
+          for (const msg of allMsgs) {
+            if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
+            if (!msg.read && msg.sender_type === "client") {
+              unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+            }
           }
+          setLastMessages(lastMap);
+          setUnreadCounts(unreadMap);
         }
-        setLastMessages(lastMap);
-        setUnreadCounts(unreadMap);
       }
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -160,20 +166,31 @@ export default function ChatsView() {
   // Fetch messages for selected lead
   const fetchMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
-    const { data } = await (supabase as any)
-      .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
-    setMessages((data as CrmMessage[]) ?? []);
-    setMessagesLoading(false);
-    // Mark as read
-    await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
-    setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+      if (error) throw error;
+      setMessages((data as CrmMessage[]) ?? []);
+      // Mark as read
+      await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
+      setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки сообщений", description: err.message, variant: "destructive" });
+    } finally {
+      setMessagesLoading(false);
+    }
   }, []);
 
   // Fetch notes for selected lead
   const fetchNotes = useCallback(async (leadId: string) => {
-    const { data } = await (supabase as any)
-      .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
-    setNotes((data as CrmNote[]) ?? []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+      if (error) throw error;
+      setNotes((data as CrmNote[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки заметок", description: err.message, variant: "destructive" });
+    }
   }, []);
 
   useEffect(() => {

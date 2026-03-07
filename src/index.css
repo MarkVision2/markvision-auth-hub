@@ -62,10 +62,10 @@
     --background: 0 0% 2%;
     --foreground: 0 0% 95%;
 
-    --card: 240 6% 4%;
+    --card: 0 0% 4%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 240 6% 4%;
+    --popover: 0 0% 4%;
     --popover-foreground: 0 0% 95%;
 
     --primary: 160 84% 39%;
@@ -83,7 +83,7 @@
     --destructive: 350 89% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14%;
+    --border: 0 0% 100% / 0.06;
     --input: 0 0% 12%;
     --ring: 160 84% 39%;
 
@@ -166,4 +166,13 @@ main {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid hsl(var(--glass-border));
+}
+
+/* Anomaly pulse */
+@keyframes anomaly-pulse {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+.animate-anomaly-pulse {
+  animation: anomaly-pulse 2s ease-in-out infinite;
 }
