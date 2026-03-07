@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Radio, Loader2 } from "lucide-react";
+import { Search, Eye, Radio, Loader2, RefreshCw } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
 import { startCompetitorScrape, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
@@ -253,6 +253,14 @@ export default function CompetitorSpy() {
             >
               {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
               {scraping ? "Сканирую..." : "Найти"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => { setAds([]); setSearch(""); }}
+              className="h-12 px-4 rounded-xl border-border/50 text-muted-foreground hover:text-foreground"
+              title="Сбросить результаты"
+            >
+              <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         </div>

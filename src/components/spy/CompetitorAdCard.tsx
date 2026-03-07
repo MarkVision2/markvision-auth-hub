@@ -24,7 +24,6 @@ interface Props {
 
 export function CompetitorAdCard({ ad, isMonitored, onToggleMonitor, onRebuild }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const aspectClass = ad.media === "9:16" ? "aspect-[9/16] max-h-[320px]" : "aspect-[4/5] max-h-[300px]";
 
   return (
     <div className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-md overflow-hidden transition-all hover:border-white/[0.15] hover:shadow-[0_0_40px_-12px_hsl(var(--primary)/0.15)]">
@@ -43,31 +42,28 @@ export function CompetitorAdCard({ ad, isMonitored, onToggleMonitor, onRebuild }
         <span className="text-[10px] font-mono text-muted-foreground/60 bg-card/50 px-2 py-0.5 rounded-full border border-border/30">{ad.platform}</span>
       </div>
 
-      {/* Media placeholder */}
-      <div className={`mx-4 rounded-xl bg-gradient-to-br from-card to-accent/20 border border-border/20 ${aspectClass} flex items-center justify-center overflow-hidden`}>
-        <div className="text-center space-y-2 opacity-40">
-          <div className="h-12 w-12 mx-auto rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-            <span className="text-lg">📸</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground font-mono">{ad.media}</p>
-        </div>
-      </div>
-
-      {/* Copy */}
-      <div className="p-4 pt-3">
-        <p className="text-xs text-foreground/80 leading-relaxed">
-          {expanded ? ad.copy : ad.copy.slice(0, 90) + "..."}
+      {/* Ad Copy Preview — full text block instead of empty media placeholder */}
+      <div className="mx-4 rounded-xl bg-gradient-to-br from-card to-accent/10 border border-border/20 p-4 min-h-[120px]">
+        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+          {expanded ? ad.copy : ad.copy.length > 200 ? ad.copy.slice(0, 200) + "..." : ad.copy}
+        </p>
+        {ad.copy.length > 200 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="ml-1 text-primary/70 hover:text-primary text-[11px] font-medium"
+            className="mt-2 text-primary/70 hover:text-primary text-xs font-medium"
           >
             {expanded ? "свернуть" : "подробнее"}
           </button>
-        </p>
+        )}
+      </div>
+
+      {/* Meta info */}
+      <div className="flex items-center gap-2 px-4 pt-2">
+        <span className="text-[10px] font-mono text-muted-foreground/50 bg-card/30 px-2 py-0.5 rounded border border-border/20">{ad.media}</span>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-4 pb-4">
+      <div className="flex items-center gap-2 px-4 py-4">
         <Button
           variant="ghost"
           size="sm"
