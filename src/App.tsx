@@ -13,6 +13,7 @@ import AgencyAccounts from "./pages/AgencyAccounts";
 import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
 import AiRopPage from "./pages/AiRopPage";
+import CompetitorSpy from "./pages/CompetitorSpy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
