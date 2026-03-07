@@ -254,6 +254,14 @@ export default function CompetitorSpy() {
               {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
               {scraping ? "Сканирую..." : "Найти"}
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => { setAds([]); setSearch(""); }}
+              className="h-12 px-4 rounded-xl border-border/50 text-muted-foreground hover:text-foreground"
+              title="Сбросить результаты"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
