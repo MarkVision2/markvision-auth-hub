@@ -53,7 +53,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                   <h3 className="text-sm font-semibold text-muted-foreground">Оригинал конкурента</h3>
                 </div>
 
-                <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 mb-4">
+                <div className="rounded-xl glass p-4 mb-4">
                   <p className="text-sm text-foreground/50 leading-relaxed whitespace-pre-wrap">{ad.copy}</p>
                 </div>
 
