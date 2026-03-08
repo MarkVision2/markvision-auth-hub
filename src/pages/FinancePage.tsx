@@ -351,25 +351,19 @@ interface ClientFinance {
   service: string;
   revenue: number;
   expenses: number;
-  profit: number;
-  margin: number;
   nextBilling: string;
   billingStatus: "paid" | "upcoming" | "overdue";
 }
 
-const clients: ClientFinance[] = [
-  { id: "1", name: "Технология позвоночника", service: "AI-Marketing OS", revenue: 300_000, expenses: 25_000, profit: 275_000, margin: 91, nextBilling: "2026-04-01", billingStatus: "paid" },
-  { id: "2", name: "DentalPro Алматы", service: "AI-Marketing OS + Content", revenue: 450_000, expenses: 48_000, profit: 402_000, margin: 89, nextBilling: "2026-03-11", billingStatus: "upcoming" },
-  { id: "3", name: "EsteticLine", service: "Lead Gen + CRM", revenue: 200_000, expenses: 18_000, profit: 182_000, margin: 91, nextBilling: "2026-03-05", billingStatus: "overdue" },
-  { id: "4", name: "MedCity Астана", service: "AI-Marketing OS", revenue: 300_000, expenses: 32_000, profit: 268_000, margin: 89, nextBilling: "2026-04-15", billingStatus: "paid" },
-  { id: "5", name: "SmileLab", service: "Content Factory", revenue: 150_000, expenses: 12_000, profit: 138_000, margin: 92, nextBilling: "2026-03-20", billingStatus: "paid" },
-  { id: "6", name: "Клиника Доктора Иванова", service: "AI-Marketing OS + Spy", revenue: 380_000, expenses: 41_000, profit: 339_000, margin: 89, nextBilling: "2026-03-08", billingStatus: "overdue" },
-  { id: "7", name: "BeautyMed", service: "Lead Gen", revenue: 120_000, expenses: 9_500, profit: 110_500, margin: 92, nextBilling: "2026-04-10", billingStatus: "paid" },
+const initialClients: ClientFinance[] = [
+  { id: "1", name: "Технология позвоночника", service: "AI-Marketing OS", revenue: 300_000, expenses: 25_000, nextBilling: "2026-04-01", billingStatus: "paid" },
+  { id: "2", name: "DentalPro Алматы", service: "AI-Marketing OS + Content", revenue: 450_000, expenses: 48_000, nextBilling: "2026-03-11", billingStatus: "upcoming" },
+  { id: "3", name: "EsteticLine", service: "Lead Gen + CRM", revenue: 200_000, expenses: 18_000, nextBilling: "2026-03-05", billingStatus: "overdue" },
+  { id: "4", name: "MedCity Астана", service: "AI-Marketing OS", revenue: 300_000, expenses: 32_000, nextBilling: "2026-04-15", billingStatus: "paid" },
+  { id: "5", name: "SmileLab", service: "Content Factory", revenue: 150_000, expenses: 12_000, nextBilling: "2026-03-20", billingStatus: "paid" },
+  { id: "6", name: "Клиника Доктора Иванова", service: "AI-Marketing OS + Spy", revenue: 380_000, expenses: 41_000, nextBilling: "2026-03-08", billingStatus: "overdue" },
+  { id: "7", name: "BeautyMed", service: "Lead Gen", revenue: 120_000, expenses: 9_500, nextBilling: "2026-04-10", billingStatus: "paid" },
 ];
-
-const totalMrr = clients.reduce((s, c) => s + c.revenue, 0);
-const totalProfit = clients.reduce((s, c) => s + c.profit, 0);
-const avgMargin = Math.round(clients.reduce((s, c) => s + c.margin, 0) / clients.length);
 
 const billingLabels: Record<string, { text: string; cls: string }> = {
   paid: { text: "Оплачено", cls: "bg-primary/10 text-primary border-primary/20" },
@@ -377,30 +371,72 @@ const billingLabels: Record<string, { text: string; cls: string }> = {
   overdue: { text: "Просрочено", cls: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
-function AgencyKpi({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="glass rounded-xl p-5 flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        {icon}
-        <span className="text-[12px] font-medium uppercase tracking-wider">{label}</span>
-      </div>
-      <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
-    </div>
-  );
-}
+const statusOptions: ClientFinance["billingStatus"][] = ["paid", "upcoming", "overdue"];
 
 function AgencyTab() {
+  const [clientsData, setClientsData] = useState<ClientFinance[]>(initialClients);
+
+  const updateClient = (id: string, field: keyof ClientFinance, value: string | number) => {
+    setClientsData(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  const addClient = () => {
+    setClientsData(prev => [...prev, {
+      id: String(Date.now()),
+      name: "Новый клиент",
+      service: "Услуга",
+      revenue: 0,
+      expenses: 0,
+      nextBilling: "2026-04-01",
+      billingStatus: "upcoming",
+    }]);
+  };
+
+  const removeClient = (id: string) => {
+    setClientsData(prev => prev.filter(c => c.id !== id));
+  };
+
+  const totalMrr = clientsData.reduce((s, c) => s + c.revenue, 0);
+  const totalProfit = clientsData.reduce((s, c) => s + (c.revenue - c.expenses), 0);
+  const avgMargin = clientsData.length > 0
+    ? Math.round(clientsData.reduce((s, c) => s + (c.revenue > 0 ? ((c.revenue - c.expenses) / c.revenue) * 100 : 0), 0) / clientsData.length)
+    : 0;
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <AgencyKpi icon={<Wallet className="h-4 w-4" />} label="MRR (ежемесячная выручка)" value={fmtCurrency(totalMrr)} />
-        <AgencyKpi icon={<PiggyBank className="h-4 w-4" />} label="Чистая прибыль" value={fmtCurrency(totalProfit)} />
-        <AgencyKpi icon={<BarChart3 className="h-4 w-4" />} label="Средняя маржинальность" value={`${avgMargin}%`} />
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Wallet className="h-4 w-4" />
+            <span className="text-[12px] font-medium uppercase tracking-wider">MRR (ежемесячная выручка)</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalMrr)}</p>
+        </div>
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <PiggyBank className="h-4 w-4" />
+            <span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalProfit)}</p>
+        </div>
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <BarChart3 className="h-4 w-4" />
+            <span className="text-[12px] font-medium uppercase tracking-wider">Средняя маржинальность</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground tracking-tight">{avgMargin}%</p>
+        </div>
       </div>
 
       {/* Table */}
       <div className="glass rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.04]">
+          <p className="text-[13px] font-semibold text-foreground">Клиенты</p>
+          <button onClick={addClient} className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1">
+            <Plus className="h-3.5 w-3.5" /> Добавить клиента
+          </button>
+        </div>
         <Table>
           <TableHeader>
             <TableRow className="border-white/[0.04] hover:bg-transparent">
@@ -412,24 +448,73 @@ function AgencyTab() {
               <TableHead className="text-[11px] text-right">Маржа</TableHead>
               <TableHead className="text-[11px]">След. оплата</TableHead>
               <TableHead className="text-[11px]">Статус</TableHead>
+              <TableHead className="text-[11px] w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {clients.map((c) => {
+            {clientsData.map((c) => {
+              const profit = c.revenue - c.expenses;
+              const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
               const bl = billingLabels[c.billingStatus];
               return (
                 <TableRow key={c.id} className="border-white/[0.04]">
-                  <TableCell className="font-medium text-[13px] text-foreground">{c.name}</TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground">{c.service}</TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] font-medium">{fmtCurrency(c.revenue)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] text-destructive">{fmtCurrency(c.expenses)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] font-semibold text-primary">{fmtCurrency(c.profit)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className="text-[11px] border-primary/20 text-primary">{c.margin}%</Badge>
-                  </TableCell>
-                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">{c.nextBilling}</TableCell>
                   <TableCell>
-                    <Badge className={`text-[11px] border ${bl.cls}`}>{bl.text}</Badge>
+                    <Input
+                      value={c.name}
+                      onChange={(e) => updateClient(c.id, "name", e.target.value)}
+                      className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={c.service}
+                      onChange={(e) => updateClient(c.id, "service", e.target.value)}
+                      className="h-8 text-[12px] bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-muted-foreground"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={c.revenue || ""}
+                      onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
+                      className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[110px] ml-auto"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={c.expenses || ""}
+                      onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
+                      className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[100px] ml-auto"
+                    />
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-[13px] font-semibold text-primary">{fmtCurrency(profit)}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className="text-[11px] border-primary/20 text-primary">{margin}%</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="date"
+                      value={c.nextBilling}
+                      onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
+                      className="h-8 text-[12px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 w-[130px]"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <select
+                      value={c.billingStatus}
+                      onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
+                      className="h-8 text-[11px] bg-transparent border border-transparent hover:border-white/[0.06] focus:border-primary/40 rounded-md px-1 cursor-pointer text-foreground"
+                    >
+                      {statusOptions.map(s => (
+                        <option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>
+                      ))}
+                    </select>
+                  </TableCell>
+                  <TableCell>
+                    <button onClick={() => removeClient(c.id)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </TableCell>
                 </TableRow>
               );
