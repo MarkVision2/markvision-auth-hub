@@ -29,6 +29,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { useNotifications, KNOWN_MODULES, type NotificationPreferences } from "@/hooks/useNotifications";
 
 /* ── Role presets ── */
 type RoleKey = "admin" | "project" | "targetolog" | "analyst";
