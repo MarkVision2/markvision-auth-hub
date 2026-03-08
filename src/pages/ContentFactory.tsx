@@ -105,8 +105,10 @@ export default function ContentFactory() {
   const [editFeedback, setEditFeedback] = useState("");
   const [showFeedbackInput, setShowFeedbackInput] = useState(false);
 
-  // Campaign builder
+  // Campaign builder & autopost
   const [campaignSheetOpen, setCampaignSheetOpen] = useState(false);
+  const [autopostOpen, setAutopostOpen] = useState(false);
+  const [autopostUrls, setAutopostUrls] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
