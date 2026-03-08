@@ -12,7 +12,7 @@ import {
   Download, Send, Calendar, TrendingUp, TrendingDown,
   Eye, DollarSign, Users, BarChart3, Trophy, Sparkles,
   CheckCircle2, Target, Image as ImageIcon,
-  Zap, Clock, Bell, ShoppingCart, Flame, MapPin,
+  Zap, Clock, Bell, ShoppingCart, Flame, MapPin, Lock,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -201,6 +201,7 @@ function AutomationDialog() {
 export default function AiReportsPage() {
   const [client, setClient] = useState("clinic-aiva");
   const [compareEnabled, setCompareEnabled] = useState(true);
+  const [hasRevenueData, setHasRevenueData] = useState(true);
 
   return (
     <DashboardLayout breadcrumb="AI Отчётность">
@@ -226,6 +227,10 @@ export default function AiReportsPage() {
               <div className="flex items-center gap-2 px-3 h-9">
                 <Switch checked={compareEnabled} onCheckedChange={setCompareEnabled} className="scale-90" />
                 <span className="text-xs text-muted-foreground">Сравнение</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 h-9 border-l border-border/30">
+                <Switch checked={hasRevenueData} onCheckedChange={setHasRevenueData} className="scale-90" />
+                <span className="text-xs text-muted-foreground">Есть данные о выручке</span>
               </div>
             </div>
 
@@ -569,42 +574,63 @@ export default function AiReportsPage() {
             {/* Unit Economics — receipt style */}
             <div className="px-10 py-7 border-t border-border/10">
               <SectionTitle>Юнит-экономика</SectionTitle>
-              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 overflow-hidden">
-                {/* Receipt header */}
-                <div className="px-6 py-4 border-b border-primary/10 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Финансовая сводка</p>
-                    <p className="text-[10px] text-muted-foreground">Unit Economics · Март 2026</p>
-                  </div>
-                </div>
-                {/* Receipt rows */}
-                <div className="divide-y divide-primary/10">
-                  {unitEconomics.map(item => (
-                    <div key={item.label} className="px-6 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-7 w-7 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                          <item.icon className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-foreground font-medium">{item.label}</p>
-                          <p className="text-[10px] text-muted-foreground">{item.sub}</p>
-                        </div>
+              <div className="relative">
+                {/* Content — blurred when no revenue data */}
+                <div className={hasRevenueData ? "" : "blur-md opacity-40 pointer-events-none select-none"}>
+                  <div className="rounded-xl bg-primary/[0.04] border border-primary/15 overflow-hidden">
+                    {/* Receipt header */}
+                    <div className="px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <BarChart3 className="h-4 w-4 text-primary" />
                       </div>
-                      <p className="text-xl font-bold text-foreground tabular-nums">{item.value}</p>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Финансовая сводка</p>
+                        <p className="text-[10px] text-muted-foreground">Unit Economics · Март 2026</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {/* Receipt footer — ROMI highlight */}
-                <div className="px-6 py-4 bg-primary/[0.06] border-t border-primary/15 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">LTV / CAC Ratio</span>
+                    {/* Receipt rows */}
+                    <div className="divide-y divide-primary/10">
+                      {unitEconomics.map(item => (
+                        <div key={item.label} className="px-6 py-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                              <item.icon className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-foreground font-medium">{item.label}</p>
+                              <p className="text-[10px] text-muted-foreground">{item.sub}</p>
+                            </div>
+                          </div>
+                          <p className="text-xl font-bold text-foreground tabular-nums">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Receipt footer — ROMI highlight */}
+                    <div className="px-6 py-4 bg-primary/[0.06] border-t border-primary/15 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold text-foreground">LTV / CAC Ratio</span>
+                      </div>
+                      <span className="text-2xl font-black text-primary tabular-nums">18.8x</span>
+                    </div>
                   </div>
-                  <span className="text-2xl font-black text-primary tabular-nums">18.8x</span>
                 </div>
+
+                {/* Locked overlay when no revenue data */}
+                {!hasRevenueData && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm border border-border/30">
+                    <div className="h-14 w-14 rounded-2xl bg-muted/80 border border-border flex items-center justify-center mb-4">
+                      <Lock className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-base font-semibold text-foreground mb-1.5">Данные о выручке не переданы</p>
+                    <p className="text-xs text-muted-foreground text-center max-w-xs leading-relaxed mb-5">
+                      Укажите суммы успешных сделок в CRM, чтобы разблокировать расчет ROMI, LTV и Среднего чека.
+                    </p>
+                    <Button variant="ghost" className="gap-2 text-sm border border-border/50 hover:border-primary/30">
+                      <ShoppingCart className="h-3.5 w-3.5" />Перейти в CRM
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
