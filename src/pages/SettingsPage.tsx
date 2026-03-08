@@ -1345,6 +1345,7 @@ function SystemHealthTab() {
   const [errors, setErrors] = useState<any[]>([]);
   const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [restartingId, setRestartingId] = useState<string | null>(null);
 
   const callGateway = async (action: string) => {
     try {
@@ -1416,6 +1417,25 @@ function SystemHealthTab() {
     setLogs(newLogs);
     setLastCheck(now());
     setChecking(false);
+  };
+
+  const restartWorkflow = async (wfId: string, wfName: string) => {
+    setRestartingId(wfId);
+    try {
+      const { data, error } = await supabase.functions.invoke("n8n-health-check", {
+        body: { action: "activate_workflow", workflowId: wfId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({ title: `Workflow перезапущен`, description: wfName });
+      } else {
+        toast({ title: "Ошибка перезапуска", description: data?.error || "Unknown", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setRestartingId(null);
+    }
   };
 
   useEffect(() => { runHealthCheck(); }, []);
@@ -1532,6 +1552,7 @@ function SystemHealthTab() {
                 <TableHead className="text-[10px] uppercase tracking-wider text-center w-20">Узлы</TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider text-right w-36">Обновлён</TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider text-right w-24">Статус</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-center w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1560,6 +1581,18 @@ function SystemHealthTab() {
                     )}>
                       {wf.active ? "Active" : "Inactive"}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-center py-2.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      disabled={restartingId === wf.id}
+                      onClick={() => restartWorkflow(wf.id, wf.name)}
+                      title="Перезапустить workflow"
+                    >
+                      <RefreshCw size={13} className={restartingId === wf.id ? "animate-spin" : ""} />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

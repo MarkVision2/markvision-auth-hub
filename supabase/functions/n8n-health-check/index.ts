@@ -38,9 +38,9 @@ serve(async (req) => {
     const body = await req.json();
     const action = body.action;
 
-    if (!action || !["ping", "list_workflows", "last_errors"].includes(action)) {
+    if (!action || !["ping", "list_workflows", "last_errors", "activate_workflow"].includes(action)) {
       return new Response(
-        JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors" }),
+        JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors, activate_workflow" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -110,6 +110,35 @@ serve(async (req) => {
         }
       } catch {
         data = [];
+      }
+    }
+
+    if (action === "activate_workflow") {
+      const workflowId = body.workflowId;
+      if (!workflowId) {
+        return new Response(
+          JSON.stringify({ error: "workflowId is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      try {
+        // Deactivate then activate to force restart
+        await fetch(`${N8N_BASE_URL}/api/v1/workflows/${workflowId}/deactivate`, {
+          method: "POST",
+          headers: apiHeaders,
+        });
+        const response = await fetch(`${N8N_BASE_URL}/api/v1/workflows/${workflowId}/activate`, {
+          method: "POST",
+          headers: apiHeaders,
+        });
+        const text = await response.text();
+        if (response.ok) {
+          try { data = JSON.parse(text); } catch { data = { status: "restarted" }; }
+        } else {
+          data = { status: "error", code: response.status };
+        }
+      } catch (e) {
+        data = { status: "error", error: e instanceof Error ? e.message : "unknown" };
       }
     }
 
