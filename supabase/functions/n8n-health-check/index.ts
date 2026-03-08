@@ -7,7 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const N8N_WEBHOOK_URL = "https://n8n.zapoinov.com/webhook/ai-control";
+const N8N_BASE_URL = "https://n8n.zapoinov.com";
+const N8N_WEBHOOK_URL = `${N8N_BASE_URL}/webhook/ai-control`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -44,24 +45,103 @@ serve(async (req) => {
       );
     }
 
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action }),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      throw new Error(`n8n responded with ${response.status}: ${responseText}`);
+    const N8N_API_KEY = Deno.env.get("N8N_CONTROL_API_KEY");
+    const apiHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (N8N_API_KEY) {
+      apiHeaders["X-N8N-API-KEY"] = N8N_API_KEY;
     }
 
-    let data: unknown;
-    try {
-      data = responseText ? JSON.parse(responseText) : null;
-    } catch {
-      // n8n returned non-JSON; wrap raw text
-      data = { raw: responseText };
+    let data: unknown = null;
+
+    if (action === "ping") {
+      // Simple webhook ping
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "ping" }),
+        });
+        const text = await response.text();
+        if (response.ok) {
+          try { data = JSON.parse(text); } catch { data = { status: "ok", raw: text }; }
+        } else {
+          data = { status: "error", code: response.status };
+        }
+      } catch (e) {
+        data = { status: "unreachable", error: e instanceof Error ? e.message : "unknown" };
+      }
+    }
+
+    if (action === "list_workflows") {
+      // Call n8n REST API directly to avoid webhook truncation
+      try {
+        const response = await fetch(`${N8N_BASE_URL}/api/v1/workflows?limit=100&active=true`, {
+          method: "GET",
+          headers: apiHeaders,
+        });
+        const text = await response.text();
+        if (response.ok) {
+          try {
+            const parsed = JSON.parse(text);
+            // n8n API returns { data: [...] }
+            const workflows = parsed.data || parsed;
+            data = (Array.isArray(workflows) ? workflows : []).map((wf: Record<string, unknown>) => ({
+              id: wf.id,
+              name: wf.name,
+              active: wf.active,
+              createdAt: wf.createdAt,
+              updatedAt: wf.updatedAt,
+              nodes: Array.isArray(wf.nodes) ? (wf.nodes as Record<string, unknown>[]).length : 0,
+            }));
+          } catch {
+            data = [];
+          }
+        } else {
+          // Fallback: try webhook
+          const wh = await fetch(N8N_WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "list_workflows" }),
+          });
+          const whText = await wh.text();
+          try { data = JSON.parse(whText); } catch { data = []; }
+        }
+      } catch {
+        data = [];
+      }
+    }
+
+    if (action === "last_errors") {
+      // Call n8n REST API for recent failed executions
+      try {
+        const response = await fetch(
+          `${N8N_BASE_URL}/api/v1/executions?status=error&limit=15`,
+          { method: "GET", headers: apiHeaders }
+        );
+        const text = await response.text();
+        if (response.ok) {
+          try {
+            const parsed = JSON.parse(text);
+            const executions = parsed.data || parsed;
+            data = (Array.isArray(executions) ? executions : []).map((ex: Record<string, unknown>) => ({
+              id: ex.id,
+              workflowId: ex.workflowId,
+              workflowName: (ex.workflowData as Record<string, unknown>)?.name || `Workflow ${ex.workflowId}`,
+              status: ex.status,
+              startedAt: ex.startedAt,
+              stoppedAt: ex.stoppedAt,
+            }));
+          } catch {
+            data = [];
+          }
+        } else {
+          data = [];
+        }
+      } catch {
+        data = [];
+      }
     }
 
     return new Response(JSON.stringify({ success: true, action, data }), {
