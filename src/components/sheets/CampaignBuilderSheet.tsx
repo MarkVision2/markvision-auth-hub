@@ -62,20 +62,59 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       toast({ title: "Загрузите креатив", description: "Выберите фото или видео перед запуском", variant: "destructive" });
       return;
     }
+    if (!account) {
+      toast({ title: "Выберите кабинет", variant: "destructive" });
+      return;
+    }
     setLaunching(true);
     try {
+      // 1. Upload media to Supabase Storage
       const ext = creativeFile.name.split(".").pop();
       const filePath = `uploads/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("content_assets").upload(filePath, creativeFile, {
+      const { error: uploadError } = await supabase.storage.from("content_assets").upload(filePath, creativeFile, {
         cacheControl: "3600",
         upsert: false,
       });
-      if (error) throw error;
-      toast({ title: "Креатив загружен ✓", description: "Кампания отправлена на запуск" });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("content_assets").getPublicUrl(filePath);
+      const mediaUrl = urlData?.publicUrl || "";
+
+      // 2. Build payload
+      const selectedAccount = accounts.find((a) => a.id === account);
+      const payload = {
+        ad_account_id: account,
+        ad_account_name: selectedAccount?.name || "",
+        objective: objective === "whatsapp" ? "WhatsApp" : objective === "website" ? "Website Leads" : "Lead Form",
+        utm_tags: objective === "website" ? utmTags : "",
+        site_url: objective === "website" ? siteUrl : "",
+        pixel_id: objective === "website" ? pixel : "",
+        pixel_event: objective === "website" ? pixelEvent : "",
+        lead_form_id: objective === "leadform" ? leadForm : "",
+        whatsapp_number: objective === "whatsapp" ? (whatsappByAccount[account] || "") : "",
+        budget_type: budgetType === "daily" ? "Daily" : "Lifetime",
+        budget_amount: Number(budgetAmount.replace(/\s/g, "")) || 0,
+        start_date: startDate ? format(startDate, "yyyy-MM-dd") : "",
+        end_date: endDate ? format(endDate, "yyyy-MM-dd") : "",
+        schedule_time: launchTime === "now" ? "Now" : "Next Day",
+        media_url: mediaUrl,
+      };
+
+      // 3. POST to n8n webhook
+      const webhookUrl = import.meta.env.VITE_N8N_AD_WEBHOOK_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
+
+      toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Кабинет: ${selectedAccount?.name}` });
       onOpenChange(false);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ошибка загрузки";
-      toast({ title: "Ошибка", description: msg, variant: "destructive" });
+      const msg = e instanceof Error ? e.message : "Ошибка отправки";
+      toast({ title: "❌ Ошибка отправки данных", description: msg, variant: "destructive" });
     } finally {
       setLaunching(false);
     }
