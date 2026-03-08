@@ -186,24 +186,33 @@ export default function ContentFactory() {
 
   // ── SUBMIT ──
   const handleGenerate = async (overrides?: { feedback?: string }) => {
-    if (!designPrompt.trim() && !exactText.trim()) {
-      toast({ title: "Заполните ТЗ для дизайна или текст для слайдов", variant: "destructive" });
+    if (!designPrompt.trim() && !exactText.trim() && !referenceUrl.trim() && !referenceFile) {
+      toast({ title: "Заполните ТЗ, текст или загрузите референс/ссылку", variant: "destructive" });
       return;
     }
     setSubmitting(true);
     setViewingTask(null);
     try {
       let customLogoUrl: string | null = null;
+      let referenceImageUrl: string | null = null;
+
+      setUploading(true);
       if (logoFile) {
-        setUploading(true);
         customLogoUrl = await uploadFile(logoFile);
-        setUploading(false);
-        if (!customLogoUrl) { setSubmitting(false); return; }
+        if (!customLogoUrl) { setSubmitting(false); setUploading(false); return; }
       }
+      if (referenceFile) {
+        referenceImageUrl = await uploadFile(referenceFile);
+        if (!referenceImageUrl) { setSubmitting(false); setUploading(false); return; }
+      }
+      setUploading(false);
+
+      const sourceUrl = referenceUrl.trim() || null;
 
       const dbPayload: Record<string, any> = {
         content_type: "photo",
-        source_type: "description",
+        source_type: sourceUrl ? "link" : referenceImageUrl ? "reference" : "description",
+        source_url: sourceUrl,
         main_text: exactText || null,
         visual_style: designPrompt || null,
         format,
@@ -228,6 +237,8 @@ export default function ContentFactory() {
         design_prompt: designPrompt,
         exact_text_slides: exactText,
         custom_logo_url: customLogoUrl,
+        reference_image_url: referenceImageUrl,
+        source_url: sourceUrl,
         ...(overrides?.feedback ? { edit_feedback: overrides.feedback } : {}),
       };
 
