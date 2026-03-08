@@ -41,7 +41,7 @@ function ClientKpiCards({ client }: { client: ClientMetric }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map(c => (
         <div key={c.label} className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
           <div className="flex items-center gap-2 mb-3">
