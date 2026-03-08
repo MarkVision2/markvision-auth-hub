@@ -118,6 +118,21 @@ const INITIAL_TEAM: TeamMember[] = [
   { id: "4", name: "Дмитрий Козлов", email: "d.kozlov@markvision.io", role: "analyst", status: "invited", lastLogin: null, permissions: ROLE_PRESETS.analyst },
 ];
 
+function loadTeam(): TeamMember[] {
+  try {
+    const raw = localStorage.getItem("mv_team_members");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return INITIAL_TEAM;
+}
+
+function saveTeam(team: TeamMember[]) {
+  localStorage.setItem("mv_team_members", JSON.stringify(team));
+}
+
 /* ── Sub-menu items ── */
 const SUB_TABS = [
   { key: "general", label: "Общие", icon: Settings },
@@ -133,8 +148,11 @@ type SubTab = typeof SUB_TABS[number]["key"];
 /* ── Page ── */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SubTab>("team");
-  const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
+  const [team, setTeam] = useState<TeamMember[]>(loadTeam);
   const [search, setSearch] = useState("");
+
+  // Persist team to localStorage
+  useEffect(() => { saveTeam(team); }, [team]);
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -593,11 +611,27 @@ function NotificationsTab() {
           <Switch
             checked={preferences.browserPushEnabled}
             onCheckedChange={async (v) => {
-              if (v && "Notification" in window) {
-                const perm = Notification.permission === "granted"
-                  ? "granted"
-                  : await Notification.requestPermission();
-                if (perm !== "granted") return;
+              if (v) {
+                if (!("Notification" in window)) {
+                  toast({ title: "Браузер не поддерживает уведомления", variant: "destructive" });
+                  return;
+                }
+                try {
+                  const perm = Notification.permission === "granted"
+                    ? "granted"
+                    : await Notification.requestPermission();
+                  if (perm === "denied") {
+                    toast({ title: "Уведомления заблокированы", description: "Разрешите их в настройках браузера для этого сайта", variant: "destructive" });
+                    return;
+                  }
+                  if (perm !== "granted") {
+                    toast({ title: "Разрешение не получено", variant: "destructive" });
+                    return;
+                  }
+                } catch {
+                  // In iframe/preview, permission API may fail — allow toggle anyway
+                  toast({ title: "Push включены", description: "Полная поддержка доступна на опубликованном сайте" });
+                }
               }
               updatePreferences({ browserPushEnabled: v });
             }}
