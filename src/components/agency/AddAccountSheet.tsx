@@ -59,7 +59,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
     setSaving(true);
 
-    const row: Record<string, unknown> = { client_name: form.client_name };
+    const row: Record<string, unknown> = { client_name: form.client_name, project_id: PROJECT_ID };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
     if (form.region_key) row.region_key = form.region_key;
