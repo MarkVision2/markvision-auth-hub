@@ -9,7 +9,7 @@ import {
   Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut,
   Send, Workflow, ScanSearch, ExternalLink,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
