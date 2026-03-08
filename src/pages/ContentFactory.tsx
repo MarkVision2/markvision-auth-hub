@@ -268,6 +268,7 @@ export default function ContentFactory() {
   const handleReset = () => {
     setTaskId(null); setTask(null); setViewingTask(null);
     setDesignPrompt(""); setExactText(""); setLogoFile(null);
+    setReferenceFile(null); setReferencePreview(null); setReferenceUrl("");
     setShowFeedbackInput(false); setEditFeedback("");
   };
 
