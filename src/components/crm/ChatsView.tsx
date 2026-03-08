@@ -284,7 +284,7 @@ export default function ChatsView() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] rounded-xl border border-border bg-card overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-24rem)] min-h-[500px] rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
       {/* TOP — Stage filter bar */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-secondary/20 overflow-x-auto">
         <button
@@ -646,14 +646,20 @@ export default function ChatsView() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-3">
-              <div className="h-16 w-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto">
-                <MessageCircle className="h-8 w-8 text-muted-foreground/30" />
+          <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-secondary/20 via-transparent to-primary/[0.02]">
+            <div className="text-center space-y-4 max-w-xs">
+              <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center mx-auto">
+                <MessageCircle className="h-9 w-9 text-primary/30" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Выберите чат</p>
-                <p className="text-xs text-muted-foreground/60 mt-0.5">Все диалоги с клиентами в одном месте</p>
+                <p className="text-base font-semibold text-foreground/80">Выберите диалог</p>
+                <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
+                  Выберите лида из списка слева чтобы просмотреть историю переписки и управлять статусом
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/50">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary/30 animate-pulse" />
+                AI-агент обрабатывает входящие автоматически
               </div>
             </div>
           </div>
