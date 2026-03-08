@@ -26,11 +26,11 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
 
   return (
     <Sheet open={!!ad} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl p-0 bg-[hsl(var(--background))] border-l border-white/[0.06] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-3xl p-0 bg-background border-l border-border overflow-y-auto">
         {ad && (
           <>
             {/* Header */}
-            <SheetHeader className="p-6 pb-4 border-b border-white/[0.06]">
+            <SheetHeader className="p-6 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-[0_0_24px_-4px_rgba(139,92,246,0.6)]">
                   <Sparkles className="h-5 w-5 text-white" />
@@ -45,7 +45,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
             {/* Two columns */}
             <div className="grid md:grid-cols-2 gap-0 md:gap-0">
               {/* LEFT — Original */}
-              <div className="p-6 border-b md:border-b-0 md:border-r border-white/[0.06]">
+              <div className="p-6 border-b md:border-b-0 md:border-r border-border">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-6 w-6 rounded-md bg-destructive/10 flex items-center justify-center">
                     <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
@@ -53,7 +53,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                   <h3 className="text-sm font-semibold text-muted-foreground">Оригинал конкурента</h3>
                 </div>
 
-                <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 mb-4">
+                <div className="rounded-xl glass p-4 mb-4">
                   <p className="text-sm text-foreground/50 leading-relaxed whitespace-pre-wrap">{ad.copy}</p>
                 </div>
 
@@ -94,12 +94,12 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                   </div>
 
                   {loading ? (
-                    <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-8 mb-4 flex flex-col items-center justify-center gap-3">
+                    <div className="rounded-xl glass border-primary/20 p-8 mb-4 flex flex-col items-center justify-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
                         <Loader2 className="h-5 w-5 text-primary animate-spin" />
                       </div>
                       <p className="text-sm text-muted-foreground">AI генерирует улучшенный оффер...</p>
-                      <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className="w-48 h-1 bg-secondary rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full animate-pulse" style={{ width: "60%" }} />
                       </div>
                     </div>
@@ -117,7 +117,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       )}
 
                       {/* Main improved text */}
-                      <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
+                      <div className="rounded-xl glass border-primary/20 p-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
                         <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{ad.improved}</p>
                       </div>
 
@@ -133,7 +133,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-8 mb-4 text-center">
+                    <div className="rounded-xl glass p-8 mb-4 text-center">
                       <p className="text-xs text-muted-foreground/40">Ожидание генерации...</p>
                     </div>
                   )}
@@ -173,7 +173,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
             </div>
 
             {/* Bottom bar */}
-            <div className="sticky bottom-0 p-6 border-t border-white/[0.06] bg-[hsl(var(--background))]/80 backdrop-blur-xl">
+            <div className="sticky bottom-0 p-6 border-t border-border bg-background/80 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 flex-1 text-xs text-muted-foreground">
                   <ArrowRight className="h-3.5 w-3.5" />

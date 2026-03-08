@@ -83,7 +83,7 @@
     --destructive: 350 89% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 0.06;
+    --border: 0 0% 100% / 0.10;
     --input: 0 0% 12%;
     --ring: 160 84% 39%;
 
@@ -95,7 +95,7 @@
 
     /* Glass tokens */
     --glass-bg: 0 0% 100% / 0.02;
-    --glass-border: 0 0% 100% / 0.06;
+    --glass-border: 0 0% 100% / 0.10;
     --glass-blur: 20px;
 
     /* Overlay */
@@ -107,7 +107,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 10%;
     --sidebar-accent-foreground: 0 0% 93%;
-    --sidebar-border: 0 0% 100% / 0.05;
+    --sidebar-border: 0 0% 100% / 0.10;
     --sidebar-ring: 160 84% 39%;
 
     /* Nav active */

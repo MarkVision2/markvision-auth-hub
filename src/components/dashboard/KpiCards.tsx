@@ -26,7 +26,7 @@ export default function KpiCards() {
                   <Icon className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
               </div>
-              <p className={`text-2xl font-bold tracking-tight leading-none ${kpi.valueColor}`}>{kpi.value}</p>
+              <p className={`text-2xl font-bold font-mono tabular-nums tracking-tight leading-none ${kpi.valueColor}`}>{kpi.value}</p>
               {kpi.progress !== undefined && (
                 <div className="mt-2"><Progress value={kpi.progress} className="h-1 bg-secondary" /></div>
               )}

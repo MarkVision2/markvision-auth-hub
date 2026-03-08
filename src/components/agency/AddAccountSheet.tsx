@@ -36,7 +36,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-white/[0.03] border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+        className="glass border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
       />
     </div>
   );
@@ -112,7 +112,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                   <Textarea
                     value={form.brief}
                     onChange={(e) => updateField("brief", e.target.value)}
-                    className="bg-white/[0.03] border-border text-foreground resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                    className="glass border-border text-foreground resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
                     rows={3}
                   />
                 </div>

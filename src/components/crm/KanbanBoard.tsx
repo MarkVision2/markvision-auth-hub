@@ -417,9 +417,10 @@ export default function KanbanBoard() {
                         {provided.placeholder}
 
                         {stageLeads.length === 0 && !snapshot.isDraggingOver && (
-                          <div className="border border-dashed border-border/60 rounded-xl h-28 flex flex-col items-center justify-center gap-1.5">
+                          <div className="border border-dashed border-border/60 rounded-xl h-32 flex flex-col items-center justify-center gap-2 glass">
                             <Icon className={`h-5 w-5 ${accentTextMap[stage.accent]} opacity-30`} />
-                            <span className="text-[11px] text-muted-foreground">Пусто</span>
+                            <span className="text-[11px] text-muted-foreground/60">Данных пока нет</span>
+                            <span className="text-[9px] text-muted-foreground/30">Перетащите карточку сюда</span>
                           </div>
                         )}
                       </div>
