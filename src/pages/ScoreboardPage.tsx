@@ -215,7 +215,7 @@ export default function ScoreboardPage() {
                     >
                       {columns.map(col => (
                         <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left text-muted-foreground font-medium" : "text-right text-foreground/80"}`}>
-                          {col.key === "date" ? fmtDate(row.date) : fmt(col.key === "cpl" ? cpl(row.spend, row.leads) : (row as Record<string, number>)[col.key] ?? 0)}
+                          {col.key === "date" ? fmtDate(row.date) : fmt(col.key === "cpl" ? cpl(row.spend, row.leads) : (row as unknown as Record<string, number>)[col.key] ?? 0)}
                         </TableCell>
                       ))}
                     </TableRow>
