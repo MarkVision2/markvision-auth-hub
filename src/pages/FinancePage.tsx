@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank, BarChart3, Plus, Trash2, Download, Users, UserPlus, X } from "lucide-react";
+import { Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank, BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
 
 /* ── Formatting ── */
 function fmt(v: number): string {
