@@ -269,6 +269,20 @@ export default function CompetitorSpy() {
           </button>
         </div>
 
+        {/* Sync button for monitoring tab */}
+        {activeTab === "monitoring" && monitoredCount > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncMonitored}
+            disabled={syncing}
+            className="gap-2 text-xs border-border/50"
+          >
+            <RotateCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Обновляю..." : "Обновить все отслеживаемые"}
+          </Button>
+        )}
+
         {/* Ad Grid */}
         {displayAds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
