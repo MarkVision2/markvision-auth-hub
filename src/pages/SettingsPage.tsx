@@ -1253,7 +1253,6 @@ function SystemHealthTab() {
     </div>
   );
 }
-  { name: "Apify", sub: "Радар конкурентов", icon: ScanSearch, status: "operational" as const, metric: "Last sync: 2m ago" },
   { name: "Anthropic / OpenAI", sub: "AI Engine", icon: Cpu, status: "operational" as const, metric: "API Active" },
   { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "operational" as const, metric: "Webhook OK" },
 ];
