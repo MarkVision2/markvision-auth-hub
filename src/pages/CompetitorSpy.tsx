@@ -156,6 +156,7 @@ export default function CompetitorSpy() {
         description: e.message || "Не удалось получить данные",
         variant: "destructive",
       });
+      pushNotification("error", "Ошибка сканирования конкурентов", e.message, "Радар конкурентов");
     } finally {
       setScraping(false);
     }
