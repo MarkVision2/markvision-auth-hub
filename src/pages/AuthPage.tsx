@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Zap, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuthReady } from "@/hooks/useAuthReady";
 
-const AuthPage = () => {
+const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,7 +71,7 @@ const AuthPage = () => {
   if (user) return null; // Will redirect via useEffect
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
+    <div ref={ref} className="flex min-h-screen flex-col lg:flex-row">
       {/* Left — Branding */}
       <div className="relative flex w-full items-center justify-center bg-card px-8 py-16 lg:w-1/2 lg:py-0">
         <div className="dot-pattern absolute inset-0" />
@@ -177,6 +177,8 @@ const AuthPage = () => {
       </div>
     </div>
   );
-};
+});
+
+AuthPage.displayName = "AuthPage";
 
 export default AuthPage;
