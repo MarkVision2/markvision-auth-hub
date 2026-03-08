@@ -275,7 +275,7 @@ function DecompositionTab() {
                 { label: "CAC (полный)", sub: "маркетинг + постоянные", value: fmt(calc.cacFull) },
                 { label: "Средний чек", sub: null, value: fmt(calc.avgCheck) },
               ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center py-3.5 border-b border-border/30 last:border-b-0">
+                <div key={i} className="flex justify-between items-center py-3.5 border-b border-border/10 last:border-b-0">
                   <div>
                     <p className="text-sm text-foreground">{item.label}</p>
                     {item.sub && <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>}
