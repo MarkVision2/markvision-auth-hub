@@ -303,7 +303,7 @@ export default function DashboardTarget() {
         {/* Data table */}
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="grid grid-cols-[1fr_100px_80px_60px_60px_60px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
+            <div className="grid grid-cols-[1fr_100px_80px_70px_70px_80px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
               {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "7д", ""].map((h, i) => (
                 <span key={i} className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">{h}</span>
               ))}
