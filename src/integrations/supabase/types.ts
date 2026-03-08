@@ -604,6 +604,131 @@ export type Database = {
           },
         ]
       }
+      competitors: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          engagement_rate: string | null
+          followers: string | null
+          id: string
+          is_active: boolean | null
+          platform: string
+          project_id: string | null
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          engagement_rate?: string | null
+          followers?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          project_id?: string | null
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          engagement_rate?: string | null
+          followers?: string | null
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          project_id?: string | null
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_factory: {
+        Row: {
+          ai_analysis: string | null
+          competitor_id: string | null
+          created_at: string | null
+          generated_script: string | null
+          hook: string | null
+          id: string
+          performance_score: number | null
+          post_caption: string | null
+          post_type: string | null
+          project_id: string | null
+          status: string | null
+          strengths: string[] | null
+          transcription: string | null
+          updated_at: string | null
+          video_url: string | null
+          weaknesses: string[] | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          competitor_id?: string | null
+          created_at?: string | null
+          generated_script?: string | null
+          hook?: string | null
+          id?: string
+          performance_score?: number | null
+          post_caption?: string | null
+          post_type?: string | null
+          project_id?: string | null
+          status?: string | null
+          strengths?: string[] | null
+          transcription?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          weaknesses?: string[] | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          competitor_id?: string | null
+          created_at?: string | null
+          generated_script?: string | null
+          hook?: string | null
+          id?: string
+          performance_score?: number | null
+          post_caption?: string | null
+          post_type?: string | null
+          project_id?: string | null
+          status?: string | null
+          strengths?: string[] | null
+          transcription?: string | null
+          updated_at?: string | null
+          video_url?: string | null
+          weaknesses?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_factory_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_factory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_tasks: {
         Row: {
           aspect_ratio: string | null
