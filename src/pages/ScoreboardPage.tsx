@@ -326,15 +326,15 @@ export default function ScoreboardPage() {
 
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
-      <div className="space-y-5">
+      <div className="space-y-4 md:space-y-5">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
+              <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {daysWithData > 0 ? `${daysWithData} дней с данными из ${daysInMonth}` : "Ежедневная сводка метрик по кабинету"}
               </p>
@@ -353,7 +353,7 @@ export default function ScoreboardPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {loading
             ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
             : topCards.map(c => <KpiCard key={c.label} {...c} />)
@@ -361,24 +361,24 @@ export default function ScoreboardPage() {
         </div>
 
         {/* Controls Bar */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Month Selector */}
             <div className="flex items-center gap-0.5 rounded-xl border border-border bg-card p-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground" onClick={prev}>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px]" onClick={prev}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm font-semibold text-foreground px-3 select-none min-w-[130px] text-center tabular-nums">
                 {MONTHS[monthIndex]} {year}
               </span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground" onClick={next}>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px]" onClick={next}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
 
             {/* Ad Account Selector */}
             <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger className="h-9 w-[220px] text-xs bg-card border-border rounded-xl">
+              <SelectTrigger className="h-10 min-h-[44px] w-full sm:w-[220px] text-xs bg-card border-border rounded-xl">
                 <div className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <SelectValue placeholder="Выберите кабинет" />
@@ -398,15 +398,16 @@ export default function ScoreboardPage() {
 
           <div className="flex items-center gap-2">
             {!hasPlan && (
-              <p className="text-[11px] text-muted-foreground/50 mr-2">План не задан — Финансы → Декомпозиция</p>
+              <p className="text-[11px] text-muted-foreground/50 mr-2 hidden sm:block">План не задан</p>
             )}
             <Button
               variant="outline"
-              className="gap-2 text-xs h-9 border-border rounded-xl hover:border-primary/20"
+              className="gap-2 text-xs h-10 min-h-[44px] border-border rounded-xl hover:border-primary/20"
               onClick={handleExport}
             >
               <Download className="h-3.5 w-3.5" />
-              Экспорт CSV
+              <span className="hidden sm:inline">Экспорт CSV</span>
+              <span className="sm:hidden">CSV</span>
             </Button>
           </div>
         </div>

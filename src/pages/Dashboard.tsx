@@ -41,7 +41,7 @@ function ClientKpiCards({ client }: { client: ClientMetric }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map(c => (
         <div key={c.label} className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
           <div className="flex items-center gap-2 mb-3">
@@ -67,7 +67,7 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-2">
@@ -236,7 +236,7 @@ export default function Dashboard() {
           /* ── CLIENT VIEW ── */
           <>
             {loading ? (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="rounded-2xl border border-border bg-card p-5 h-28 animate-pulse" />
                 ))}

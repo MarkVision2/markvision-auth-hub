@@ -289,27 +289,28 @@ export default function DashboardTarget() {
               {clients.length} кабинетов · {totals.withData} активных · {MONTH_NAMES[selectedMonth]} {selectedYear}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-9">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => goMonth(-1)}>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-10 min-h-[44px]">
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(-1)}>
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <div className="flex items-center gap-1.5 px-2 min-w-[130px] justify-center">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex items-center gap-1.5 px-2 min-w-[120px] justify-center">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
                 <span className="text-sm font-medium text-foreground whitespace-nowrap">
                   {MONTH_NAMES[selectedMonth]} {selectedYear}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
+            <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px] border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-semibold gap-1.5">
+            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5">
               <Rocket className="h-4 w-4" />
-              Создать кампанию
+              <span className="hidden sm:inline">Создать кампанию</span>
+              <span className="sm:hidden">Создать</span>
             </Button>
           </div>
         </FadeUpItem>
@@ -372,7 +373,8 @@ export default function DashboardTarget() {
         {/* Data table */}
         <FadeUpItem>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20">
+            <div className="overflow-x-auto">
+            <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
               {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
                 <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
               ))}
@@ -380,14 +382,15 @@ export default function DashboardTarget() {
 
             {filteredClients.length === 0 && (
               <div className="px-4 py-16 text-center">
-                <div className="h-12 w-12 rounded-2xl bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                <div className="h-14 w-14 rounded-2xl glass flex items-center justify-center mx-auto mb-3">
                   <Megaphone className="h-6 w-6 text-muted-foreground/30" />
                 </div>
-                <p className="text-sm font-medium text-foreground/60">Ничего не найдено</p>
+                <p className="text-sm font-medium text-foreground/60">Данных пока нет</p>
                 <p className="text-xs text-muted-foreground/50 mt-1">Попробуйте изменить фильтры</p>
               </div>
             )}
 
+            <div className="min-w-[700px]">
             {filteredClients.map((client) => {
               const isOpen = expandedAccounts.has(client.name);
               const hasAlert = alerts.some(a => a.account === client.name);
@@ -501,6 +504,8 @@ export default function DashboardTarget() {
                 </Collapsible>
               );
             })}
+            </div>
+            </div>
           </div>
         </FadeUpItem>
       </StaggerContainer>

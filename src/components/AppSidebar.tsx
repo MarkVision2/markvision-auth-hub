@@ -65,7 +65,11 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-export default function AppSidebar() {
+interface SidebarContentInnerProps {
+  onNavigate?: () => void;
+}
+
+function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
   const location = useLocation();
   const { workspaces, active, setActiveId, isAgency } = useWorkspace();
   const { isSuperadmin } = useRole();
@@ -94,7 +98,6 @@ export default function AppSidebar() {
     ? profile.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     : "MV";
 
-  // Filter groups and items based on role
   const visibleGroups = navGroups
     .filter(g => !g.superadminOnly || isSuperadmin)
     .map(g => ({
@@ -104,11 +107,11 @@ export default function AppSidebar() {
     .filter(g => g.items.length > 0);
 
   return (
-    <aside className="w-64 shrink-0 h-screen flex flex-col border-r border-border bg-sidebar">
+    <>
       {/* ── Workspace Switcher ── */}
       <Popover open={wsOpen} onOpenChange={setWsOpen}>
         <PopoverTrigger asChild>
-          <button className="h-14 flex items-center gap-3 px-4 shrink-0 w-full hover:bg-accent/30 transition-colors group">
+          <button className="h-14 flex items-center gap-3 px-4 shrink-0 w-full hover:bg-accent/30 transition-colors group min-h-[56px]">
             <div className={cn(
               "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-base",
               isAgency ? "bg-primary/10 border border-primary/20" : "bg-accent border border-border"
@@ -139,7 +142,7 @@ export default function AppSidebar() {
                 key={ws.id}
                 onClick={() => { setActiveId(ws.id); setWsOpen(false); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left transition-colors",
+                  "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left transition-colors min-h-[44px]",
                   selected ? "bg-primary/10" : "hover:bg-accent/50"
                 )}
               >
@@ -181,7 +184,8 @@ export default function AppSidebar() {
                     key={item.path}
                     to={item.path}
                     end={item.end}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-150
+                    onClick={onNavigate}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150 min-h-[44px]
                       ${isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -203,7 +207,8 @@ export default function AppSidebar() {
         <Separator className="mb-3" />
         <NavLink
           to="/settings"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+          onClick={onNavigate}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 min-h-[44px]"
           activeClassName="bg-primary/10 text-primary"
         >
           <Settings size={18} strokeWidth={1.8} />
@@ -223,6 +228,17 @@ export default function AppSidebar() {
           </div>
         </div>
       </div>
+    </>
+  );
+}
+
+export default function AppSidebar() {
+  return (
+    <aside className="hidden md:flex w-64 shrink-0 h-screen flex-col border-r border-border bg-sidebar">
+      <SidebarContentInner />
     </aside>
   );
 }
+
+// Export for mobile drawer
+export { SidebarContentInner, navGroups };

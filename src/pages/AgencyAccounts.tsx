@@ -228,42 +228,42 @@ export default function AgencyAccounts() {
 
   return (
     <DashboardLayout breadcrumb={pageTitle}>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
+        <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
         {isSuperadmin && (
-          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+          <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
             <Plus className="h-4 w-4" />
             Добавить кабинет
           </Button>
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+      <div className="flex flex-col gap-4 mb-4 md:mb-6">
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="bg-secondary border border-border">
-            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
+          <TabsList className="bg-secondary border border-border w-full overflow-x-auto flex-nowrap">
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
               Все ({metrics.length})
             </TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
-              ⚠️ Внимание ({attentionCount})
+            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
+              ⚠️ ({attentionCount})
             </TabsTrigger>
-            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
-              ✅ Эффективные ({effectiveCount})
+            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
+              ✅ ({effectiveCount})
             </TabsTrigger>
-            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs">
-              Неактивные ({inactiveCount})
+            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
+              ⏸ ({inactiveCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Поиск..."
-              className="h-8 w-48 pl-8 text-xs bg-secondary border-border"
+              className="h-10 min-h-[44px] w-full pl-8 text-xs bg-secondary border-border"
             />
           </div>
           <PeriodPicker value={period} onChange={setPeriod} />
@@ -272,7 +272,8 @@ export default function AgencyAccounts() {
 
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <Table>
+        <div className="overflow-x-auto">
+        <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
               <TableHead className="text-xs font-medium text-muted-foreground w-[180px]">Кабинет</TableHead>
@@ -358,6 +359,7 @@ export default function AgencyAccounts() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onSaved={fetchMetrics} />
