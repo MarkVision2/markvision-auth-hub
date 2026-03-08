@@ -52,6 +52,24 @@ export default function AppSidebar() {
   const location = useLocation();
   const { workspaces, active, setActiveId, isAgency } = useWorkspace();
   const [wsOpen, setWsOpen] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null }>({ full_name: null, avatar_url: null });
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+      if (data) setProfile(data);
+    };
+    load();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { load(); });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const initials = profile.full_name
+    ? profile.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+    : "MV";
 
   return (
     <aside className="w-64 shrink-0 h-screen flex flex-col border-r border-border bg-sidebar">
