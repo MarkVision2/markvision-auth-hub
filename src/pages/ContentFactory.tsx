@@ -60,12 +60,20 @@ const VIDEO_ASPECT_CARDS = [
   { value: "1:1", label: "1:1", sub: "Квадрат" },
 ] as const;
 
-const pipelineSteps = [
+const photoPipelineSteps = [
   { key: "analyze", label: "Обработка запроса", icon: "🔍" },
   { key: "generate", label: "Создание изображения", icon: "🎨" },
   { key: "text", label: "Добавление текста", icon: "✍️" },
   { key: "prepare", label: "Подготовка к загрузке", icon: "📦" },
   { key: "done", label: "Отправлено в группу", icon: "✅" },
+];
+
+const videoPipelineSteps = [
+  { key: "analyze", label: "Обработка запроса", icon: "🔍" },
+  { key: "generate", label: "Генерация видео", icon: "🎬" },
+  { key: "effects", label: "Наложение эффектов и текста", icon: "✨" },
+  { key: "render", label: "Рендеринг", icon: "⚙️" },
+  { key: "done", label: "Видео готово", icon: "✅" },
 ];
 
 const MOCK_AI_DESIGN = `Минималистичный дизайн на тёмном фоне (#0a0a0a). Градиентные неоновые акценты (emerald → cyan). Шрифт: Montserrat Bold для заголовков, Inter для основного текста. Геометрические линии и абстрактные формы на фоне. Фото элайнеров в центральной композиции с мягким свечением. Стиль: премиум-клиника, технологичность, доверие. Палитра: тёмный + изумрудный + белый текст.`;
