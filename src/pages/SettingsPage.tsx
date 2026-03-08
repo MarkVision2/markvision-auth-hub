@@ -1383,23 +1383,25 @@ function SystemHealthTab() {
       setServices(prev => prev.map(s => s.name === "n8n" ? { ...s, status: "operational", metric: "Webhook OK" } : s));
       newLogs.push({ time: now(), level: "SUCCESS", msg: "n8n AI_CONTROL_GATEWAY ping successful" });
     } else {
-      setServices(prev => prev.map(s => s.name === "n8n" ? { ...s, status: "outage", metric: "Unreachable" } : s));
+      setServices(prev => prev.map(s => s.name === "n8n" ? { ...s, status: "outage", metric: pingResult?.error || "Unreachable" } : s));
       newLogs.push({ time: now(), level: "ERROR", msg: `n8n ping failed: ${pingResult?.error || "no response"}` });
     }
 
-    // 3. n8n workflows list
+    // 3. n8n workflows list (now via direct REST API)
     const wfResult = await callGateway("list_workflows");
     if (wfResult?.success && wfResult.data) {
-      const wfData = Array.isArray(wfResult.data) ? wfResult.data : wfResult.data?.data || [];
+      const wfData = Array.isArray(wfResult.data) ? wfResult.data : [];
       setWorkflows(wfData);
       const activeCount = wfData.filter((w: any) => w.active).length;
-      newLogs.push({ time: now(), level: "INFO", msg: `n8n: ${wfData.length} workflows, ${activeCount} active` });
+      newLogs.push({ time: now(), level: "SUCCESS", msg: `n8n REST API: ${wfData.length} workflows loaded, ${activeCount} active` });
+    } else {
+      newLogs.push({ time: now(), level: "WARN", msg: `n8n workflows: ${wfResult?.error || "failed to load"}` });
     }
 
     // 4. n8n last errors
     const errResult = await callGateway("last_errors");
     if (errResult?.success && errResult.data) {
-      const errData = Array.isArray(errResult.data) ? errResult.data : errResult.data?.data || [];
+      const errData = Array.isArray(errResult.data) ? errResult.data : [];
       setErrors(errData);
       if (errData.length > 0) {
         newLogs.push({ time: now(), level: "WARN", msg: `n8n: ${errData.length} recent execution errors` });
@@ -1421,6 +1423,13 @@ function SystemHealthTab() {
   const operationalCount = services.filter(s => s.status === "operational").length;
   const allOk = operationalCount === services.length && !services.some(s => s.status === "loading");
   const hasIssues = services.some(s => s.status === "outage" || s.status === "degraded");
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "short" }) + " " + d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", hour12: false });
+    } catch { return "—"; }
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -1444,7 +1453,8 @@ function SystemHealthTab() {
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {operationalCount} из {services.length} сервисов активны
-              {errors.length > 0 && ` · ${errors.length} ошибок в n8n`}
+              {workflows.length > 0 && ` · ${workflows.length} n8n workflows`}
+              {errors.length > 0 && ` · ${errors.length} ошибок`}
             </p>
           </div>
         </div>
@@ -1475,10 +1485,10 @@ function SystemHealthTab() {
                       <p className="text-[10px] text-muted-foreground">{svc.sub}</p>
                     </div>
                   </div>
-                  <Badge variant="outline" className={cn("text-[10px] gap-1 border-none", s.bg, s.text)}>
-                    <div className={cn("h-1.5 w-1.5 rounded-full", s.color)} />
+                  <span className={cn("inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-2 py-0.5", s.bg, s.text)}>
+                    <span className={cn("h-1.5 w-1.5 rounded-full", s.color)} />
                     {s.label}
-                  </Badge>
+                  </span>
                 </div>
                 <div className="rounded-lg bg-accent/20 border border-border/10 px-3 py-2">
                   <span className="text-[11px] font-mono text-muted-foreground">{svc.metric}</span>
@@ -1490,26 +1500,73 @@ function SystemHealthTab() {
       </div>
 
       {/* ── n8n Workflows ── */}
-      {workflows.length > 0 && (
-        <div className="rounded-xl border border-border/30 bg-card overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2">
-            <Workflow size={14} className="text-muted-foreground" />
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">n8n Workflows</h2>
-            <span className="text-[10px] text-muted-foreground/40 ml-auto">{workflows.length} всего</span>
-          </div>
-          <div className="divide-y divide-border/10">
-            {workflows.slice(0, 15).map((wf: any, i: number) => (
-              <div key={wf.id || i} className="px-5 py-2.5 flex items-center gap-3 hover:bg-accent/10 transition-colors">
-                <div className={cn("h-2 w-2 rounded-full shrink-0", wf.active ? "bg-emerald-500" : "bg-muted-foreground/30")} />
-                <span className="text-sm text-foreground flex-1 truncate">{wf.name}</span>
-                <Badge variant="outline" className={cn("text-[9px]", wf.active ? "text-emerald-400 border-emerald-500/20" : "text-muted-foreground border-border")}>
-                  {wf.active ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-            ))}
-          </div>
+      <div className="rounded-xl border border-border/30 bg-card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2">
+          <Workflow size={14} className="text-primary" />
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">n8n Workflows</h2>
+          {workflows.length > 0 && (
+            <span className="text-[10px] text-muted-foreground/40 ml-auto">{workflows.length} подключено</span>
+          )}
         </div>
-      )}
+
+        {checking && workflows.length === 0 && (
+          <div className="px-5 py-8 text-center">
+            <RefreshCw size={16} className="animate-spin text-muted-foreground mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Загрузка workflows из n8n REST API...</p>
+          </div>
+        )}
+
+        {!checking && workflows.length === 0 && (
+          <div className="px-5 py-8 text-center">
+            <Wifi size={20} className="text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Не удалось загрузить workflows</p>
+            <p className="text-[11px] text-muted-foreground/60 mt-1">Проверьте N8N_CONTROL_API_KEY в секретах Supabase</p>
+          </div>
+        )}
+
+        {workflows.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-[10px] uppercase tracking-wider">Workflow</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-center w-20">Узлы</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-right w-36">Обновлён</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-right w-24">Статус</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {workflows.map((wf: any, i: number) => (
+                <TableRow key={wf.id || i} className="hover:bg-accent/10">
+                  <TableCell className="py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className={cn("h-2 w-2 rounded-full shrink-0", wf.active ? "bg-emerald-500" : "bg-muted-foreground/30")} />
+                      <span className="text-sm text-foreground truncate max-w-[280px]">{wf.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center py-2.5">
+                    <span className="text-xs text-muted-foreground tabular-nums">{wf.nodes || "—"}</span>
+                  </TableCell>
+                  <TableCell className="text-right py-2.5">
+                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                      {wf.updatedAt ? formatDate(wf.updatedAt) : "—"}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right py-2.5">
+                    <span className={cn(
+                      "inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-2 py-0.5",
+                      wf.active
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {wf.active ? "Active" : "Inactive"}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
 
       {/* ── n8n Errors ── */}
       {errors.length > 0 && (
@@ -1523,11 +1580,11 @@ function SystemHealthTab() {
             {errors.slice(0, 10).map((err: any, i: number) => (
               <div key={err.id || i} className="px-5 py-2.5 flex items-start gap-3 hover:bg-rose-500/5 transition-colors">
                 <span className="text-muted-foreground/40 shrink-0 tabular-nums">
-                  {err.startedAt ? new Date(err.startedAt).toLocaleTimeString("ru-RU", { hour12: false }) : "—"}
+                  {err.startedAt ? formatDate(err.startedAt) : "—"}
                 </span>
                 <span className="text-rose-400 shrink-0 font-semibold w-16">[ERROR]</span>
                 <span className="text-muted-foreground truncate">
-                  {err.workflowName || err.workflow?.name || `Workflow ${err.workflowId}`}
+                  {err.workflowName || `Workflow ${err.workflowId}`}
                 </span>
               </div>
             ))}
