@@ -4,6 +4,8 @@ import { startOfMonth, endOfMonth } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRole } from "@/hooks/useRole";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -96,6 +98,8 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 export default function AgencyAccounts() {
+  const { isSuperadmin } = useRole();
+  const { active } = useWorkspace();
   const [metrics, setMetrics] = useState<MetricsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -110,15 +114,18 @@ export default function AgencyAccounts() {
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("agency_metrics_view")
-      .select("*");
+    let query = (supabase as any).from("agency_metrics_view").select("*");
+    // Client mode: filter to only their client
+    if (!isSuperadmin && active.clientName) {
+      query = query.eq("client_name", active.clientName);
+    }
+    const { data, error } = await query;
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     }
     setMetrics((data as MetricsRow[]) ?? []);
     setLoading(false);
-  }, []);
+  }, [isSuperadmin, active.clientName]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
@@ -217,14 +224,18 @@ export default function AgencyAccounts() {
     return "border-l-2 border-l-transparent";
   }
 
+  const pageTitle = isSuperadmin ? "Агентские кабинеты" : "Мои рекламные кабинеты";
+
   return (
-    <DashboardLayout breadcrumb="Агентские кабинеты">
+    <DashboardLayout breadcrumb={pageTitle}>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Агентские кабинеты</h1>
-        <Button onClick={() => setSheetOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Добавить кабинет
-        </Button>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
+        {isSuperadmin && (
+          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Добавить кабинет
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
