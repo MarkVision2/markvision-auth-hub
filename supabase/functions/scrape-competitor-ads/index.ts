@@ -11,6 +11,27 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ success: false, error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const reqBody = await req.json();
     const { url, query } = reqBody;
 
@@ -22,11 +43,6 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Accept optional country filter, default to KZ
     const country = reqBody.country || "KZ";
 
     let scrapeUrl = url;
@@ -44,7 +60,6 @@ serve(async (req) => {
 
     console.log("Scraping URL:", scrapeUrl);
 
-    // Use Firecrawl to scrape the Ad Library page
     const firecrawlResponse = await fetch("https://api.firecrawl.dev/v2/scrape", {
       method: "POST",
       headers: {
@@ -71,7 +86,6 @@ serve(async (req) => {
 
     const markdown = firecrawlData.data?.markdown || firecrawlData.markdown || "";
 
-    // Now use Lovable AI to extract structured ad data from the scraped content
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(
@@ -168,7 +182,12 @@ serve(async (req) => {
       console.error("Failed to parse AI response:", e);
     }
 
-    // Insert scraped ads into Supabase
+    // Use service role client for inserts (RLS requires authenticated)
+    const serviceSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     if (ads.length > 0) {
       const rows = ads.map((ad: any) => ({
         advertiser_name: ad.advertiser_name || "Unknown",
@@ -182,7 +201,7 @@ serve(async (req) => {
         scrape_status: "completed",
       }));
 
-      const { error: insertError } = await supabase.from("competitor_ads").insert(rows);
+      const { error: insertError } = await serviceSupabase.from("competitor_ads").insert(rows);
       if (insertError) {
         console.error("Insert error:", insertError);
       }

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,26 +8,43 @@ import { ProtectedRoute } from "@/hooks/useAuthReady";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoleProvider } from "@/hooks/useRole";
 import { NotificationProvider } from "@/hooks/useNotifications";
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import DashboardTarget from "./pages/DashboardTarget";
-import DashboardSales from "./pages/DashboardSales";
-import DashboardPM from "./pages/DashboardPM";
-import AgencyAccounts from "./pages/AgencyAccounts";
-import ContentFactory from "./pages/ContentFactory";
-import CrmSystem from "./pages/CrmSystem";
-import AiRopPage from "./pages/AiRopPage";
-import CompetitorSpy from "./pages/CompetitorSpy";
-import SettingsPage from "./pages/SettingsPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import FinancePage from "./pages/FinancePage";
-import AiReportsPage from "./pages/AiReportsPage";
-import ScoreboardPage from "./pages/ScoreboardPage";
-import AgencyBillingPage from "./pages/AgencyBillingPage";
-import AutopostingPage from "./pages/AutopostingPage";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy-loaded pages for code splitting
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardTarget = lazy(() => import("./pages/DashboardTarget"));
+const DashboardSales = lazy(() => import("./pages/DashboardSales"));
+const DashboardPM = lazy(() => import("./pages/DashboardPM"));
+const AgencyAccounts = lazy(() => import("./pages/AgencyAccounts"));
+const ContentFactory = lazy(() => import("./pages/ContentFactory"));
+const CrmSystem = lazy(() => import("./pages/CrmSystem"));
+const AiRopPage = lazy(() => import("./pages/AiRopPage"));
+const CompetitorSpy = lazy(() => import("./pages/CompetitorSpy"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
+const FinancePage = lazy(() => import("./pages/FinancePage"));
+const AiReportsPage = lazy(() => import("./pages/AiReportsPage"));
+const ScoreboardPage = lazy(() => import("./pages/ScoreboardPage"));
+const AgencyBillingPage = lazy(() => import("./pages/AgencyBillingPage"));
+const AutopostingPage = lazy(() => import("./pages/AutopostingPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const PageLoader = () => (
+  <div className="flex h-screen items-center justify-center bg-background">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -37,6 +55,7 @@ const App = () => (
         <RoleProvider>
         <WorkspaceProvider>
         <NotificationProvider>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<AuthPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -57,6 +76,7 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
         </NotificationProvider>
         </WorkspaceProvider>
         </RoleProvider>
