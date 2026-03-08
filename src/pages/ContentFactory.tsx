@@ -68,6 +68,8 @@ export default function ContentFactory() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [videoFormat, setVideoFormat] = useState<"reels" | "slideshow">("reels");
+
   // Video is always 9:16
   const videoAspect = "9:16";
 
