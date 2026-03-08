@@ -677,7 +677,10 @@ function AgencyTab() {
                 <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalMrr)}</td>
                 <td className="py-4 px-4 text-sm font-bold text-destructive tabular-nums text-left">{fmtCurrency(totalExpenses)}</td>
                 <td className="py-4 px-4 text-sm font-bold text-primary tabular-nums text-left">{fmtCurrency(totalMrr - totalExpenses)}</td>
-                <td colSpan={4} />
+                <td className="py-4 px-4 text-sm font-bold tabular-nums text-left">
+                  <span className={totalMrr > 0 ? "text-primary" : "text-muted-foreground"}>{totalMrr > 0 ? Math.round(((totalMrr - totalExpenses) / totalMrr) * 100) : 0}%</span>
+                </td>
+                <td colSpan={3} />
               </tr>
             </tbody>
           </table>
