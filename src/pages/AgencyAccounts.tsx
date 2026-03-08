@@ -114,15 +114,18 @@ export default function AgencyAccounts() {
 
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("agency_metrics_view")
-      .select("*");
+    let query = (supabase as any).from("agency_metrics_view").select("*");
+    // Client mode: filter to only their client
+    if (!isSuperadmin && active.clientName) {
+      query = query.eq("client_name", active.clientName);
+    }
+    const { data, error } = await query;
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     }
     setMetrics((data as MetricsRow[]) ?? []);
     setLoading(false);
-  }, []);
+  }, [isSuperadmin, active.clientName]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
