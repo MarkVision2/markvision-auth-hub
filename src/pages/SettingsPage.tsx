@@ -1253,9 +1253,8 @@ function SystemHealthTab() {
     </div>
   );
 }
-  { name: "Anthropic / OpenAI", sub: "AI Engine", icon: Cpu, status: "operational" as const, metric: "API Active" },
-  { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "operational" as const, metric: "Webhook OK" },
-];
+
+
 
 const STATUS_MAP = {
   operational: { label: "Operational", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
