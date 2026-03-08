@@ -1,7 +1,9 @@
 import { ReactNode } from "react";
-import { Sun, Moon, Sparkles } from "lucide-react";
+import { Sun, Moon, Sparkles, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useTheme } from "@/hooks/useTheme";
+import { useRole } from "@/hooks/useRole";
 import AppSidebar from "@/components/AppSidebar";
 
 interface DashboardLayoutProps {
@@ -11,6 +13,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
   const { theme, toggle } = useTheme();
+  const { role, setRole, isSuperadmin } = useRole();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -37,6 +40,19 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
                 </kbd>
               </div>
             </div>
+          </div>
+
+          {/* Role Toggle (testing) */}
+          <div className="flex items-center gap-2 shrink-0 border border-border/50 rounded-lg px-3 py-1.5">
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[11px] text-muted-foreground font-medium">Client</span>
+            <Switch
+              checked={isSuperadmin}
+              onCheckedChange={(checked) => setRole(checked ? "superadmin" : "client")}
+              className="data-[state=checked]:bg-primary"
+            />
+            <Shield className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[11px] text-primary font-medium">Super</span>
           </div>
 
           <Button

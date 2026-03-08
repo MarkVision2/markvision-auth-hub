@@ -2,12 +2,13 @@ import { useLocation } from "react-router-dom";
 import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
-  ChevronsUpDown, Check, Building2, TableProperties,
+  ChevronsUpDown, Check, Building2, TableProperties, Receipt,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -15,12 +16,26 @@ import {
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const navGroups = [
+interface NavItem {
+  title: string;
+  path: string;
+  icon: React.ElementType;
+  end?: boolean;
+  superadminOnly?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  superadminOnly?: boolean;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
   {
     label: "ГЛАВНОЕ",
     items: [
       { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true },
-      { title: "Агентские кабинеты", path: "/accounts", icon: Briefcase },
+      { title: "Агентские кабинеты", path: "/accounts", icon: Briefcase, superadminOnly: true },
     ],
   },
   {
@@ -47,11 +62,19 @@ const navGroups = [
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],
   },
+  {
+    label: "АГЕНТСТВО",
+    superadminOnly: true,
+    items: [
+      { title: "Агентская аналитика", path: "/agency-billing", icon: Receipt, superadminOnly: true },
+    ],
+  },
 ];
 
 export default function AppSidebar() {
   const location = useLocation();
   const { workspaces, active, setActiveId, isAgency } = useWorkspace();
+  const { isSuperadmin } = useRole();
   const [wsOpen, setWsOpen] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null }>({ full_name: null, avatar_url: null });
 
@@ -71,6 +94,15 @@ export default function AppSidebar() {
   const initials = profile.full_name
     ? profile.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     : "MV";
+
+  // Filter groups and items based on role
+  const visibleGroups = navGroups
+    .filter(g => !g.superadminOnly || isSuperadmin)
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => !item.superadminOnly || isSuperadmin),
+    }))
+    .filter(g => g.items.length > 0);
 
   return (
     <aside className="w-64 shrink-0 h-screen flex flex-col border-r border-border bg-sidebar">
@@ -140,7 +172,7 @@ export default function AppSidebar() {
 
       {/* ── Nav groups ── */}
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <div key={group.label}>
             <p className="px-3 mb-2 text-[11px] tracking-wider text-muted-foreground font-semibold uppercase select-none">
               {group.label}
@@ -194,7 +226,7 @@ export default function AppSidebar() {
           </Avatar>
           <div className="min-w-0">
             <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
-            <p className="text-[11px] text-muted-foreground">CEO</p>
+            <p className="text-[11px] text-muted-foreground">{isSuperadmin ? "Superadmin" : "Client"}</p>
           </div>
         </div>
       </div>

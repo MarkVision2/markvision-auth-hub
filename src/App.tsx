@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/hooks/useAuthReady";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
+import { RoleProvider } from "@/hooks/useRole";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import DashboardTarget from "./pages/DashboardTarget";
@@ -20,6 +21,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import FinancePage from "./pages/FinancePage";
 import AiReportsPage from "./pages/AiReportsPage";
 import ScoreboardPage from "./pages/ScoreboardPage";
+import AgencyBillingPage from "./pages/AgencyBillingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <RoleProvider>
         <WorkspaceProvider>
         <Routes>
           <Route path="/" element={<AuthPage />} />
@@ -46,10 +49,12 @@ const App = () => (
           <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
           <Route path="/ai-reports" element={<ProtectedRoute><AiReportsPage /></ProtectedRoute>} />
           <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage /></ProtectedRoute>} />
+          <Route path="/agency-billing" element={<ProtectedRoute><AgencyBillingPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         </WorkspaceProvider>
+        </RoleProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
