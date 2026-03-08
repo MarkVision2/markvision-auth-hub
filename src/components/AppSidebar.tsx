@@ -5,14 +5,15 @@ import {
   ChevronsUpDown, Check, Building2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { cn } from "@/lib/utils";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const navGroups = [
   {
@@ -51,6 +52,24 @@ export default function AppSidebar() {
   const location = useLocation();
   const { workspaces, active, setActiveId, isAgency } = useWorkspace();
   const [wsOpen, setWsOpen] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null }>({ full_name: null, avatar_url: null });
+
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+      if (data) setProfile(data);
+    };
+    load();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { load(); });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const initials = profile.full_name
+    ? profile.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
+    : "MV";
 
   return (
     <aside className="w-64 shrink-0 h-screen flex flex-col border-r border-border bg-sidebar">
@@ -167,12 +186,13 @@ export default function AppSidebar() {
 
         <div className="flex items-center gap-3 px-3 py-2 mt-1">
           <Avatar className="h-8 w-8">
+            {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || "Avatar"} />}
             <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
-              MV
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">Admin</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
             <p className="text-[11px] text-muted-foreground">CEO</p>
           </div>
         </div>
