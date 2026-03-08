@@ -289,27 +289,28 @@ export default function DashboardTarget() {
               {clients.length} кабинетов · {totals.withData} активных · {MONTH_NAMES[selectedMonth]} {selectedYear}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-9">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => goMonth(-1)}>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-10 min-h-[44px]">
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(-1)}>
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
-              <div className="flex items-center gap-1.5 px-2 min-w-[130px] justify-center">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="flex items-center gap-1.5 px-2 min-w-[120px] justify-center">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
                 <span className="text-sm font-medium text-foreground whitespace-nowrap">
                   {MONTH_NAMES[selectedMonth]} {selectedYear}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <Button variant="outline" size="icon" className="h-9 w-9 border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
+            <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px] border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 text-sm font-semibold gap-1.5">
+            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5">
               <Rocket className="h-4 w-4" />
-              Создать кампанию
+              <span className="hidden sm:inline">Создать кампанию</span>
+              <span className="sm:hidden">Создать</span>
             </Button>
           </div>
         </FadeUpItem>
