@@ -100,6 +100,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
 export default function AgencyAccounts() {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
+  const [metrics, setMetrics] = useState<MetricsRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [filter, setFilter] = useState("all");
