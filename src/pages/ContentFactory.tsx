@@ -675,7 +675,7 @@ export default function ContentFactory() {
           </div>
 
           {/* History */}
-          {history.length > 0 && (
+          {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0).length > 0 && (
             <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
