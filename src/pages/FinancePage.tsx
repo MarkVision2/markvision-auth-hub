@@ -203,7 +203,7 @@ function DecompositionTab() {
         </div>
 
         {/* Expenses */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-3">
+        <div className="rounded-2xl bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Расходы</p>
             <div className="flex gap-2">
