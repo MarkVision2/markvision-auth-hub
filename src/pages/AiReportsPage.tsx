@@ -556,7 +556,7 @@ export default function AiReportsPage() {
             </div>
 
             {/* ═══ PAGE 2: CREATIVES & CHANNELS ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[1] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               <MiniHeader clientName={clientName} dateRange={dateRange} subtitle="Креативы и Каналы" />
 
               {/* Top Creatives */}
