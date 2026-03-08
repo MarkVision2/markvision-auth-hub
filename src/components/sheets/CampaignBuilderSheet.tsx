@@ -58,6 +58,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [launching, setLaunching] = useState(false);
   const { toast } = useToast();
+  const { pushNotification } = useNotifications();
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
