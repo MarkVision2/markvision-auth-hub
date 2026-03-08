@@ -445,7 +445,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
             <div key={sv.name} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors">
               <span className="text-sm text-foreground flex-1 truncate">{sv.name}</span>
               <Input type="number" value={sv.price || ""} onChange={(e) => updateServicePrice(sv.name, Number(e.target.value))}
-                className="h-7 w-[100px] text-xs tabular-nums text-right bg-secondary/50 border-border/30 rounded-md px-2" placeholder="Сумма" />
+                className="h-7 w-[100px] text-xs tabular-nums text-right bg-secondary/50 border-border/10 rounded-md px-2" placeholder="Сумма" />
               <span className="text-[10px] text-muted-foreground shrink-0">₸</span>
               <button onClick={() => removeService(sv.name)} className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0">
                 <X className="h-3.5 w-3.5" />
