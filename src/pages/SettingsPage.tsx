@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
@@ -7,7 +7,8 @@ import {
   LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
   Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut,
-  Send, Workflow, ScanSearch, ExternalLink,
+  Send, Workflow, ScanSearch, ExternalLink, HeartPulse,
+  Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
