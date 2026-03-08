@@ -284,7 +284,7 @@ export default function ChatsView() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] rounded-xl border border-border bg-card overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-24rem)] min-h-[500px] rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
       {/* TOP — Stage filter bar */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-secondary/20 overflow-x-auto">
         <button
