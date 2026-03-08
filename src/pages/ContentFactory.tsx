@@ -607,14 +607,16 @@ export default function ContentFactory() {
           </div>
 
           {/* History */}
-          {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0).length > 0 && (
+          {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
             <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Последние генерации</span>
+                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                  Последние {mainType === "video" ? "видео" : "фото"}
+                </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0).map((h) => (
+                {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
                   <div key={h.id} className="relative group">
                     <button
                       onClick={() => loadHistoryItem(h)}
