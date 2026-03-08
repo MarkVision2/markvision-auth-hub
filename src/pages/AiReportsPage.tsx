@@ -339,6 +339,41 @@ export default function AiReportsPage() {
     ? (isAgency ? "Все проекты" : active.name)
     : clients.find(c => c.id === selectedClient)?.client_name || "Проект";
 
+  const handleDownloadPdf = useCallback(async () => {
+    const pages = pagesRef.current.filter(Boolean) as HTMLDivElement[];
+    if (pages.length === 0) return;
+    setDownloading(true);
+    try {
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
+        const imgW = canvas.width * ratio;
+        const imgH = canvas.height * ratio;
+        const x = (pdfW - imgW) / 2;
+        const y = (pdfH - imgH) / 2;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+      }
+
+      pdf.save(`report_${clientName}_${format(now, "yyyy-MM-dd")}.pdf`);
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    } finally {
+      setDownloading(false);
+    }
+  }, [clientName]);
+
   const isEmpty = curMetrics.length === 0 && !loading;
 
   return (
