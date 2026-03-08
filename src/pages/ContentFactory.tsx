@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import {
   Image, Download, Loader2, CheckCircle2, RotateCcw,
   Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
-  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus,
+  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus, Video, Film,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -20,6 +20,7 @@ import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AutopostSheet from "@/components/sheets/AutopostSheet";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
+type ContentMode = "photo" | "video";
 
 interface ContentTask {
   id: string;
@@ -35,24 +36,44 @@ interface ContentTask {
   created_at: string | null;
 }
 
-const FORMAT_CARDS = [
+const PHOTO_FORMAT_CARDS = [
   { value: "single", label: "1 Картинка (Баннер)", sub: "Одно изображение", icon: "🖼" },
   { value: "carousel-7", label: "Карусель 7 слайдов", sub: "Продающая серия", icon: "📑" },
   { value: "carousel-10", label: "Карусель 10 слайдов", sub: "Максимум контента", icon: "📚" },
 ] as const;
 
-const ASPECT_CARDS = [
+const VIDEO_FORMAT_CARDS = [
+  { value: "reels", label: "Reels / Shorts", sub: "Вертикальное видео", icon: "📱" },
+  { value: "promo-clip", label: "Промо-ролик", sub: "Рекламный клип", icon: "🎬" },
+  { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
+] as const;
+
+const PHOTO_ASPECT_CARDS = [
   { value: "1:1", label: "1:1", sub: "Квадрат" },
   { value: "4:5", label: "4:5", sub: "Лента" },
   { value: "9:16", label: "9:16", sub: "Stories / Reels" },
 ] as const;
 
-const pipelineSteps = [
+const VIDEO_ASPECT_CARDS = [
+  { value: "9:16", label: "9:16", sub: "Reels / Stories" },
+  { value: "16:9", label: "16:9", sub: "YouTube / Горизонт" },
+  { value: "1:1", label: "1:1", sub: "Квадрат" },
+] as const;
+
+const photoPipelineSteps = [
   { key: "analyze", label: "Обработка запроса", icon: "🔍" },
   { key: "generate", label: "Создание изображения", icon: "🎨" },
   { key: "text", label: "Добавление текста", icon: "✍️" },
   { key: "prepare", label: "Подготовка к загрузке", icon: "📦" },
   { key: "done", label: "Отправлено в группу", icon: "✅" },
+];
+
+const videoPipelineSteps = [
+  { key: "analyze", label: "Обработка запроса", icon: "🔍" },
+  { key: "generate", label: "Генерация видео", icon: "🎬" },
+  { key: "effects", label: "Наложение эффектов и текста", icon: "✨" },
+  { key: "render", label: "Рендеринг", icon: "⚙️" },
+  { key: "done", label: "Видео готово", icon: "✅" },
 ];
 
 const MOCK_AI_DESIGN = `Минималистичный дизайн на тёмном фоне (#0a0a0a). Градиентные неоновые акценты (emerald → cyan). Шрифт: Montserrat Bold для заголовков, Inter для основного текста. Геометрические линии и абстрактные формы на фоне. Фото элайнеров в центральной композиции с мягким свечением. Стиль: премиум-клиника, технологичность, доверие. Палитра: тёмный + изумрудный + белый текст.`;
@@ -70,6 +91,7 @@ const formatLabel = (val: string | null) => {
     single: "Баннер", "carousel-7": "Карусель 7", "carousel-10": "Карусель 10",
     "fb-target": "ADS Баннер", "insta-carousel": "Карусель", stories: "Stories",
     "reels-cover": "Обложка Reels", "ai-photo": "AI Фото",
+    reels: "Reels", "promo-clip": "Промо-ролик", slideshow: "Слайдшоу",
   };
   return map[val || ""] || val || "—";
 };
@@ -79,6 +101,7 @@ export default function ContentFactory() {
   const prefill = (location.state as any)?.prefill || "";
 
   // Form state
+  const [contentMode, setContentMode] = useState<ContentMode>("photo");
   const [format, setFormat] = useState("single");
   const [aspectRatio, setAspectRatio] = useState("4:5");
   const [designPrompt, setDesignPrompt] = useState("");
@@ -210,7 +233,7 @@ export default function ContentFactory() {
       const sourceUrl = referenceUrl.trim() || null;
 
       const dbPayload: Record<string, any> = {
-        content_type: "photo",
+        content_type: contentMode,
         source_type: sourceUrl ? "link" : referenceImageUrl ? "reference" : "description",
         source_url: sourceUrl,
         main_text: exactText || null,
@@ -231,7 +254,8 @@ export default function ContentFactory() {
 
       const n8nPayload = {
         task_id: data.id,
-        type: format === "single" ? "photo_banner" : "photo_carousel",
+        content_mode: contentMode,
+        type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"),
         slides_count: slidesCount,
         aspect_ratio: aspectRatio,
         design_prompt: designPrompt,
@@ -270,6 +294,7 @@ export default function ContentFactory() {
     setDesignPrompt(""); setExactText(""); setLogoFile(null);
     setReferenceFile(null); setReferencePreview(null); setReferenceUrl("");
     setShowFeedbackInput(false); setEditFeedback("");
+    setContentMode("photo"); setFormat("single"); setAspectRatio("4:5");
   };
 
   const handleDownloadAll = async (urls: string[]) => {
@@ -370,8 +395,9 @@ export default function ContentFactory() {
 
   // ── PROGRESS VIEW ──
   const renderProgressView = (t: ContentTask) => {
+    const steps = t.content_type === "video" ? videoPipelineSteps : photoPipelineSteps;
     const step = getActiveStep(t);
-    const pct = t.status === "completed" ? 100 : step >= 0 ? Math.min(95, ((step + 1) / pipelineSteps.length) * 100) : 0;
+    const pct = t.status === "completed" ? 100 : step >= 0 ? Math.min(95, ((step + 1) / steps.length) * 100) : 0;
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-8 space-y-8">
         <div className="space-y-2">
@@ -382,7 +408,7 @@ export default function ContentFactory() {
           </div>
         </div>
         <div className="space-y-1">
-          {pipelineSteps.map((s, i) => {
+          {steps.map((s, i) => {
             const isDone = i < step || t.status === "completed";
             const isActive = i === step && t.status !== "completed";
             return (
@@ -481,16 +507,64 @@ export default function ContentFactory() {
         <div className="px-6 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Image className="h-4 w-4 text-primary" />
+              {contentMode === "video" ? <Film className="h-4 w-4 text-primary" /> : <Image className="h-4 w-4 text-primary" />}
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Точное ТЗ для производства</h2>
+              <h2 className="text-sm font-semibold text-foreground">Точное ТЗ для производства {contentMode === "video" ? "видео" : "фото"}</h2>
               <p className="text-[11px] text-muted-foreground">Заполните поля — AI выполнит буквально</p>
             </div>
           </div>
         </div>
 
         <div className="p-6 space-y-8">
+          {/* 0. CONTENT MODE */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">●</div>
+              <Label className="text-sm font-semibold text-foreground">Тип контента</Label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => { setContentMode("photo"); setFormat("single"); setAspectRatio("4:5"); }}
+                className={`relative rounded-xl border p-4 flex items-center gap-3 transition-all duration-200 ${
+                  contentMode === "photo"
+                    ? "border-primary bg-primary/[0.06] shadow-[0_0_20px_-8px] shadow-primary/30"
+                    : "border-border bg-muted/10 hover:bg-muted/20"
+                }`}>
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Image className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-foreground">📸 Фото</p>
+                  <p className="text-[10px] text-muted-foreground">Баннеры, карусели</p>
+                </div>
+                {contentMode === "photo" && (
+                  <motion.div layoutId="mode-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                  </motion.div>
+                )}
+              </button>
+              <button onClick={() => { setContentMode("video"); setFormat("reels"); setAspectRatio("9:16"); }}
+                className={`relative rounded-xl border p-4 flex items-center gap-3 transition-all duration-200 ${
+                  contentMode === "video"
+                    ? "border-primary bg-primary/[0.06] shadow-[0_0_20px_-8px] shadow-primary/30"
+                    : "border-border bg-muted/10 hover:bg-muted/20"
+                }`}>
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Video className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-foreground">🎬 Видео</p>
+                  <p className="text-[10px] text-muted-foreground">Reels, промо, слайдшоу</p>
+                </div>
+                {contentMode === "video" && (
+                  <motion.div layoutId="mode-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <CheckCircle2 className="h-3 w-3 text-primary-foreground" />
+                  </motion.div>
+                )}
+              </button>
+            </div>
+          </div>
+
           {/* 1. FORMAT SETUP */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -498,7 +572,7 @@ export default function ContentFactory() {
               <Label className="text-sm font-semibold text-foreground">Формат</Label>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              {FORMAT_CARDS.map(f => (
+              {(contentMode === "video" ? VIDEO_FORMAT_CARDS : PHOTO_FORMAT_CARDS).map(f => (
                 <button key={f.value} onClick={() => setFormat(f.value)}
                   className={`relative rounded-xl border p-4 text-left transition-all duration-200 ${
                     format === f.value
@@ -518,7 +592,7 @@ export default function ContentFactory() {
             </div>
 
             <div className="flex gap-2">
-              {ASPECT_CARDS.map(a => (
+              {(contentMode === "video" ? VIDEO_ASPECT_CARDS : PHOTO_ASPECT_CARDS).map(a => (
                 <button key={a.value} onClick={() => setAspectRatio(a.value)}
                   className={`flex-1 rounded-xl border px-3 py-3 text-center transition-all duration-200 ${
                     aspectRatio === a.value
@@ -644,7 +718,7 @@ export default function ContentFactory() {
           <details className="text-[10px]">
             <summary className="text-muted-foreground/50 cursor-pointer hover:text-muted-foreground">Превью payload (для отладки)</summary>
             <pre className="mt-2 p-3 rounded-lg bg-muted/20 border border-border text-muted-foreground overflow-x-auto font-mono">
-              {JSON.stringify({ type: format === "single" ? "photo_banner" : "photo_carousel", slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
+              {JSON.stringify({ content_mode: contentMode, type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"), slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
             </pre>
           </details>
         </div>
