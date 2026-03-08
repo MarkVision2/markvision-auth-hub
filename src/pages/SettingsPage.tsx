@@ -123,6 +123,7 @@ const SUB_TABS = [
   { key: "integrations", label: "Интеграции", icon: Plug },
   { key: "team", label: "Команда и доступы", icon: Users },
   { key: "security", label: "Безопасность", icon: Shield },
+  { key: "health", label: "Здоровье системы", icon: HeartPulse },
 ] as const;
 
 type SubTab = typeof SUB_TABS[number]["key"];
