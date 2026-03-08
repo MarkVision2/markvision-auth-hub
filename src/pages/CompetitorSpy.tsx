@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Radio, Loader2, RefreshCw, RotateCw, Globe, ExternalLink } from "lucide-react";
+import { Search, Eye, Radio, Loader2, RefreshCw, RotateCw, Globe, ExternalLink, Satellite } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
-import { scrapeCompetitorAds, searchLocalAds, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
+import { triggerCompetitorScrape, searchLocalAds, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface CompetitorAd {
   id: string;
@@ -42,34 +43,47 @@ function mapDbRow(d: any): CompetitorAd {
 
 export default function CompetitorSpy() {
   const { toast } = useToast();
+  const { pushNotification } = useNotifications();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"results" | "monitoring">("results");
   const [ads, setAds] = useState<CompetitorAd[]>([]);
+  const [loading, setLoading] = useState(true);
   const [scraping, setScraping] = useState(false);
   const [selectedAd, setSelectedAd] = useState<CompetitorAd | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<RebuildResult | null>(null);
-  const { pushNotification } = useNotifications();
+  const [syncing, setSyncing] = useState(false);
 
   // Load saved ads from Supabase
   useEffect(() => {
     const loadAds = async () => {
-      const { data } = await supabase
-        .from("competitor_ads")
-        .select("*")
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("competitor_ads")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (data && data.length > 0) {
-        setAds(data.map(mapDbRow));
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setAds(data.map(mapDbRow));
+        }
+      } catch (e: any) {
+        console.error("Failed to load ads:", e);
+      } finally {
+        setLoading(false);
       }
     };
     loadAds();
 
+    // Realtime — new ads appear instantly
     const channel = supabase
       .channel("competitor_ads_realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "competitor_ads" }, (payload) => {
         const newAd = mapDbRow(payload.new);
         setAds((prev) => {
+          // Deduplicate
+          if (prev.some(a => a.id === newAd.id)) return prev;
+
           const isMonitoredAdvertiser = prev.some(
             (a) => a.is_monitored && a.advertiser_name === newAd.advertiser_name
           );
@@ -91,44 +105,35 @@ export default function CompetitorSpy() {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      const isUrl = search.trim().startsWith("http");
-
       // Step 1: Check local DB first
       const localResults = await searchLocalAds(search.trim());
       if (localResults.length > 0) {
         setAds(localResults.map(mapDbRow));
-        toast({ title: "Найдено в базе", description: `${localResults.length} объявлений из локальной базы` });
+        toast({ title: "Найдено в базе", description: `${localResults.length} объявлений` });
       }
 
-      // Step 2: Scrape fresh data via Edge Function (Firecrawl + AI)
-      toast({ title: "🔍 Сканирование...", description: isUrl ? "Парсинг рекламы по ссылке через Firecrawl..." : `Поиск рекламы "${search.trim()}" в Meta Ad Library...` });
-
-      const result = await scrapeCompetitorAds(
-        isUrl ? { url: search.trim() } : { query: search.trim(), country: "KZ" }
-      );
-
-      if (result.count > 0) {
-        // Reload from DB since edge function inserts into competitor_ads
-        const { data: freshData } = await supabase
-          .from("competitor_ads")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        if (freshData) {
-          setAds(freshData.map(mapDbRow));
-        }
-        toast({ title: "✅ Готово!", description: `Найдено и сохранено ${result.count} новых объявлений` });
-        pushNotification("info", "Сканирование завершено", `Найдено ${result.count} объявлений`, "Радар конкурентов");
-      } else if (localResults.length === 0) {
-        toast({ title: "Нет результатов", description: "Объявления не найдены. Попробуйте другой запрос или ссылку на Ad Library." });
-      }
-    } catch (e: any) {
+      // Step 2: Trigger n8n → Apify scrape (async, data arrives via Realtime)
+      await triggerCompetitorScrape(search.trim());
       toast({
-        title: "Ошибка сканирования",
-        description: e.message || "Не удалось получить данные",
-        variant: "destructive",
+        title: "⏳ Парсинг запущен",
+        description: "Алгоритм ищет креативы конкурента. Данные появятся автоматически через ~60 сек.",
       });
+      pushNotification("info", "Парсинг конкурента запущен", `Ищем рекламу: ${search.trim()}`, "Радар конкурентов");
+      setSearch("");
+    } catch (e: any) {
+      // If n8n failed but we have local results, don't show error
+      if (ads.length === 0) {
+        toast({
+          title: "Ошибка сканирования",
+          description: e.message || "Не удалось запустить парсинг",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "⚠️ Парсинг недоступен",
+          description: "Показаны результаты из базы. Фоновый скан временно не работает.",
+        });
+      }
       pushNotification("error", "Ошибка сканирования конкурентов", e.message, "Радар конкурентов");
     } finally {
       setScraping(false);
@@ -155,18 +160,14 @@ export default function CompetitorSpy() {
   };
 
   const toggleMonitoring = async (ad: CompetitorAd) => {
-    if (!ad.id.startsWith("preview-")) {
-      await supabase
-        .from("competitor_ads")
-        .update({ is_monitored: !ad.is_monitored })
-        .eq("id", ad.id);
-    }
+    await supabase
+      .from("competitor_ads")
+      .update({ is_monitored: !ad.is_monitored })
+      .eq("id", ad.id);
     setAds((prev) =>
       prev.map((a) => a.id === ad.id ? { ...a, is_monitored: !a.is_monitored } : a)
     );
   };
-
-  const [syncing, setSyncing] = useState(false);
 
   const syncMonitored = async () => {
     const monitored = ads.filter(a => a.is_monitored);
@@ -175,29 +176,19 @@ export default function CompetitorSpy() {
       return;
     }
     setSyncing(true);
-    
     const uniqueNames = [...new Set(monitored.map(a => a.advertiser_name))];
-    let successCount = 0;
-    
+    let ok = 0;
+
     for (const name of uniqueNames) {
       try {
-        await scrapeCompetitorAds({ query: name, country: "KZ" });
-        successCount++;
-      } catch (err) {
-        console.error("Sync error for", name, err);
-      }
+        await triggerCompetitorScrape(name);
+        ok++;
+      } catch { /* skip */ }
     }
 
-    // Reload all
-    const { data } = await supabase
-      .from("competitor_ads")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (data) setAds(data.map(mapDbRow));
-
     toast({
-      title: "🔄 Синхронизация завершена",
-      description: `${successCount} из ${uniqueNames.length} конкурентов обновлены`,
+      title: "🔄 Синхронизация запущена",
+      description: `${ok} из ${uniqueNames.length} конкурентов отправлены на обновление. Данные появятся через ~90 сек.`,
     });
     setSyncing(false);
   };
@@ -224,7 +215,7 @@ export default function CompetitorSpy() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">Радар конкурентов</h1>
-            <p className="text-xs text-muted-foreground">Анализ рекламы · Разбор офферов · AI-реконструкция</p>
+            <p className="text-xs text-muted-foreground">Парсинг рекламы из Meta Ad Library · AI-реконструкция · Мониторинг</p>
           </div>
         </div>
 
@@ -232,11 +223,11 @@ export default function CompetitorSpy() {
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
           <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>
-            Вставьте ссылку из{" "}
+            Введите <strong>@username</strong> конкурента из Instagram, название страницы или ссылку из{" "}
             <a href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
               Meta Ad Library <ExternalLink className="h-3 w-3" />
             </a>
-            {" "}или введите название страницы конкурента (например «Клиника AIVA»)
+            . Данные появятся автоматически через Realtime.
           </span>
         </div>
 
@@ -248,7 +239,7 @@ export default function CompetitorSpy() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="https://facebook.com/ads/library/...  или  Клиника AIVA"
+              placeholder="@aivaclinic  или  Клиника AIVA  или  https://facebook.com/ads/library/..."
               className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
             />
           </div>
@@ -258,7 +249,7 @@ export default function CompetitorSpy() {
             className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
           >
             {scraping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-            {scraping ? "Сканирую..." : "Найти"}
+            {scraping ? "Ищу..." : "Искать"}
           </Button>
           <Button
             variant="outline"
@@ -280,7 +271,7 @@ export default function CompetitorSpy() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Результаты поиска
+            Результаты ({ads.length})
           </button>
           <button
             onClick={() => setActiveTab("monitoring")}
@@ -307,11 +298,37 @@ export default function CompetitorSpy() {
           </Button>
         )}
 
-        {/* Ad Grid */}
-        {displayAds.length === 0 ? (
+        {/* Loading skeleton */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-xl border border-border/50 bg-card/30 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-1.5 flex-1">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-40 w-full rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : displayAds.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <Eye className="h-10 w-10 mb-3 opacity-30" />
-            <p className="text-sm">{activeTab === "monitoring" ? "Нет объявлений в мониторинге" : "Введите запрос для поиска рекламы конкурентов"}</p>
+            {scraping ? (
+              <>
+                <Satellite className="h-10 w-10 mb-3 animate-pulse text-primary/50" />
+                <p className="text-sm font-medium">Парсинг запущен...</p>
+                <p className="text-xs mt-1 text-muted-foreground/60">Креативы появятся автоматически через Realtime</p>
+              </>
+            ) : (
+              <>
+                <Eye className="h-10 w-10 mb-3 opacity-30" />
+                <p className="text-sm">{activeTab === "monitoring" ? "Нет объявлений в мониторинге" : "Введите @username или название конкурента"}</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
