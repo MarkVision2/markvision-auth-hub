@@ -310,7 +310,7 @@ function DecompositionTab() {
                   </div>
                 </div>
               ))}
-              <div className="flex justify-between text-sm pt-4 border-t border-border/50">
+              <div className="flex justify-between text-sm pt-4 border-t border-border/10">
                 <span className="font-semibold text-foreground">Всего расходов</span>
                 <span className="font-bold tabular-nums text-foreground">{fmt(calc.totalExpenses)}</span>
               </div>
