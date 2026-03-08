@@ -244,23 +244,23 @@ export default function CompetitorSpy() {
     setSelectedAnalysis(null);
     setAdaptedScript(null);
     try {
-      await spyRequest({ action: "analyze_post", url: postUrl.trim() });
-      toast({ title: "⏳ Анализ запущен", description: "Результат появится через 30-60 сек" });
+      const result = await spyRequest({ action: "analyze_post", url: postUrl.trim() });
+      toast({ title: "⏳ Анализ запущен", description: result.message || "Пост добавлен в очередь. Результат появится через Realtime." });
+      
+      // If the edge function returned data from content_factory, show it
+      if (result.data && result.data.id) {
+        setSelectedAnalysis({
+          ...result.data,
+          performance_score: result.data.performance_score || 0,
+          strengths: result.data.strengths || [],
+          weaknesses: result.data.weaknesses || [],
+        });
+      }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setPostLoading(false);
     }
-    // Simulate for demo (real data arrives via Realtime)
-    await new Promise(r => setTimeout(r, 2500));
-    const mock = MOCK_ANALYSES[0];
-    const fakeResult: AnalysisResult = {
-      id: crypto.randomUUID(),
-      competitor_id: null,
-      video_url: postUrl,
-      ...mock,
-      created_at: new Date().toISOString(),
-    };
-    setSelectedAnalysis(fakeResult);
-    setPostLoading(false);
   }, [postUrl, toast]);
 
   // ─── Delete Analysis ───
