@@ -158,13 +158,6 @@ export default function AppSidebar() {
               </button>
             );
           })}
-          <Separator className="my-1.5 bg-border/20" />
-          <button className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left hover:bg-accent/50 transition-colors">
-            <div className="h-7 w-7 rounded-md bg-accent/50 border border-dashed border-border/50 flex items-center justify-center">
-              <Building2 size={12} className="text-muted-foreground" />
-            </div>
-            <span className="text-[13px] text-muted-foreground">Добавить проект…</span>
-          </button>
         </PopoverContent>
       </Popover>
 
