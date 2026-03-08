@@ -113,6 +113,218 @@ export type Database = {
           },
         ]
       }
+      analytics_campaigns: {
+        Row: {
+          channel_id: string
+          clicks: number
+          created_at: string | null
+          id: string
+          leads: number
+          name: string
+          revenue: number
+          sales: number
+          spend: number
+          visits: number
+        }
+        Insert: {
+          channel_id: string
+          clicks?: number
+          created_at?: string | null
+          id?: string
+          leads?: number
+          name: string
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Update: {
+          channel_id?: string
+          clicks?: number
+          created_at?: string | null
+          id?: string
+          leads?: number
+          name?: string
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_campaigns_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_channels: {
+        Row: {
+          clicks: number
+          color: string
+          created_at: string | null
+          icon: string
+          id: string
+          leads: number
+          name: string
+          period_end: string | null
+          period_start: string | null
+          project_id: string | null
+          revenue: number
+          sales: number
+          spend: number
+          visits: number
+        }
+        Insert: {
+          clicks?: number
+          color?: string
+          created_at?: string | null
+          icon?: string
+          id?: string
+          leads?: number
+          name: string
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Update: {
+          clicks?: number
+          color?: string
+          created_at?: string | null
+          icon?: string
+          id?: string
+          leads?: number
+          name?: string
+          period_end?: string | null
+          period_start?: string | null
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_channels_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_creatives: {
+        Row: {
+          campaign_id: string
+          clicks: number
+          created_at: string | null
+          format: string
+          id: string
+          landing: string | null
+          leads: number
+          name: string
+          revenue: number
+          sales: number
+          spend: number
+          thumbnail: string | null
+          visits: number
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number
+          created_at?: string | null
+          format?: string
+          id?: string
+          landing?: string | null
+          leads?: number
+          name: string
+          revenue?: number
+          sales?: number
+          spend?: number
+          thumbnail?: string | null
+          visits?: number
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number
+          created_at?: string | null
+          format?: string
+          id?: string
+          landing?: string | null
+          leads?: number
+          name?: string
+          revenue?: number
+          sales?: number
+          spend?: number
+          thumbnail?: string | null
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_creatives_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_organic_posts: {
+        Row: {
+          caption: string
+          created_at: string | null
+          dms: number
+          id: string
+          leads: number
+          ltv: number
+          project_id: string | null
+          revenue: number
+          sales: number
+          thumbnail: string | null
+          trigger_word: string | null
+        }
+        Insert: {
+          caption: string
+          created_at?: string | null
+          dms?: number
+          id?: string
+          leads?: number
+          ltv?: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          thumbnail?: string | null
+          trigger_word?: string | null
+        }
+        Update: {
+          caption?: string
+          created_at?: string | null
+          dms?: number
+          id?: string
+          leads?: number
+          ltv?: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          thumbnail?: string | null
+          trigger_word?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_organic_posts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients_config: {
         Row: {
           ad_account_id: string | null
