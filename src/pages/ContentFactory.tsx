@@ -114,6 +114,7 @@ export default function ContentFactory() {
   const [autopostUrls, setAutopostUrls] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const refInputRef = useRef<HTMLInputElement>(null);
 
   // Load history
   useEffect(() => {
