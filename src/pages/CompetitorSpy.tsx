@@ -8,6 +8,7 @@ import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
 import { startCompetitorScrape, rebuildAdText, fetchAdPreviews, type RebuildResult } from "@/lib/api/ad-library-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export interface CompetitorAd {
   id: string;
@@ -49,6 +50,7 @@ export default function CompetitorSpy() {
   const [selectedAd, setSelectedAd] = useState<CompetitorAd | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<RebuildResult | null>(null);
+  const { pushNotification } = useNotifications();
 
   // Load saved ads from Supabase
   useEffect(() => {
@@ -154,6 +156,7 @@ export default function CompetitorSpy() {
         description: e.message || "Не удалось получить данные",
         variant: "destructive",
       });
+      pushNotification("error", "Ошибка сканирования конкурентов", e.message, "Радар конкурентов");
     } finally {
       setScraping(false);
     }
@@ -172,6 +175,7 @@ export default function CompetitorSpy() {
         description: e.message || "Не удалось проанализировать объявление",
         variant: "destructive",
       });
+      pushNotification("error", "Ошибка AI-реконструкции", e.message, "Радар конкурентов");
     } finally {
       setRebuildLoading(false);
     }

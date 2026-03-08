@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/hooks/useAuthReady";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoleProvider } from "@/hooks/useRole";
+import { NotificationProvider } from "@/hooks/useNotifications";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import DashboardTarget from "./pages/DashboardTarget";
@@ -35,6 +36,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleProvider>
         <WorkspaceProvider>
+        <NotificationProvider>
         <Routes>
           <Route path="/" element={<AuthPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -55,6 +57,7 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </NotificationProvider>
         </WorkspaceProvider>
         </RoleProvider>
       </BrowserRouter>

@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { CalendarIcon, Upload, Scissors, Rocket, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface Props {
   open: boolean;
@@ -57,6 +58,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [launching, setLaunching] = useState(false);
   const { toast } = useToast();
+  const { pushNotification } = useNotifications();
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
@@ -160,10 +162,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
 
       toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Клиент: ${selectedClient.client_name}` });
+      pushNotification("info", "Кампания отправлена на запуск", `Клиент: ${selectedClient.client_name}, бюджет: ${budgetAmount}₽`, "Управление рекламой");
       onOpenChange(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
       toast({ title: "❌ Ошибка отправки", description: msg, variant: "destructive" });
+      pushNotification("error", "Ошибка запуска рекламы в n8n", msg, "Управление рекламой");
     } finally {
       setLaunching(false);
     }
