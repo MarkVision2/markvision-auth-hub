@@ -202,11 +202,32 @@ export default function ContentFactory() {
     }
   };
 
+  const pipelineSteps = [
+    { key: "analyze", label: "Обработка запроса", icon: "🔍" },
+    { key: "generate", label: "Создание изображения", icon: "🎨" },
+    { key: "text", label: "Добавление текста", icon: "✍️" },
+    { key: "prepare", label: "Подготовка к загрузке", icon: "📦" },
+    { key: "done", label: "Отправлено в группу", icon: "✅" },
+  ];
+
+  const getActiveStep = (): number => {
+    if (!task) return -1;
+    const t = (task.progress_text || "").toLowerCase();
+    if (task.status === "completed") return 4;
+    if (t.includes("отправ") || t.includes("загруз") || t.includes("готов")) return 3;
+    if (t.includes("текст") || t.includes("шрифт") || t.includes("overlay")) return 2;
+    if (t.includes("генер") || t.includes("render") || t.includes("изображ") || t.includes("créat") || t.includes("рендер")) return 1;
+    if (task.status === "processing") return 1;
+    if (task.status === "pending") return 0;
+    return 0;
+  };
+
+  const activeStep = getActiveStep();
+
   const progressPercent =
     !task ? 0
-    : task.status === "pending" ? 10
-    : task.status === "processing" ? 60
     : task.status === "completed" ? 100
+    : activeStep >= 0 ? Math.min(95, ((activeStep + 1) / pipelineSteps.length) * 100)
     : 0;
 
   // ---- RENDER ----
