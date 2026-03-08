@@ -44,7 +44,7 @@ const navGroups: NavGroup[] = [
       { title: "Контент-Завод", path: "/content", icon: Wand2 },
       { title: "Автопостинг", path: "/autoposting", icon: CalendarClock },
       { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
-      { title: "Радар конкурентов", path: "/spy", icon: Radar },
+      { title: "Мониторинг конкурентов", path: "/spy", icon: Radar },
     ],
   },
   {
