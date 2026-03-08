@@ -71,13 +71,18 @@ interface AnalysisResult {
   created_at: string;
 }
 
-// ─── n8n Webhook (for on-demand profile scan) ───
-const N8N_WEBHOOK = import.meta.env.VITE_N8N_SPY_WEBHOOK || "https://n8n.zapoinov.com/webhook/competitor-spy";
+// ─── n8n Webhook (proxied via Edge Function to avoid CORS) ───
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function spyRequest(payload: Record<string, unknown>): Promise<any> {
-  const res = await fetch(N8N_WEBHOOK, {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/spy-webhook-proxy`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "apikey": SUPABASE_KEY,
+    },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
