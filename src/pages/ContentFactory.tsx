@@ -117,6 +117,27 @@ export default function ContentFactory() {
     return data.publicUrl;
   }, []);
 
+  // Magic expand: takes short text from a field and expands it
+  const [expandingField, setExpandingField] = useState<string | null>(null);
+  const handleMagicExpand = async (fieldName: string, getter: string, setter: (v: string) => void) => {
+    if (!getter.trim()) {
+      toast({ title: "Напишите краткое описание", description: "AI развернёт его в полноценный текст", variant: "destructive" });
+      return;
+    }
+    setExpandingField(fieldName);
+    await new Promise(r => setTimeout(r, 1500));
+    // Simulate expansion based on field type
+    const expansions: Record<string, (input: string) => string> = {
+      visualStyle: (input) => `${input}. Используйте динамичные переходы между сценами, крупные планы с акцентом на детали. Тёплая цветовая палитра с натуральным освещением. Минималистичный фон, современная типографика с контрастными акцентами.`,
+      speakerText: (input) => `${input}\n\nПредставьте себе результат, который говорит сам за себя. Каждый элемент продуман до мелочей — от идеи до реализации. Наш подход — это качество в каждой детали, которое вы почувствуете с первого взгляда.\n\nДействуйте прямо сейчас — количество мест ограничено.`,
+      mainText: (input) => `Слайд 1: ${input}\nСлайд 2: Ключевое преимущество — то, что отличает вас от конкурентов\nСлайд 3: Социальное доказательство — отзывы и результаты клиентов\nСлайд 4: Призыв к действию — запишитесь сегодня и получите бонус`,
+    };
+    const expand = expansions[fieldName] || ((i: string) => `${i}. Дополнительные детали, визуальные акценты, профессиональная подача контента с учётом целевой аудитории.`);
+    setter(expand(getter));
+    setExpandingField(null);
+    toast({ title: "✨ Текст расширен" });
+  };
+
   // Magic AI auto-fill
   const handleMagicAI = async () => {
     if (!sourceUrl.trim()) {
@@ -124,7 +145,6 @@ export default function ContentFactory() {
       return;
     }
     setMagicLoading(true);
-    // Simulate AI analysis (in production this calls an edge function)
     await new Promise(r => setTimeout(r, 1500));
     if (mainType === "video") {
       setVisualStyle("Динамичные переходы, крупные планы продукта, тёплая цветовая палитра, натуральное освещение");
