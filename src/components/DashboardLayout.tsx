@@ -1,9 +1,9 @@
-import { ReactNode } from "react";
-import { Sun, Moon, Sparkles } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { Sun, Moon, Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useTheme } from "@/hooks/useTheme";
-import AppSidebar from "@/components/AppSidebar";
-
+import AppSidebar, { SidebarContentInner } from "@/components/AppSidebar";
 import NotificationBell from "@/components/NotificationBell";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
@@ -14,15 +14,35 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
   const { theme, toggle } = useTheme();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useRealtimeNotifications();
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Desktop sidebar */}
       <AppSidebar />
 
+      {/* Mobile drawer */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-r border-border flex flex-col">
+          <SidebarContentInner onNavigate={() => setMobileMenuOpen(false)} />
+        </SheetContent>
+      </Sheet>
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 shrink-0 flex items-center gap-4 px-6 border-b border-border">
+        <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border">
+          {/* Mobile hamburger */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-10 w-10 shrink-0"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
           {breadcrumb ? (
-            <span className="text-[13px] text-muted-foreground font-medium shrink-0">{breadcrumb}</span>
+            <span className="text-[13px] text-muted-foreground font-medium shrink-0 hidden sm:block">{breadcrumb}</span>
           ) : <span />}
 
           {/* AI Search — global */}
@@ -33,7 +53,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
                 <input
                   type="text"
                   placeholder="Спросите ИИ..."
-                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none"
+                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"
                 />
                 <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1.5 text-[9px] font-mono text-muted-foreground/60">
                   ⌘K
@@ -48,17 +68,16 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
             variant="ghost"
             size="icon"
             onClick={toggle}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+            className="h-10 w-10 text-muted-foreground hover:text-foreground shrink-0"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
-
     </div>
   );
 }
