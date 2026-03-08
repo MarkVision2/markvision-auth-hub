@@ -705,6 +705,11 @@ export type Database = {
           id: string
           impressions: number | null
           leads: number | null
+          plan_leads: number | null
+          plan_revenue: number | null
+          plan_sales: number | null
+          plan_spend: number | null
+          plan_visits: number | null
           project_id: string | null
           revenue: number | null
           sales: number | null
@@ -719,6 +724,11 @@ export type Database = {
           id?: string
           impressions?: number | null
           leads?: number | null
+          plan_leads?: number | null
+          plan_revenue?: number | null
+          plan_sales?: number | null
+          plan_spend?: number | null
+          plan_visits?: number | null
           project_id?: string | null
           revenue?: number | null
           sales?: number | null
@@ -733,6 +743,11 @@ export type Database = {
           id?: string
           impressions?: number | null
           leads?: number | null
+          plan_leads?: number | null
+          plan_revenue?: number | null
+          plan_sales?: number | null
+          plan_spend?: number | null
+          plan_visits?: number | null
           project_id?: string | null
           revenue?: number | null
           sales?: number | null
