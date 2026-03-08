@@ -442,7 +442,7 @@ export default function AiReportsPage() {
           <div className="max-w-4xl mx-auto space-y-8 pb-12">
 
             {/* ═══ PAGE 1: KPI & FUNNEL ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[0] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               {/* Report Header */}
               <div className="px-10 pt-10 pb-8 border-b border-border/20">
                 <div className="flex items-start justify-between">
