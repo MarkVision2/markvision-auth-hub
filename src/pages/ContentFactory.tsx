@@ -44,8 +44,7 @@ const PHOTO_FORMAT_CARDS = [
 ] as const;
 
 const VIDEO_FORMAT_CARDS = [
-  { value: "reels", label: "Reels", sub: "Instagram вертикалка", icon: "📱" },
-  { value: "shorts", label: "Shorts", sub: "YouTube / TikTok", icon: "⚡" },
+  { value: "reels", label: "Reels", sub: "Вертикальное видео 9:16", icon: "📱" },
   { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
 ] as const;
 
@@ -86,7 +85,7 @@ const formatLabel = (val: string | null) => {
     single: "Баннер", "carousel-7": "Карусель 7", "carousel-10": "Карусель 10",
     "fb-target": "ADS Баннер", "insta-carousel": "Карусель", stories: "Stories",
     "reels-cover": "Обложка Reels", "ai-photo": "AI Фото",
-    reels: "Reels", shorts: "Shorts", slideshow: "Слайдшоу",
+    reels: "Reels", slideshow: "Слайдшоу",
   };
   return map[val || ""] || val || "—";
 };
@@ -574,7 +573,7 @@ export default function ContentFactory() {
               <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
               <Label className="text-sm font-semibold text-foreground">Формат</Label>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid gap-3 ${contentMode === "video" ? "grid-cols-2" : "grid-cols-3"}`}>
               {(contentMode === "video" ? VIDEO_FORMAT_CARDS : PHOTO_FORMAT_CARDS).map(f => (
                 <button key={f.value} onClick={() => setFormat(f.value)}
                   className={`relative rounded-xl border p-4 text-left transition-all duration-200 ${
