@@ -1065,7 +1065,7 @@ export default function FinancePage() {
         </div>
 
         <Tabs defaultValue="decomposition" className="space-y-6">
-          <TabsList className="bg-card border border-border/10 h-11 p-1 rounded-xl">
+          <TabsList className="bg-card h-11 p-1 rounded-xl">
             <TabsTrigger value="decomposition" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
               <Calculator className="h-4 w-4" /> Декомпозиция
             </TabsTrigger>
