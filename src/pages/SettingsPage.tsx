@@ -801,12 +801,59 @@ function IntegrationCard({ icon, name, description, connected, fields, buttonLab
 }
 
 function IntegrationsTab() {
+  const [n8nWorkflows, setN8nWorkflows] = useState<any[]>([]);
+  const [loadingWf, setLoadingWf] = useState(false);
+
+  const N8N_WORKFLOWS = [
+    { id: "rGcbMYpFDsAJdzKk", name: "AI_CONTROL_GATEWAY", desc: "Здоровье системы — ping, list_workflows, last_errors", icon: HeartPulse, color: "text-emerald-400" },
+    { id: "c2a6VlSlvYdO167U", name: "Ad Library - Core Engine", desc: "Радар конкурентов — scrape, rebuild, preview", icon: Radar, color: "text-purple-400" },
+    { id: "nR8Dsm5s4VLcwdWg", name: "Spy Module: FB Ads Monitor", desc: "Авто-мониторинг отслеживаемых конкурентов", icon: Eye, color: "text-blue-400" },
+    { id: "RMy7Gf7Ij2RGjN52CJI1r", name: "CAPI-Send-Conversion", desc: "Отправка конверсий в Facebook Pixel (Lead, Purchase)", icon: Target, color: "text-amber-400" },
+    { id: "lObqS3bSMYjGa3L-46icJ", name: "Подписчики и посты", desc: "Ежедневный сбор IG-статистики (followers, reach, engagement)", icon: Activity, color: "text-pink-400" },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-bold text-foreground tracking-tight">Интеграции</h1>
         <p className="text-sm text-muted-foreground mt-1">Управление подключениями и API-ключами</p>
       </div>
+
+      {/* n8n Workflow Map */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">n8n Автоматизации</h2>
+          <span className="text-[10px] text-muted-foreground/40 ml-auto">{N8N_WORKFLOWS.length} workflows</span>
+        </div>
+        <div className="space-y-2">
+          {N8N_WORKFLOWS.map(wf => (
+            <div key={wf.id} className="rounded-xl border border-border/30 bg-card p-4 flex items-center gap-4 hover:border-border/60 transition-colors">
+              <div className="h-10 w-10 rounded-lg bg-accent/30 border border-border/20 flex items-center justify-center shrink-0">
+                <wf.icon size={18} className={wf.color} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground">{wf.name}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{wf.desc}</p>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-emerald-400 font-medium">Active</span>
+              </div>
+              <a
+                href={`https://n8n.zapoinov.com/workflow/${wf.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+              >
+                <ExternalLink size={14} />
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Separator className="bg-border/20" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <IntegrationCard
@@ -831,23 +878,22 @@ function IntegrationsTab() {
           ]}
         />
         <IntegrationCard
-          icon={<Workflow size={18} className="text-orange-400" />}
-          name="n8n Автоматизация"
-          description="Webhook-интеграция с n8n workflows"
-          connected={true}
-          fields={[
-            { label: "Webhook Base URL", value: "https://n8n.markvision.io/webhook" },
-          ]}
-        />
-        <IntegrationCard
           icon={<ScanSearch size={18} className="text-muted-foreground" />}
           name="Apify"
           description="Парсинг рекламы конкурентов"
-          connected={false}
+          connected={true}
           fields={[
-            { label: "API Token", value: "" },
+            { label: "API Token", value: "apify_api_b0Tc...", type: "password" },
           ]}
-          buttonLabel="Подключить"
+        />
+        <IntegrationCard
+          icon={<Globe size={18} className="text-orange-400" />}
+          name="Firecrawl"
+          description="AI-скрейпинг сайтов конкурентов"
+          connected={true}
+          fields={[
+            { label: "API Key", value: "fc-••••••••", type: "password" },
+          ]}
         />
       </div>
     </div>

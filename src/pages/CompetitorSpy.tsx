@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Radio, Loader2, RefreshCw } from "lucide-react";
+import { Search, Eye, Radio, Loader2, RefreshCw, RotateCw } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
 import { startCompetitorScrape, rebuildAdText, fetchAdPreviews, type RebuildResult } from "@/lib/api/ad-library-api";
@@ -150,6 +150,45 @@ export default function CompetitorSpy() {
     );
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const syncMonitored = async () => {
+    const monitored = ads.filter(a => a.is_monitored);
+    if (monitored.length === 0) {
+      toast({ title: "Нет отслеживаемых", description: "Добавьте конкурентов в мониторинг" });
+      return;
+    }
+    setSyncing(true);
+    // Get unique page_ids from monitored ads
+    const uniquePages = new Map<string, string>();
+    for (const ad of monitored) {
+      // Use page_id from DB if available, otherwise extract from source_url
+      const pageId = (ad as any).page_id || ad.advertiser_name;
+      if (pageId && !uniquePages.has(pageId)) {
+        uniquePages.set(pageId, ad.advertiser_name);
+      }
+    }
+    
+    let successCount = 0;
+    for (const [pageId] of uniquePages) {
+      try {
+        await fetch("https://n8n.zapoinov.com/webhook/competitor-spy-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page_id: pageId, project_id: null }),
+        });
+        successCount++;
+      } catch (err) {
+        console.error("Spy sync error:", err);
+      }
+    }
+    toast({
+      title: "🔄 Синхронизация запущена",
+      description: `${successCount} из ${uniquePages.size} страниц отправлены на обновление. Новые данные появятся через ~90 сек.`,
+    });
+    setSyncing(false);
+  };
+
   const monitoredCount = ads.filter((a) => a.is_monitored).length;
   const displayAds = activeTab === "monitoring"
     ? ads.filter((a) => a.is_monitored)
@@ -229,6 +268,20 @@ export default function CompetitorSpy() {
             Мой мониторинг ({monitoredCount})
           </button>
         </div>
+
+        {/* Sync button for monitoring tab */}
+        {activeTab === "monitoring" && monitoredCount > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncMonitored}
+            disabled={syncing}
+            className="gap-2 text-xs border-border/50"
+          >
+            <RotateCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Обновляю..." : "Обновить все отслеживаемые"}
+          </Button>
+        )}
 
         {/* Ad Grid */}
         {displayAds.length === 0 ? (
