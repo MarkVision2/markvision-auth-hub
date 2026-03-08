@@ -1419,6 +1419,25 @@ function SystemHealthTab() {
     setChecking(false);
   };
 
+  const restartWorkflow = async (wfId: string, wfName: string) => {
+    setRestartingId(wfId);
+    try {
+      const { data, error } = await supabase.functions.invoke("n8n-health-check", {
+        body: { action: "activate_workflow", workflowId: wfId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast({ title: `Workflow перезапущен`, description: wfName });
+      } else {
+        toast({ title: "Ошибка перезапуска", description: data?.error || "Unknown", variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setRestartingId(null);
+    }
+  };
+
   useEffect(() => { runHealthCheck(); }, []);
 
   const operationalCount = services.filter(s => s.status === "operational").length;
