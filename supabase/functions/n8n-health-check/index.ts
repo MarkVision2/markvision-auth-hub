@@ -38,9 +38,9 @@ serve(async (req) => {
     const body = await req.json();
     const action = body.action;
 
-    if (!action || !["ping", "list_workflows", "last_errors"].includes(action)) {
+    if (!action || !["ping", "list_workflows", "last_errors", "activate_workflow"].includes(action)) {
       return new Response(
-        JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors" }),
+        JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors, activate_workflow" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
