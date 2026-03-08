@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import {
   Image, Download, Loader2, CheckCircle2, RotateCcw,
   Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
-  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus,
+  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus, Video, Film,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
