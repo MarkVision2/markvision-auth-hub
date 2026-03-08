@@ -895,7 +895,7 @@ function DynamicsTab() {
             </TableHeader>
             <TableBody>
               {monthsData.map((m, i) => (
-                <TableRow key={m.month} className="border-border/20 hover:bg-secondary/30">
+                <TableRow key={m.month} className="border-border/10 hover:bg-secondary/30">
                   <TableCell className="text-sm font-medium text-foreground pl-6">{m.month}</TableCell>
                   <TableCell>
                     <Input type="number" value={m.revenue || ""} onChange={(e) => updateMonth(i, "revenue", Number(e.target.value))}
