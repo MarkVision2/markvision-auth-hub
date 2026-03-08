@@ -449,8 +449,7 @@ export default function ContentFactory() {
           );
         })()}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
-          {/* LEFT: Form */}
+        <div className="max-w-3xl">
           <div className="rounded-xl border border-border bg-card p-6 space-y-8">
             {/* Type toggle */}
             <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
