@@ -175,6 +175,7 @@ export default function CompetitorSpy() {
         description: e.message || "Не удалось проанализировать объявление",
         variant: "destructive",
       });
+      pushNotification("error", "Ошибка AI-реконструкции", e.message, "Радар конкурентов");
     } finally {
       setRebuildLoading(false);
     }
