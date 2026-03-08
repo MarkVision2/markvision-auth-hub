@@ -68,6 +68,8 @@ export default function ContentFactory() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
 
+  const [videoFormat, setVideoFormat] = useState<"reels" | "slideshow">("reels");
+
   // Video is always 9:16
   const videoAspect = "9:16";
 
@@ -154,7 +156,7 @@ export default function ContentFactory() {
         source_url: mode === "link" ? sourceUrl : null,
         visual_style: (isVideo && mode === "description") ? visualStyle : (!isVideo && photoMode === "description" ? visualStyle : null),
         main_text: isVideo && mode === "description" ? speakerText : (!isVideo ? mainText : null),
-        format: isVideo ? "reels" : photoFormat,
+        format: isVideo ? videoFormat : photoFormat,
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
         custom_logo_url: customLogoUrl,
@@ -176,7 +178,7 @@ export default function ContentFactory() {
         content_type: mainType,
         source_type: payload.source_type,
         source_url: payload.source_url,
-        format: isVideo ? "reels" : (formatMap[photoFormat] || "fb-target"),
+        format: isVideo ? videoFormat : (formatMap[photoFormat] || "fb-target"),
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         main_text: payload.main_text || "",
         visual_style: payload.visual_style || payload.design_template || "",
@@ -396,6 +398,57 @@ export default function ContentFactory() {
         </div>
         <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
 
+        {/* Last completed content */}
+        {(() => {
+          const lastCompleted = history.find(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0);
+          if (!lastCompleted) return null;
+          return (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Последний контент</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {lastCompleted.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                    {lastCompleted.created_at && ` • ${dateFmt(new Date(lastCompleted.created_at), "dd.MM HH:mm")}`}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => loadHistoryItem(lastCompleted)}>
+                    Открыть
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => {
+                    if (lastCompleted.result_urls) {
+                      for (const url of lastCompleted.result_urls) {
+                        const a = document.createElement("a");
+                        a.href = url; a.download = ""; a.target = "_blank"; a.click();
+                      }
+                    }
+                  }}>
+                    <Download className="h-3 w-3" /> Скачать
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {lastCompleted.result_urls!.slice(0, 5).map((url, i) => (
+                  <div key={i} className="flex-shrink-0 rounded-lg border border-border overflow-hidden bg-secondary/20">
+                    {lastCompleted.content_type === "video" ? (
+                      <video src={url} className="h-20 w-14 object-cover" muted />
+                    ) : (
+                      <img src={url} alt={`Результат ${i + 1}`} className="h-20 object-contain" />
+                    )}
+                  </div>
+                ))}
+                {lastCompleted.result_urls!.length > 5 && (
+                  <div className="flex-shrink-0 h-20 w-14 rounded-lg border border-border bg-secondary/30 flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">+{lastCompleted.result_urls!.length - 5}</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
           {/* LEFT: Form */}
           <div className="rounded-xl border border-border bg-card p-6 space-y-8">
@@ -414,6 +467,23 @@ export default function ContentFactory() {
             {/* VIDEO MODE */}
             {mainType === "video" && (
               <div className="space-y-6">
+                {/* Video format: Reels vs Slideshow */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-foreground">Формат видео</Label>
+                  <RadioGroup value={videoFormat} onValueChange={(v) => setVideoFormat(v as "reels" | "slideshow")} className="grid grid-cols-2 gap-3">
+                    {[
+                      { value: "reels", label: "🎬 Reels", sub: "AI-спикер + видеоряд" },
+                      { value: "slideshow", label: "📸 Слайд-шоу", sub: "Фото + музыка + текст" },
+                    ].map((opt) => (
+                      <Label key={opt.value} htmlFor={`vf-${opt.value}`} className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${videoFormat === opt.value ? "border-primary/60 bg-primary/[0.06]" : "border-border bg-secondary/20 hover:bg-secondary/40"}`}>
+                        <RadioGroupItem value={opt.value} id={`vf-${opt.value}`} className="sr-only" />
+                        <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                        <span className="text-xs text-muted-foreground">{opt.sub}</span>
+                      </Label>
+                    ))}
+                  </RadioGroup>
+                </div>
+
                 <Tabs value={videoMode} onValueChange={(v) => setVideoMode(v as "link" | "description")}>
                   <TabsList className="h-9 bg-secondary/40">
                     <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background"><Link className="mr-1.5 h-3.5 w-3.5" />По ссылке</TabsTrigger>
@@ -439,14 +509,14 @@ export default function ContentFactory() {
                       <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Текст для AI-Спикера</Label>
-                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder="Точный текст, который будет озвучен (слово в слово)" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                      <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
+                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Каждая строка — новый слайд с текстом" : "Точный текст, который будет озвучен (слово в слово)"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                   </div>
                 )}
 
                 <div className="rounded-lg bg-secondary/20 border border-border p-3">
-                  <p className="text-xs text-muted-foreground">📐 Видео всегда генерируется в формате <span className="font-semibold text-foreground">9:16</span> (Reels / Stories / Shorts)</p>
+                  <p className="text-xs text-muted-foreground">📐 Видео всегда генерируется в формате <span className="font-semibold text-foreground">9:16</span> — {videoFormat === "reels" ? "Reels / Stories / Shorts" : "Слайд-шоу с музыкой"}</p>
                 </div>
               </div>
             )}
@@ -576,7 +646,7 @@ export default function ContentFactory() {
             <div className="sticky top-4">
               <PhoneMockup
                 contentMode={mainType}
-                format={mainType === "video" ? "reels" : photoFormat}
+                format={mainType === "video" ? videoFormat : photoFormat}
                 aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
                 designPrompt={visualStyle}
                 exactText={mainType === "video" ? speakerText : mainText}
