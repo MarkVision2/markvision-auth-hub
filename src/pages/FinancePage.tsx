@@ -350,21 +350,37 @@ function DecompositionTab() {
 interface ClientFinance {
   id: string;
   name: string;
-  service: string;
+  services: string[];
   revenue: number;
   expenses: number;
   nextBilling: string;
   billingStatus: "paid" | "upcoming" | "overdue";
 }
 
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  salary: number;
+}
+
+const defaultServices = ["Таргет", "СММ", "Маркетинг", "Контент", "SEO", "Разработка", "Дизайн", "CRM"];
+
 const initialClients: ClientFinance[] = [
-  { id: "1", name: "Технология позвоночника", service: "AI-Marketing OS", revenue: 300_000, expenses: 25_000, nextBilling: "2026-04-01", billingStatus: "paid" },
-  { id: "2", name: "DentalPro Алматы", service: "AI-Marketing OS + Content", revenue: 450_000, expenses: 48_000, nextBilling: "2026-03-11", billingStatus: "upcoming" },
-  { id: "3", name: "EsteticLine", service: "Lead Gen + CRM", revenue: 200_000, expenses: 18_000, nextBilling: "2026-03-05", billingStatus: "overdue" },
-  { id: "4", name: "MedCity Астана", service: "AI-Marketing OS", revenue: 300_000, expenses: 32_000, nextBilling: "2026-04-15", billingStatus: "paid" },
-  { id: "5", name: "SmileLab", service: "Content Factory", revenue: 150_000, expenses: 12_000, nextBilling: "2026-03-20", billingStatus: "paid" },
-  { id: "6", name: "Клиника Доктора Иванова", service: "AI-Marketing OS + Spy", revenue: 380_000, expenses: 41_000, nextBilling: "2026-03-08", billingStatus: "overdue" },
-  { id: "7", name: "BeautyMed", service: "Lead Gen", revenue: 120_000, expenses: 9_500, nextBilling: "2026-04-10", billingStatus: "paid" },
+  { id: "1", name: "Технология позвоночника", services: ["Таргет", "СММ"], revenue: 300_000, expenses: 25_000, nextBilling: "2026-04-01", billingStatus: "paid" },
+  { id: "2", name: "DentalPro Алматы", services: ["Маркетинг", "Контент", "Таргет"], revenue: 450_000, expenses: 48_000, nextBilling: "2026-03-11", billingStatus: "upcoming" },
+  { id: "3", name: "EsteticLine", services: ["Таргет", "CRM"], revenue: 200_000, expenses: 18_000, nextBilling: "2026-03-05", billingStatus: "overdue" },
+  { id: "4", name: "MedCity Астана", services: ["Маркетинг"], revenue: 300_000, expenses: 32_000, nextBilling: "2026-04-15", billingStatus: "paid" },
+  { id: "5", name: "SmileLab", services: ["Контент"], revenue: 150_000, expenses: 12_000, nextBilling: "2026-03-20", billingStatus: "paid" },
+  { id: "6", name: "Клиника Доктора Иванова", services: ["Таргет", "СММ", "SEO"], revenue: 380_000, expenses: 41_000, nextBilling: "2026-03-08", billingStatus: "overdue" },
+  { id: "7", name: "BeautyMed", services: ["Таргет"], revenue: 120_000, expenses: 9_500, nextBilling: "2026-04-10", billingStatus: "paid" },
+];
+
+const initialTeam: TeamMember[] = [
+  { id: "t1", name: "Алексей Ким", role: "Таргетолог", salary: 350_000 },
+  { id: "t2", name: "Мария Иванова", role: "СММ-менеджер", salary: 280_000 },
+  { id: "t3", name: "Дамир Нурланов", role: "Дизайнер", salary: 300_000 },
+  { id: "t4", name: "Айгуль Сатпаева", role: "Контент-менеджер", salary: 250_000 },
 ];
 
 const billingLabels: Record<string, { text: string; cls: string }> = {
@@ -377,73 +393,144 @@ const statusOptions: ClientFinance["billingStatus"][] = ["paid", "upcoming", "ov
 
 function AgencyTab() {
   const [clientsData, setClientsData] = useState<ClientFinance[]>(initialClients);
+  const [team, setTeam] = useState<TeamMember[]>(initialTeam);
+  const [services, setServices] = useState<string[]>(defaultServices);
+  const [newServiceName, setNewServiceName] = useState("");
 
-  const updateClient = (id: string, field: keyof ClientFinance, value: string | number) => {
-    setClientsData(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-  };
+  const [addOpen, setAddOpen] = useState(false);
+  const [newClient, setNewClient] = useState({ name: "", services: [] as string[], revenue: 0, nextBilling: "" });
 
-  const addClient = () => {
+  const handleAddClient = () => {
+    if (!newClient.name) return;
     setClientsData(prev => [...prev, {
       id: String(Date.now()),
-      name: "Новый клиент",
-      service: "Услуга",
-      revenue: 0,
+      name: newClient.name,
+      services: newClient.services,
+      revenue: newClient.revenue,
       expenses: 0,
-      nextBilling: "2026-04-01",
+      nextBilling: newClient.nextBilling || "2026-04-01",
       billingStatus: "upcoming",
     }]);
+    setNewClient({ name: "", services: [], revenue: 0, nextBilling: "" });
+    setAddOpen(false);
   };
 
-  const removeClient = (id: string) => {
-    setClientsData(prev => prev.filter(c => c.id !== id));
+  const updateClient = (id: string, field: keyof ClientFinance, value: unknown) => {
+    setClientsData(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+  const removeClient = (id: string) => setClientsData(prev => prev.filter(c => c.id !== id));
+
+  const toggleClientService = (clientId: string, service: string) => {
+    setClientsData(prev => prev.map(c => {
+      if (c.id !== clientId) return c;
+      const has = c.services.includes(service);
+      return { ...c, services: has ? c.services.filter(s => s !== service) : [...c.services, service] };
+    }));
+  };
+
+  const addTeamMember = () => setTeam(prev => [...prev, { id: String(Date.now()), name: "Новый сотрудник", role: "Должность", salary: 0 }]);
+  const updateMember = (id: string, field: keyof TeamMember, value: string | number) => setTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+  const removeMember = (id: string) => setTeam(prev => prev.filter(m => m.id !== id));
+
+  const addService = () => {
+    if (newServiceName.trim() && !services.includes(newServiceName.trim())) {
+      setServices(prev => [...prev, newServiceName.trim()]);
+      setNewServiceName("");
+    }
   };
 
   const totalMrr = clientsData.reduce((s, c) => s + c.revenue, 0);
-  const totalProfit = clientsData.reduce((s, c) => s + (c.revenue - c.expenses), 0);
-  const avgMargin = clientsData.length > 0
-    ? Math.round(clientsData.reduce((s, c) => s + (c.revenue > 0 ? ((c.revenue - c.expenses) / c.revenue) * 100 : 0), 0) / clientsData.length)
-    : 0;
+  const totalExpenses = clientsData.reduce((s, c) => s + c.expenses, 0);
+  const totalSalaries = team.reduce((s, m) => s + m.salary, 0);
+  const totalProfit = totalMrr - totalExpenses - totalSalaries;
+  const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
 
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Wallet className="h-4 w-4" />
-            <span className="text-[12px] font-medium uppercase tracking-wider">MRR (ежемесячная выручка)</span>
-          </div>
+          <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">MRR</span></div>
           <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalMrr)}</p>
         </div>
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <PiggyBank className="h-4 w-4" />
-            <span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span>
-          </div>
-          <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalProfit)}</p>
+          <div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">ФОТ команды</span></div>
+          <p className="text-2xl font-bold text-destructive tracking-tight">{fmtCurrency(totalSalaries)}</p>
         </div>
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <BarChart3 className="h-4 w-4" />
-            <span className="text-[12px] font-medium uppercase tracking-wider">Средняя маржинальность</span>
-          </div>
+          <div className="flex items-center gap-2 text-muted-foreground"><PiggyBank className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span></div>
+          <p className={`text-2xl font-bold tracking-tight ${totalProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totalProfit)}</p>
+        </div>
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground"><BarChart3 className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Маржинальность</span></div>
           <p className="text-2xl font-bold text-foreground tracking-tight">{avgMargin}%</p>
         </div>
       </div>
 
-      {/* Table */}
+      {/* Services manager */}
+      <div className="glass rounded-xl p-4">
+        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Услуги</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          {services.map(s => (
+            <Badge key={s} variant="secondary" className="text-[11px] gap-1 pr-1">
+              {s}
+              <button onClick={() => setServices(prev => prev.filter(x => x !== s))} className="ml-0.5 hover:text-destructive"><X className="h-3 w-3" /></button>
+            </Badge>
+          ))}
+          <div className="flex items-center gap-1">
+            <Input value={newServiceName} onChange={(e) => setNewServiceName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addService()} placeholder="Новая услуга..." className="h-7 w-[130px] text-[11px] bg-transparent border-white/[0.06]" />
+            <button onClick={addService} className="text-primary hover:text-primary/80"><Plus className="h-3.5 w-3.5" /></button>
+          </div>
+        </div>
+      </div>
+
+      {/* Clients Table */}
       <div className="glass rounded-xl overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-white/[0.04]">
           <p className="text-[13px] font-semibold text-foreground">Клиенты</p>
-          <button onClick={addClient} className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1">
-            <Plus className="h-3.5 w-3.5" /> Добавить клиента
-          </button>
+          <Sheet open={addOpen} onOpenChange={setAddOpen}>
+            <SheetTrigger asChild>
+              <button className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Добавить клиента</button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px]">
+              <SheetHeader><SheetTitle>Новый клиент</SheetTitle></SheetHeader>
+              <div className="space-y-4 mt-6">
+                <div className="space-y-1.5">
+                  <label className="text-[12px] text-muted-foreground">Имя клиента</label>
+                  <Input value={newClient.name} onChange={(e) => setNewClient(p => ({ ...p, name: e.target.value }))} placeholder="Название компании" className="h-9 text-[13px]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] text-muted-foreground">Услуги</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {services.map(s => {
+                      const selected = newClient.services.includes(s);
+                      return (
+                        <button key={s} onClick={() => setNewClient(p => ({ ...p, services: selected ? p.services.filter(x => x !== s) : [...p.services, s] }))}
+                          className={`text-[11px] px-2.5 py-1 rounded-md border transition-colors ${selected ? "bg-primary/10 border-primary/30 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] text-muted-foreground">Оплата (₸)</label>
+                  <Input type="number" value={newClient.revenue || ""} onChange={(e) => setNewClient(p => ({ ...p, revenue: Number(e.target.value) }))} className="h-9 text-[13px]" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] text-muted-foreground">Дата оплаты</label>
+                  <Input type="date" value={newClient.nextBilling} onChange={(e) => setNewClient(p => ({ ...p, nextBilling: e.target.value }))} className="h-9 text-[13px]" />
+                </div>
+                <Button onClick={handleAddClient} className="w-full h-10 text-[13px] mt-4"><Plus className="h-4 w-4 mr-2" /> Добавить</Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
         <Table>
           <TableHeader>
             <TableRow className="border-white/[0.04] hover:bg-transparent">
               <TableHead className="text-[11px]">Клиент</TableHead>
-              <TableHead className="text-[11px]">Услуга</TableHead>
+              <TableHead className="text-[11px]">Услуги</TableHead>
               <TableHead className="text-[11px] text-right">Оплата</TableHead>
               <TableHead className="text-[11px] text-right">Расходы</TableHead>
               <TableHead className="text-[11px] text-right">Прибыль</TableHead>
@@ -457,70 +544,71 @@ function AgencyTab() {
             {clientsData.map((c) => {
               const profit = c.revenue - c.expenses;
               const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
-              const bl = billingLabels[c.billingStatus];
               return (
                 <TableRow key={c.id} className="border-white/[0.04]">
+                  <TableCell><Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)} className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1" /></TableCell>
                   <TableCell>
-                    <Input
-                      value={c.name}
-                      onChange={(e) => updateClient(c.id, "name", e.target.value)}
-                      className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={c.service}
-                      onChange={(e) => updateClient(c.id, "service", e.target.value)}
-                      className="h-8 text-[12px] bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-muted-foreground"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={c.revenue || ""}
-                      onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
-                      className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[110px] ml-auto"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={c.expenses || ""}
-                      onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
-                      className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[100px] ml-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] font-semibold text-primary">{fmtCurrency(profit)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className="text-[11px] border-primary/20 text-primary">{margin}%</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="date"
-                      value={c.nextBilling}
-                      onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
-                      className="h-8 text-[12px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 w-[130px]"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <select
-                      value={c.billingStatus}
-                      onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
-                      className="h-8 text-[11px] bg-transparent border border-transparent hover:border-white/[0.06] focus:border-primary/40 rounded-md px-1 cursor-pointer text-foreground"
-                    >
-                      {statusOptions.map(s => (
-                        <option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>
+                    <div className="flex flex-wrap gap-1 items-center">
+                      {c.services.map(s => (
+                        <Badge key={s} variant="secondary" className="text-[10px] gap-0.5 pr-0.5 cursor-pointer" onClick={() => toggleClientService(c.id, s)}>{s} <X className="h-2.5 w-2.5" /></Badge>
                       ))}
+                      <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
+                        <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden"><Plus className="h-3 w-3 text-muted-foreground" /></SelectTrigger>
+                        <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-[12px]">{s}</SelectItem>))}</SelectContent>
+                      </Select>
+                    </div>
+                  </TableCell>
+                  <TableCell><Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))} className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[110px] ml-auto" /></TableCell>
+                  <TableCell><Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))} className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[100px] ml-auto" /></TableCell>
+                  <TableCell className="text-right tabular-nums text-[13px] font-semibold text-primary">{fmtCurrency(profit)}</TableCell>
+                  <TableCell className="text-right"><Badge variant="outline" className="text-[11px] border-primary/20 text-primary">{margin}%</Badge></TableCell>
+                  <TableCell><Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)} className="h-8 text-[12px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 w-[130px]" /></TableCell>
+                  <TableCell>
+                    <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)} className="h-8 text-[11px] bg-transparent border border-transparent hover:border-white/[0.06] focus:border-primary/40 rounded-md px-1 cursor-pointer text-foreground">
+                      {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
                     </select>
                   </TableCell>
-                  <TableCell>
-                    <button onClick={() => removeClient(c.id)} className="text-muted-foreground hover:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </TableCell>
+                  <TableCell><button onClick={() => removeClient(c.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
                 </TableRow>
               );
             })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Team Section */}
+      <div className="glass rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-white/[0.04]">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <p className="text-[13px] font-semibold text-foreground">Команда</p>
+            <Badge variant="secondary" className="text-[10px]">{team.length} чел.</Badge>
+          </div>
+          <button onClick={addTeamMember} className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1"><UserPlus className="h-3.5 w-3.5" /> Добавить</button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.04] hover:bg-transparent">
+              <TableHead className="text-[11px]">Имя</TableHead>
+              <TableHead className="text-[11px]">Должность</TableHead>
+              <TableHead className="text-[11px] text-right">Зарплата (₸)</TableHead>
+              <TableHead className="text-[11px] w-8" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {team.map((m) => (
+              <TableRow key={m.id} className="border-white/[0.04]">
+                <TableCell><Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)} className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1" /></TableCell>
+                <TableCell><Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)} className="h-8 text-[12px] bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-muted-foreground" /></TableCell>
+                <TableCell><Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))} className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[130px] ml-auto" /></TableCell>
+                <TableCell><button onClick={() => removeMember(m.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="border-white/[0.04] bg-white/[0.01]">
+              <TableCell colSpan={2} className="text-[12px] font-semibold text-foreground">Итого ФОТ</TableCell>
+              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totalSalaries)}</TableCell>
+              <TableCell />
+            </TableRow>
           </TableBody>
         </Table>
       </div>
