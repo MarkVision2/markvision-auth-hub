@@ -1,136 +1,93 @@
+import { useMemo } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Bot, TrendingUp, TrendingDown, Minus, PhoneIncoming, PhoneOutgoing, Clock, Star, MessageCircle, PhoneCall } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Bot, TrendingUp, Minus, PhoneCall, Clock, Star, MessageCircle, Inbox } from "lucide-react";
+import type { AuditRecord } from "./types";
 
-interface Manager {
+interface Props { audits: AuditRecord[]; loading: boolean; }
+
+interface ManagerStats {
   name: string;
   isAi: boolean;
   avgScore: number;
-  incomingCalls: number;
-  outgoingCalls: number;
+  totalCalls: number;
   totalChats: number;
-  totalTalkTimeMin: number;
-  avgCallDurationSec: number;
-  conversionRate: number;
-  trend: "up" | "down" | "flat";
+  totalDurationSec: number;
   weakSpot: string;
   strongSpot: string;
-  scriptMatch: number;
 }
 
-const MOCK_MANAGERS: Manager[] = [
-  {
-    name: "AI-Агент",
-    isAi: true,
-    avgScore: 99,
-    incomingCalls: 0,
-    outgoingCalls: 0,
-    totalChats: 45,
-    totalTalkTimeMin: 0,
-    avgCallDurationSec: 0,
-    conversionRate: 94,
-    trend: "up",
-    weakSpot: "—",
-    strongSpot: "Отработка возражений (29.5/30)",
-    scriptMatch: 98,
-  },
-  {
-    name: "Алия Нурланова",
-    isAi: false,
-    avgScore: 88,
-    incomingCalls: 28,
-    outgoingCalls: 14,
-    totalChats: 22,
-    totalTalkTimeMin: 218,
-    avgCallDurationSec: 312,
-    conversionRate: 72,
-    trend: "up",
-    weakSpot: "Презентация рассрочки (15/20)",
-    strongSpot: "Закрытие на визит (19/20)",
-    scriptMatch: 82,
-  },
-  {
-    name: "Айгерим Жумабекова",
-    isAi: false,
-    avgScore: 72,
-    incomingCalls: 18,
-    outgoingCalls: 10,
-    totalChats: 14,
-    totalTalkTimeMin: 145,
-    avgCallDurationSec: 256,
-    conversionRate: 58,
-    trend: "flat",
-    weakSpot: "Закрытие на визит (12/20)",
-    strongSpot: "Выявление потребности (18/20)",
-    scriptMatch: 68,
-  },
-  {
-    name: "Дамир Касымов",
-    isAi: false,
-    avgScore: 34,
-    incomingCalls: 22,
-    outgoingCalls: 13,
-    totalChats: 18,
-    totalTalkTimeMin: 98,
-    avgCallDurationSec: 168,
-    conversionRate: 22,
-    trend: "down",
-    weakSpot: "Отработка возражений (4/30)",
-    strongSpot: "Приветствие (8/10)",
-    scriptMatch: 38,
-  },
-];
-
-function getInitials(name: string) {
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-}
-
+function getInitials(name: string) { return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(); }
 function scoreColor(score: number) {
   if (score >= 80) return { text: "text-[hsl(var(--status-good))]", bg: "bg-[hsl(var(--status-good))]", badge: "bg-[hsl(var(--status-good)/0.15)] text-[hsl(var(--status-good))] border-[hsl(var(--status-good)/0.3)]" };
   if (score >= 50) return { text: "text-[hsl(var(--status-warning))]", bg: "bg-[hsl(var(--status-warning))]", badge: "bg-[hsl(var(--status-warning)/0.15)] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.3)]" };
   return { text: "text-[hsl(var(--status-critical))]", bg: "bg-[hsl(var(--status-critical))]", badge: "bg-[hsl(var(--status-critical)/0.15)] text-[hsl(var(--status-critical))] border-[hsl(var(--status-critical)/0.3)]" };
 }
 
-function formatTalkTime(min: number) {
-  if (min === 0) return "—";
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return h > 0 ? `${h}ч ${m}м` : `${m}м`;
-}
-
-function formatAvgDuration(sec: number) {
+function formatTime(sec: number) {
   if (sec === 0) return "—";
   const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  const h = Math.floor(m / 60);
+  return h > 0 ? `${h}ч ${m % 60}м` : `${m}м`;
 }
 
-const TrendIcon = ({ trend }: { trend: string }) => {
-  if (trend === "up") return <TrendingUp className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />;
-  if (trend === "down") return <TrendingDown className="h-3.5 w-3.5 text-[hsl(var(--status-critical))]" />;
-  return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
-};
+export default function ManagerRating({ audits, loading }: Props) {
+  const managers = useMemo(() => {
+    const map = new Map<string, AuditRecord[]>();
+    audits.forEach(a => {
+      const list = map.get(a.manager_name) || [];
+      list.push(a);
+      map.set(a.manager_name, list);
+    });
 
-export default function ManagerRating() {
+    const result: ManagerStats[] = [];
+    map.forEach((records, name) => {
+      const isAi = name.toLowerCase().includes("ai");
+      const avgScore = Math.round(records.reduce((s, r) => s + r.ai_score, 0) / records.length);
+      const totalCalls = records.filter(r => r.interaction_type === "call").length;
+      const totalChats = records.filter(r => r.interaction_type === "whatsapp").length;
+      const totalDurationSec = records.reduce((s, r) => s + r.duration_seconds, 0);
+
+      const failCounts: Record<string, number> = {};
+      const passCounts: Record<string, number> = {};
+      records.forEach(r => r.checklist.forEach(c => {
+        if (!c.passed) failCounts[c.name] = (failCounts[c.name] || 0) + 1;
+        else passCounts[c.name] = (passCounts[c.name] || 0) + 1;
+      }));
+      const topFail = Object.entries(failCounts).sort((a, b) => b[1] - a[1])[0];
+      const topPass = Object.entries(passCounts).sort((a, b) => b[1] - a[1])[0];
+
+      result.push({
+        name, isAi, avgScore, totalCalls, totalChats, totalDurationSec,
+        weakSpot: topFail ? topFail[0] : "—",
+        strongSpot: topPass ? topPass[0] : "—",
+      });
+    });
+
+    return result.sort((a, b) => b.avgScore - a.avgScore);
+  }, [audits]);
+
+  if (loading) return <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}</div>;
+
+  if (managers.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Inbox className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <p className="text-sm font-semibold text-foreground">Нет данных о менеджерах</p>
+        <p className="text-xs text-muted-foreground mt-1">Загрузите аудиты для формирования рейтинга</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {MOCK_MANAGERS.map((mgr, i) => {
+      {managers.map((mgr, i) => {
         const color = scoreColor(mgr.avgScore);
-        const totalCalls = mgr.incomingCalls + mgr.outgoingCalls;
         return (
-          <div key={i} className="rounded-xl border border-border bg-card p-5">
-            {/* Top row: rank, avatar, name, score */}
+          <div key={mgr.name} className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-start gap-4">
-              {/* Rank */}
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <span className={`text-2xl font-black tabular-nums ${i === 0 ? "text-primary" : "text-muted-foreground/60"}`}>
-                  #{i + 1}
-                </span>
-                <TrendIcon trend={mgr.trend} />
-              </div>
-
-              {/* Avatar & Name */}
+              <span className={`text-2xl font-black tabular-nums shrink-0 ${i === 0 ? "text-primary" : "text-muted-foreground/60"}`}>#{i + 1}</span>
               <div className="flex items-center gap-3 w-44 shrink-0">
                 <Avatar className="h-11 w-11">
                   <AvatarFallback className={`text-sm font-bold ${mgr.isAi ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
@@ -142,21 +99,15 @@ export default function ManagerRating() {
                   {mgr.isAi && <span className="text-[10px] text-primary font-medium">AI Agent</span>}
                 </div>
               </div>
-
-              {/* Score */}
               <div className="w-28 shrink-0 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Балл</span>
-                  <Badge variant="outline" className={`text-xs font-bold tabular-nums border ${color.badge}`}>
-                    {mgr.avgScore}
-                  </Badge>
+                  <Badge variant="outline" className={`text-xs font-bold tabular-nums border ${color.badge}`}>{mgr.avgScore}</Badge>
                 </div>
                 <div className="h-2 rounded-full bg-secondary overflow-hidden">
                   <div className={`h-full rounded-full transition-all ${color.bg}`} style={{ width: `${mgr.avgScore}%` }} />
                 </div>
               </div>
-
-              {/* Weak / Strong spots */}
               <div className="flex-1 grid grid-cols-2 gap-3 min-w-0">
                 <div className="rounded-lg bg-[hsl(var(--status-critical)/0.05)] border border-[hsl(var(--status-critical)/0.1)] px-3 py-2">
                   <span className="text-[9px] uppercase tracking-wider text-[hsl(var(--status-critical)/0.7)] font-medium">Слабое место</span>
@@ -168,45 +119,11 @@ export default function ManagerRating() {
                 </div>
               </div>
             </div>
-
-            {/* Stats row */}
-            <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-7 gap-3">
-              <StatCell
-                icon={<PhoneIncoming className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />}
-                label="Входящие"
-                value={String(mgr.incomingCalls)}
-              />
-              <StatCell
-                icon={<PhoneOutgoing className="h-3.5 w-3.5 text-primary" />}
-                label="Исходящие"
-                value={String(mgr.outgoingCalls)}
-              />
-              <StatCell
-                icon={<PhoneCall className="h-3.5 w-3.5 text-muted-foreground" />}
-                label="Всего звонков"
-                value={String(totalCalls)}
-              />
-              <StatCell
-                icon={<MessageCircle className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />}
-                label="Чатов"
-                value={String(mgr.totalChats)}
-              />
-              <StatCell
-                icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-                label="Общее время"
-                value={formatTalkTime(mgr.totalTalkTimeMin)}
-              />
-              <StatCell
-                icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-                label="Ср. звонок"
-                value={formatAvgDuration(mgr.avgCallDurationSec)}
-              />
-              <StatCell
-                icon={<Star className="h-3.5 w-3.5 text-[hsl(var(--status-warning))]" />}
-                label="Конверсия"
-                value={`${mgr.conversionRate}%`}
-                highlight={mgr.conversionRate >= 60}
-              />
+            <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-4 gap-3">
+              <StatCell icon={<PhoneCall className="h-3.5 w-3.5 text-muted-foreground" />} label="Звонков" value={String(mgr.totalCalls)} />
+              <StatCell icon={<MessageCircle className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />} label="Чатов" value={String(mgr.totalChats)} />
+              <StatCell icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />} label="Время" value={formatTime(mgr.totalDurationSec)} />
+              <StatCell icon={<Star className="h-3.5 w-3.5 text-[hsl(var(--status-warning))]" />} label="Балл" value={`${mgr.avgScore}%`} highlight={mgr.avgScore >= 60} />
             </div>
           </div>
         );
@@ -219,9 +136,7 @@ function StatCell({ icon, label, value, highlight }: { icon: React.ReactNode; la
   return (
     <div className="flex flex-col items-center gap-1 text-center">
       {icon}
-      <span className={`text-sm font-bold tabular-nums ${highlight ? "text-[hsl(var(--status-good))]" : "text-foreground"}`}>
-        {value}
-      </span>
+      <span className={`text-sm font-bold tabular-nums ${highlight ? "text-[hsl(var(--status-good))]" : "text-foreground"}`}>{value}</span>
       <span className="text-[9px] text-muted-foreground uppercase tracking-wider leading-tight">{label}</span>
     </div>
   );

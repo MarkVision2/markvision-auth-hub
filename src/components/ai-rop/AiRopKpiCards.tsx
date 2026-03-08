@@ -1,20 +1,59 @@
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, BarChart3, AlertTriangle, Bot } from "lucide-react";
-import { MOCK_AUDITS } from "./mockData";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { AuditRecord } from "./types";
 
-export default function AiRopKpiCards() {
-  const totalCalls = MOCK_AUDITS.filter(a => a.interaction_type === "call").length;
-  const totalChats = MOCK_AUDITS.filter(a => a.interaction_type === "whatsapp").length;
-  const avgScore = Math.round(MOCK_AUDITS.reduce((s, a) => s + a.ai_score, 0) / MOCK_AUDITS.length);
-  const aiAvg = Math.round(MOCK_AUDITS.filter(a => a.manager_name.toLowerCase().includes("ai")).reduce((s, a) => s + a.ai_score, 0) / Math.max(1, MOCK_AUDITS.filter(a => a.manager_name.toLowerCase().includes("ai")).length));
-  const humanAudits = MOCK_AUDITS.filter(a => !a.manager_name.toLowerCase().includes("ai"));
-  const humanAvg = Math.round(humanAudits.reduce((s, a) => s + a.ai_score, 0) / Math.max(1, humanAudits.length));
+interface Props {
+  audits: AuditRecord[];
+  loading: boolean;
+}
 
-  // Find most common failed checklist item
+export default function AiRopKpiCards({ audits, loading }: Props) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  if (audits.length === 0) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Средний балл отдела", value: "—", icon: TrendingUp },
+          { label: "Проанализировано", value: "0", icon: BarChart3 },
+          { label: "Главная ошибка", value: "Нет данных", icon: AlertTriangle },
+          { label: "AI vs Люди", value: "—", icon: Bot },
+        ].map(c => (
+          <div key={c.label} className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
+              <c.icon className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{c.label}</p>
+              <p className="text-2xl font-bold text-muted-foreground tabular-nums mt-1">{c.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const totalCalls = audits.filter(a => a.interaction_type === "call").length;
+  const totalChats = audits.filter(a => a.interaction_type === "whatsapp").length;
+  const avgScore = Math.round(audits.reduce((s, a) => s + a.ai_score, 0) / audits.length);
+  const aiAudits = audits.filter(a => a.manager_name.toLowerCase().includes("ai"));
+  const aiAvg = aiAudits.length > 0 ? Math.round(aiAudits.reduce((s, a) => s + a.ai_score, 0) / aiAudits.length) : 0;
+  const humanAudits = audits.filter(a => !a.manager_name.toLowerCase().includes("ai"));
+  const humanAvg = humanAudits.length > 0 ? Math.round(humanAudits.reduce((s, a) => s + a.ai_score, 0) / humanAudits.length) : 0;
+
   const failCounts: Record<string, number> = {};
-  MOCK_AUDITS.forEach(a => a.checklist.forEach(c => { if (!c.passed) failCounts[c.name] = (failCounts[c.name] || 0) + 1; }));
+  audits.forEach(a => a.checklist.forEach(c => { if (!c.passed) failCounts[c.name] = (failCounts[c.name] || 0) + 1; }));
   const topFail = Object.entries(failCounts).sort((a, b) => b[1] - a[1])[0];
-  const failPct = topFail ? Math.round((topFail[1] / MOCK_AUDITS.length) * 100) : 0;
+  const failPct = topFail ? Math.round((topFail[1] / audits.length) * 100) : 0;
 
   const scoreColor = avgScore >= 80 ? "text-[hsl(var(--status-good))]" : avgScore >= 50 ? "text-[hsl(var(--status-warning))]" : "text-[hsl(var(--status-critical))]";
   const scoreBg = avgScore >= 80 ? "bg-[hsl(var(--status-good)/0.1)]" : avgScore >= 50 ? "bg-[hsl(var(--status-warning)/0.1)]" : "bg-[hsl(var(--status-critical)/0.1)]";
@@ -23,7 +62,6 @@ export default function AiRopKpiCards() {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-      {/* Card 1: Average Score */}
       <div className={`rounded-xl border ${scoreBorder} bg-card p-4 space-y-3`}>
         <div className="flex items-center justify-between">
           <div className={`h-8 w-8 rounded-lg ${scoreBg} flex items-center justify-center`}>
@@ -41,7 +79,6 @@ export default function AiRopKpiCards() {
         </div>
       </div>
 
-      {/* Card 2: Analyzed */}
       <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -60,12 +97,9 @@ export default function AiRopKpiCards() {
         </div>
       </div>
 
-      {/* Card 3: Top Error */}
       <div className="rounded-xl border border-[hsl(var(--status-critical)/0.2)] bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="h-8 w-8 rounded-lg bg-[hsl(var(--status-critical)/0.1)] flex items-center justify-center">
-            <AlertTriangle className="h-4 w-4 text-[hsl(var(--status-critical))]" />
-          </div>
+        <div className="h-8 w-8 rounded-lg bg-[hsl(var(--status-critical)/0.1)] flex items-center justify-center">
+          <AlertTriangle className="h-4 w-4 text-[hsl(var(--status-critical))]" />
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Главная ошибка</p>
@@ -75,12 +109,9 @@ export default function AiRopKpiCards() {
         </div>
       </div>
 
-      {/* Card 4: AI vs Humans */}
       <div className="rounded-xl border border-primary/20 bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-primary" />
-          </div>
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Bot className="h-4 w-4 text-primary" />
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">AI vs Люди</p>
