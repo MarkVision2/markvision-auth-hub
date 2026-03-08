@@ -12,21 +12,24 @@ import {
   Download, Send, Calendar, TrendingUp, TrendingDown,
   Eye, DollarSign, Users, BarChart3, Trophy, Sparkles,
   CheckCircle2, Target, Image as ImageIcon,
-  Zap, Clock, Bell,
+  Zap, Clock, Bell, ShoppingCart, Flame, MapPin,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
 
 /* ══════════════════════════════════════════════
-   MOCK DATA
+   MOCK DATA — upgraded
    ══════════════════════════════════════════════ */
 
-const kpis = [
-  { label: "Расходы на рекламу", value: "487 320 ₸", trend: -8, trendLabel: "vs прошлая неделя", icon: DollarSign, good: true },
-  { label: "Лиды", value: "143", trend: 15, trendLabel: "vs прошлая неделя", icon: Users, good: true },
-  { label: "Выручка (CRM)", value: "2 840 000 ₸", trend: 11, trendLabel: "vs прошлая неделя", icon: BarChart3, good: true },
-  { label: "ROMI", value: "483%", trend: 22, trendLabel: "vs прошлая неделя", icon: TrendingUp, good: true },
+const kpis7 = [
+  { label: "Расходы", value: "487 320 ₸", trend: -8, good: true, icon: DollarSign, accent: false },
+  { label: "Лиды", value: "143", trend: 15, good: true, icon: Users, accent: false },
+  { label: "CPL", value: "3 408 ₸", trend: -12, good: true, icon: Target, accent: false },
+  { label: "Визиты", value: "89", trend: 9, good: true, icon: Eye, accent: false },
+  { label: "CPV", value: "5 476 ₸", trend: -5, good: true, icon: MapPin, accent: false },
+  { label: "Продажи", value: "27", trend: 23, good: true, icon: ShoppingCart, accent: false },
+  { label: "CAC", value: "18 049 ₸", trend: -6, good: true, icon: Flame, accent: true },
 ];
 
 const funnel = [
@@ -34,7 +37,7 @@ const funnel = [
   { label: "Клики", value: 4218, short: "4 218" },
   { label: "Лиды", value: 143, short: "143" },
   { label: "Визиты", value: 89, short: "89" },
-  { label: "Оплаты", value: 27, short: "27" },
+  { label: "Продажи", value: 27, short: "27" },
 ];
 
 const aiActions = [
@@ -44,48 +47,54 @@ const aiActions = [
   "Обновлены UTM-метки для корректной атрибуции.",
 ];
 
-const aiPlan = [
-  "Масштабируем кампанию «Брекеты» — увеличить бюджет на 30%.",
-  "Запускаем 5 новых креативов из Контент-Завода (формат карусель).",
-  "Оптимизируем посадочную страницу — A/B тест нового заголовка.",
-  "Подключить WhatsApp-бот для мгновенного ответа на заявки.",
+const topCreatives = [
+  { badge: "👑", title: "Лучший по стоимости лида", name: "Reels · Брекеты", metric: "CPL: 1 200 ₸", color: "border-primary/30 bg-primary/[0.04]" },
+  { badge: "🔥", title: "Больше всего визитов", name: "Stories · Виниры", metric: "Визитов: 48", color: "border-amber-500/30 bg-amber-500/[0.04]" },
+  { badge: "💰", title: "Максимум продаж", name: "Карусель · Имплант", metric: "Продаж: 14", color: "border-emerald-500/30 bg-emerald-500/[0.04]" },
 ];
 
 const revenuePie = [
-  { name: "Meta Ads", value: 1840000, color: "hsl(var(--primary))" },
-  { name: "Google Ads", value: 620000, color: "#60a5fa" },
-  { name: "Органика", value: 380000, color: "#a78bfa" },
+  { name: "Instagram", value: 60, color: "hsl(var(--primary))" },
+  { name: "Google", value: 30, color: "#60a5fa" },
+  { name: "TikTok", value: 10, color: "#f472b6" },
 ];
 
-const cplByChannel = [
-  { channel: "Meta Ads", cpl: "3 410 ₸", leads: 94 },
-  { channel: "Google Ads", cpl: "4 820 ₸", leads: 32 },
-  { channel: "Органика", cpl: "—", leads: 17 },
+const ageData = [
+  { age: "18–24", pct: 12 },
+  { age: "25–34", pct: 65 },
+  { age: "35–44", pct: 18 },
+  { age: "45+", pct: 5 },
 ];
 
-const audienceAge = [
-  { age: "18–24", sales: 4, pct: 15 },
-  { age: "25–34", sales: 12, pct: 44 },
-  { age: "35–44", sales: 8, pct: 30 },
-  { age: "45+", sales: 3, pct: 11 },
+const leadQuality = [
+  { label: "🔥 Горячие", pct: 45, count: 64, color: "bg-primary", textColor: "text-primary" },
+  { label: "🟡 Тёплые", pct: 35, count: 50, color: "bg-amber-500", textColor: "text-amber-400" },
+  { label: "🗑 Спам/Отказ", pct: 20, count: 29, color: "bg-destructive", textColor: "text-destructive" },
 ];
 
-const audienceGeo = [
-  { city: "Алматы", sales: 18, pct: 67 },
-  { city: "Астана", sales: 5, pct: 19 },
-  { city: "Шымкент", sales: 3, pct: 11 },
-  { city: "Другие", sales: 1, pct: 3 },
+const unitEconomics = [
+  { label: "Средний чек", value: "105 185 ₸", sub: "Average Order Value", icon: ShoppingCart },
+  { label: "LTV", value: "340 000 ₸", sub: "Lifetime Value", icon: Users },
+  { label: "Маржинальность", value: "62%", sub: "Gross Margin", icon: BarChart3 },
+  { label: "ROMI", value: "483%", sub: "Return on Marketing", icon: TrendingUp },
 ];
 
-/* ── Components ── */
+const aiPlan = [
+  "Масштабировать кампанию «Брекеты» — увеличить бюджет на 30%.",
+  "Запустить 5 новых креативов из Контент-Завода (формат карусель).",
+  "Оптимизировать посадочную страницу — A/B тест нового заголовка.",
+  "Увеличить долю автоматизированной обработки (AI-агент 1.9x эффективнее).",
+];
 
-function TrendPill({ value, isGood }: { value: number; isGood: boolean }) {
-  const isPositive = value > 0;
-  const color = isGood ? "text-primary" : "text-destructive";
+/* ── Helpers ── */
+
+function TrendPill({ value, good }: { value: number; good: boolean }) {
+  const positive = value > 0;
+  const color = good ? "text-primary" : "text-destructive";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${color}`}>
-      {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-      {isPositive ? "+" : ""}{value}%
+    <span className={`inline-flex items-center gap-0.5 text-[11px] font-semibold ${color}`}>
+      {positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {positive ? "+" : ""}{value}%
     </span>
   );
 }
@@ -111,6 +120,22 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MiniHeader({ subtitle }: { subtitle: string }) {
+  return (
+    <>
+      <div className="px-10 pt-8 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-lg">🏥</span>
+          <span className="text-sm font-semibold text-foreground">Клиника AIVA</span>
+          <span className="text-xs text-muted-foreground">· 1–7 Марта 2026</span>
+        </div>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">{subtitle}</span>
+      </div>
+      <div className="mx-10"><Separator className="bg-border/15" /></div>
+    </>
+  );
+}
+
 /* ── Automation Dialog ── */
 function AutomationDialog() {
   const [enabled, setEnabled] = useState(false);
@@ -120,16 +145,14 @@ function AutomationDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="gap-2 text-sm h-10 text-muted-foreground hover:text-foreground">
-          <Send className="h-4 w-4" />
-          Авто-отправка
+        <Button variant="ghost" className="gap-2 text-sm h-9 text-muted-foreground hover:text-foreground">
+          <Send className="h-4 w-4" />Авто-отправка
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[480px] border-border/30">
         <DialogHeader>
           <DialogTitle className="text-lg flex items-center gap-2">
-            <Send className="h-5 w-5 text-primary" />
-            Автоматизация отчётов
+            <Send className="h-5 w-5 text-primary" />Автоматизация отчётов
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">Настройте регулярную отправку в Telegram</p>
         </DialogHeader>
@@ -219,7 +242,7 @@ export default function AiReportsPage() {
         <div className="max-w-4xl mx-auto space-y-8 pb-12">
 
           {/* ═══════════════════════════════════════
-             PAGE 1: EXECUTIVE SUMMARY
+             PAGE 1: MACRO KPI & FUNNEL
              ═══════════════════════════════════════ */}
           <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30" id="report-page-1">
             {/* Report Header */}
@@ -244,46 +267,87 @@ export default function AiReportsPage() {
               </div>
             </div>
 
-            {/* KPI Grid */}
+            {/* 7-Metric KPI Grid */}
             <div className="px-10 py-7">
               <SectionTitle>Ключевые показатели</SectionTitle>
-              <div className="grid grid-cols-4 gap-3">
-                {kpis.map(kpi => (
-                  <div key={kpi.label} className="rounded-xl bg-accent/20 p-4">
+              {/* Top row: 4 metrics */}
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                {kpis7.slice(0, 4).map(kpi => (
+                  <div key={kpi.label} className="rounded-xl bg-accent/20 border border-border/10 p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <kpi.icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      <kpi.icon className="h-3.5 w-3.5 text-muted-foreground/60" />
                       <span className="text-[11px] text-muted-foreground font-medium">{kpi.label}</span>
                     </div>
                     <p className="text-lg font-bold text-foreground tabular-nums">{kpi.value}</p>
-                    {compareEnabled && <div className="mt-1.5"><TrendPill value={kpi.trend} isGood={kpi.good} /></div>}
+                    {compareEnabled && (
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <TrendPill value={kpi.trend} good={kpi.good} />
+                        <span className="text-[9px] text-muted-foreground/50">vs нед.</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {/* Bottom row: 3 metrics — CAC highlighted */}
+              <div className="grid grid-cols-3 gap-3">
+                {kpis7.slice(4).map(kpi => (
+                  <div
+                    key={kpi.label}
+                    className={`rounded-xl p-4 border ${
+                      kpi.accent
+                        ? "bg-primary/[0.06] border-primary/25 ring-1 ring-primary/10"
+                        : "bg-accent/20 border-border/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <kpi.icon className={`h-3.5 w-3.5 ${kpi.accent ? "text-primary" : "text-muted-foreground/60"}`} />
+                      <span className={`text-[11px] font-medium ${kpi.accent ? "text-primary" : "text-muted-foreground"}`}>{kpi.label}</span>
+                      {kpi.accent && (
+                        <Badge className="ml-auto text-[8px] h-4 px-1.5 bg-primary/15 text-primary border-primary/20">KEY</Badge>
+                      )}
+                    </div>
+                    <p className={`text-lg font-bold tabular-nums ${kpi.accent ? "text-primary" : "text-foreground"}`}>{kpi.value}</p>
+                    {compareEnabled && (
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <TrendPill value={kpi.trend} good={kpi.good} />
+                        <span className="text-[9px] text-muted-foreground/50">vs нед.</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Funnel */}
+            {/* Funnel with drop-offs */}
             <div className="px-10 py-7 border-t border-border/10">
               <SectionTitle>Воронка конверсии</SectionTitle>
-              <div className="flex items-center gap-0">
+              <div className="space-y-0">
                 {funnel.map((step, i) => {
                   const nextStep = funnel[i + 1];
                   const convRate = nextStep ? ((nextStep.value / step.value) * 100).toFixed(1) : null;
-                  const widthPct = 20 + (80 * (step.value / funnel[0].value));
+                  const dropOff = nextStep ? (100 - (nextStep.value / step.value) * 100).toFixed(1) : null;
+                  const barWidth = (step.value / funnel[0].value) * 100;
+
                   return (
-                    <div key={step.label} className="flex-1 flex items-center">
-                      <div className="flex-1">
-                        <div
-                          className="rounded-lg bg-primary/10 border border-primary/20 px-3 py-3 text-center mx-auto transition-all"
-                          style={{ width: `${Math.max(widthPct, 60)}%` }}
-                        >
-                          <p className="text-lg font-bold text-foreground tabular-nums">{step.short}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">{step.label}</p>
+                    <div key={step.label}>
+                      <div className="flex items-center gap-4 py-2">
+                        <span className="text-[11px] text-muted-foreground w-20 text-right shrink-0 font-medium">{step.label}</span>
+                        <div className="flex-1 relative">
+                          <div
+                            className="h-9 rounded-lg bg-primary/15 border border-primary/20 flex items-center px-3 transition-all"
+                            style={{ width: `${Math.max(barWidth, 8)}%` }}
+                          >
+                            <span className="text-sm font-bold text-foreground tabular-nums">{step.short}</span>
+                          </div>
                         </div>
                       </div>
                       {convRate && (
-                        <div className="shrink-0 px-1 text-center">
-                          <p className="text-[10px] font-bold text-primary tabular-nums">{convRate}%</p>
-                          <div className="text-muted-foreground/40 text-[10px]">→</div>
+                        <div className="flex items-center gap-4 py-1 ml-24">
+                          <div className="flex items-center gap-3 text-[10px]">
+                            <span className="text-primary font-bold tabular-nums">↓ {convRate}% конверсия</span>
+                            <span className="text-muted-foreground/40">·</span>
+                            <span className="text-destructive/70 tabular-nums">−{dropOff}% потери</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -295,35 +359,18 @@ export default function AiReportsPage() {
             {/* AI Director Summary */}
             <div className="px-10 py-7 border-t border-border/10">
               <SectionTitle>🧠 Сводка от AI-Директора</SectionTitle>
-              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 p-6 space-y-5">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Что сделано</h3>
-                  </div>
-                  <div className="space-y-2 pl-6">
-                    {aiActions.map((a, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <div className="h-1 w-1 rounded-full bg-primary/60 mt-2 shrink-0" />
-                        <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
-                      </div>
-                    ))}
-                  </div>
+              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Что сделано на этой неделе</h3>
                 </div>
-                <Separator className="bg-border/10" />
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Target className="h-4 w-4 text-primary" />
-                    <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">План на следующий период</h3>
-                  </div>
-                  <div className="space-y-2 pl-6">
-                    {aiPlan.map((item, i) => (
-                      <div key={i} className="flex items-start gap-2">
-                        <span className="text-xs font-bold text-primary tabular-nums mt-0.5 shrink-0 w-4">{i + 1}.</span>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{item}</p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-2 pl-6">
+                  {aiActions.map((a, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="h-1 w-1 rounded-full bg-primary/60 mt-2 shrink-0" />
+                      <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -332,69 +379,39 @@ export default function AiReportsPage() {
           </div>
 
           {/* ═══════════════════════════════════════
-             PAGE 2: TRAFFIC & CREATIVE
+             PAGE 2: CREATIVES & TRAFFIC
              ═══════════════════════════════════════ */}
           <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30" id="report-page-2">
-            {/* Mini header */}
-            <div className="px-10 pt-8 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🏥</span>
-                <span className="text-sm font-semibold text-foreground">Клиника AIVA</span>
-                <span className="text-xs text-muted-foreground">· 1–7 Марта 2026</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Трафик и Креативы</span>
-            </div>
+            <MiniHeader subtitle="Креативы и Трафик" />
 
-            <div className="mx-10"><Separator className="bg-border/15" /></div>
-
-            {/* Best Creative */}
+            {/* Top-3 Creatives */}
             <div className="px-10 py-7">
-              <SectionTitle>Топ перформер</SectionTitle>
-              <div className="rounded-xl border border-border/20 bg-accent/10 overflow-hidden">
-                <div className="grid grid-cols-[240px_1fr]">
-                  <div className="bg-accent/20 p-5 flex items-center justify-center border-r border-border/10">
-                    <div className="w-full aspect-[4/5] rounded-lg bg-gradient-to-br from-primary/20 via-primary/5 to-transparent border border-border/20 flex flex-col items-center justify-center gap-2 p-4">
-                      <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                        <ImageIcon className="h-5 w-5 text-primary/60" />
-                      </div>
-                      <p className="text-xs font-semibold text-foreground text-center">Reels · Брекеты</p>
-                      <p className="text-[10px] text-muted-foreground">«Улыбка за 6 месяцев»</p>
-                      <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">Reels</Badge>
-                    </div>
-                  </div>
-                  <div className="p-5 space-y-4">
+              <SectionTitle>Топ-3 креативов</SectionTitle>
+              <div className="grid grid-cols-3 gap-4">
+                {topCreatives.map(c => (
+                  <div key={c.title} className={`rounded-xl border p-5 space-y-3 ${c.color}`}>
                     <div className="flex items-center gap-2">
-                      <Trophy className="h-4 w-4 text-amber-400" />
-                      <span className="text-sm font-semibold text-foreground">Лучший креатив недели</span>
+                      <span className="text-lg">{c.badge}</span>
+                      <span className="text-[11px] font-semibold text-foreground">{c.title}</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { label: "CPL", value: "2 340 ₸", sub: "−18% vs средний" },
-                        { label: "ROMI", value: "483%", sub: "Лучший за месяц" },
-                        { label: "CTR", value: "4.2%", sub: "+67% vs средний" },
-                      ].map(s => (
-                        <div key={s.label} className="rounded-lg bg-accent/30 p-3">
-                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{s.label}</p>
-                          <p className="text-base font-bold text-foreground tabular-nums mt-0.5">{s.value}</p>
-                          <p className="text-[10px] text-primary mt-0.5">{s.sub}</p>
-                        </div>
-                      ))}
+                    <div className="aspect-[4/3] rounded-lg bg-accent/20 border border-border/15 flex flex-col items-center justify-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-accent/40 flex items-center justify-center">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
+                      </div>
+                      <p className="text-[11px] font-medium text-foreground">{c.name}</p>
                     </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {["Instagram", "Reels", "18–35 лет", "Алматы"].map(t => (
-                        <Badge key={t} variant="outline" className="text-[10px] border-border/30">{t}</Badge>
-                      ))}
+                    <div className="rounded-lg bg-accent/30 px-3 py-2 text-center">
+                      <p className="text-sm font-bold text-foreground tabular-nums">{c.metric}</p>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Revenue Sources */}
+            {/* Revenue by Channel — Donut */}
             <div className="px-10 py-7 border-t border-border/10">
               <SectionTitle>Источники выручки</SectionTitle>
               <div className="grid grid-cols-[1fr_1fr] gap-6">
-                {/* Donut */}
                 <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
                   <p className="text-xs text-muted-foreground mb-3 font-medium">Выручка по каналам</p>
                   <div className="h-48">
@@ -415,7 +432,7 @@ export default function AiReportsPage() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(v: number) => `${(v / 1000).toFixed(0)}K ₸`}
+                          formatter={(v: number) => `${v}%`}
                           contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border)/0.3)", borderRadius: 8, fontSize: 12 }}
                         />
                       </PieChart>
@@ -424,23 +441,28 @@ export default function AiReportsPage() {
                   <div className="flex justify-center gap-4 mt-2">
                     {revenuePie.map(r => (
                       <div key={r.name} className="flex items-center gap-1.5">
-                        <div className="h-2 w-2 rounded-full" style={{ background: r.color }} />
-                        <span className="text-[10px] text-muted-foreground">{r.name}</span>
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                        <span className="text-[11px] text-muted-foreground">{r.name} — {r.value}%</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* CPL Table */}
+                {/* Channel breakdown table */}
                 <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
-                  <p className="text-xs text-muted-foreground mb-3 font-medium">CPL по каналам</p>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">Детализация по каналам</p>
                   <div className="space-y-0">
-                    <div className="grid grid-cols-3 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold py-2 border-b border-border/10">
-                      <span>Канал</span><span className="text-right">CPL</span><span className="text-right">Лиды</span>
+                    <div className="grid grid-cols-4 text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold py-2 border-b border-border/10">
+                      <span>Канал</span><span className="text-right">Доля</span><span className="text-right">CPL</span><span className="text-right">Лиды</span>
                     </div>
-                    {cplByChannel.map(c => (
-                      <div key={c.channel} className="grid grid-cols-3 py-3 border-b border-border/5 last:border-0">
+                    {[
+                      { channel: "Instagram", share: "60%", cpl: "2 840 ₸", leads: 86 },
+                      { channel: "Google", share: "30%", cpl: "4 950 ₸", leads: 40 },
+                      { channel: "TikTok", share: "10%", cpl: "5 120 ₸", leads: 17 },
+                    ].map(c => (
+                      <div key={c.channel} className="grid grid-cols-4 py-3 border-b border-border/5 last:border-0">
                         <span className="text-sm text-foreground">{c.channel}</span>
+                        <span className="text-sm text-foreground tabular-nums text-right">{c.share}</span>
                         <span className="text-sm text-foreground tabular-nums text-right">{c.cpl}</span>
                         <span className="text-sm text-muted-foreground tabular-nums text-right">{c.leads}</span>
                       </div>
@@ -450,41 +472,60 @@ export default function AiReportsPage() {
               </div>
             </div>
 
-            {/* Audience Analysis */}
+            {/* Audience Demographics */}
             <div className="px-10 py-7 border-t border-border/10">
-              <SectionTitle>Анализ аудитории (по продажам)</SectionTitle>
-              <div className="grid grid-cols-2 gap-6">
-                {/* Age */}
+              <SectionTitle>Анализ платящей аудитории</SectionTitle>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Geo */}
                 <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
-                  <p className="text-xs text-muted-foreground mb-4 font-medium">Возраст покупателей</p>
-                  <div className="h-36">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={audienceAge} barSize={28}>
-                        <XAxis dataKey="age" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                        <YAxis hide />
-                        <Tooltip
-                          formatter={(v: number) => [`${v} продаж`]}
-                          contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border)/0.3)", borderRadius: 8, fontSize: 12 }}
-                        />
-                        <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">География</p>
+                  <div className="flex items-center gap-2 rounded-lg bg-primary/[0.06] border border-primary/15 px-3 py-2.5">
+                    <MapPin className="h-4 w-4 text-primary shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Астана (+40 км)</p>
+                      <p className="text-[10px] text-muted-foreground">Основная зона покрытия</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Geo */}
+                {/* Age */}
                 <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
-                  <p className="text-xs text-muted-foreground mb-4 font-medium">География продаж</p>
-                  <div className="space-y-3">
-                    {audienceGeo.map(g => (
-                      <div key={g.city}>
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">Возраст</p>
+                  <div className="space-y-2.5">
+                    {ageData.map(a => (
+                      <div key={a.age}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-foreground">{g.city}</span>
-                          <span className="text-xs text-muted-foreground tabular-nums">{g.sales} продаж · {g.pct}%</span>
+                          <span className="text-[11px] text-foreground">{a.age}</span>
+                          <span className="text-[11px] font-bold text-foreground tabular-nums">{a.pct}%</span>
                         </div>
-                        <Progress value={g.pct} className="h-1.5 bg-accent/30" />
+                        <Progress value={a.pct} className="h-1.5 bg-accent/30" />
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                {/* Gender */}
+                <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
+                  <p className="text-xs text-muted-foreground mb-3 font-medium">Пол покупателей</p>
+                  <div className="space-y-4 mt-2">
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <span className="text-sm text-foreground">Женщины</span>
+                        <span className="text-sm font-bold text-primary tabular-nums">80%</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-accent/30 overflow-hidden">
+                        <div className="h-full rounded-full bg-primary" style={{ width: "80%" }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1.5">
+                        <span className="text-sm text-foreground">Мужчины</span>
+                        <span className="text-sm font-bold text-foreground tabular-nums">20%</span>
+                      </div>
+                      <div className="h-3 rounded-full bg-accent/30 overflow-hidden">
+                        <div className="h-full rounded-full bg-muted-foreground/30" style={{ width: "20%" }} />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -494,102 +535,92 @@ export default function AiReportsPage() {
           </div>
 
           {/* ═══════════════════════════════════════
-             PAGE 3: SALES & CRM QA
+             PAGE 3: SALES QA & UNIT ECONOMICS
              ═══════════════════════════════════════ */}
           <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30" id="report-page-3">
-            {/* Mini header */}
-            <div className="px-10 pt-8 pb-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🏥</span>
-                <span className="text-sm font-semibold text-foreground">Клиника AIVA</span>
-                <span className="text-xs text-muted-foreground">· 1–7 Марта 2026</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Продажи и Качество</span>
-            </div>
+            <MiniHeader subtitle="Продажи и Юнит-экономика" />
 
-            <div className="mx-10"><Separator className="bg-border/15" /></div>
-
-            {/* Lead Quality */}
+            {/* Lead Quality — stacked bar */}
             <div className="px-10 py-7">
               <SectionTitle>Качество трафика (AI Scoring)</SectionTitle>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { label: "🔥 Горячие", count: 38, pct: 27, color: "bg-primary" },
-                  { label: "🟡 Тёплые", count: 67, pct: 47, color: "bg-amber-500" },
-                  { label: "🗑 Спам / Нецелевые", count: 38, pct: 26, color: "bg-destructive" },
-                ].map(seg => (
-                  <div key={seg.label} className="rounded-xl bg-accent/10 border border-border/15 p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm text-foreground">{seg.label}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">{seg.count} лидов</span>
+              {/* Stacked progress bar */}
+              <div className="rounded-xl bg-accent/10 border border-border/15 p-6">
+                <div className="h-6 rounded-full overflow-hidden flex mb-5 ring-1 ring-border/10">
+                  {leadQuality.map(seg => (
+                    <div
+                      key={seg.label}
+                      className={`${seg.color} h-full transition-all relative group`}
+                      style={{ width: `${seg.pct}%` }}
+                    />
+                  ))}
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {leadQuality.map(seg => (
+                    <div key={seg.label} className="text-center">
+                      <p className="text-sm font-medium text-foreground">{seg.label}</p>
+                      <p className={`text-2xl font-bold tabular-nums mt-1 ${seg.textColor}`}>{seg.pct}%</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{seg.count} лидов</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Progress value={seg.pct} className="h-2 flex-1 bg-accent/30" />
-                      <span className="text-lg font-bold text-foreground tabular-nums">{seg.pct}%</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Processing Efficiency */}
-            <div className="px-10 py-7 border-t border-border/10">
-              <SectionTitle>Эффективность обработки</SectionTitle>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { label: "Среднее время ответа", value: "2 мин", sub: "Цель: < 5 мин", ok: true },
-                  { label: "Конверсия AI-Агента", value: "15%", sub: "Лид → Визит", ok: true },
-                  { label: "Конверсия менеджеров", value: "8%", sub: "Лид → Визит", ok: false },
-                  { label: "Необработанные", value: "4", sub: "из 143 лидов", ok: false },
-                ].map(m => (
-                  <div key={m.label} className="rounded-xl bg-accent/10 border border-border/15 p-5 space-y-2">
-                    <p className="text-[11px] text-muted-foreground font-medium">{m.label}</p>
-                    <p className={`text-2xl font-bold tabular-nums ${m.ok ? "text-primary" : "text-amber-400"}`}>{m.value}</p>
-                    <p className="text-[11px] text-muted-foreground">{m.sub}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Unit Economics */}
+            {/* Unit Economics — receipt style */}
             <div className="px-10 py-7 border-t border-border/10">
               <SectionTitle>Юнит-экономика</SectionTitle>
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { label: "Средний чек (AOV)", value: "105 185 ₸", icon: DollarSign, sub: "+12% vs прошлый месяц", trend: 12 },
-                  { label: "Стоимость привлечения (CAC)", value: "18 049 ₸", icon: Target, sub: "−6% vs прошлый месяц", trend: -6 },
-                  { label: "LTV клиента", value: "340 000 ₸", icon: Users, sub: "LTV / CAC = 18.8x", trend: 8 },
-                ].map(card => (
-                  <div key={card.label} className="rounded-xl bg-primary/[0.04] border border-primary/15 p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <card.icon className="h-4 w-4 text-primary" />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground font-medium">{card.label}</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground tabular-nums">{card.value}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <TrendPill value={card.trend} isGood={card.trend > 0 ? card.label !== "Стоимость привлечения (CAC)" : card.label === "Стоимость привлечения (CAC)"} />
-                      <span className="text-[10px] text-muted-foreground">{card.sub}</span>
-                    </div>
+              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 overflow-hidden">
+                {/* Receipt header */}
+                <div className="px-6 py-4 border-b border-primary/10 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <BarChart3 className="h-4 w-4 text-primary" />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Финансовая сводка</p>
+                    <p className="text-[10px] text-muted-foreground">Unit Economics · Март 2026</p>
+                  </div>
+                </div>
+                {/* Receipt rows */}
+                <div className="divide-y divide-primary/10">
+                  {unitEconomics.map(item => (
+                    <div key={item.label} className="px-6 py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-7 w-7 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                          <item.icon className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-foreground font-medium">{item.label}</p>
+                          <p className="text-[10px] text-muted-foreground">{item.sub}</p>
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold text-foreground tabular-nums">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Receipt footer — ROMI highlight */}
+                <div className="px-6 py-4 bg-primary/[0.06] border-t border-primary/15 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">LTV / CAC Ratio</span>
+                  </div>
+                  <span className="text-2xl font-black text-primary tabular-nums">18.8x</span>
+                </div>
               </div>
             </div>
 
-            {/* Final summary */}
+            {/* Action Plan */}
             <div className="px-10 py-7 border-t border-border/10">
-              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 p-6 flex gap-4">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground mb-1">Резюме AI-Директора</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Юнит-экономика здоровая: LTV/CAC = 18.8x. Основной рост идёт от Meta Ads (65% выручки).
-                    Рекомендую масштабировать бюджет на 30% при сохранении текущего CPL. Конверсия AI-агента в 1.9x выше менеджеров —
-                    стоит увеличить долю автоматизированной обработки.
-                  </p>
+              <SectionTitle>📋 План действий на следующий период</SectionTitle>
+              <div className="rounded-xl bg-primary/[0.04] border border-primary/15 p-6">
+                <div className="space-y-3">
+                  {aiPlan.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-lg bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[11px] font-bold text-primary tabular-nums">{i + 1}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">{item}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
