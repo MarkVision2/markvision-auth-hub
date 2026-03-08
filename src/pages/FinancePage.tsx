@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank,
   BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp,
-  ChevronLeft, ChevronRight, ChevronDown, Receipt, Percent, Target, CircleDollarSign
+  ChevronLeft, ChevronRight, ChevronDown, Receipt, Percent, Target, CircleDollarSign, Loader2
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Area, AreaChart } from "recharts";
 
