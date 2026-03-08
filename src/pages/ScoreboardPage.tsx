@@ -5,8 +5,11 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   ChevronLeft, ChevronRight, Download, DollarSign, Eye,
-  ArrowRightLeft, Target, TrendingUp, Loader2,
+  ArrowRightLeft, Target, TrendingUp, Loader2, BarChart3,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -30,6 +33,11 @@ interface DailyRow {
   visits: number;
   sales: number;
   revenue: number;
+}
+
+interface ClientAccount {
+  id: string;
+  client_name: string;
 }
 
 type PlanKey = "spend" | "impressions" | "clicks" | "leads" | "followers" | "visits" | "sales" | "revenue";
@@ -75,12 +83,12 @@ function PctCell({ value }: { value: number }) {
   const hit = value >= 100;
   return (
     <div className="flex flex-col items-end gap-1">
-      <span className={`text-xs font-bold font-mono tabular-nums ${hit ? "text-emerald-400" : "text-rose-400"}`}>
+      <span className={`text-xs font-bold font-mono tabular-nums ${hit ? "text-status-good" : "text-destructive"}`}>
         {value}%
       </span>
       <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${hit ? "bg-emerald-500" : "bg-rose-500"}`}
+          className={`h-full rounded-full transition-all ${hit ? "bg-status-good" : "bg-destructive"}`}
           style={{ width: `${Math.min(value, 100)}%` }}
         />
       </div>
@@ -104,6 +112,10 @@ export default function ScoreboardPage() {
   const [planValues, setPlanValues] = useState<PlanValues>({ ...EMPTY_PLAN });
   const { active } = useWorkspace();
 
+  // Ad Account filter
+  const [accounts, setAccounts] = useState<ClientAccount[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("all");
+
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
   const prev = () => { if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); } else setMonthIndex(i => i - 1); };
@@ -112,12 +124,36 @@ export default function ScoreboardPage() {
   const dateFrom = `${monthYear}-01`;
   const dateTo = `${monthYear}-31`;
 
-  // Fetch daily facts
+  // Fetch available ad accounts
+  useEffect(() => {
+    async function fetchAccounts() {
+      try {
+        const { data, error } = await supabase
+          .from("clients_config")
+          .select("id, client_name")
+          .eq("is_active", true)
+          .order("client_name");
+        if (error) throw error;
+        setAccounts((data || []) as ClientAccount[]);
+      } catch {
+        setAccounts([]);
+      }
+    }
+    fetchAccounts();
+  }, []);
+
+  // Fetch daily facts — filtered by account
   const fetchDaily = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("daily_metrics").select("*")
+      let query = supabase.from("daily_metrics").select("*")
         .gte("date", dateFrom).lte("date", dateTo).order("date", { ascending: true });
+
+      if (selectedAccountId !== "all") {
+        query = query.eq("client_config_id", selectedAccountId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setRows((data || []).map((r: any) => ({
         id: r.id, date: r.date,
@@ -128,7 +164,7 @@ export default function ScoreboardPage() {
       })));
     } catch { setRows([]); }
     finally { setLoading(false); }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, selectedAccountId]);
 
   // Fetch monthly plan (read-only, set from Finance page)
   const fetchPlan = useCallback(async () => {
@@ -163,7 +199,7 @@ export default function ScoreboardPage() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchDaily]);
 
-  // Realtime for monthly_plans (auto-update when saved from Finance)
+  // Realtime for monthly_plans
   useEffect(() => {
     const ch = supabase.channel("scoreboard_plan_rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "monthly_plans" }, () => fetchPlan())
@@ -189,13 +225,17 @@ export default function ScoreboardPage() {
 
   const hasPlan = Object.values(planValues).some(v => v > 0);
 
-  const topCards = [
+  const topCards = useMemo(() => [
     { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
     { label: "CPV", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
     { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
     { label: "CR Клик→Лид", value: fact.clicks > 0 ? `${Math.round((fact.leads / fact.clicks) * 100)}%` : "—", sub: "Лиды / Клики", icon: ArrowRightLeft },
     { label: "CR Визит→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Визиты", icon: TrendingUp },
-  ];
+  ], [fact]);
+
+  const selectedAccountLabel = selectedAccountId === "all"
+    ? "Все кабинеты"
+    : accounts.find(a => a.id === selectedAccountId)?.client_name ?? "—";
 
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
@@ -208,29 +248,53 @@ export default function ScoreboardPage() {
           }
         </div>
 
-        {/* Month Controls */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={prev}><ChevronLeft className="h-4 w-4" /></Button>
-            <span className="text-sm font-semibold text-foreground px-2 select-none min-w-[120px] text-center">{MONTHS[monthIndex]} {year}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={next}><ChevronRight className="h-4 w-4" /></Button>
+        {/* Controls Bar */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            {/* Month Selector */}
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={prev}><ChevronLeft className="h-4 w-4" /></Button>
+              <span className="text-sm font-semibold text-foreground px-2 select-none min-w-[120px] text-center">{MONTHS[monthIndex]} {year}</span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={next}><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+
+            {/* Ad Account Selector */}
+            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+              <SelectTrigger className="h-8 w-[220px] text-xs bg-secondary border-border">
+                <div className="flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Все кабинеты" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="font-medium">Все кабинеты (Общая сводка)</span>
+                </SelectItem>
+                {accounts.map(acc => (
+                  <SelectItem key={acc.id} value={acc.id}>
+                    {acc.client_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+
           <div className="flex items-center gap-2">
             {!hasPlan && (
-              <p className="text-xs text-muted-foreground/60 mr-2">План не задан — задайте в разделе Финансы → Декомпозиция</p>
+              <p className="text-xs text-muted-foreground/60 mr-2">План не задан — Финансы → Декомпозиция</p>
             )}
-            <Button variant="outline" className="gap-2 text-xs h-8 border-border/50">
+            <Button variant="outline" className="gap-2 text-xs h-8 border-border">
               <Download className="h-3.5 w-3.5" />Экспорт
             </Button>
           </div>
         </div>
 
-        {/* Table — always visible */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden [&_tr]:border-b-0">
+        {/* Table */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-border/10 bg-muted/30">
+                <TableRow className="border-b border-border bg-muted/30">
                   {columns.map(col => (
                     <TableHead key={col.key} className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground whitespace-nowrap px-3 py-3 ${col.align === "right" ? "text-right" : "text-left"}`}>
                       {col.label}
@@ -239,14 +303,14 @@ export default function ScoreboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* ── PLAN ROW (read-only, from monthly_plans) ── */}
-                <TableRow className="bg-blue-500/[0.06] border-b border-border/10 hover:bg-blue-500/[0.08]">
+                {/* ── PLAN ROW ── */}
+                <TableRow className="bg-primary/[0.04] border-b border-border">
                   {columns.map(col => (
                     <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
-                        <span className="font-semibold text-blue-400">🎯 ПЛАН</span>
+                        <span className="font-semibold text-primary">🎯 ПЛАН</span>
                       ) : (
-                        <span className="text-blue-400/80 font-semibold">
+                        <span className="text-primary/80 font-semibold">
                           {getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
                             ? fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))
                             : "—"
@@ -258,7 +322,7 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* ── FACT ROW ── */}
-                <TableRow className="bg-primary/[0.04] border-b border-border/10 hover:bg-primary/[0.06]">
+                <TableRow className="bg-secondary/30 border-b border-border">
                   {columns.map(col => (
                     <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums font-bold ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}>
                       {col.key === "date"
@@ -272,11 +336,11 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* ── PCT ROW ── */}
-                <TableRow className="border-b border-border/10 bg-muted/10">
+                <TableRow className="border-b border-border bg-muted/10">
                   {columns.map(col => (
                     <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
-                        <span className="text-xs font-semibold text-amber-400 font-mono">⚡ % ВЫПОЛН.</span>
+                        <span className="text-xs font-semibold text-status-warning font-mono">⚡ % ВЫПОЛН.</span>
                       ) : (
                         getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
                           ? <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))} />
@@ -298,16 +362,20 @@ export default function ScoreboardPage() {
                 {/* ── Empty daily data ── */}
                 {!loading && rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center py-10">
-                      <p className="text-sm text-muted-foreground">Нет фактических данных за {MONTHS[monthIndex]} {year}</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">Данные появятся автоматически после синхронизации</p>
+                    <TableCell colSpan={columns.length} className="text-center py-12">
+                      <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Нет данных за {MONTHS[monthIndex]} {year}
+                        {selectedAccountId !== "all" && ` · ${selectedAccountLabel}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground/50 mt-1.5">Ожидание синхронизации с рекламными кабинетами</p>
                     </TableCell>
                   </TableRow>
                 )}
 
                 {/* ── Daily rows ── */}
                 {!loading && rows.map((row, i) => (
-                  <TableRow key={row.id} className={`border-b border-border/5 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}>
+                  <TableRow key={row.id} className={`border-b border-border/50 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}>
                     {columns.map(col => (
                       <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left text-muted-foreground font-medium" : "text-right text-foreground/80"}`}>
                         {col.key === "date"
