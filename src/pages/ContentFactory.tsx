@@ -285,6 +285,7 @@ export default function ContentFactory() {
     setDesignPrompt(""); setExactText(""); setLogoFile(null);
     setReferenceFile(null); setReferencePreview(null); setReferenceUrl("");
     setShowFeedbackInput(false); setEditFeedback("");
+    setContentMode("photo"); setFormat("single"); setAspectRatio("4:5");
   };
 
   const handleDownloadAll = async (urls: string[]) => {
