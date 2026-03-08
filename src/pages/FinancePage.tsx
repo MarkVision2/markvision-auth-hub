@@ -445,7 +445,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
             <div className="flex flex-wrap gap-1.5">
               {availableServices.map(s => (
                 <button key={s} onClick={() => addExistingService(s)}
-                  className="text-[11px] px-2.5 py-1 rounded-md border border-border/10 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all">
+                  className="text-[11px] px-2.5 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-all">
                   + {s}
                 </button>
               ))}
