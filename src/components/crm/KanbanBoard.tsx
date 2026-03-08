@@ -109,14 +109,62 @@ export default function KanbanBoard() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchLeads]);
 
+  // Маппинг CRM-этапов на ключи CAPI (n8n CAPI-Status-Trigger)
+  const CAPI_STATUS_MAP: Record<string, string> = {
+    "Записан": "scheduled",
+    "Визит совершен": "diagnostic",
+    "Оплачен": "paid",
+  };
+
+  const fireCAPIWebhook = async (lead: Lead, oldStatus: string, newStatus: string) => {
+    const capiKey = CAPI_STATUS_MAP[newStatus];
+    if (!capiKey) return; // этап не требует CAPI-события
+
+    try {
+      const res = await fetch("https://n8n.zapoinov.com/webhook/lead-status-changed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "leads",
+          type: "UPDATE",
+          record: {
+            id: lead.id,
+            status: capiKey,
+            project_id: (lead as any).project_id || null,
+            deal_amount: lead.amount || 0,
+          },
+          old_record: { status: oldStatus },
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && !data.skipped) {
+          toast({
+            title: "📡 CAPI событие отправлено",
+            description: `${data.event_name || capiKey} → Facebook Pixel`,
+          });
+        }
+      }
+    } catch (err) {
+      // Не блокируем основной флоу — CAPI отправляется фоново
+      console.error("CAPI webhook error:", err);
+    }
+  };
+
   const handleMoveStage = async (leadId: string, newStatus: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    const oldStatus = lead?.status || "Новая заявка";
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     const { error } = await (supabase as any)
       .from("leads").update({ status: newStatus }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       fetchLeads();
+      return;
     }
+    // Фоново отправляем CAPI-событие в n8n
+    if (lead) fireCAPIWebhook(lead, oldStatus, newStatus);
   };
 
   const onDragEnd = (result: DropResult) => {
