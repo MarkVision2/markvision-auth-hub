@@ -14,7 +14,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
   const { theme, toggle } = useTheme();
-
+  useRealtimeNotifications();
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar />
