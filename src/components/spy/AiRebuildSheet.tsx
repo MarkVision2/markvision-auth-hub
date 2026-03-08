@@ -133,7 +133,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-8 mb-4 text-center">
+                    <div className="rounded-xl glass p-8 mb-4 text-center">
                       <p className="text-xs text-muted-foreground/40">Ожидание генерации...</p>
                     </div>
                   )}
