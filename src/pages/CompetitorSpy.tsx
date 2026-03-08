@@ -222,9 +222,15 @@ export default function CompetitorSpy() {
   }, [toast]);
 
   const handleDeleteCompetitor = useCallback(async (id: string) => {
-    await (supabase as any).from("competitors").delete().eq("id", id);
-    setCompetitors((prev) => prev.filter((c) => c.id !== id));
-    toast({ title: "Удалён" });
+    try {
+      const { error } = await (supabase as any).from("competitors").delete().eq("id", id);
+      if (error) throw error;
+      setCompetitors((prev) => prev.filter((c) => c.id !== id));
+      toast({ title: "Удалён" });
+    } catch (err: any) {
+      console.error("Delete competitor error:", err);
+      toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
+    }
   }, [toast]);
 
   const handleAnalyzePost = useCallback(async () => {
