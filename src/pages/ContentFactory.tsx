@@ -20,6 +20,7 @@ import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AutopostSheet from "@/components/sheets/AutopostSheet";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
+type ContentMode = "photo" | "video";
 
 interface ContentTask {
   id: string;
@@ -35,16 +36,28 @@ interface ContentTask {
   created_at: string | null;
 }
 
-const FORMAT_CARDS = [
+const PHOTO_FORMAT_CARDS = [
   { value: "single", label: "1 Картинка (Баннер)", sub: "Одно изображение", icon: "🖼" },
   { value: "carousel-7", label: "Карусель 7 слайдов", sub: "Продающая серия", icon: "📑" },
   { value: "carousel-10", label: "Карусель 10 слайдов", sub: "Максимум контента", icon: "📚" },
 ] as const;
 
-const ASPECT_CARDS = [
+const VIDEO_FORMAT_CARDS = [
+  { value: "reels", label: "Reels / Shorts", sub: "Вертикальное видео", icon: "📱" },
+  { value: "promo-clip", label: "Промо-ролик", sub: "Рекламный клип", icon: "🎬" },
+  { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
+] as const;
+
+const PHOTO_ASPECT_CARDS = [
   { value: "1:1", label: "1:1", sub: "Квадрат" },
   { value: "4:5", label: "4:5", sub: "Лента" },
   { value: "9:16", label: "9:16", sub: "Stories / Reels" },
+] as const;
+
+const VIDEO_ASPECT_CARDS = [
+  { value: "9:16", label: "9:16", sub: "Reels / Stories" },
+  { value: "16:9", label: "16:9", sub: "YouTube / Горизонт" },
+  { value: "1:1", label: "1:1", sub: "Квадрат" },
 ] as const;
 
 const pipelineSteps = [
