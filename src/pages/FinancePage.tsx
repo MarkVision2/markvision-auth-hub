@@ -50,8 +50,8 @@ function Section({ title, action, children, className = "" }: {
   title: string; action?: React.ReactNode; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`rounded-2xl bg-card border border-border/50 overflow-hidden ${className}`}>
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+    <div className={`rounded-2xl bg-card border border-border/10 overflow-hidden ${className}`}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/10">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {action}
       </div>
