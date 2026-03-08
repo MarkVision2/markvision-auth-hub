@@ -14,6 +14,7 @@ export interface AppNotification {
 
 export interface NotificationPreferences {
   soundEnabled: boolean;
+  browserPushEnabled: boolean;
   errorEnabled: boolean;
   warningEnabled: boolean;
   infoEnabled: boolean;
@@ -22,6 +23,7 @@ export interface NotificationPreferences {
 
 const DEFAULT_PREFS: NotificationPreferences = {
   soundEnabled: true,
+  browserPushEnabled: false,
   errorEnabled: true,
   warningEnabled: true,
   infoEnabled: true,
