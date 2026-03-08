@@ -499,100 +499,83 @@ function AgencyTab() {
           </Sheet>
         }
       >
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className="border-b border-border/30">
-                <th className="text-left text-xs font-medium text-muted-foreground py-3 pl-6 w-[200px]">Клиент</th>
-                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[200px]">Услуги</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[120px]">Оплата</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[110px]">Расходы</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[120px]">Прибыль</th>
-                <th className="text-center text-xs font-medium text-muted-foreground py-3 w-[70px]">Маржа</th>
-                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[130px]">Дата оплаты</th>
-                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[120px]">Статус</th>
-                <th className="w-[44px] py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {clientsData.map((c) => {
-                const profit = c.revenue - c.expenses;
-                const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
-                const statusStyle = billingLabels[c.billingStatus];
-                return (
-                  <tr key={c.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
-                    {/* Client name — plain text, editable on click */}
-                    <td className="py-4 pl-6 align-middle">
-                      <Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)}
-                        className="h-auto py-1 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full truncate" />
-                    </td>
-                    {/* Services */}
-                    <td className="py-4 align-middle">
-                      <div className="flex flex-wrap gap-1.5 items-center">
-                        {c.services.map(s => (
-                          <Badge key={s} variant="outline" className="text-[11px] gap-1 pr-1 rounded-md border-border/50 cursor-pointer hover:border-destructive/50 transition-colors whitespace-nowrap" onClick={() => toggleClientService(c.id, s)}>
-                            {s} <X className="h-2.5 w-2.5 opacity-40 hover:opacity-100" />
-                          </Badge>
-                        ))}
-                        <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
-                          <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden shrink-0">
-                            <Plus className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
-                          </SelectTrigger>
-                          <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>))}</SelectContent>
-                        </Select>
-                      </div>
-                    </td>
-                    {/* Revenue */}
-                    <td className="py-4 align-middle text-right">
-                      <Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
-                        className="h-auto py-1 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-full" />
-                    </td>
-                    {/* Expenses */}
-                    <td className="py-4 align-middle text-right">
-                      <Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
-                        className="h-auto py-1 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-full" />
-                    </td>
-                    {/* Profit */}
-                    <td className="py-4 align-middle text-right pr-3">
-                      <span className="text-sm font-semibold tabular-nums text-primary">{fmtCurrency(profit)}</span>
-                    </td>
-                    {/* Margin */}
-                    <td className="py-4 align-middle text-center">
-                      <span className={`inline-flex items-center justify-center text-xs font-medium tabular-nums rounded-full h-8 w-12 border ${margin >= 80 ? "bg-primary/8 border-primary/20 text-primary" : "bg-secondary/50 border-border/30 text-muted-foreground"}`}>
-                        {margin}%
-                      </span>
-                    </td>
-                    {/* Date */}
-                    <td className="py-4 align-middle">
-                      <Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
-                        className="h-auto py-1 text-xs tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
-                    </td>
-                    {/* Status */}
-                    <td className="py-4 align-middle">
-                      <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
-                        className={`h-8 text-xs rounded-lg px-2.5 py-1 border cursor-pointer transition-colors w-full ${statusStyle.cls}`}>
-                        {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
-                      </select>
-                    </td>
-                    {/* Delete */}
-                    <td className="py-4 align-middle text-center">
-                      <button onClick={() => removeClient(c.id)} className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {/* Totals */}
-              <tr className="bg-secondary/20 border-t border-border/30">
-                <td className="py-4 pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого</td>
-                <td className="py-4 text-right text-sm font-bold text-foreground tabular-nums pr-2">{fmtCurrency(totalMrr)}</td>
-                <td className="py-4 text-right text-sm font-bold text-destructive tabular-nums pr-2">{fmtCurrency(totalExpenses)}</td>
-                <td className="py-4 text-right text-sm font-bold text-primary tabular-nums pr-3">{fmtCurrency(totalMrr - totalExpenses)}</td>
-                <td colSpan={4} />
-              </tr>
-            </tbody>
-          </table>
+        <div className="divide-y divide-border/20">
+          {clientsData.map((c) => {
+            const profit = c.revenue - c.expenses;
+            const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
+            const statusStyle = billingLabels[c.billingStatus];
+            return (
+              <div key={c.id} className="group px-6 py-5 hover:bg-secondary/20 transition-colors">
+                {/* Row 1: Name + Status + Actions */}
+                <div className="flex items-center justify-between gap-4 mb-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">{c.name.charAt(0)}</span>
+                    </div>
+                    <Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)}
+                      className="h-auto py-1 text-sm font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 max-w-[280px]" />
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
+                      className={`h-7 text-[11px] rounded-lg px-2.5 border cursor-pointer transition-colors ${statusStyle.cls}`}>
+                      {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
+                    </select>
+                    <Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
+                      className="h-7 py-0 text-[11px] tabular-nums bg-transparent border-border/30 rounded-lg px-2 w-[130px]" />
+                    <button onClick={() => removeClient(c.id)} className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Row 2: Services */}
+                <div className="flex items-center gap-1.5 mb-3 ml-12">
+                  {c.services.map(s => (
+                    <Badge key={s} variant="outline" className="text-[11px] gap-1 pr-1.5 rounded-md border-border/40 cursor-pointer hover:border-destructive/40 transition-colors" onClick={() => toggleClientService(c.id, s)}>
+                      {s} <X className="h-2.5 w-2.5 opacity-40 hover:opacity-100" />
+                    </Badge>
+                  ))}
+                  <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
+                    <SelectTrigger className="h-6 w-6 p-0 border-dashed border-border/40 bg-transparent [&>svg]:hidden shrink-0 rounded-md hover:border-primary/40 transition-colors">
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                    </SelectTrigger>
+                    <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+
+                {/* Row 3: Financial metrics */}
+                <div className="grid grid-cols-4 gap-4 ml-12">
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/30 border border-border/20 px-3 py-2">
+                    <span className="text-[11px] text-muted-foreground">Оплата</span>
+                    <Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
+                      className="h-auto py-0 text-sm tabular-nums font-semibold bg-transparent border-none text-right w-[100px] focus-visible:ring-0 px-0" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/30 border border-border/20 px-3 py-2">
+                    <span className="text-[11px] text-muted-foreground">Расходы</span>
+                    <Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
+                      className="h-auto py-0 text-sm tabular-nums font-semibold text-destructive bg-transparent border-none text-right w-[100px] focus-visible:ring-0 px-0" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-primary/[0.04] border border-primary/10 px-3 py-2">
+                    <span className="text-[11px] text-muted-foreground">Прибыль</span>
+                    <span className="text-sm font-semibold tabular-nums text-primary">{fmtCurrency(profit)}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg bg-secondary/30 border border-border/20 px-3 py-2">
+                    <span className="text-[11px] text-muted-foreground">Маржа</span>
+                    <span className={`text-sm font-semibold tabular-nums ${margin >= 80 ? "text-primary" : "text-muted-foreground"}`}>{margin}%</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {/* Totals */}
+          <div className="px-6 py-4 bg-secondary/20 flex items-center justify-between">
+            <span className="text-sm font-bold text-foreground">Итого · {clientsData.length} клиентов</span>
+            <div className="flex items-center gap-6">
+              <span className="text-sm tabular-nums"><span className="text-muted-foreground text-xs mr-1.5">Оплата</span><span className="font-bold text-foreground">{fmtCurrency(totalMrr)}</span></span>
+              <span className="text-sm tabular-nums"><span className="text-muted-foreground text-xs mr-1.5">Расходы</span><span className="font-bold text-destructive">{fmtCurrency(totalExpenses)}</span></span>
+              <span className="text-sm tabular-nums"><span className="text-muted-foreground text-xs mr-1.5">Прибыль</span><span className="font-bold text-primary">{fmtCurrency(totalMrr - totalExpenses)}</span></span>
+            </div>
+          </div>
         </div>
       </Section>
 
