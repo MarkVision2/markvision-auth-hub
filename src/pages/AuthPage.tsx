@@ -177,8 +177,6 @@ const AuthPage = () => {
       </div>
     </div>
   );
-});
-
-AuthPage.displayName = "AuthPage";
+};
 
 export default AuthPage;
