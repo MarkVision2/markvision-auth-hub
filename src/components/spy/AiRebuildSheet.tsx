@@ -94,7 +94,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                   </div>
 
                   {loading ? (
-                    <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-8 mb-4 flex flex-col items-center justify-center gap-3">
+                    <div className="rounded-xl glass border-primary/20 p-8 mb-4 flex flex-col items-center justify-center gap-3">
                       <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
                         <Loader2 className="h-5 w-5 text-primary animate-spin" />
                       </div>
