@@ -398,6 +398,57 @@ export default function ContentFactory() {
         </div>
         <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
 
+        {/* Last completed content */}
+        {(() => {
+          const lastCompleted = history.find(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0);
+          if (!lastCompleted) return null;
+          return (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Последний контент</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {lastCompleted.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                    {lastCompleted.created_at && ` • ${dateFmt(new Date(lastCompleted.created_at), "dd.MM HH:mm")}`}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => loadHistoryItem(lastCompleted)}>
+                    Открыть
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => {
+                    if (lastCompleted.result_urls) {
+                      for (const url of lastCompleted.result_urls) {
+                        const a = document.createElement("a");
+                        a.href = url; a.download = ""; a.target = "_blank"; a.click();
+                      }
+                    }
+                  }}>
+                    <Download className="h-3 w-3" /> Скачать
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {lastCompleted.result_urls!.slice(0, 5).map((url, i) => (
+                  <div key={i} className="flex-shrink-0 rounded-lg border border-border overflow-hidden bg-secondary/20">
+                    {lastCompleted.content_type === "video" ? (
+                      <video src={url} className="h-20 w-14 object-cover" muted />
+                    ) : (
+                      <img src={url} alt={`Результат ${i + 1}`} className="h-20 object-contain" />
+                    )}
+                  </div>
+                ))}
+                {lastCompleted.result_urls!.length > 5 && (
+                  <div className="flex-shrink-0 h-20 w-14 rounded-lg border border-border bg-secondary/30 flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">+{lastCompleted.result_urls!.length - 5}</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
           {/* LEFT: Form */}
           <div className="rounded-xl border border-border bg-card p-6 space-y-8">
