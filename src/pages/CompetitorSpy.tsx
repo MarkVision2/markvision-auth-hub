@@ -347,6 +347,7 @@ export default function CompetitorSpy() {
                   improved: "",
                   suggestedFormat: "",
                   media_url: ad.media_url,
+                  source_url: ad.source_url || undefined,
                 }}
                 isMonitored={!!ad.is_monitored}
                 onToggleMonitor={() => toggleMonitoring(ad)}
