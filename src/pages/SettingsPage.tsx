@@ -5,6 +5,8 @@ import {
   Settings, Users, Shield, Plug, UserPlus, Pencil, Trash2, Search,
   LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
+  Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut,
+  Send, Workflow, ScanSearch, ExternalLink,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -257,9 +259,9 @@ export default function SettingsPage() {
               onDelete={setDeleteTarget}
             />
           )}
-          {activeTab === "general" && <PlaceholderTab title="Общие" desc="Настройки профиля, языка и темы оформления." />}
-          {activeTab === "integrations" && <PlaceholderTab title="Интеграции" desc="Управление подключениями Meta, Telegram, n8n и API-ключами." />}
-          {activeTab === "security" && <PlaceholderTab title="Безопасность" desc="Двухфакторная аутентификация, журнал действий и политики паролей." />}
+          {activeTab === "general" && <GeneralTab />}
+          {activeTab === "integrations" && <IntegrationsTab />}
+          {activeTab === "security" && <SecurityTab />}
         </div>
       </div>
 
@@ -528,16 +530,381 @@ function TeamContent({
   );
 }
 
-/* ── Placeholder for other tabs ── */
-function PlaceholderTab({ title, desc }: { title: string; desc: string }) {
+/* ═══════════════════════════════════════
+   TAB: ОБЩИЕ (General)
+   ═══════════════════════════════════════ */
+function GeneralTab() {
+  const [name, setName] = useState("Admin");
+  const [email, setEmail] = useState("admin@markvision.io");
+  const [phone, setPhone] = useState("+7 777 123 45 67");
+  const [company, setCompany] = useState("MarkVision Agency");
+  const [tz, setTz] = useState("asia-almaty");
+  const [currency, setCurrency] = useState("kzt");
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-xl font-bold text-foreground tracking-tight">{title}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">Общие настройки</h1>
+        <p className="text-sm text-muted-foreground mt-1">Управление профилем и параметрами агентства</p>
       </div>
-      <div className="rounded-xl bg-card/30 p-12 text-center">
-        <p className="text-sm text-muted-foreground">Будет доступно в следующем обновлении</p>
+
+      {/* Card 1: Personal */}
+      <div className="rounded-xl border border-border/30 bg-card p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+            <Users size={13} className="text-primary" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Личный профиль</span>
+        </div>
+
+        <div className="flex items-center gap-5">
+          <Avatar className="h-16 w-16">
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">MV</AvatarFallback>
+          </Avatar>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Фото профиля</p>
+            <p className="text-[11px] text-muted-foreground">JPG, PNG. Макс 2 МБ</p>
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1.5 text-primary hover:text-primary mt-0.5">
+              <Upload size={12} />Загрузить
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Имя</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} className="bg-accent/30 border-border/30" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Email</Label>
+            <Input value={email} onChange={e => setEmail(e.target.value)} type="email" className="bg-accent/30 border-border/30" />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs text-muted-foreground">Телефон</Label>
+            <div className="relative">
+              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/40" />
+              <Input value={phone} onChange={e => setPhone(e.target.value)} className="bg-accent/30 border-border/30 pl-9" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Card 2: Agency */}
+      <div className="rounded-xl border border-border/30 bg-card p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+            <Briefcase size={13} className="text-primary" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Настройки агентства</span>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Название компании</Label>
+            <Input value={company} onChange={e => setCompany(e.target.value)} className="bg-accent/30 border-border/30" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Часовой пояс</Label>
+              <Select value={tz} onValueChange={setTz}>
+                <SelectTrigger className="bg-accent/30 border-border/30">
+                  <div className="flex items-center gap-2"><Globe size={13} className="text-muted-foreground/50" /><SelectValue /></div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="asia-almaty">Asia/Almaty (UTC+6)</SelectItem>
+                  <SelectItem value="europe-moscow">Europe/Moscow (UTC+3)</SelectItem>
+                  <SelectItem value="asia-dubai">Asia/Dubai (UTC+4)</SelectItem>
+                  <SelectItem value="europe-london">Europe/London (UTC+0)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Валюта по умолчанию</Label>
+              <Select value={currency} onValueChange={setCurrency}>
+                <SelectTrigger className="bg-accent/30 border-border/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="kzt">KZT (₸)</SelectItem>
+                  <SelectItem value="usd">USD ($)</SelectItem>
+                  <SelectItem value="rub">RUB (₽)</SelectItem>
+                  <SelectItem value="eur">EUR (€)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Button className="gap-2" onClick={() => toast({ title: "Изменения сохранены" })}>
+        <Settings size={15} />Сохранить изменения
+      </Button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   TAB: ИНТЕГРАЦИИ (Integrations)
+   ═══════════════════════════════════════ */
+interface IntegrationCardProps {
+  icon: React.ReactNode;
+  name: string;
+  description: string;
+  connected: boolean;
+  fields: { label: string; value: string; type?: string }[];
+  buttonLabel?: string;
+}
+
+function IntegrationCard({ icon, name, description, connected, fields, buttonLabel }: IntegrationCardProps) {
+  const [showTokens, setShowTokens] = useState<Record<number, boolean>>({});
+
+  return (
+    <div className="rounded-xl border border-border/30 bg-card p-5 space-y-4">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-accent border border-border/30 flex items-center justify-center shrink-0">
+            {icon}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{name}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{description}</p>
+          </div>
+        </div>
+        <Badge variant="outline" className={cn("text-[10px] shrink-0", connected ? "border-primary/30 text-primary" : "border-border/40 text-muted-foreground")}>
+          {connected ? "🟢 Подключено" : "⚪️ Не подключено"}
+        </Badge>
+      </div>
+
+      <Separator className="bg-border/15" />
+
+      <div className="space-y-3">
+        {fields.map((f, i) => (
+          <div key={i} className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">{f.label}</Label>
+            <div className="relative">
+              <Input
+                type={f.type === "password" && !showTokens[i] ? "password" : "text"}
+                defaultValue={f.value}
+                className="bg-accent/20 border-border/20 text-sm font-mono pr-10"
+                readOnly
+              />
+              {f.type === "password" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                  onClick={() => setShowTokens(prev => ({ ...prev, [i]: !prev[i] }))}
+                >
+                  {showTokens[i] ? <EyeOff size={13} /> : <Eye size={13} />}
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Button variant={connected ? "ghost" : "outline"} size="sm" className="h-8 text-xs gap-1.5">
+        {connected ? <ExternalLink size={12} /> : <Plug size={12} />}
+        {buttonLabel || (connected ? "Обновить токен" : "Подключить")}
+      </Button>
+    </div>
+  );
+}
+
+function IntegrationsTab() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">Интеграции</h1>
+        <p className="text-sm text-muted-foreground mt-1">Управление подключениями и API-ключами</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <IntegrationCard
+          icon={<span className="text-lg">📘</span>}
+          name="Meta Ads"
+          description="Facebook & Instagram Ads Manager"
+          connected={true}
+          fields={[
+            { label: "System User Token", value: "EAAGZBsBA9ZC9kBO...", type: "password" },
+            { label: "Ad Account ID", value: "act_123456789012" },
+          ]}
+          buttonLabel="Обновить токен"
+        />
+        <IntegrationCard
+          icon={<Send size={18} className="text-blue-400" />}
+          name="Telegram"
+          description="Бот-уведомления и отчёты"
+          connected={true}
+          fields={[
+            { label: "Bot Token", value: "7123456789:AAF...", type: "password" },
+            { label: "Chat ID", value: "-1003746647686" },
+          ]}
+        />
+        <IntegrationCard
+          icon={<Workflow size={18} className="text-orange-400" />}
+          name="n8n Автоматизация"
+          description="Webhook-интеграция с n8n workflows"
+          connected={true}
+          fields={[
+            { label: "Webhook Base URL", value: "https://n8n.markvision.io/webhook" },
+          ]}
+        />
+        <IntegrationCard
+          icon={<ScanSearch size={18} className="text-muted-foreground" />}
+          name="Apify"
+          description="Парсинг рекламы конкурентов"
+          connected={false}
+          fields={[
+            { label: "API Token", value: "" },
+          ]}
+          buttonLabel="Подключить"
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   TAB: БЕЗОПАСНОСТЬ (Security)
+   ═══════════════════════════════════════ */
+function SecurityTab() {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [twoFa, setTwoFa] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">Безопасность</h1>
+        <p className="text-sm text-muted-foreground mt-1">Защита аккаунта, пароли и активные сессии</p>
+      </div>
+
+      {/* Card 1: Password */}
+      <div className="rounded-xl border border-border/30 bg-card p-6 space-y-5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+            <Lock size={13} className="text-primary" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Изменение пароля</span>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Текущий пароль</Label>
+            <div className="relative">
+              <Input type={showCurrent ? "text" : "password"} value={currentPw} onChange={e => setCurrentPw(e.target.value)} placeholder="••••••••" className="bg-accent/30 border-border/30 pr-10" />
+              <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowCurrent(!showCurrent)}>
+                {showCurrent ? <EyeOff size={13} /> : <Eye size={13} />}
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Новый пароль</Label>
+              <div className="relative">
+                <Input type={showNew ? "text" : "password"} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Мин. 8 символов" className="bg-accent/30 border-border/30 pr-10" />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowNew(!showNew)}>
+                  {showNew ? <EyeOff size={13} /> : <Eye size={13} />}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Подтверждение</Label>
+              <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="Повторите пароль" className="bg-accent/30 border-border/30" />
+            </div>
+          </div>
+        </div>
+
+        <Button
+          className="gap-2"
+          disabled={!currentPw || !newPw || newPw !== confirmPw}
+          onClick={() => { toast({ title: "Пароль обновлён" }); setCurrentPw(""); setNewPw(""); setConfirmPw(""); }}
+        >
+          <Lock size={14} />Обновить пароль
+        </Button>
+      </div>
+
+      {/* Card 2: 2FA */}
+      <div className="rounded-xl border border-border/30 bg-card p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+            <Smartphone size={13} className="text-primary" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Двухфакторная аутентификация</span>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl bg-accent/20 border border-border/15 p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Включить 2FA</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Защитите аккаунт приложением-аутентификатором (Google Authenticator, Authy)</p>
+          </div>
+          <Switch
+            checked={twoFa}
+            onCheckedChange={v => { setTwoFa(v); toast({ title: v ? "2FA активирована" : "2FA отключена" }); }}
+            className="data-[state=checked]:bg-primary"
+          />
+        </div>
+
+        {twoFa && (
+          <div className="rounded-xl bg-primary/[0.04] border border-primary/15 p-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Отсканируйте QR-код в приложении-аутентификаторе для завершения настройки. Код будет сгенерирован при подключении к бэкенду.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Card 3: Sessions */}
+      <div className="rounded-xl border border-border/30 bg-card p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+            <Monitor size={13} className="text-primary" />
+          </div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Активные сессии</span>
+        </div>
+
+        <div className="space-y-0">
+          {/* Session 1 — current */}
+          <div className="flex items-center gap-4 py-3.5 border-b border-border/10">
+            <div className="h-9 w-9 rounded-lg bg-accent border border-border/30 flex items-center justify-center shrink-0">
+              <Monitor size={15} className="text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Mac OS · Safari</p>
+              <p className="text-[11px] text-muted-foreground">Алматы, Казахстан</p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="text-xs text-primary font-medium">Сейчас онлайн</span>
+            </div>
+          </div>
+
+          {/* Session 2 */}
+          <div className="flex items-center gap-4 py-3.5">
+            <div className="h-9 w-9 rounded-lg bg-accent border border-border/30 flex items-center justify-center shrink-0">
+              <Smartphone size={15} className="text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">iOS 17 · Safari</p>
+              <p className="text-[11px] text-muted-foreground">Астана, Казахстан</p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-[11px] text-muted-foreground">2 часа назад</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                onClick={() => toast({ title: "Сеанс завершён" })}
+              >
+                <LogOut size={12} />Завершить
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
