@@ -117,6 +117,27 @@ export default function ContentFactory() {
     return data.publicUrl;
   }, []);
 
+  // Magic expand: takes short text from a field and expands it
+  const [expandingField, setExpandingField] = useState<string | null>(null);
+  const handleMagicExpand = async (fieldName: string, getter: string, setter: (v: string) => void) => {
+    if (!getter.trim()) {
+      toast({ title: "Напишите краткое описание", description: "AI развернёт его в полноценный текст", variant: "destructive" });
+      return;
+    }
+    setExpandingField(fieldName);
+    await new Promise(r => setTimeout(r, 1500));
+    // Simulate expansion based on field type
+    const expansions: Record<string, (input: string) => string> = {
+      visualStyle: (input) => `${input}. Используйте динамичные переходы между сценами, крупные планы с акцентом на детали. Тёплая цветовая палитра с натуральным освещением. Минималистичный фон, современная типографика с контрастными акцентами.`,
+      speakerText: (input) => `${input}\n\nПредставьте себе результат, который говорит сам за себя. Каждый элемент продуман до мелочей — от идеи до реализации. Наш подход — это качество в каждой детали, которое вы почувствуете с первого взгляда.\n\nДействуйте прямо сейчас — количество мест ограничено.`,
+      mainText: (input) => `Слайд 1: ${input}\nСлайд 2: Ключевое преимущество — то, что отличает вас от конкурентов\nСлайд 3: Социальное доказательство — отзывы и результаты клиентов\nСлайд 4: Призыв к действию — запишитесь сегодня и получите бонус`,
+    };
+    const expand = expansions[fieldName] || ((i: string) => `${i}. Дополнительные детали, визуальные акценты, профессиональная подача контента с учётом целевой аудитории.`);
+    setter(expand(getter));
+    setExpandingField(null);
+    toast({ title: "✨ Текст расширен" });
+  };
+
   // Magic AI auto-fill
   const handleMagicAI = async () => {
     if (!sourceUrl.trim()) {
@@ -124,7 +145,6 @@ export default function ContentFactory() {
       return;
     }
     setMagicLoading(true);
-    // Simulate AI analysis (in production this calls an edge function)
     await new Promise(r => setTimeout(r, 1500));
     if (mainType === "video") {
       setVisualStyle("Динамичные переходы, крупные планы продукта, тёплая цветовая палитра, натуральное освещение");
@@ -471,12 +491,22 @@ export default function ContentFactory() {
                 ) : (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                      <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">Описание визуала</Label>
+                        <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                          {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                        </Button>
+                      </div>
+                      <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт в полное описание…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
-                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Каждая строка — новый слайд с текстом" : "Точный текст, который будет озвучен (слово в слово)"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
+                        <Button variant="ghost" size="sm" disabled={expandingField === "speakerText"} onClick={() => handleMagicExpand("speakerText", speakerText, setSpeakerText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                          {expandingField === "speakerText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                        </Button>
+                      </div>
+                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Напишите кратко тему слайдов…" : "Напишите кратко суть, AI развернёт…"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                   </div>
                 )}
@@ -516,8 +546,13 @@ export default function ContentFactory() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                    <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-muted-foreground">Описание визуала</Label>
+                      <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                        {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                      </Button>
+                    </div>
+                    <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                   </div>
                 )}
 
@@ -553,8 +588,13 @@ export default function ContentFactory() {
 
                 {/* Slide text */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
-                  <Textarea value={mainText} onChange={(e) => setMainText(e.target.value)} placeholder="Каждая новая строка — новый слайд. Для баннера — одна строка." className="min-h-[120px] bg-secondary/30 border-border resize-none" />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
+                    <Button variant="ghost" size="sm" disabled={expandingField === "mainText"} onClick={() => handleMagicExpand("mainText", mainText, setMainText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                      {expandingField === "mainText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                    </Button>
+                  </div>
+                  <Textarea value={mainText} onChange={(e) => setMainText(e.target.value)} placeholder="Напишите кратко тему, AI развернёт в слайды…" className="min-h-[120px] bg-secondary/30 border-border resize-none" />
                 </div>
 
                 {/* Design */}
