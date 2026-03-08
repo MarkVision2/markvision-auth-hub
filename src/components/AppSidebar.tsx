@@ -13,6 +13,7 @@ import {
   Moon,
   Activity,
   Coins,
+  FileBarChart,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -46,6 +47,7 @@ const navGroups = [
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
       { title: "Финансы", path: "/finance", icon: Coins },
+      { title: "AI Отчётность", path: "/ai-reports", icon: FileBarChart },
     ],
   },
 ];
