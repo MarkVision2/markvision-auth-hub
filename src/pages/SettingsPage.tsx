@@ -259,9 +259,9 @@ export default function SettingsPage() {
               onDelete={setDeleteTarget}
             />
           )}
-          {activeTab === "general" && <PlaceholderTab title="Общие" desc="Настройки профиля, языка и темы оформления." />}
-          {activeTab === "integrations" && <PlaceholderTab title="Интеграции" desc="Управление подключениями Meta, Telegram, n8n и API-ключами." />}
-          {activeTab === "security" && <PlaceholderTab title="Безопасность" desc="Двухфакторная аутентификация, журнал действий и политики паролей." />}
+          {activeTab === "general" && <GeneralTab />}
+          {activeTab === "integrations" && <IntegrationsTab />}
+          {activeTab === "security" && <SecurityTab />}
         </div>
       </div>
 
