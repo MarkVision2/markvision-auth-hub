@@ -410,7 +410,7 @@ export default function AutopostingPage() {
         )}
       </div>
 
-      <CampaignBuilderSheet open={adSheetOpen} onOpenChange={setAdSheetOpen} prefillImage={selectedAdImage} />
+      <CampaignBuilderSheet open={adSheetOpen} onOpenChange={setAdSheetOpen} />
     </DashboardLayout>
   );
 }
