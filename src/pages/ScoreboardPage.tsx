@@ -250,7 +250,7 @@ export default function ScoreboardPage() {
     { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
     { label: "CPV", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
     { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
-    { label: "CR Клик→Лид", value: fact.clicks > 0 ? `${Math.round((fact.leads / fact.clicks) * 100)}%` : "—", sub: "Лиды / Клики", icon: ArrowRightLeft },
+    { label: "CR Лид→Визит", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Визиты / Лиды", icon: ArrowRightLeft },
     { label: "CR Визит→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Визиты", icon: TrendingUp },
   ], [fact]);
 
