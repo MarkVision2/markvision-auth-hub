@@ -470,7 +470,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
         )}
 
         {/* Add custom service */}
-        <div className="p-3 border-t border-border/20">
+        <div className="p-3 border-t border-border/10">
           <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Новая услуга</p>
           <div className="flex items-center gap-2">
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Название"
