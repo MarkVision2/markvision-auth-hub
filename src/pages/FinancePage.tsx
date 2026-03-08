@@ -35,15 +35,15 @@ function KpiCard({ icon: Icon, label, value, valueClass = "text-foreground", sub
   icon: React.ElementType; label: string; value: string; valueClass?: string; sub?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-card p-5 flex flex-col gap-3">
-      <div className="flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
-          <Icon className="h-4 w-4 text-muted-foreground" />
+    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center">
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`text-2xl font-bold tracking-tight tabular-nums ${valueClass}`}>{value}</p>
-      {sub && <p className="text-xs text-muted-foreground -mt-1">{sub}</p>}
+      <p className={`text-lg font-bold tracking-tight font-mono tabular-nums ${valueClass}`}>{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground -mt-0.5">{sub}</p>}
     </div>
   );
 }
