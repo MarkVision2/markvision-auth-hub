@@ -82,11 +82,8 @@ function NumField({ label, value, onChange, suffix }: { label: string; value: nu
 }
 
 /* ══════════════════════════════════════════════
-   TAB 1 — ДЕКОМПОЗИЦИЯ ЦЕЛИ
+   TAB 1 — ДЕКОМПОЗИЦИЯ ЦЕЛИ (Обратная воронка)
    ══════════════════════════════════════════════ */
-
-interface Product { name: string; check: number; share: number; }
-interface Expense { name: string; value: number; isPercent: boolean; }
 
 function DecompositionTab() {
   const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
@@ -95,299 +92,198 @@ function DecompositionTab() {
   const [planYear, setPlanYear] = useState(now.getFullYear());
   const [savingPlan, setSavingPlan] = useState(false);
 
-  const [mode, setMode] = useState<"revenue" | "profit">("revenue");
-  const [targetRevenue, setTargetRevenue] = useState(1_000_000);
-  const [targetProfit, setTargetProfit] = useState(200_000);
-  const [cpl, setCpl] = useState(300);
-  const [cr1, setCr1] = useState(2);
-  const [cr2, setCr2] = useState(10);
+  // ── Step 1: Целевая выручка
+  const [targetRevenue, setTargetRevenue] = useState(5_000_000);
+  // ── Step 2: Средний чек
+  const [avgCheck, setAvgCheck] = useState(1_000_000);
+  // ── Step 3: CR диагностика → продажа
+  const [crDiagToSale, setCrDiagToSale] = useState(20);
+  // ── Step 4: CR лид → диагностика
+  const [crLeadToDiag, setCrLeadToDiag] = useState(10);
+  // ── Step 5: Стоимость лида (CPL)
+  const [cpl, setCpl] = useState(2000);
 
-  const [products, setProducts] = useState<Product[]>([
-    { name: "Основной товар", check: 5000, share: 100 },
-  ]);
-  const [fixExpenses, setFixExpenses] = useState<Expense[]>([
-    { name: "Офис", value: 50000, isPercent: false },
-    { name: "ФОТ", value: 100000, isPercent: false },
-  ]);
-  const [varExpenses, setVarExpenses] = useState<Expense[]>([
-    { name: "Налоги", value: 6, isPercent: true },
-    { name: "Эквайринг", value: 2.5, isPercent: true },
-  ]);
-
+  // ── Computed (обратная воронка) ──
   const calc = useMemo(() => {
-    const avgCheck = products.reduce((s, p) => s + p.check * (p.share / 100), 0);
-    const revenue = targetRevenue;
-    const sales = avgCheck > 0 ? revenue / avgCheck : 0;
-    const leads = cr2 > 0 ? sales / (cr2 / 100) : 0;
-    const impressions = cr1 > 0 ? leads / (cr1 / 100) : 0;
-    const marketingSpend = leads * cpl;
-    const fixTotal = fixExpenses.reduce((s, e) => s + (e.isPercent ? revenue * e.value / 100 : e.value), 0);
-    const varTotal = varExpenses.reduce((s, e) => s + (e.isPercent ? revenue * e.value / 100 : e.value), 0);
-    const totalExpenses = marketingSpend + fixTotal + varTotal;
-    const netProfit = revenue - totalExpenses;
-    const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
-    const romiMarketing = marketingSpend > 0 ? ((revenue - marketingSpend) / marketingSpend) * 100 : 0;
-    const roiAll = totalExpenses > 0 ? ((revenue - totalExpenses) / totalExpenses) * 100 : 0;
-    const cacMarketing = sales > 0 ? marketingSpend / sales : 0;
-    const cacFull = sales > 0 ? (marketingSpend + fixTotal) / sales : 0;
-    const marginPerClient = avgCheck - cacFull;
-    return { avgCheck, revenue, sales, leads, impressions, marketingSpend, fixTotal, varTotal, totalExpenses, netProfit, margin, romiMarketing, roiAll, cacMarketing, cacFull, marginPerClient };
-  }, [targetRevenue, cpl, cr1, cr2, products, fixExpenses, varExpenses]);
+    const sales = avgCheck > 0 ? Math.ceil(targetRevenue / avgCheck) : 0;
+    const diagnostics = crDiagToSale > 0 ? Math.ceil(sales / (crDiagToSale / 100)) : 0;
+    const leads = crLeadToDiag > 0 ? Math.ceil(diagnostics / (crLeadToDiag / 100)) : 0;
+    const adBudget = leads * cpl;
+    const revenue = sales * avgCheck;
+    const costPerDiag = diagnostics > 0 ? adBudget / diagnostics : 0;
+    const costPerSale = sales > 0 ? adBudget / sales : 0;
+    const romi = adBudget > 0 ? Math.round(((revenue - adBudget) / adBudget) * 100) : 0;
+    return { sales, diagnostics, leads, adBudget, revenue, costPerDiag, costPerSale, romi };
+  }, [targetRevenue, avgCheck, crDiagToSale, crLeadToDiag, cpl]);
 
-  const updateProduct = (i: number, field: keyof Product, val: string | number) => {
-    setProducts(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
-  };
-  const addProduct = () => setProducts(prev => [...prev, { name: `Товар ${prev.length + 1}`, check: 0, share: 0 }]);
-  const removeProduct = (i: number) => setProducts(prev => prev.filter((_, idx) => idx !== i));
-  const addFix = () => setFixExpenses(prev => [...prev, { name: "Новый расход", value: 0, isPercent: false }]);
-  const addVar = () => setVarExpenses(prev => [...prev, { name: "Новый расход", value: 0, isPercent: true }]);
+  const funnelSteps = [
+    { label: "Целевая выручка", value: `${fmt(targetRevenue)} ₸`, icon: DollarSign, accent: true, sub: null },
+    { label: "Нужно продаж", value: String(calc.sales), icon: Target, accent: false, sub: `чек ${fmt(avgCheck)} ₸` },
+    { label: "Нужно диагностик", value: String(calc.diagnostics), icon: Users, accent: false, sub: `CR ${crDiagToSale}% → продажа` },
+    { label: "Нужно лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CR ${crLeadToDiag}% → диагностика` },
+    { label: "Бюджет на рекламу", value: `${fmt(calc.adBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
+  ];
+
+  const summaryRows = [
+    { label: "Кол-во диагностик", value: String(calc.diagnostics) },
+    { label: "Кол-во продаж", value: String(calc.sales) },
+    { label: "Средний чек", value: `${fmt(avgCheck)} ₸` },
+    { label: "CR лид → диагностика", value: `${crLeadToDiag}%` },
+    { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
+    { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
+    { label: "Стоимость пациента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
+    { label: "Выручка", value: `${fmt(calc.revenue)} ₸` },
+    { label: "ROMI", value: `${calc.romi}%` },
+  ];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8">
-      {/* LEFT — Inputs */}
-      <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-220px)] pr-2">
-        {/* Mode */}
-        <div className="rounded-2xl bg-card p-5">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3">Режим расчёта</p>
-          <div className="grid grid-cols-2 gap-1.5 bg-secondary/50 rounded-xl p-1.5">
-            <button onClick={() => setMode("revenue")}
-              className={`text-sm font-medium py-2.5 rounded-lg transition-all ${mode === "revenue" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              От Выручки
-            </button>
-            <button onClick={() => setMode("profit")}
-              className={`text-sm font-medium py-2.5 rounded-lg transition-all ${mode === "profit" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-              От Прибыли
-            </button>
+    <div className="space-y-8 max-w-5xl">
+      {/* ── Input Fields (Horizontal cards) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {[
+          { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 },
+          { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
+          { label: "📊 CR диагностика → продажа", value: crDiagToSale, onChange: setCrDiagToSale, suffix: "%", step: 1 },
+          { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
+          { label: "💵 Стоимость лида (CPL)", value: cpl, onChange: setCpl, suffix: "₸", step: 100 },
+        ].map((field) => (
+          <div key={field.label} className="rounded-2xl border border-border bg-card p-4 space-y-2">
+            <label className="text-[11px] text-muted-foreground font-medium">{field.label}</label>
+            <div className="relative">
+              <Input
+                type="number"
+                value={field.value || ""}
+                onChange={(e) => { const n = Number(e.target.value); if (!isNaN(n)) field.onChange(Math.max(0, n)); }}
+                step={field.step}
+                className="h-11 text-lg font-bold tabular-nums bg-secondary/50 border-transparent rounded-xl pr-10 focus:border-primary/40"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">{field.suffix}</span>
+            </div>
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Targets */}
-        <div className="rounded-2xl bg-card p-5 space-y-4">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Целевые метрики</p>
-          <NumField label="Целевая Выручка" value={targetRevenue} onChange={setTargetRevenue} />
-          <NumField label="Целевая Прибыль" value={targetProfit} onChange={setTargetProfit} />
-        </div>
-
-        {/* Marketing */}
-        <div className="rounded-2xl bg-card p-5 space-y-4">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Маркетинг</p>
-          <NumField label="CPL (Стоимость лида)" value={cpl} onChange={setCpl} />
-          <NumField label="CR1: Просмотр → Лид" value={cr1} onChange={setCr1} suffix="%" />
-          <NumField label="CR2: Лид → Продажа" value={cr2} onChange={setCr2} suffix="%" />
-        </div>
-
-        {/* Products */}
-        <div className="rounded-2xl bg-card p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Товары / Услуги</p>
-            <button onClick={addProduct} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1">
-              <Plus className="h-3.5 w-3.5" /> Добавить
-            </button>
-          </div>
-          {products.map((p, i) => (
-            <div key={i} className="bg-secondary/40 rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Input value={p.name} onChange={(e) => updateProduct(i, "name", e.target.value)}
-                  className="h-8 text-sm font-medium bg-transparent border-none p-0 focus-visible:ring-0" />
-                {products.length > 1 && (
-                  <button onClick={() => removeProduct(i)} className="text-muted-foreground hover:text-destructive transition-colors">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Чек</label>
-                  <Input type="number" value={p.check || ""} onChange={(e) => updateProduct(i, "check", Number(e.target.value))} className={inlineInput} />
+      {/* ── Visual Reverse Funnel ── */}
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center gap-2">
+          <Calculator className="h-4 w-4 text-primary" />
+          Обратная воронка — от выручки к бюджету
+        </h3>
+        <div className="flex items-stretch gap-0">
+          {funnelSteps.map((step, i) => (
+            <div key={step.label} className="flex items-center flex-1">
+              <div className={`rounded-2xl p-5 flex-1 text-center transition-all ${
+                step.accent
+                  ? "border-2 border-primary/30 bg-primary/[0.06] shadow-lg shadow-primary/5"
+                  : "border border-border bg-secondary/20"
+              }`}>
+                <div className={`h-10 w-10 rounded-xl mx-auto mb-3 flex items-center justify-center ${
+                  step.accent ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+                }`}>
+                  <step.icon className="h-5 w-5" />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Доля %</label>
-                  <Input type="number" value={p.share || ""} onChange={(e) => updateProduct(i, "share", Number(e.target.value))} className={inlineInput} />
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
+                <p className={`text-2xl font-black tabular-nums mt-2 font-mono ${step.accent ? "text-primary" : "text-foreground"}`}>{step.value}</p>
+                {step.sub && <p className="text-[11px] text-muted-foreground mt-1.5">{step.sub}</p>}
+              </div>
+              {i < funnelSteps.length - 1 && (
+                <div className="shrink-0 px-2">
+                  <ArrowRight className="h-5 w-5 text-muted-foreground/30" />
                 </div>
-              </div>
-            </div>
-          ))}
-          <p className="text-xs text-muted-foreground text-center pt-1">Средний чек: <span className="font-semibold text-foreground">{fmt(calc.avgCheck)}</span></p>
-        </div>
-
-        {/* Expenses */}
-        <div className="rounded-2xl bg-card p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Расходы</p>
-            <div className="flex gap-2">
-              <button onClick={addFix} className="text-xs text-primary hover:text-primary/80 font-medium">+ Fix</button>
-              <button onClick={addVar} className="text-xs text-destructive hover:text-destructive/80 font-medium">+ Var</button>
-            </div>
-          </div>
-          {fixExpenses.map((e, i) => (
-            <div key={`fix-${i}`} className="flex items-center gap-2">
-              <Input value={e.name} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className={`${inlineInput} flex-1`} />
-              <Input type="number" value={e.value || ""} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className={`${inlineInputRight} w-[110px]`} />
-              <button onClick={() => setFixExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-            </div>
-          ))}
-          {varExpenses.map((e, i) => (
-            <div key={`var-${i}`} className="flex items-center gap-2">
-              <Input value={e.name} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className={`${inlineInput} flex-1`} />
-              <div className="flex items-center gap-1">
-                <Input type="number" value={e.value || ""} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className={`${inlineInputRight} w-[90px]`} />
-                <span className="text-xs text-muted-foreground">%</span>
-              </div>
-              <button onClick={() => setVarExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* RIGHT — Results */}
-      <div className="space-y-6">
-        <div className="grid grid-cols-3 gap-4">
-          <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmt(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="После всех расходов" />
-          <KpiCard icon={CircleDollarSign} label="Выручка" value={fmt(calc.revenue)} sub={`${fmt(calc.sales)} продаж · ${calc.margin.toFixed(1)}% маржа`} />
-          <KpiCard icon={TrendingUp} label="ROMI" value={`${Math.round(calc.romiMarketing)}%`} sub={`ROI (все расх.): ${Math.round(calc.roiAll)}%`} />
+      {/* ── Summary Table ── */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="px-6 py-4 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Сводная таблица</h3>
         </div>
-
-        {/* Funnel */}
-        <Section title="Визуализация воронки">
-          <div className="p-6">
-            <div className="flex items-center justify-between gap-3">
-              {[
-                { label: "Просмотры", value: fmt(calc.impressions), sub: null, highlight: false },
-                { label: "Лиды", value: fmt(calc.leads), sub: `по ${fmt(cpl)} ₸`, highlight: false },
-                { label: "Продажи", value: fmt(calc.sales), sub: `чек ${fmt(calc.avgCheck)}`, highlight: true },
-                { label: "Выручка", value: fmt(calc.revenue), sub: null, highlight: true },
-              ].map((step, i, arr) => (
-                <div key={step.label} className="flex items-center gap-3 flex-1">
-                  <div className={`rounded-xl p-4 flex-1 text-center transition-colors ${step.highlight ? "border border-primary/30 bg-primary/[0.06]" : "bg-secondary/40"}`}>
-                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
-                    <p className={`text-lg font-bold tabular-nums mt-1.5 ${step.highlight ? "text-primary" : "text-foreground"}`}>{step.value}</p>
-                    {step.sub && <p className="text-[11px] text-muted-foreground mt-1">{step.sub}</p>}
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="flex flex-col items-center shrink-0 gap-0.5">
-                      <span className="text-[11px] text-primary font-semibold tabular-nums">{i === 0 ? `${cr1}%` : i === 1 ? `${cr2}%` : ""}</span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
-                    </div>
-                  )}
-                </div>
-              ))}
+        <div className="divide-y divide-border">
+          {summaryRows.map((row, i) => (
+            <div key={i} className={`px-6 py-3.5 flex items-center justify-between ${
+              row.label === "ROMI" ? "bg-primary/[0.04]" : ""
+            }`}>
+              <span className="text-sm text-foreground">{row.label}</span>
+              <span className={`text-sm font-bold tabular-nums ${
+                row.label === "ROMI"
+                  ? calc.romi >= 0 ? "text-primary" : "text-destructive"
+                  : row.label === "Выручка" ? "text-primary" : "text-foreground"
+              }`}>{row.value}</span>
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── KPI Summary Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
+        <KpiCard icon={Target} label="Стоимость продажи" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
+        <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} />
+        <KpiCard icon={PiggyBank} label="Прибыль с рекламы" value={fmtCurrency(calc.revenue - calc.adBudget)} valueClass={calc.revenue - calc.adBudget >= 0 ? "text-primary" : "text-destructive"} sub="выручка − бюджет" />
+      </div>
+
+      {/* ── Save to Plan ── */}
+      <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Save className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-foreground">Сохранить план в Таблицу показателей</p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          План будет сохранён: {calc.leads} лидов · {calc.sales} продаж · {fmtCurrency(calc.adBudget)} бюджет · {fmtCurrency(calc.revenue)} выручка
+        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <button onClick={() => { if (planMonthIndex === 0) { setPlanMonthIndex(11); setPlanYear(y => y - 1); } else setPlanMonthIndex(i => i - 1); }}
+              className="h-9 w-9 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+            </button>
+            <span className="text-sm font-semibold text-foreground px-3 select-none min-w-[140px] text-center">{MONTHS_RU[planMonthIndex]} {planYear}</span>
+            <button onClick={() => { if (planMonthIndex === 11) { setPlanMonthIndex(0); setPlanYear(y => y + 1); } else setPlanMonthIndex(i => i + 1); }}
+              className="h-9 w-9 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
-        </Section>
+          <Button
+            disabled={savingPlan}
+            onClick={async () => {
+              setSavingPlan(true);
+              try {
+                const monthYear = `${planYear}-${String(planMonthIndex + 1).padStart(2, "0")}`;
+                const payload: Record<string, any> = {
+                  month_year: monthYear,
+                  plan_spend: Math.round(calc.adBudget),
+                  plan_leads: calc.leads,
+                  plan_visits: calc.diagnostics,
+                  plan_sales: calc.sales,
+                  plan_revenue: Math.round(calc.revenue),
+                };
 
-        {/* Bottom: Unit Economics + Expenses */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Section title="Юнит-экономика (на 1 клиента)">
-            <div className="p-6 space-y-0">
-              {[
-                { label: "CAC (маркетинг)", sub: "только стоимость лида", value: fmt(calc.cacMarketing) },
-                { label: "CAC (полный)", sub: "маркетинг + постоянные", value: fmt(calc.cacFull) },
-                { label: "Средний чек", sub: null, value: fmt(calc.avgCheck) },
-              ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center py-3.5 last:border-b-0">
-                  <div>
-                    <p className="text-sm text-foreground">{item.label}</p>
-                    {item.sub && <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>}
-                  </div>
-                  <span className="text-base font-semibold text-foreground tabular-nums">{item.value}</span>
-                </div>
-              ))}
-              <div className="flex justify-between items-center py-3.5 bg-primary/[0.06] rounded-xl px-4 -mx-2 mt-3 border border-primary/20">
-                <div>
-                  <p className="text-sm text-primary font-medium">Маржа на клиента</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">чек − полный CAC</p>
-                </div>
-                <span className="text-lg font-bold text-primary tabular-nums">{fmt(calc.marginPerClient)}</span>
-              </div>
-            </div>
-          </Section>
+                const { data: existing } = await (supabase as any).from("monthly_plans")
+                  .select("id").eq("month_year", monthYear).limit(1);
 
-          <Section title="Структура расходов">
-            <div className="p-6 space-y-5">
-              {[
-                { label: "Маркетинг", value: calc.marketingSpend, color: "bg-primary" },
-                { label: "Постоянные (Fix)", value: calc.fixTotal, color: "bg-blue-500" },
-                { label: "Переменные (Var)", value: calc.varTotal, color: "bg-destructive" },
-              ].map(item => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-foreground">{item.label}</span>
-                    <span className="font-semibold tabular-nums text-foreground">{fmt(item.value)}</span>
-                  </div>
-                  <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
-                    <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${calc.totalExpenses > 0 ? (item.value / calc.totalExpenses) * 100 : 0}%` }} />
-                  </div>
-                </div>
-              ))}
-              <div className="flex justify-between text-sm pt-4">
-                <span className="font-semibold text-foreground">Всего расходов</span>
-                <span className="font-bold tabular-nums text-foreground">{fmt(calc.totalExpenses)}</span>
-              </div>
-            </div>
-          </Section>
+                if (existing && existing.length > 0) {
+                  const { error } = await (supabase as any).from("monthly_plans")
+                    .update(payload).eq("id", existing[0].id);
+                  if (error) throw error;
+                } else {
+                  const { error } = await (supabase as any).from("monthly_plans").insert(payload);
+                  if (error) throw error;
+                }
+
+                toast({ title: "✅ План сохранён!", description: `${MONTHS_RU[planMonthIndex]} ${planYear} — данные перенесены в Таблицу показателей` });
+              } catch (e: unknown) {
+                toast({ title: "Ошибка", description: e instanceof Error ? e.message : "Не удалось сохранить", variant: "destructive" });
+              } finally { setSavingPlan(false); }
+            }}
+            className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl"
+          >
+            {savingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Сохранить план на {MONTHS_RU[planMonthIndex]}
+          </Button>
         </div>
-
-        {/* Month selector + Save to plan */}
-        <div className="rounded-2xl bg-card p-5 space-y-4">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Сохранить план в Таблицу данных</p>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <button onClick={() => { if (planMonthIndex === 0) { setPlanMonthIndex(11); setPlanYear(y => y - 1); } else setPlanMonthIndex(i => i - 1); }}
-                className="h-8 w-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
-                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
-              </button>
-              <span className="text-sm font-semibold text-foreground px-3 select-none min-w-[130px] text-center">{MONTHS_RU[planMonthIndex]} {planYear}</span>
-              <button onClick={() => { if (planMonthIndex === 11) { setPlanMonthIndex(0); setPlanYear(y => y + 1); } else setPlanMonthIndex(i => i + 1); }}
-                className="h-8 w-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-            <Button
-              disabled={savingPlan}
-              onClick={async () => {
-                setSavingPlan(true);
-                try {
-                  const monthYear = `${planYear}-${String(planMonthIndex + 1).padStart(2, "0")}`;
-                  const payload: Record<string, any> = {
-                    month_year: monthYear,
-                    plan_spend: Math.round(calc.marketingSpend),
-                    plan_leads: Math.round(calc.leads),
-                    plan_visits: Math.round(calc.sales), // visits = sales in this model context
-                    plan_sales: Math.round(calc.sales),
-                    plan_revenue: Math.round(calc.revenue),
-                  };
-
-                  const { data: existing } = await (supabase as any).from("monthly_plans")
-                    .select("id").eq("month_year", monthYear).limit(1);
-
-                  if (existing && existing.length > 0) {
-                    const { error } = await (supabase as any).from("monthly_plans")
-                      .update(payload).eq("id", existing[0].id);
-                    if (error) throw error;
-                  } else {
-                    const { error } = await (supabase as any).from("monthly_plans").insert(payload);
-                    if (error) throw error;
-                  }
-
-                  toast({ title: "План сохранён!", description: `${MONTHS_RU[planMonthIndex]} ${planYear} → Таблица показателей` });
-                } catch (e: unknown) {
-                  toast({ title: "Ошибка", description: e instanceof Error ? e.message : "Не удалось сохранить", variant: "destructive" });
-                } finally { setSavingPlan(false); }
-              }}
-              className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl"
-            >
-              {savingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Сохранить план на {MONTHS_RU[planMonthIndex]}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Рассчитано: {fmt(Math.round(calc.leads))} лидов · {fmt(Math.round(calc.sales))} продаж · {fmtCurrency(Math.round(calc.marketingSpend))} бюджет · {fmtCurrency(Math.round(calc.revenue))} выручка
-          </p>
-        </div>
-
-        <Button variant="ghost" className="h-11 text-sm gap-2 rounded-xl w-full">
-          <Download className="h-4 w-4" /> Экспорт в Excel
-        </Button>
       </div>
     </div>
   );
