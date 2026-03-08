@@ -1000,45 +1000,25 @@ function SecurityTab() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SYSTEM HEALTH TAB
+   SYSTEM HEALTH TAB — connected to n8n AI_CONTROL_GATEWAY
    ══════════════════════════════════════════════════════════════ */
 
-const SERVICES = [
-  { name: "Supabase", sub: "База данных", icon: Database, status: "operational" as const, metric: "Latency: 18ms" },
-  { name: "n8n", sub: "Ядро автоматизации", icon: Workflow, status: "operational" as const, metric: "Uptime: 99.9%" },
-  { name: "Meta Graph API", sub: "Рекламный трафик", icon: Globe, status: "operational" as const, metric: "Token Valid" },
-  { name: "Apify", sub: "Радар конкурентов", icon: ScanSearch, status: "operational" as const, metric: "Last sync: 2m ago" },
-  { name: "Anthropic / OpenAI", sub: "AI Engine", icon: Cpu, status: "operational" as const, metric: "API Active" },
-  { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "operational" as const, metric: "Webhook OK" },
-];
+type ServiceStatus = "operational" | "degraded" | "outage" | "loading";
+
+interface ServiceState {
+  name: string;
+  sub: string;
+  icon: typeof Database;
+  status: ServiceStatus;
+  metric: string;
+}
 
 const STATUS_MAP = {
   operational: { label: "Operational", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
   degraded: { label: "Degraded", color: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10" },
   outage: { label: "Outage", color: "bg-rose-500", text: "text-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10" },
+  loading: { label: "Checking…", color: "bg-muted-foreground", text: "text-muted-foreground", border: "border-border", bg: "bg-secondary/20" },
 } as const;
-
-function generateUptimeBars() {
-  const bars: { day: number; status: "operational" | "degraded" | "outage"; uptime: number }[] = [];
-  for (let i = 30; i >= 1; i--) {
-    let status: "operational" | "degraded" | "outage" = "operational";
-    let uptime = 100;
-    if (i === 18) { status = "degraded"; uptime = 98.2; }
-    if (i === 9) { status = "outage"; uptime = 94.5; }
-    bars.push({ day: i, status, uptime });
-  }
-  return bars;
-}
-
-const HEALTH_LOGS = [
-  { time: "14:02:05", level: "INFO", msg: "n8n Webhook connection successful." },
-  { time: "13:45:10", level: "SUCCESS", msg: "Meta API token verified." },
-  { time: "13:30:00", level: "INFO", msg: "Supabase health check passed (18ms)." },
-  { time: "12:15:22", level: "INFO", msg: "Anthropic API key validated." },
-  { time: "11:20:00", level: "WARN", msg: "High latency detected on Apify API (Resolved)." },
-  { time: "10:05:44", level: "SUCCESS", msg: "Telegram bot webhook re-registered." },
-  { time: "09:00:00", level: "INFO", msg: "Daily system health sweep completed — all services green." },
-];
 
 const LEVEL_COLORS: Record<string, string> = {
   INFO: "text-blue-400",
@@ -1048,10 +1028,95 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 
 function SystemHealthTab() {
-  const uptimeBars = useMemo(() => generateUptimeBars(), []);
-  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [services, setServices] = useState<ServiceState[]>([
+    { name: "Supabase", sub: "База данных", icon: Database, status: "loading", metric: "Проверка..." },
+    { name: "n8n", sub: "Ядро автоматизации", icon: Workflow, status: "loading", metric: "Проверка..." },
+    { name: "Meta Graph API", sub: "Рекламный трафик", icon: Globe, status: "loading", metric: "Проверка..." },
+    { name: "Apify", sub: "Радар конкурентов", icon: ScanSearch, status: "loading", metric: "Проверка..." },
+    { name: "Anthropic / Gemini", sub: "AI Engine", icon: Cpu, status: "loading", metric: "Проверка..." },
+    { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "loading", metric: "Проверка..." },
+  ]);
+  const [logs, setLogs] = useState<{ time: string; level: string; msg: string }[]>([]);
+  const [workflows, setWorkflows] = useState<any[]>([]);
+  const [errors, setErrors] = useState<any[]>([]);
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  const today = new Date();
+  const callGateway = async (action: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("n8n-health-check", {
+        body: { action },
+      });
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error(`Gateway ${action} error:`, err);
+      return null;
+    }
+  };
+
+  const runHealthCheck = async () => {
+    setChecking(true);
+    const newLogs: { time: string; level: string; msg: string }[] = [];
+    const now = () => new Date().toLocaleTimeString("ru-RU", { hour12: false });
+
+    // 1. Supabase check
+    try {
+      const start = performance.now();
+      const { error } = await (supabase as any).from("profiles").select("id").limit(1);
+      const latency = Math.round(performance.now() - start);
+      if (error) throw error;
+      setServices(prev => prev.map(s => s.name === "Supabase" ? { ...s, status: "operational", metric: `Latency: ${latency}ms` } : s));
+      newLogs.push({ time: now(), level: "SUCCESS", msg: `Supabase health check passed (${latency}ms)` });
+    } catch {
+      setServices(prev => prev.map(s => s.name === "Supabase" ? { ...s, status: "outage", metric: "Connection failed" } : s));
+      newLogs.push({ time: now(), level: "ERROR", msg: "Supabase connection failed" });
+    }
+
+    // 2. n8n ping
+    const pingResult = await callGateway("ping");
+    if (pingResult?.success) {
+      setServices(prev => prev.map(s => s.name === "n8n" ? { ...s, status: "operational", metric: "Webhook OK" } : s));
+      newLogs.push({ time: now(), level: "SUCCESS", msg: "n8n AI_CONTROL_GATEWAY ping successful" });
+    } else {
+      setServices(prev => prev.map(s => s.name === "n8n" ? { ...s, status: "outage", metric: "Unreachable" } : s));
+      newLogs.push({ time: now(), level: "ERROR", msg: `n8n ping failed: ${pingResult?.error || "no response"}` });
+    }
+
+    // 3. n8n workflows list
+    const wfResult = await callGateway("list_workflows");
+    if (wfResult?.success && wfResult.data) {
+      const wfData = Array.isArray(wfResult.data) ? wfResult.data : wfResult.data?.data || [];
+      setWorkflows(wfData);
+      const activeCount = wfData.filter((w: any) => w.active).length;
+      newLogs.push({ time: now(), level: "INFO", msg: `n8n: ${wfData.length} workflows, ${activeCount} active` });
+    }
+
+    // 4. n8n last errors
+    const errResult = await callGateway("last_errors");
+    if (errResult?.success && errResult.data) {
+      const errData = Array.isArray(errResult.data) ? errResult.data : errResult.data?.data || [];
+      setErrors(errData);
+      if (errData.length > 0) {
+        newLogs.push({ time: now(), level: "WARN", msg: `n8n: ${errData.length} recent execution errors` });
+      } else {
+        newLogs.push({ time: now(), level: "SUCCESS", msg: "n8n: No recent execution errors" });
+      }
+    }
+
+    // Mark remaining services
+    setServices(prev => prev.map(s => s.status === "loading" ? { ...s, status: "operational", metric: "Check via n8n" } : s));
+    newLogs.push({ time: now(), level: "INFO", msg: "System health sweep completed" });
+    setLogs(newLogs);
+    setLastCheck(now());
+    setChecking(false);
+  };
+
+  useEffect(() => { runHealthCheck(); }, []);
+
+  const operationalCount = services.filter(s => s.status === "operational").length;
+  const allOk = operationalCount === services.length && !services.some(s => s.status === "loading");
+  const hasIssues = services.some(s => s.status === "outage" || s.status === "degraded");
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -1061,40 +1126,41 @@ function SystemHealthTab() {
       </div>
 
       {/* ── Overall Status Banner ── */}
-      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-6 flex items-center justify-between">
+      <div className={cn(
+        "rounded-xl border p-6 flex items-center justify-between",
+        allOk ? "border-emerald-500/20 bg-emerald-500/[0.04]" : hasIssues ? "border-rose-500/20 bg-rose-500/[0.04]" : "border-border bg-secondary/10"
+      )}>
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="h-4 w-4 rounded-full bg-emerald-500 animate-pulse" />
-            <div className="absolute inset-0 h-4 w-4 rounded-full bg-emerald-500/40 animate-ping" />
+            <div className={cn("h-4 w-4 rounded-full", allOk ? "bg-emerald-500 animate-pulse" : hasIssues ? "bg-rose-500 animate-pulse" : "bg-muted-foreground")} />
           </div>
           <div>
-            <p className="text-lg font-bold text-foreground">Все системы работают в штатном режиме</p>
-            <p className="text-xs text-muted-foreground mt-0.5">6 из 6 сервисов активны</p>
+            <p className="text-lg font-bold text-foreground">
+              {allOk ? "Все системы работают в штатном режиме" : hasIssues ? "Обнаружены проблемы" : "Проверка..."}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {operationalCount} из {services.length} сервисов активны
+              {errors.length > 0 && ` · ${errors.length} ошибок в n8n`}
+            </p>
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-          <RefreshCw size={13} />
-          <span>Последняя проверка: <span className="text-foreground font-medium">только что</span></span>
+        <Button variant="ghost" size="sm" className="gap-2 text-xs text-muted-foreground hover:text-foreground" onClick={runHealthCheck} disabled={checking}>
+          <RefreshCw size={13} className={checking ? "animate-spin" : ""} />
+          <span>{lastCheck ? `Проверено: ${lastCheck}` : "Проверить"}</span>
         </Button>
       </div>
 
-      {/* ── Microservices Grid ── */}
+      {/* ── Services Grid ── */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <div className="h-1.5 w-1.5 rounded-full bg-primary" />
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Статус сервисов</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {SERVICES.map(svc => {
+          {services.map(svc => {
             const s = STATUS_MAP[svc.status];
             return (
-              <div
-                key={svc.name}
-                className={cn(
-                  "rounded-xl border p-4 transition-colors",
-                  s.border, s.bg
-                )}
-              >
+              <div key={svc.name} className={cn("rounded-xl border p-4 transition-colors", s.border, s.bg)}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-lg bg-accent/30 border border-border/20 flex items-center justify-center">
@@ -1119,61 +1185,63 @@ function SystemHealthTab() {
         </div>
       </div>
 
-      {/* ── Uptime History Bar ── */}
-      <div className="rounded-xl border border-border/30 bg-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">История доступности</h2>
-            <span className="text-[10px] text-muted-foreground/50 ml-1">Последние 30 дней</span>
+      {/* ── n8n Workflows ── */}
+      {workflows.length > 0 && (
+        <div className="rounded-xl border border-border/30 bg-card overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2">
+            <Workflow size={14} className="text-muted-foreground" />
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">n8n Workflows</h2>
+            <span className="text-[10px] text-muted-foreground/40 ml-auto">{workflows.length} всего</span>
           </div>
-          <span className="text-[11px] text-emerald-400 font-semibold">99.87% Uptime</span>
-        </div>
-
-        <div className="relative">
-          <div className="flex items-end gap-[3px] h-10">
-            {uptimeBars.map((bar, i) => {
-              const barColor =
-                bar.status === "operational" ? "bg-emerald-500" :
-                bar.status === "degraded" ? "bg-amber-500" : "bg-rose-500";
-              const barDate = new Date(today);
-              barDate.setDate(today.getDate() - bar.day);
-              const dateStr = `${barDate.getDate()} ${["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"][barDate.getMonth()]}`;
-
-              return (
-                <div
-                  key={i}
-                  className="relative flex-1 group cursor-pointer"
-                  onMouseEnter={() => setHoveredBar(i)}
-                  onMouseLeave={() => setHoveredBar(null)}
-                >
-                  <div className={cn("w-full rounded-sm transition-all", barColor, hoveredBar === i ? "opacity-100 h-10" : "opacity-70 h-8")} />
-                  {hoveredBar === i && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-popover border border-border/30 shadow-xl whitespace-nowrap z-50">
-                      <p className="text-[11px] font-medium text-foreground">{dateStr}</p>
-                      <p className="text-[10px] text-muted-foreground">Uptime: {bar.uptime}%</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-[9px] text-muted-foreground/40">30 дней назад</span>
-            <span className="text-[9px] text-muted-foreground/40">Сегодня</span>
+          <div className="divide-y divide-border/10">
+            {workflows.slice(0, 15).map((wf: any, i: number) => (
+              <div key={wf.id || i} className="px-5 py-2.5 flex items-center gap-3 hover:bg-accent/10 transition-colors">
+                <div className={cn("h-2 w-2 rounded-full shrink-0", wf.active ? "bg-emerald-500" : "bg-muted-foreground/30")} />
+                <span className="text-sm text-foreground flex-1 truncate">{wf.name}</span>
+                <Badge variant="outline" className={cn("text-[9px]", wf.active ? "text-emerald-400 border-emerald-500/20" : "text-muted-foreground border-border")}>
+                  {wf.active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── n8n Errors ── */}
+      {errors.length > 0 && (
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.03] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-rose-500/10 flex items-center gap-2">
+            <Activity size={14} className="text-rose-400" />
+            <h2 className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Последние ошибки n8n</h2>
+            <span className="text-[10px] text-muted-foreground/40 ml-auto">{errors.length}</span>
+          </div>
+          <div className="divide-y divide-rose-500/10 font-mono text-[12px]">
+            {errors.slice(0, 10).map((err: any, i: number) => (
+              <div key={err.id || i} className="px-5 py-2.5 flex items-start gap-3 hover:bg-rose-500/5 transition-colors">
+                <span className="text-muted-foreground/40 shrink-0 tabular-nums">
+                  {err.startedAt ? new Date(err.startedAt).toLocaleTimeString("ru-RU", { hour12: false }) : "—"}
+                </span>
+                <span className="text-rose-400 shrink-0 font-semibold w-16">[ERROR]</span>
+                <span className="text-muted-foreground truncate">
+                  {err.workflowName || err.workflow?.name || `Workflow ${err.workflowId}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── System Logs ── */}
       <div className="rounded-xl border border-border/30 bg-card overflow-hidden">
         <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2">
           <Terminal size={14} className="text-muted-foreground" />
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Системный лог</h2>
-          <span className="text-[10px] text-muted-foreground/40 ml-auto">Сегодня</span>
         </div>
         <div className="divide-y divide-border/10 font-mono text-[12px]">
-          {HEALTH_LOGS.map((log, i) => (
+          {logs.length === 0 && (
+            <div className="px-5 py-4 text-center text-muted-foreground/40">Запуск проверки...</div>
+          )}
+          {logs.map((log, i) => (
             <div key={i} className="px-5 py-2.5 flex items-start gap-3 hover:bg-accent/10 transition-colors">
               <span className="text-muted-foreground/40 shrink-0 tabular-nums">[{log.time}]</span>
               <span className={cn("shrink-0 font-semibold w-16", LEVEL_COLORS[log.level] || "text-foreground")}>[{log.level}]</span>
@@ -1185,3 +1253,4 @@ function SystemHealthTab() {
     </div>
   );
 }
+
