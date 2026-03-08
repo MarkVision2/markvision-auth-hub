@@ -29,21 +29,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function fetchClients() {
-      const { data } = await supabase
-        .from("clients_config")
-        .select("id, client_name")
-        .eq("project_id", PROJECT_ID)
-        .eq("is_active", true)
-        .order("client_name");
+      try {
+        const { data, error } = await supabase
+          .from("clients_config")
+          .select("id, client_name")
+          .eq("project_id", PROJECT_ID)
+          .eq("is_active", true)
+          .order("client_name");
 
-      if (data) {
-        setClientWorkspaces(data.map(c => ({
-          id: c.id,
-          name: c.client_name,
-          emoji: "🦷",
-          type: "client" as const,
-          clientName: c.client_name,
-        })));
+        if (error) throw error;
+
+        if (data) {
+          setClientWorkspaces(data.map(c => ({
+            id: c.id,
+            name: c.client_name,
+            emoji: "🦷",
+            type: "client" as const,
+            clientName: c.client_name,
+          })));
+        }
+      } catch (err) {
+        console.error("WorkspaceProvider: failed to fetch clients", err);
       }
     }
     fetchClients();
