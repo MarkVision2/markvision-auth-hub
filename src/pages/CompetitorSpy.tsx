@@ -258,6 +258,21 @@ export default function CompetitorSpy() {
     setPostLoading(false);
   }, [postUrl, toast]);
 
+  // ─── Delete Analysis ───
+  const handleDeleteAnalysis = useCallback(async (id: string) => {
+    if (id.startsWith("mock-")) {
+      // just hide mock
+      return;
+    }
+    const { error } = await (supabase as any).from("content_factory").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      return;
+    }
+    setAnalyses(prev => prev.filter(a => a.id !== id));
+    toast({ title: "🗑 Удалено", description: "Контент удалён из базы" });
+  }, [toast]);
+
   // ─── View Script ───
   const handleViewScript = useCallback((analysis: AnalysisResult) => {
     setScriptDialog({ open: true, script: analysis.generated_script, loading: false });
