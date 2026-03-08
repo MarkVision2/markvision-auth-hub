@@ -186,12 +186,13 @@ export default function AppSidebar() {
 
         <div className="flex items-center gap-3 px-3 py-2 mt-1">
           <Avatar className="h-8 w-8">
+            {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || "Avatar"} />}
             <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
-              MV
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">Admin</p>
+            <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
             <p className="text-[11px] text-muted-foreground">CEO</p>
           </div>
         </div>
