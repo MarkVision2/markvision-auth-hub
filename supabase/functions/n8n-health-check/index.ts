@@ -27,10 +27,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -52,12 +50,19 @@ serve(async (req) => {
       body: JSON.stringify({ action }),
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`n8n responded with ${response.status}: ${errText}`);
+      throw new Error(`n8n responded with ${response.status}: ${responseText}`);
     }
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      // n8n returned non-JSON; wrap raw text
+      data = { raw: responseText };
+    }
 
     return new Response(JSON.stringify({ success: true, action, data }), {
       status: 200,
