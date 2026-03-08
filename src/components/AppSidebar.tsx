@@ -11,6 +11,7 @@ import {
   Settings,
   Sun,
   Moon,
+  Activity,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
