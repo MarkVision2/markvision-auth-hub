@@ -245,7 +245,8 @@ export default function ContentFactory() {
 
       const n8nPayload = {
         task_id: data.id,
-        type: format === "single" ? "photo_banner" : "photo_carousel",
+        content_mode: contentMode,
+        type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"),
         slides_count: slidesCount,
         aspect_ratio: aspectRatio,
         design_prompt: designPrompt,
