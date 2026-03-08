@@ -59,7 +59,6 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
         </main>
       </div>
 
-      <DevRoleToggle />
     </div>
   );
 }
