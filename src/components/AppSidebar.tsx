@@ -40,6 +40,12 @@ const navGroups = [
       { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
     ],
   },
+  {
+    label: "АНАЛИТИКА",
+    items: [
+      { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
+    ],
+  },
 ];
 
 export default function AppSidebar() {
