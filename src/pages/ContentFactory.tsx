@@ -588,8 +588,13 @@ export default function ContentFactory() {
 
                 {/* Slide text */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
-                  <Textarea value={mainText} onChange={(e) => setMainText(e.target.value)} placeholder="Каждая новая строка — новый слайд. Для баннера — одна строка." className="min-h-[120px] bg-secondary/30 border-border resize-none" />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
+                    <Button variant="ghost" size="sm" disabled={expandingField === "mainText"} onClick={() => handleMagicExpand("mainText", mainText, setMainText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                      {expandingField === "mainText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                    </Button>
+                  </div>
+                  <Textarea value={mainText} onChange={(e) => setMainText(e.target.value)} placeholder="Напишите кратко тему, AI развернёт в слайды…" className="min-h-[120px] bg-secondary/30 border-border resize-none" />
                 </div>
 
                 {/* Design */}
