@@ -860,7 +860,31 @@ function DynamicsTab() {
   const [year, setYear] = useState(2026);
   const [monthsData, setMonthsData] = useState<MonthData[]>(generateDefaultMonths(2026));
 
-  const updateMonth = (idx: number, field: keyof MonthData, value: number) => {
+  // Fetch months from Supabase
+  const fetchMonths = useCallback(async (y: number) => {
+    const { data } = await supabase.from("finance_months").select("*").eq("year", y).order("month_index");
+    const defaults = generateDefaultMonths(y);
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        if (row.month_index >= 0 && row.month_index < 12) {
+          const revenue = Number(row.revenue);
+          const expenses = Number(row.expenses);
+          const salaries = Number(row.salaries);
+          const tax = revenue * 0.1;
+          defaults[row.month_index] = {
+            ...defaults[row.month_index],
+            revenue, expenses, salaries, tax,
+            profit: revenue - expenses - salaries - tax,
+          };
+        }
+      });
+    }
+    setMonthsData(defaults);
+  }, []);
+
+  useEffect(() => { fetchMonths(year); }, [year, fetchMonths]);
+
+  const updateMonth = async (idx: number, field: keyof MonthData, value: number) => {
     setMonthsData(prev => prev.map((m, i) => {
       if (i !== idx) return m;
       const updated = { ...m, [field]: value };
@@ -868,12 +892,22 @@ function DynamicsTab() {
       updated.profit = updated.revenue - updated.expenses - updated.salaries - updated.tax;
       return updated;
     }));
+
+    // Save to Supabase
+    const current = monthsData[idx];
+    const updated = { ...current, [field]: value };
+    await supabase.from("finance_months").upsert({
+      year,
+      month_index: idx,
+      revenue: field === "revenue" ? value : current.revenue,
+      expenses: field === "expenses" ? value : current.expenses,
+      salaries: field === "salaries" ? value : current.salaries,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "year,month_index" });
   };
 
   const changeYear = (delta: number) => {
-    const newYear = year + delta;
-    setYear(newYear);
-    setMonthsData(generateDefaultMonths(newYear));
+    setYear(prev => prev + delta);
   };
 
   const totals = useMemo(() => ({
