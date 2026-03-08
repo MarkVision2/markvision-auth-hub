@@ -253,19 +253,31 @@ export default function CompetitorSpy() {
 
   const handleDeleteAnalysis = useCallback(async (id: string) => {
     if (id.startsWith("mock-")) return;
-    const { error } = await (supabase as any).from("content_factory").delete().eq("id", id);
-    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
-    setAnalyses((prev) => prev.filter((a) => a.id !== id));
-    toast({ title: "🗑 Удалено" });
+    try {
+      const { error } = await (supabase as any).from("content_factory").delete().eq("id", id);
+      if (error) throw error;
+      setAnalyses((prev) => prev.filter((a) => a.id !== id));
+      toast({ title: "🗑 Удалено" });
+    } catch (err: any) {
+      console.error("Delete analysis error:", err);
+      toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
+    }
   }, [toast]);
 
   const handleAdapt = useCallback(async (analysis: AnalysisResult) => {
     setAdaptLoading(true);
-    try { await spyRequest({ action: "adapt_content", format: adaptFormat, analysis_id: analysis.id }); } catch { /* continue */ }
-    await new Promise((r) => setTimeout(r, 2000));
-    setAdaptedScript(analysis.generated_script || MOCK_ANALYSES[0].generated_script!);
-    setAdaptLoading(false);
-  }, [adaptFormat]);
+    try {
+      await spyRequest({ action: "adapt_content", format: adaptFormat, analysis_id: analysis.id });
+      await new Promise((r) => setTimeout(r, 2000));
+      setAdaptedScript(analysis.generated_script || MOCK_ANALYSES[0].generated_script!);
+      toast({ title: "✅ Сценарий адаптирован" });
+    } catch (err: any) {
+      console.error("Adapt error:", err);
+      toast({ title: "Ошибка связи с сервером автоматизации", description: err.message, variant: "destructive" });
+    } finally {
+      setAdaptLoading(false);
+    }
+  }, [adaptFormat, toast]);
 
   const displayAnalyses = analyses.length > 0
     ? analyses
