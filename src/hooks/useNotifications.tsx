@@ -14,6 +14,7 @@ export interface AppNotification {
 
 export interface NotificationPreferences {
   soundEnabled: boolean;
+  browserPushEnabled: boolean;
   errorEnabled: boolean;
   warningEnabled: boolean;
   infoEnabled: boolean;
@@ -22,6 +23,7 @@ export interface NotificationPreferences {
 
 const DEFAULT_PREFS: NotificationPreferences = {
   soundEnabled: true,
+  browserPushEnabled: false,
   errorEnabled: true,
   warningEnabled: true,
   infoEnabled: true,
@@ -119,6 +121,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     // Play sound for errors and warnings if enabled
     if (prefs.soundEnabled && (type === "error" || type === "warning")) {
       playAlertSound();
+    }
+
+    // Browser push notification when tab is not focused
+    if (prefs.browserPushEnabled && document.hidden && Notification.permission === "granted") {
+      try {
+        const iconMap: Record<string, string> = { error: "🔴", warning: "🟡", info: "🟢" };
+        new Notification(`${iconMap[type] || ""} ${title}`, {
+          body: description || "",
+          tag: newNotif.id,
+          silent: true, // we handle sound ourselves
+        });
+      } catch {}
     }
   }, []);
 

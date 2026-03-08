@@ -580,6 +580,35 @@ function NotificationsTab() {
         </Button>
       </div>
 
+      {/* Browser Push */}
+      <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Bell size={16} className={preferences.browserPushEnabled ? "text-primary" : "text-muted-foreground"} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">Push-уведомления в браузере</p>
+            <p className="text-xs text-muted-foreground">Показывать системные уведомления когда вкладка неактивна</p>
+          </div>
+          <Switch
+            checked={preferences.browserPushEnabled}
+            onCheckedChange={async (v) => {
+              if (v && "Notification" in window) {
+                const perm = Notification.permission === "granted"
+                  ? "granted"
+                  : await Notification.requestPermission();
+                if (perm !== "granted") return;
+              }
+              updatePreferences({ browserPushEnabled: v });
+            }}
+            className="data-[state=checked]:bg-primary"
+          />
+        </div>
+        {typeof Notification !== "undefined" && Notification.permission === "denied" && (
+          <p className="text-xs text-destructive">Уведомления заблокированы в браузере. Разрешите их в настройках сайта.</p>
+        )}
+      </div>
+
       {/* Type filters */}
       <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-3">
         <p className="text-sm font-semibold text-foreground mb-2">Типы уведомлений</p>
