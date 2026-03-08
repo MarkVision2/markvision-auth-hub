@@ -451,7 +451,7 @@ function AgencyTab() {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">MRR</span></div>
           <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalMrr)}</p>
@@ -459,6 +459,10 @@ function AgencyTab() {
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">ФОТ команды</span></div>
           <p className="text-2xl font-bold text-destructive tracking-tight">{fmtCurrency(totalSalaries)}</p>
+        </div>
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Налоги (10%)</span></div>
+          <p className="text-2xl font-bold text-amber-400 tracking-tight">{fmtCurrency(totalTax)}</p>
         </div>
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><PiggyBank className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span></div>
