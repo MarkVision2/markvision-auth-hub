@@ -192,17 +192,21 @@ export default function ContentFactory() {
       setTask(data as ContentTask);
       setTaskId(data.id);
 
+      const isCarousel = !isVideo && (photoFormat === "carousel7" || photoFormat === "carousel10");
+      const slideCount = photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1;
       const formatMap: Record<string, string> = { banner: "fb-target", carousel7: "insta-carousel", carousel10: "insta-carousel" };
       const n8nPayload = {
         task_id: data.id,
-        content_type: mainType,
+        content_type: isCarousel ? "carousel" : mainType,
         source_type: payload.source_type,
         source_url: payload.source_url,
         format: isVideo ? videoFormat : (formatMap[photoFormat] || "fb-target"),
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         main_text: payload.main_text || "",
         visual_style: payload.visual_style || payload.design_template || "",
-        slide_count: photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1,
+        is_carousel: isCarousel,
+        num_slides: slideCount,
+        slide_count: slideCount,
         custom_logo_url: payload.custom_logo_url,
       };
 
