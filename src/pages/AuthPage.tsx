@@ -71,7 +71,7 @@ const AuthPage = () => {
   if (user) return null; // Will redirect via useEffect
 
   return (
-    <div ref={ref} className="flex min-h-screen flex-col lg:flex-row">
+    <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left — Branding */}
       <div className="relative flex w-full items-center justify-center bg-card px-8 py-16 lg:w-1/2 lg:py-0">
         <div className="dot-pattern absolute inset-0" />
