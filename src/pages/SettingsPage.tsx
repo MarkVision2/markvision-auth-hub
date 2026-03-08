@@ -5,6 +5,8 @@ import {
   Settings, Users, Shield, Plug, UserPlus, Pencil, Trash2, Search,
   LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
+  Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut,
+  Send, Workflow, ScanSearch, ExternalLink,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
