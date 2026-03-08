@@ -714,7 +714,7 @@ function AgencyTab() {
             </thead>
             <tbody>
               {team.map((m) => (
-                <tr key={m.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                <tr key={m.id} className="group hover:bg-secondary/20 transition-colors">
                   <td className="py-4 px-4 align-middle text-left">
                     <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
                       className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
