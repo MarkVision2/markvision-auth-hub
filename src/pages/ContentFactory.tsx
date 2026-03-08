@@ -521,7 +521,7 @@ export default function ContentFactory() {
 
         <div className="p-6 space-y-8">
           {/* 0. CONTENT MODE */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">●</div>
               <Label className="text-sm font-semibold text-foreground">Тип контента</Label>
@@ -557,7 +557,7 @@ export default function ContentFactory() {
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-semibold text-foreground">🎬 Видео</p>
-                  <p className="text-[10px] text-muted-foreground">Reels, промо, слайдшоу</p>
+                  <p className="text-[10px] text-muted-foreground">Reels, Shorts, Слайдшоу</p>
                 </div>
                 {contentMode === "video" && (
                   <motion.div layoutId="mode-check" className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
@@ -568,7 +568,7 @@ export default function ContentFactory() {
             </div>
           </div>
 
-          {/* 1. FORMAT SETUP */}
+          {/* 1. FORMAT + ASPECT */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
@@ -594,19 +594,27 @@ export default function ContentFactory() {
               ))}
             </div>
 
-            <div className="flex gap-2">
-              {(contentMode === "video" ? VIDEO_ASPECT_CARDS : PHOTO_ASPECT_CARDS).map(a => (
-                <button key={a.value} onClick={() => setAspectRatio(a.value)}
-                  className={`flex-1 rounded-xl border px-3 py-3 text-center transition-all duration-200 ${
-                    aspectRatio === a.value
-                      ? "border-primary bg-primary/[0.06]"
-                      : "border-border bg-muted/10 hover:bg-muted/20"
-                  }`}>
-                  <p className="text-sm font-bold text-foreground tabular-nums font-mono">{a.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{a.sub}</p>
-                </button>
-              ))}
-            </div>
+            {/* Aspect ratio — only for photo mode, video is always 9:16 */}
+            {contentMode === "photo" ? (
+              <div className="flex gap-2">
+                {PHOTO_ASPECT_CARDS.map(a => (
+                  <button key={a.value} onClick={() => setAspectRatio(a.value)}
+                    className={`flex-1 rounded-xl border px-3 py-3 text-center transition-all duration-200 ${
+                      aspectRatio === a.value
+                        ? "border-primary bg-primary/[0.06]"
+                        : "border-border bg-muted/10 hover:bg-muted/20"
+                    }`}>
+                    <p className="text-sm font-bold text-foreground tabular-nums font-mono">{a.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{a.sub}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/20 border border-border">
+                <Film className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Формат видео: <strong className="text-foreground font-mono">9:16</strong> (вертикальный)</span>
+              </div>
+            )}
           </div>
 
           {/* 2. DESIGN PROMPT */}
