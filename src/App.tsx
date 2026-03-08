@@ -36,6 +36,7 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleProvider>
         <WorkspaceProvider>
+        <NotificationProvider>
         <Routes>
           <Route path="/" element={<AuthPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </NotificationProvider>
         </WorkspaceProvider>
         </RoleProvider>
       </BrowserRouter>
