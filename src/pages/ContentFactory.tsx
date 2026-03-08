@@ -666,6 +666,7 @@ export default function ContentFactory() {
       </Dialog>
 
       <CampaignBuilderSheet open={campaignSheetOpen} onOpenChange={setCampaignSheetOpen} />
+      <AutopostSheet open={autopostOpen} onOpenChange={setAutopostOpen} mediaUrls={autopostUrls} />
     </DashboardLayout>
   );
 }
