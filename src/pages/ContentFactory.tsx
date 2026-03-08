@@ -84,6 +84,9 @@ export default function ContentFactory() {
   const [designPrompt, setDesignPrompt] = useState("");
   const [exactText, setExactText] = useState(prefill);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [referenceUrl, setReferenceUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
   // AI Magic modal
