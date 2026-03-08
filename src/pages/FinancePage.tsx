@@ -610,7 +610,7 @@ function AgencyTab() {
               <col style={{ width: "3%" }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-border/30">
+              <tr className="border-b border-border/10">
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Клиент</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Услуги</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Оплата</th>
@@ -629,7 +629,7 @@ function AgencyTab() {
                 const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
                 const statusStyle = billingLabels[c.billingStatus];
                 return (
-                  <tr key={c.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                  <tr key={c.id} className="group hover:bg-secondary/20 transition-colors">
                     <td className="py-4 px-4 align-middle text-left">
                       <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
                     </td>
@@ -671,7 +671,7 @@ function AgencyTab() {
                   </tr>
                 );
               })}
-              <tr className="bg-secondary/20 border-t border-border/30">
+              <tr className="bg-secondary/20">
                 <td className="py-4 px-4 text-sm font-bold text-foreground text-left">Итого</td>
                 <td className="py-4 px-4 text-sm text-muted-foreground text-left">{clientsData.reduce((s, c) => s + c.services.length, 0)} услуг</td>
                 <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalMrr)}</td>
@@ -705,7 +705,7 @@ function AgencyTab() {
               <col style={{ width: "5%" }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-border/30">
+              <tr className="border-b border-border/10">
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Имя</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Должность</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Зарплата (₸)</th>
@@ -714,7 +714,7 @@ function AgencyTab() {
             </thead>
             <tbody>
               {team.map((m) => (
-                <tr key={m.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                <tr key={m.id} className="group hover:bg-secondary/20 transition-colors">
                   <td className="py-4 px-4 align-middle text-left">
                     <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
                       className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
@@ -734,7 +734,7 @@ function AgencyTab() {
                   </td>
                 </tr>
               ))}
-              <tr className="bg-secondary/20 border-t border-border/30">
+              <tr className="bg-secondary/20">
                 <td className="py-4 px-4 text-sm font-bold text-foreground text-left" colSpan={2}>Итого ФОТ</td>
                 <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalSalaries)}</td>
                 <td />
