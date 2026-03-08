@@ -237,8 +237,20 @@ export default function ContentFactory() {
   const handleDownloadAll = async () => {
     if (!task?.result_urls) return;
     for (const url of task.result_urls) {
-      const a = document.createElement("a");
-      a.href = url; a.download = ""; a.target = "_blank"; a.click();
+      try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        const ext = url.split(".").pop()?.split("?")[0] || "file";
+        a.download = `content_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${ext}`;
+        a.click();
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        const a = document.createElement("a");
+        a.href = url; a.download = ""; a.target = "_blank"; a.click();
+      }
     }
   };
 
