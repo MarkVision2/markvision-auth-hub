@@ -40,14 +40,12 @@ interface ClientAccount {
   client_name: string;
 }
 
-type PlanKey = "spend" | "impressions" | "clicks" | "leads" | "followers" | "visits" | "sales" | "revenue";
-type MetricKey = "spend" | "impressions" | "clicks" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
+type PlanKey = "spend" | "leads" | "followers" | "visits" | "sales" | "revenue";
+type MetricKey = "spend" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
 
 const columns: { key: "date" | MetricKey; label: string; align: "left" | "right" }[] = [
   { key: "date", label: "Дата", align: "left" },
   { key: "spend", label: "Расходы", align: "right" },
-  { key: "impressions", label: "Показы", align: "right" },
-  { key: "clicks", label: "Клики", align: "right" },
   { key: "leads", label: "Лиды", align: "right" },
   { key: "cpl", label: "CPL", align: "right" },
   { key: "followers", label: "Подписч.", align: "right" },
@@ -101,7 +99,7 @@ function PctCell({ value }: { value: number }) {
    ══════════════════════════════════════════════ */
 
 type PlanValues = Record<PlanKey, number>;
-const EMPTY_PLAN: PlanValues = { spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
+const EMPTY_PLAN: PlanValues = { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
 
 export default function ScoreboardPage() {
   const now = new Date();
@@ -175,8 +173,6 @@ export default function ScoreboardPage() {
         const p = data[0];
         setPlanValues({
           spend: Number(p.plan_spend) || 0,
-          impressions: Number(p.plan_impressions) || 0,
-          clicks: Number(p.plan_clicks) || 0,
           leads: Number(p.plan_leads) || 0,
           followers: Number(p.plan_followers) || 0,
           visits: Number(p.plan_visits) || 0,
@@ -235,12 +231,12 @@ export default function ScoreboardPage() {
   // Aggregated fact (only rows with data)
   const fact = useMemo(() => rows.reduce(
     (acc, d) => ({
-      spend: acc.spend + d.spend, impressions: acc.impressions + d.impressions,
-      clicks: acc.clicks + d.clicks, leads: acc.leads + d.leads,
+      spend: acc.spend + d.spend,
+      leads: acc.leads + d.leads,
       followers: acc.followers + d.followers, visits: acc.visits + d.visits,
       sales: acc.sales + d.sales, revenue: acc.revenue + d.revenue,
     }),
-    { spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
+    { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
   ), [rows]);
 
   const getVal = (src: Record<string, number>, key: MetricKey): number => {
@@ -254,7 +250,7 @@ export default function ScoreboardPage() {
     { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
     { label: "CPV", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
     { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
-    { label: "CR Клик→Лид", value: fact.clicks > 0 ? `${Math.round((fact.leads / fact.clicks) * 100)}%` : "—", sub: "Лиды / Клики", icon: ArrowRightLeft },
+    { label: "CR Лид→Визит", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Визиты / Лиды", icon: ArrowRightLeft },
     { label: "CR Визит→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Визиты", icon: TrendingUp },
   ], [fact]);
 
