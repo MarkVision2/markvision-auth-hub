@@ -610,7 +610,7 @@ function AgencyTab() {
               <col style={{ width: "3%" }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-border/30">
+              <tr className="border-b border-border/10">
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Клиент</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Услуги</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Оплата</th>
