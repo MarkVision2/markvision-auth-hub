@@ -998,6 +998,50 @@ export type Database = {
           },
         ]
       }
+      monthly_plans: {
+        Row: {
+          created_at: string | null
+          id: string
+          month_year: string
+          plan_leads: number | null
+          plan_revenue: number | null
+          plan_sales: number | null
+          plan_spend: number | null
+          plan_visits: number | null
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month_year: string
+          plan_leads?: number | null
+          plan_revenue?: number | null
+          plan_sales?: number | null
+          plan_spend?: number | null
+          plan_visits?: number | null
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month_year?: string
+          plan_leads?: number | null
+          plan_revenue?: number | null
+          plan_sales?: number | null
+          plan_spend?: number | null
+          plan_visits?: number | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
