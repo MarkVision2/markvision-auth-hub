@@ -36,7 +36,7 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "N8N API Key": apiKey,
+        "X-N8N-API-Key": apiKey,
       },
       body: JSON.stringify({ action }),
     });
