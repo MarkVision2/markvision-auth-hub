@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import {
   Image, Download, Loader2, CheckCircle2, RotateCcw,
   Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
-  Trash2, Sparkles, Upload, Rocket,
+  Trash2, Sparkles, Upload, Rocket, Link, X, ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -84,6 +84,9 @@ export default function ContentFactory() {
   const [designPrompt, setDesignPrompt] = useState("");
   const [exactText, setExactText] = useState(prefill);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [referencePreview, setReferencePreview] = useState<string | null>(null);
+  const [referenceUrl, setReferenceUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
   // AI Magic modal
@@ -111,6 +114,7 @@ export default function ContentFactory() {
   const [autopostUrls, setAutopostUrls] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const refInputRef = useRef<HTMLInputElement>(null);
 
   // Load history
   useEffect(() => {
@@ -182,24 +186,33 @@ export default function ContentFactory() {
 
   // ── SUBMIT ──
   const handleGenerate = async (overrides?: { feedback?: string }) => {
-    if (!designPrompt.trim() && !exactText.trim()) {
-      toast({ title: "Заполните ТЗ для дизайна или текст для слайдов", variant: "destructive" });
+    if (!designPrompt.trim() && !exactText.trim() && !referenceUrl.trim() && !referenceFile) {
+      toast({ title: "Заполните ТЗ, текст или загрузите референс/ссылку", variant: "destructive" });
       return;
     }
     setSubmitting(true);
     setViewingTask(null);
     try {
       let customLogoUrl: string | null = null;
+      let referenceImageUrl: string | null = null;
+
+      setUploading(true);
       if (logoFile) {
-        setUploading(true);
         customLogoUrl = await uploadFile(logoFile);
-        setUploading(false);
-        if (!customLogoUrl) { setSubmitting(false); return; }
+        if (!customLogoUrl) { setSubmitting(false); setUploading(false); return; }
       }
+      if (referenceFile) {
+        referenceImageUrl = await uploadFile(referenceFile);
+        if (!referenceImageUrl) { setSubmitting(false); setUploading(false); return; }
+      }
+      setUploading(false);
+
+      const sourceUrl = referenceUrl.trim() || null;
 
       const dbPayload: Record<string, any> = {
         content_type: "photo",
-        source_type: "description",
+        source_type: sourceUrl ? "link" : referenceImageUrl ? "reference" : "description",
+        source_url: sourceUrl,
         main_text: exactText || null,
         visual_style: designPrompt || null,
         format,
@@ -224,6 +237,8 @@ export default function ContentFactory() {
         design_prompt: designPrompt,
         exact_text_slides: exactText,
         custom_logo_url: customLogoUrl,
+        reference_image_url: referenceImageUrl,
+        source_url: sourceUrl,
         ...(overrides?.feedback ? { edit_feedback: overrides.feedback } : {}),
       };
 
@@ -253,6 +268,7 @@ export default function ContentFactory() {
   const handleReset = () => {
     setTaskId(null); setTask(null); setViewingTask(null);
     setDesignPrompt(""); setExactText(""); setLogoFile(null);
+    setReferenceFile(null); setReferencePreview(null); setReferenceUrl("");
     setShowFeedbackInput(false); setEditFeedback("");
   };
 
@@ -550,6 +566,56 @@ export default function ContentFactory() {
             </p>
           </div>
 
+          {/* 4. REFERENCE */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">4</div>
+              <Label className="text-sm font-semibold text-foreground">Референс (необязательно)</Label>
+            </div>
+
+            {/* Reference URL */}
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                <Link className="h-4 w-4" />
+              </div>
+              <Input
+                value={referenceUrl}
+                onChange={(e) => setReferenceUrl(e.target.value)}
+                placeholder="Ссылка на пример дизайна, пост или рекламу..."
+                className="pl-10 h-11 bg-muted/10 border-border"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground/70">AI проанализирует ссылку и создаст контент по образцу (n8n: source_url)</p>
+
+            {/* Reference Image Upload */}
+            <div className="flex items-center gap-3">
+              <input ref={refInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) { setReferenceFile(f); setReferencePreview(URL.createObjectURL(f)); }
+              }} />
+              <Button variant="outline" size="sm" onClick={() => refInputRef.current?.click()} className="border-border text-muted-foreground hover:text-foreground h-10 px-4 gap-2">
+                <ImagePlus className="h-3.5 w-3.5" />
+                {referenceFile ? "Изменить референс" : "Загрузить референс-фото"}
+              </Button>
+              {referenceFile && (
+                <Button variant="ghost" size="sm" onClick={() => { setReferenceFile(null); setReferencePreview(null); }} className="text-muted-foreground h-10 gap-1">
+                  <X className="h-3.5 w-3.5" /> Убрать
+                </Button>
+              )}
+            </div>
+
+            {/* Reference Preview */}
+            {referencePreview && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                className="relative rounded-xl border border-border overflow-hidden w-fit">
+                <img src={referencePreview} alt="Референс" className="max-h-40 rounded-xl object-contain" />
+                <div className="absolute top-2 left-2">
+                  <Badge variant="secondary" className="text-[10px] bg-background/80 backdrop-blur-sm">📌 Референс</Badge>
+                </div>
+              </motion.div>
+            )}
+          </div>
+
           {/* LOGO UPLOAD */}
           <div className="flex items-center gap-3">
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)} />
@@ -558,7 +624,7 @@ export default function ContentFactory() {
               {logoFile ? logoFile.name : "Загрузить логотип"}
             </Button>
             {logoFile && (
-              <Button variant="ghost" size="sm" onClick={() => setLogoFile(null)} className="text-muted-foreground h-10">✕ Убрать</Button>
+              <Button variant="ghost" size="sm" onClick={() => setLogoFile(null)} className="text-muted-foreground h-10 gap-1"><X className="h-3.5 w-3.5" /> Убрать</Button>
             )}
           </div>
 
@@ -578,7 +644,7 @@ export default function ContentFactory() {
           <details className="text-[10px]">
             <summary className="text-muted-foreground/50 cursor-pointer hover:text-muted-foreground">Превью payload (для отладки)</summary>
             <pre className="mt-2 p-3 rounded-lg bg-muted/20 border border-border text-muted-foreground overflow-x-auto font-mono">
-              {JSON.stringify({ type: format === "single" ? "photo_banner" : "photo_carousel", slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "..." }, null, 2)}
+              {JSON.stringify({ type: format === "single" ? "photo_banner" : "photo_carousel", slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
             </pre>
           </details>
         </div>
