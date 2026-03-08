@@ -11,6 +11,7 @@ import {
   Settings,
   Sun,
   Moon,
+  Activity,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -37,6 +38,12 @@ const navGroups = [
     items: [
       { title: "CRM Система", path: "/crm", icon: Users },
       { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
+    ],
+  },
+  {
+    label: "АНАЛИТИКА",
+    items: [
+      { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
     ],
   },
 ];
