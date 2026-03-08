@@ -443,6 +443,73 @@ export type Database = {
           },
         ]
       }
+      daily_metrics: {
+        Row: {
+          clicks: number | null
+          client_config_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          impressions: number | null
+          leads: number | null
+          project_id: string | null
+          revenue: number | null
+          sales: number | null
+          spend: number | null
+          visits: number | null
+        }
+        Insert: {
+          clicks?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          impressions?: number | null
+          leads?: number | null
+          project_id?: string | null
+          revenue?: number | null
+          sales?: number | null
+          spend?: number | null
+          visits?: number | null
+        }
+        Update: {
+          clicks?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          leads?: number | null
+          project_id?: string | null
+          revenue?: number | null
+          sales?: number | null
+          spend?: number | null
+          visits?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_metrics_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "daily_metrics_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_client_billing: {
         Row: {
           billing_status: string
