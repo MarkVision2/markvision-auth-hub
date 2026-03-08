@@ -734,7 +734,7 @@ function AgencyTab() {
                   </td>
                 </tr>
               ))}
-              <tr className="bg-secondary/20 border-t border-border/30">
+              <tr className="bg-secondary/20">
                 <td className="py-4 px-4 text-sm font-bold text-foreground text-left" colSpan={2}>Итого ФОТ</td>
                 <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalSalaries)}</td>
                 <td />
