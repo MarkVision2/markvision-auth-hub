@@ -30,7 +30,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
         {ad && (
           <>
             {/* Header */}
-            <SheetHeader className="p-6 pb-4 border-b border-white/[0.06]">
+            <SheetHeader className="p-6 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-[0_0_24px_-4px_rgba(139,92,246,0.6)]">
                   <Sparkles className="h-5 w-5 text-white" />
