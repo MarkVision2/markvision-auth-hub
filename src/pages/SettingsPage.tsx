@@ -6,7 +6,7 @@ import {
   Settings, Users, Shield, Plug, UserPlus, Pencil, Trash2, Search,
   LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
-  Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut,
+  Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut, Clock, Zap,
   Send, Workflow, ScanSearch, ExternalLink, HeartPulse,
   Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu,
 } from "lucide-react";
