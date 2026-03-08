@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      agency_billing: {
+        Row: {
+          created_at: string | null
+          id: string
+          infrastructure_cost: number | null
+          next_payment_date: string | null
+          payment_status: string | null
+          project_id: string | null
+          subscription_fee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          infrastructure_cost?: number | null
+          next_payment_date?: string | null
+          payment_status?: string | null
+          project_id?: string | null
+          subscription_fee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          infrastructure_cost?: number | null
+          next_payment_date?: string | null
+          payment_status?: string | null
+          project_id?: string | null
+          subscription_fee?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_billing_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_bridge_tasks: {
         Row: {
           created_at: string | null
@@ -975,6 +1016,39 @@ export type Database = {
         }
         Relationships: []
       }
+      project_members: {
+        Row: {
+          id: string
+          project_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          project_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string | null
@@ -992,6 +1066,152 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      scoreboard_daily_facts: {
+        Row: {
+          clicks: number
+          client_config_id: string | null
+          created_at: string | null
+          date: string
+          followers: number
+          id: string
+          impressions: number
+          leads: number
+          project_id: string | null
+          revenue: number
+          sales: number
+          spend: number
+          visits: number
+        }
+        Insert: {
+          clicks?: number
+          client_config_id?: string | null
+          created_at?: string | null
+          date: string
+          followers?: number
+          id?: string
+          impressions?: number
+          leads?: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Update: {
+          clicks?: number
+          client_config_id?: string | null
+          created_at?: string | null
+          date?: string
+          followers?: number
+          id?: string
+          impressions?: number
+          leads?: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scoreboard_daily_facts_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "scoreboard_daily_facts_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scoreboard_daily_facts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scoreboard_plans: {
+        Row: {
+          clicks: number
+          client_config_id: string | null
+          created_at: string | null
+          followers: number
+          id: string
+          impressions: number
+          leads: number
+          month_index: number
+          project_id: string | null
+          revenue: number
+          sales: number
+          spend: number
+          updated_at: string | null
+          visits: number
+          year: number
+        }
+        Insert: {
+          clicks?: number
+          client_config_id?: string | null
+          created_at?: string | null
+          followers?: number
+          id?: string
+          impressions?: number
+          leads?: number
+          month_index: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          updated_at?: string | null
+          visits?: number
+          year: number
+        }
+        Update: {
+          clicks?: number
+          client_config_id?: string | null
+          created_at?: string | null
+          followers?: number
+          id?: string
+          impressions?: number
+          leads?: number
+          month_index?: number
+          project_id?: string | null
+          revenue?: number
+          sales?: number
+          spend?: number
+          updated_at?: string | null
+          visits?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scoreboard_plans_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "scoreboard_plans_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scoreboard_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

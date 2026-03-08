@@ -4,105 +4,54 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  ChevronLeft, ChevronRight, Download, DollarSign, Eye, Users,
-  ArrowRightLeft, ShoppingCart, Target, TrendingUp,
+  ChevronLeft, ChevronRight, Download, DollarSign, Eye,
+  ArrowRightLeft, Target, TrendingUp, Inbox,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useScoreboardData } from "@/hooks/useScoreboardData";
 
-/* ══════════════════════════════════════════════
-   MOCK DATA
-   ══════════════════════════════════════════════ */
-
-const topCards = [
-  { label: "Стоимость клиента (CAC)", value: "18 292 ₸", sub: "Расходы / Продажи", icon: DollarSign },
-  { label: "Стоимость визита (CPV)", value: "8 261 ₸", sub: "Расходы / Визиты", icon: Eye },
-  { label: "Стоимость лида (CPL)", value: "247 ₸", sub: "Расходы / Лиды", icon: Target },
-  { label: "CR (Клики → Лиды)", value: "5%", sub: "Лиды / Клики", icon: ArrowRightLeft },
-  { label: "CR (Визиты → Продажи)", value: "45%", sub: "Продажи / Визиты", icon: TrendingUp },
-];
-
-const columns = [
-  { key: "date", label: "Дата", align: "left" as const },
-  { key: "spend", label: "Расходы", align: "right" as const },
-  { key: "impressions", label: "Показы", align: "right" as const },
-  { key: "clicks", label: "Клики", align: "right" as const },
-  { key: "leads", label: "Лиды", align: "right" as const },
-  { key: "cpl", label: "CPL", align: "right" as const },
-  { key: "followers", label: "Подписч.", align: "right" as const },
-  { key: "visits", label: "Визиты", align: "right" as const },
-  { key: "sales", label: "Оплаты", align: "right" as const },
-  { key: "revenue", label: "Выручка", align: "right" as const },
-];
-
-const planRow: Record<string, string> = {
-  date: "🎯 ПЛАН (Март)",
-  spend: "200 000",
-  impressions: "100 000",
-  clicks: "5 000",
-  leads: "300",
-  cpl: "667",
-  followers: "150",
-  visits: "60",
-  sales: "10",
-  revenue: "5 000 000",
+/* ── helpers ── */
+const fmt = (v: number) => v.toLocaleString("ru-RU");
+const fmtDate = (iso: string) => {
+  const d = new Date(iso + "T00:00:00");
+  const day = String(d.getDate()).padStart(2, "0");
+  const wd = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][d.getDay()];
+  return `${day} ${wd}`;
 };
+const pct = (fact: number, plan: number) => (plan > 0 ? Math.round((fact / plan) * 100) : 0);
+const cpl = (spend: number, leads: number) => (leads > 0 ? Math.round(spend / leads) : 0);
 
-const factRow: Record<string, string | number> = {
-  date: "📊 ФАКТ",
-  spend: "256 118",
-  impressions: "138 492",
-  clicks: "6 218",
-  leads: "1 037",
-  cpl: "247",
-  followers: "214",
-  visits: "31",
-  sales: "14",
-  revenue: "1 920 000",
-};
+const METRIC_KEYS = ["spend", "impressions", "clicks", "leads", "cpl", "followers", "visits", "sales", "revenue"] as const;
+type MetricKey = typeof METRIC_KEYS[number];
 
-function pctValue(fact: string | number, plan: string | number): number {
-  const f = typeof fact === "number" ? fact : parseInt(String(fact).replace(/\s/g, ""), 10);
-  const p = typeof plan === "number" ? plan : parseInt(String(plan).replace(/\s/g, ""), 10);
-  if (!p || isNaN(f) || isNaN(p)) return 0;
-  return Math.round((f / p) * 100);
-}
-
-const pctRow: Record<string, string | number> = (() => {
-  const r: Record<string, string | number> = { date: "⚡ % ВЫПОЛН." };
-  columns.forEach(col => {
-    if (col.key === "date") return;
-    r[col.key] = pctValue(factRow[col.key], planRow[col.key]);
-  });
-  return r;
-})();
-
-const dailyData = [
-  { date: "01 Ср", spend: "4 692", impressions: "4 137", clicks: "72", leads: "11", cpl: "427", followers: "3", visits: "2", sales: "1", revenue: "180 000" },
-  { date: "02 Чт", spend: "34 620", impressions: "17 848", clicks: "772", leads: "140", cpl: "247", followers: "31", visits: "5", sales: "2", revenue: "290 000" },
-  { date: "03 Пт", spend: "38 122", impressions: "21 053", clicks: "1 005", leads: "168", cpl: "227", followers: "38", visits: "6", sales: "3", revenue: "350 000" },
-  { date: "04 Сб", spend: "35 815", impressions: "19 728", clicks: "892", leads: "148", cpl: "242", followers: "28", visits: "4", sales: "2", revenue: "240 000" },
-  { date: "05 Вс", spend: "33 219", impressions: "18 412", clicks: "814", leads: "132", cpl: "252", followers: "22", visits: "3", sales: "1", revenue: "120 000" },
-  { date: "06 Пн", spend: "36 880", impressions: "20 140", clicks: "948", leads: "156", cpl: "236", followers: "34", visits: "4", sales: "2", revenue: "260 000" },
-  { date: "07 Вт", spend: "38 540", impressions: "19 862", clicks: "920", leads: "152", cpl: "254", followers: "30", visits: "4", sales: "2", revenue: "280 000" },
-  { date: "08 Ср", spend: "34 230", impressions: "17 312", clicks: "795", leads: "130", cpl: "263", followers: "28", visits: "3", sales: "1", revenue: "200 000" },
+const columns: { key: "date" | MetricKey; label: string; align: "left" | "right" }[] = [
+  { key: "date", label: "Дата", align: "left" },
+  { key: "spend", label: "Расходы", align: "right" },
+  { key: "impressions", label: "Показы", align: "right" },
+  { key: "clicks", label: "Клики", align: "right" },
+  { key: "leads", label: "Лиды", align: "right" },
+  { key: "cpl", label: "CPL", align: "right" },
+  { key: "followers", label: "Подписч.", align: "right" },
+  { key: "visits", label: "Визиты", align: "right" },
+  { key: "sales", label: "Оплаты", align: "right" },
+  { key: "revenue", label: "Выручка", align: "right" },
 ];
 
-/* ══════════════════════════════════════════════
-   COMPONENTS
-   ══════════════════════════════════════════════ */
+const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 
-function KpiCard({ card }: { card: typeof topCards[0] }) {
+/* ── KPI Card ── */
+function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/20 transition-colors">
       <div className="flex items-center gap-2 mb-2.5">
         <div className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center">
-          <card.icon className="h-3.5 w-3.5 text-primary" />
+          <Icon className="h-3.5 w-3.5 text-primary" />
         </div>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">{card.label}</span>
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">{label}</span>
       </div>
-      <p className="text-xl font-mono font-bold text-foreground tabular-nums tracking-tight">{card.value}</p>
-      <p className="text-[10px] text-muted-foreground mt-1">{card.sub}</p>
+      <p className="text-xl font-mono font-bold text-foreground tabular-nums tracking-tight">{value}</p>
+      <p className="text-[10px] text-muted-foreground mt-1">{sub}</p>
     </div>
   );
 }
@@ -124,33 +73,72 @@ function PctCell({ value }: { value: number }) {
   );
 }
 
-/* ══════════════════════════════════════════════
-   MAIN PAGE
-   ══════════════════════════════════════════════ */
-
-const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-
+/* ── MAIN PAGE ── */
 export default function ScoreboardPage() {
-  const [monthIndex, setMonthIndex] = useState(2); // Март
+  const now = new Date();
+  const [monthIndex, setMonthIndex] = useState(now.getMonth());
+  const [year, setYear] = useState(now.getFullYear());
 
-  const prev = () => setMonthIndex(i => (i > 0 ? i - 1 : 11));
-  const next = () => setMonthIndex(i => (i < 11 ? i + 1 : 0));
+  const prev = () => {
+    if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); }
+    else setMonthIndex(i => i - 1);
+  };
+  const next = () => {
+    if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); }
+    else setMonthIndex(i => i + 1);
+  };
+
+  const { plan, fact, dailyFacts, loading } = useScoreboardData(year, monthIndex);
+
+  const factCpl = cpl(fact.spend, fact.leads);
+  const planCpl = cpl(plan.spend, plan.leads);
+
+  const getVal = (src: Record<string, number>, key: MetricKey): number => {
+    if (key === "cpl") return cpl(src.spend, src.leads);
+    return src[key] ?? 0;
+  };
+
+  const topCards = [
+    { label: "Стоимость клиента (CAC)", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
+    { label: "Стоимость визита (CPV)", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
+    { label: "Стоимость лида (CPL)", value: fact.leads > 0 ? `${fmt(factCpl)} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
+    { label: "CR (Клики → Лиды)", value: fact.clicks > 0 ? `${Math.round((fact.leads / fact.clicks) * 100)}%` : "—", sub: "Лиды / Клики", icon: ArrowRightLeft },
+    { label: "CR (Визиты → Продажи)", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Визиты", icon: TrendingUp },
+  ];
+
+  if (loading) {
+    return (
+      <DashboardLayout breadcrumb="Таблица показателей">
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-[110px] rounded-xl" />)}
+          </div>
+          <Skeleton className="h-[500px] rounded-xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const hasPlan = plan.spend > 0 || plan.leads > 0 || plan.revenue > 0;
+  const hasData = dailyFacts.length > 0 || hasPlan;
 
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
       <div className="space-y-6">
-        {/* ── Top KPI Cards ── */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-          {topCards.map(c => <KpiCard key={c.label} card={c} />)}
+          {topCards.map(c => <KpiCard key={c.label} {...c} />)}
         </div>
 
-        {/* ── Controls Bar ── */}
+        {/* Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={prev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-semibold text-foreground px-2 select-none min-w-[90px] text-center">{MONTHS[monthIndex]}</span>
+            <span className="text-sm font-semibold text-foreground px-2 select-none min-w-[120px] text-center">
+              {MONTHS[monthIndex]} {year}
+            </span>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={next}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -160,84 +148,83 @@ export default function ScoreboardPage() {
           </Button>
         </div>
 
-        {/* ── Master Table ── */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden [&_tr]:border-b-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border/10 bg-muted/30">
-                  {columns.map(col => (
-                    <TableHead
-                      key={col.key}
-                      className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground whitespace-nowrap px-3 py-3 ${col.align === "right" ? "text-right" : "text-left"}`}
-                    >
-                      {col.label}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {/* PLAN row */}
-                <TableRow className="bg-blue-500/[0.06] border-b border-border/10 hover:bg-blue-500/[0.08]">
-                  {columns.map(col => (
-                    <TableCell
-                      key={col.key}
-                      className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "font-semibold text-blue-400 text-left" : "text-right text-blue-400/80"}`}
-                    >
-                      {planRow[col.key]}
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* FACT row */}
-                <TableRow className="bg-primary/[0.04] border-b border-border/10 hover:bg-primary/[0.06]">
-                  {columns.map(col => (
-                    <TableCell
-                      key={col.key}
-                      className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums font-bold ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}
-                    >
-                      {factRow[col.key]}
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* PCT row */}
-                <TableRow className="border-b border-border/10 bg-muted/10">
-                  {columns.map(col => (
-                    <TableCell
-                      key={col.key}
-                      className={`px-3 py-3 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}
-                    >
-                      {col.key === "date" ? (
-                        <span className="text-xs font-semibold text-amber-400 font-mono">{pctRow[col.key]}</span>
-                      ) : (
-                        <PctCell value={pctRow[col.key] as number} />
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* Daily rows */}
-                {dailyData.map((row, i) => (
-                  <TableRow
-                    key={row.date}
-                    className={`border-b border-border/5 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
-                  >
+        {/* Table */}
+        {!hasData ? (
+          <div className="rounded-xl border border-border bg-card flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+            <Inbox className="h-10 w-10 opacity-40" />
+            <p className="text-sm">Нет данных за {MONTHS[monthIndex]} {year}</p>
+            <p className="text-xs">Добавьте план в scoreboard_plans и факты в scoreboard_daily_facts</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-border bg-card overflow-hidden [&_tr]:border-b-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/10 bg-muted/30">
                     {columns.map(col => (
-                      <TableCell
+                      <TableHead
                         key={col.key}
-                        className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left text-muted-foreground font-medium" : "text-right text-foreground/80"}`}
+                        className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground whitespace-nowrap px-3 py-3 ${col.align === "right" ? "text-right" : "text-left"}`}
                       >
-                        {(row as Record<string, string>)[col.key]}
+                        {col.label}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {/* PLAN */}
+                  {hasPlan && (
+                    <TableRow className="bg-blue-500/[0.06] border-b border-border/10 hover:bg-blue-500/[0.08]">
+                      {columns.map(col => (
+                        <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "font-semibold text-blue-400 text-left" : "text-right text-blue-400/80"}`}>
+                          {col.key === "date" ? `🎯 ПЛАН (${MONTHS[monthIndex]})` : fmt(getVal(plan as unknown as Record<string, number>, col.key as MetricKey))}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )}
+
+                  {/* FACT */}
+                  <TableRow className="bg-primary/[0.04] border-b border-border/10 hover:bg-primary/[0.06]">
+                    {columns.map(col => (
+                      <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums font-bold ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}>
+                        {col.key === "date" ? "📊 ФАКТ" : fmt(getVal(fact as unknown as Record<string, number>, col.key as MetricKey))}
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+
+                  {/* PCT */}
+                  {hasPlan && (
+                    <TableRow className="border-b border-border/10 bg-muted/10">
+                      {columns.map(col => (
+                        <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}>
+                          {col.key === "date" ? (
+                            <span className="text-xs font-semibold text-amber-400 font-mono">⚡ % ВЫПОЛН.</span>
+                          ) : (
+                            <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(plan as unknown as Record<string, number>, col.key as MetricKey))} />
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )}
+
+                  {/* Daily rows */}
+                  {dailyFacts.map((row, i) => (
+                    <TableRow
+                      key={row.date}
+                      className={`border-b border-border/5 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
+                    >
+                      {columns.map(col => (
+                        <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left text-muted-foreground font-medium" : "text-right text-foreground/80"}`}>
+                          {col.key === "date" ? fmtDate(row.date) : fmt(col.key === "cpl" ? cpl(row.spend, row.leads) : (row as unknown as Record<string, number>)[col.key] ?? 0)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </DashboardLayout>
   );
