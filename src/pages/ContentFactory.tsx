@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AutopostSheet from "@/components/sheets/AutopostSheet";
+import { PhoneMockup } from "@/components/content/PhoneMockup";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 type ContentMode = "photo" | "video";
