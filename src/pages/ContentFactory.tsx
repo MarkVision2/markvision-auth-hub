@@ -17,6 +17,7 @@ import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
+import AutopostSheet from "@/components/sheets/AutopostSheet";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
@@ -104,8 +105,10 @@ export default function ContentFactory() {
   const [editFeedback, setEditFeedback] = useState("");
   const [showFeedbackInput, setShowFeedbackInput] = useState(false);
 
-  // Campaign builder
+  // Campaign builder & autopost
   const [campaignSheetOpen, setCampaignSheetOpen] = useState(false);
+  const [autopostOpen, setAutopostOpen] = useState(false);
+  const [autopostUrls, setAutopostUrls] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -318,7 +321,7 @@ export default function ContentFactory() {
         <Button onClick={() => setCampaignSheetOpen(true)} className="gap-2 h-11 bg-primary hover:bg-primary/90 text-primary-foreground">
           <Megaphone className="h-4 w-4" /> В рекламу
         </Button>
-        <Button onClick={() => toast({ title: "📅 Автопостинг", description: "Перейдите в раздел Автопостинг" })} variant="outline" className="gap-2 h-11 border-border">
+        <Button onClick={() => { setAutopostUrls(t.result_urls || []); setAutopostOpen(true); }} variant="outline" className="gap-2 h-11 border-border">
           <CalendarClock className="h-4 w-4" /> Автопостинг
         </Button>
         <Button onClick={() => handleGenerate()} variant="outline" className="gap-2 h-11 border-border">
@@ -663,6 +666,7 @@ export default function ContentFactory() {
       </Dialog>
 
       <CampaignBuilderSheet open={campaignSheetOpen} onOpenChange={setCampaignSheetOpen} />
+      <AutopostSheet open={autopostOpen} onOpenChange={setAutopostOpen} mediaUrls={autopostUrls} />
     </DashboardLayout>
   );
 }
