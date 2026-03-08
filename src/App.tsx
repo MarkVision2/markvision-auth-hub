@@ -14,6 +14,7 @@ import ContentFactory from "./pages/ContentFactory";
 import CrmSystem from "./pages/CrmSystem";
 import AiRopPage from "./pages/AiRopPage";
 import CompetitorSpy from "./pages/CompetitorSpy";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +24,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<AuthPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
           <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
           <Route path="/spy" element={<ProtectedRoute><CompetitorSpy /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
