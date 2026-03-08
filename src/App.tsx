@@ -51,6 +51,7 @@ const App = () => (
           <Route path="/ai-reports" element={<ProtectedRoute><AiReportsPage /></ProtectedRoute>} />
           <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage /></ProtectedRoute>} />
           <Route path="/agency-billing" element={<ProtectedRoute><AgencyBillingPage /></ProtectedRoute>} />
+          <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
