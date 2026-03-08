@@ -49,6 +49,7 @@ export default function CompetitorSpy() {
   const [scraping, setScraping] = useState(false);
   const [selectedAd, setSelectedAd] = useState<CompetitorAd | null>(null);
   const [rebuildLoading, setRebuildLoading] = useState(false);
+  const [rebuildResult, setRebuildResult] = useState<RebuildResult | null>(null);
   const { pushNotification } = useNotifications();
 
   // Load saved ads from Supabase
