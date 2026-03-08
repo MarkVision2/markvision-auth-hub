@@ -163,15 +163,36 @@ export default function Dashboard() {
     fetch();
   }, [active.id, isAgency]);
 
-  // Agency aggregated metrics — ONLY from filtered clients
+  // Agency metrics — show only the agency's own finances, NOT client ad spend
+  const [agencyFinance, setAgencyFinance] = useState<{ mrr: number; costs: number } | null>(null);
+
+  useEffect(() => {
+    if (!isAgency) return;
+    async function fetchAgencyFinance() {
+      const { data } = await supabase
+        .from("finance_client_services")
+        .select("price");
+      const mrr = (data || []).reduce((s, r) => s + (r.price ?? 0), 0);
+
+      const { data: billing } = await supabase
+        .from("finance_client_billing")
+        .select("expenses");
+      const costs = (billing || []).reduce((s, r) => s + (r.expenses ?? 0), 0);
+
+      setAgencyFinance({ mrr, costs });
+    }
+    fetchAgencyFinance();
+  }, [isAgency]);
+
   const agencyMetrics = loading
     ? null
     : (() => {
-        const totalRevenue = clients.reduce((s, c) => s + (c.revenue ?? 0), 0);
-        const totalSpend = clients.reduce((s, c) => s + (c.spend ?? 0), 0);
-        const romi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
         const activeAccounts = clients.filter((c) => c.is_active).length;
-        return { totalRevenue, totalSpend, romi, activeProjects: activeAccounts };
+        const mrr = agencyFinance?.mrr ?? 0;
+        const costs = agencyFinance?.costs ?? 0;
+        const profit = mrr - costs;
+        const margin = mrr > 0 ? (profit / mrr) * 100 : 0;
+        return { totalRevenue: mrr, totalSpend: costs, romi: margin, activeProjects: activeAccounts };
       })();
 
   const matchedClient = !isAgency && clients.length > 0 ? clients[0] : null;

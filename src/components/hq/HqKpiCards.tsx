@@ -68,7 +68,7 @@ export default function HqKpiCards({ metrics }: { metrics: AgencyMetrics | null 
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <KpiCard
         icon={<DollarSign className="h-4 w-4 text-primary" />}
-        label="Выручка"
+        label="MRR Агентства"
         value={formatMoney(metrics.totalRevenue)}
         target={formatMoney(revTarget)}
         targetPct={Math.min(100, Math.round((metrics.totalRevenue / revTarget) * 100))}
@@ -76,14 +76,14 @@ export default function HqKpiCards({ metrics }: { metrics: AgencyMetrics | null 
       />
       <KpiCard
         icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-        label="Расходы"
+        label="Расходы агентства"
         value={formatMoney(metrics.totalSpend)}
         target={formatMoney(spendTarget)}
         targetPct={Math.min(100, Math.round((metrics.totalSpend / spendTarget) * 100))}
       />
       <KpiCard
         icon={<BarChart3 className="h-4 w-4 text-primary" />}
-        label="ROMI"
+        label="Маржа"
         value={`${metrics.romi.toFixed(0)}%`}
         target={`${romiTarget}%`}
         targetPct={Math.min(100, Math.round((Math.max(0, metrics.romi) / romiTarget) * 100))}
