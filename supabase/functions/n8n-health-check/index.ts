@@ -113,6 +113,35 @@ serve(async (req) => {
       }
     }
 
+    if (action === "activate_workflow") {
+      const workflowId = body.workflowId;
+      if (!workflowId) {
+        return new Response(
+          JSON.stringify({ error: "workflowId is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      try {
+        // Deactivate then activate to force restart
+        await fetch(`${N8N_BASE_URL}/api/v1/workflows/${workflowId}/deactivate`, {
+          method: "POST",
+          headers: apiHeaders,
+        });
+        const response = await fetch(`${N8N_BASE_URL}/api/v1/workflows/${workflowId}/activate`, {
+          method: "POST",
+          headers: apiHeaders,
+        });
+        const text = await response.text();
+        if (response.ok) {
+          try { data = JSON.parse(text); } catch { data = { status: "restarted" }; }
+        } else {
+          data = { status: "error", code: response.status };
+        }
+      } catch (e) {
+        data = { status: "error", error: e instanceof Error ? e.message : "unknown" };
+      }
+    }
+
     if (action === "last_errors") {
       // Call n8n REST API for recent failed executions
       try {
