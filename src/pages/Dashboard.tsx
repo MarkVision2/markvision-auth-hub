@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import HqAiSearch from "@/components/hq/HqAiSearch";
 import HqKpiCards from "@/components/hq/HqKpiCards";
 import HqAnomalyRadar from "@/components/hq/HqAnomalyRadar";
 import HqAiDirector from "@/components/hq/HqAiDirector";
 import HqRevenueChart from "@/components/hq/HqRevenueChart";
-import HqRolePanels from "@/components/hq/HqRolePanels";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -215,7 +213,6 @@ export default function Dashboard() {
         {isAgency ? (
           /* ── AGENCY VIEW ── */
           <>
-            <HqAiSearch />
             <HqKpiCards metrics={agencyMetrics} />
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
               <div className="lg:col-span-3">
@@ -226,7 +223,6 @@ export default function Dashboard() {
               </div>
             </div>
             <HqRevenueChart clients={clients} />
-            <HqRolePanels />
           </>
         ) : (
           /* ── CLIENT VIEW ── */
