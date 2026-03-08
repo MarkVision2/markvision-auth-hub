@@ -366,6 +366,84 @@ export type Database = {
           },
         ]
       }
+      autopost_items: {
+        Row: {
+          caption: string | null
+          channels: Json
+          clicks: number
+          content_task_id: string | null
+          created_at: string | null
+          id: string
+          impressions: number
+          leads: number
+          media_type: string
+          media_url: string
+          project_id: string | null
+          published_at: string | null
+          revenue: number
+          sales: number
+          scheduled_at: string | null
+          status: string
+          updated_at: string | null
+          visits: number
+        }
+        Insert: {
+          caption?: string | null
+          channels?: Json
+          clicks?: number
+          content_task_id?: string | null
+          created_at?: string | null
+          id?: string
+          impressions?: number
+          leads?: number
+          media_type?: string
+          media_url: string
+          project_id?: string | null
+          published_at?: string | null
+          revenue?: number
+          sales?: number
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string | null
+          visits?: number
+        }
+        Update: {
+          caption?: string | null
+          channels?: Json
+          clicks?: number
+          content_task_id?: string | null
+          created_at?: string | null
+          id?: string
+          impressions?: number
+          leads?: number
+          media_type?: string
+          media_url?: string
+          project_id?: string | null
+          published_at?: string | null
+          revenue?: number
+          sales?: number
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string | null
+          visits?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "autopost_items_content_task_id_fkey"
+            columns: ["content_task_id"]
+            isOneToOne: false
+            referencedRelation: "content_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "autopost_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients_config: {
         Row: {
           ad_account_id: string | null

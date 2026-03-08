@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
-  ChevronsUpDown, Check, TableProperties, Receipt,
+  ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,6 +42,7 @@ const navGroups: NavGroup[] = [
     label: "МАРКЕТИНГ",
     items: [
       { title: "Контент-Завод", path: "/content", icon: Wand2 },
+      { title: "Автопостинг", path: "/autoposting", icon: CalendarClock },
       { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
       { title: "Радар конкурентов", path: "/spy", icon: Radar },
     ],
