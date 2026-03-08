@@ -474,26 +474,24 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* ── PCT ROW ── */}
-                {hasPlan && (
-                  <TableRow className="border-b-2 border-border bg-muted/10 hover:bg-muted/20">
-                    {columns.map(col => (
-                      <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}>
-                        {col.key === "date" ? (
-                          <div className="flex items-center gap-1.5">
-                            <div className="h-5 w-5 rounded-md bg-[hsl(var(--status-warning)/0.1)] flex items-center justify-center">
-                              <TrendingUp className="h-3 w-3 text-[hsl(var(--status-warning))]" />
-                            </div>
-                            <span className="text-xs font-semibold text-[hsl(var(--status-warning))]">% ВЫПОЛН.</span>
+                <TableRow className="border-b-2 border-border bg-muted/10 hover:bg-muted/20">
+                  {columns.map(col => (
+                    <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}>
+                      {col.key === "date" ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-5 w-5 rounded-md bg-[hsl(var(--status-warning)/0.1)] flex items-center justify-center">
+                            <TrendingUp className="h-3 w-3 text-[hsl(var(--status-warning))]" />
                           </div>
-                        ) : (
-                          getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
-                            ? <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))} />
-                            : <span className="text-xs text-muted-foreground/30">—</span>
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                )}
+                          <span className="text-xs font-semibold text-[hsl(var(--status-warning))]">% ВЫПОЛН.</span>
+                        </div>
+                      ) : (
+                        getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
+                          ? <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))} />
+                          : <span className="text-xs text-muted-foreground/30">—</span>
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
 
                 {/* ── Loading ── */}
                 {loading && (
