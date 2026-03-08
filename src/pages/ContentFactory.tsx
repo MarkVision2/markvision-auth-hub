@@ -437,12 +437,30 @@ export default function ContentFactory() {
                   <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-border" onClick={() => {
                     if (lastCompleted.result_urls) {
                       for (const url of lastCompleted.result_urls) {
-                        const a = document.createElement("a");
-                        a.href = url; a.download = ""; a.target = "_blank"; a.click();
+                        fetch(url).then(r => r.blob()).then(blob => {
+                          const blobUrl = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = blobUrl;
+                          a.download = `content.${url.split(".").pop()?.split("?")[0] || "file"}`;
+                          a.click();
+                          URL.revokeObjectURL(blobUrl);
+                        }).catch(() => {
+                          const a = document.createElement("a");
+                          a.href = url; a.download = ""; a.target = "_blank"; a.click();
+                        });
                       }
                     }
                   }}>
                     <Download className="h-3 w-3" /> Скачать
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={async () => {
+                    try {
+                      await (supabase as any).from("content_tasks").delete().eq("id", lastCompleted.id);
+                      fetchHistory();
+                      toast({ title: "Удалено", description: "Контент удалён" });
+                    } catch { toast({ title: "Ошибка", variant: "destructive" }); }
+                  }}>
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
