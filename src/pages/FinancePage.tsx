@@ -138,7 +138,7 @@ function DecompositionTab() {
       {/* LEFT — Inputs */}
       <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-220px)] pr-2">
         {/* Mode */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5">
+        <div className="rounded-2xl bg-card border border-border/10 p-5">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3">Режим расчёта</p>
           <div className="grid grid-cols-2 gap-1.5 bg-secondary/50 rounded-xl p-1.5">
             <button onClick={() => setMode("revenue")}
