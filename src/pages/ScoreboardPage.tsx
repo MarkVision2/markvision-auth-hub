@@ -326,15 +326,15 @@ export default function ScoreboardPage() {
 
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
-      <div className="space-y-5">
+      <div className="space-y-4 md:space-y-5">
         {/* Header */}
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
+              <h1 className="text-lg md:text-xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {daysWithData > 0 ? `${daysWithData} дней с данными из ${daysInMonth}` : "Ежедневная сводка метрик по кабинету"}
               </p>
@@ -353,7 +353,7 @@ export default function ScoreboardPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {loading
             ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
             : topCards.map(c => <KpiCard key={c.label} {...c} />)
