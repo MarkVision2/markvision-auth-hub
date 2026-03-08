@@ -708,7 +708,7 @@ export default function ContentFactory() {
           <details className="text-[10px]">
             <summary className="text-muted-foreground/50 cursor-pointer hover:text-muted-foreground">Превью payload (для отладки)</summary>
             <pre className="mt-2 p-3 rounded-lg bg-muted/20 border border-border text-muted-foreground overflow-x-auto font-mono">
-              {JSON.stringify({ type: format === "single" ? "photo_banner" : "photo_carousel", slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
+              {JSON.stringify({ content_mode: contentMode, type: contentMode === "video" ? `video_${format}` : (format === "single" ? "photo_banner" : "photo_carousel"), slides_count: slidesCount, aspect_ratio: aspectRatio, design_prompt: designPrompt.slice(0, 50) + "...", exact_text_slides: exactText.slice(0, 50) + "...", source_url: referenceUrl || null, reference_image: referenceFile ? "✅ загружен" : null }, null, 2)}
             </pre>
           </details>
         </div>
