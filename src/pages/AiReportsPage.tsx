@@ -228,6 +228,10 @@ export default function AiReportsPage() {
                 <Switch checked={compareEnabled} onCheckedChange={setCompareEnabled} className="scale-90" />
                 <span className="text-xs text-muted-foreground">Сравнение</span>
               </div>
+              <div className="flex items-center gap-2 px-3 h-9 border-l border-border/30">
+                <Switch checked={hasRevenueData} onCheckedChange={setHasRevenueData} className="scale-90" />
+                <span className="text-xs text-muted-foreground">Есть данные о выручке</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-1">
