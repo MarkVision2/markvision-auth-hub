@@ -321,7 +321,7 @@ export default function ContentFactory() {
         <Button onClick={() => setCampaignSheetOpen(true)} className="gap-2 h-11 bg-primary hover:bg-primary/90 text-primary-foreground">
           <Megaphone className="h-4 w-4" /> В рекламу
         </Button>
-        <Button onClick={() => toast({ title: "📅 Автопостинг", description: "Перейдите в раздел Автопостинг" })} variant="outline" className="gap-2 h-11 border-border">
+        <Button onClick={() => { setAutopostUrls(t.result_urls || []); setAutopostOpen(true); }} variant="outline" className="gap-2 h-11 border-border">
           <CalendarClock className="h-4 w-4" /> Автопостинг
         </Button>
         <Button onClick={() => handleGenerate()} variant="outline" className="gap-2 h-11 border-border">
