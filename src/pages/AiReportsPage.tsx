@@ -1,6 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -162,6 +164,8 @@ export default function AiReportsPage() {
   const [selectedClient, setSelectedClient] = useState<string>("all");
   const [compareEnabled, setCompareEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const pagesRef = useRef<(HTMLDivElement | null)[]>([]);
 
   // Data state
   const [curMetrics, setCurMetrics] = useState<DailyRow[]>([]);
@@ -335,6 +339,41 @@ export default function AiReportsPage() {
     ? (isAgency ? "Все проекты" : active.name)
     : clients.find(c => c.id === selectedClient)?.client_name || "Проект";
 
+  const handleDownloadPdf = useCallback(async () => {
+    const pages = pagesRef.current.filter(Boolean) as HTMLDivElement[];
+    if (pages.length === 0) return;
+    setDownloading(true);
+    try {
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+      const pdfW = pdf.internal.pageSize.getWidth();
+      const pdfH = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const ratio = Math.min(pdfW / canvas.width, pdfH / canvas.height);
+        const imgW = canvas.width * ratio;
+        const imgH = canvas.height * ratio;
+        const x = (pdfW - imgW) / 2;
+        const y = (pdfH - imgH) / 2;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", x, y, imgW, imgH);
+      }
+
+      pdf.save(`report_${clientName}_${format(now, "yyyy-MM-dd")}.pdf`);
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    } finally {
+      setDownloading(false);
+    }
+  }, [clientName]);
+
   const isEmpty = curMetrics.length === 0 && !loading;
 
   return (
@@ -367,8 +406,9 @@ export default function AiReportsPage() {
 
             <div className="flex items-center gap-1">
               <AutomationDialog />
-              <Button className="gap-2 text-sm h-9 font-semibold">
-                <Download className="h-4 w-4" />Скачать PDF
+              <Button className="gap-2 text-sm h-9 font-semibold" onClick={handleDownloadPdf} disabled={downloading || loading || isEmpty}>
+                {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {downloading ? "Генерация…" : "Скачать PDF"}
               </Button>
             </div>
           </div>
@@ -402,7 +442,7 @@ export default function AiReportsPage() {
           <div className="max-w-4xl mx-auto space-y-8 pb-12">
 
             {/* ═══ PAGE 1: KPI & FUNNEL ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[0] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               {/* Report Header */}
               <div className="px-10 pt-10 pb-8 border-b border-border/20">
                 <div className="flex items-start justify-between">
@@ -516,7 +556,7 @@ export default function AiReportsPage() {
             </div>
 
             {/* ═══ PAGE 2: CREATIVES & CHANNELS ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[1] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               <MiniHeader clientName={clientName} dateRange={dateRange} subtitle="Креативы и Каналы" />
 
               {/* Top Creatives */}
@@ -598,7 +638,7 @@ export default function AiReportsPage() {
             </div>
 
             {/* ═══ PAGE 3: LEAD QUALITY & UNIT ECONOMICS ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[2] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               <MiniHeader clientName={clientName} dateRange={dateRange} subtitle="Продажи и Юнит-экономика" />
 
               {/* Lead Quality */}
