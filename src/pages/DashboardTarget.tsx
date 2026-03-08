@@ -6,14 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import SparklineChart from "@/components/agency/SparklineChart";
-import CampaignDetailSheet from "@/components/sheets/CampaignDetailSheet";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
+  ChevronLeft, ChevronRight, Calendar,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -42,7 +41,6 @@ interface ClientWithMetrics {
   totalSales: number;
   totalRevenue: number;
   totalClicks: number;
-  sparkline: number[];
   cpl: number;
   hasData: boolean;
 }
@@ -65,21 +63,46 @@ function fmtCurrency(n: number) {
   return `${fmt(n)} ₸`;
 }
 
+const MONTH_NAMES = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
+function getMonthRange(year: number, month: number) {
+  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const nextMonth = month === 11 ? 0 : month + 1;
+  const nextYear = month === 11 ? year + 1 : year;
+  const end = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-01`;
+  return { start, end };
+}
+
 type StatusFilter = "all" | "with-data" | "no-data";
 
 export default function DashboardTarget() {
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [clients, setClients] = useState<ClientWithMetrics[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClient, setSelectedClient] = useState<ClientWithMetrics | null>(null);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
+  const goMonth = (dir: -1 | 1) => {
+    let m = selectedMonth + dir;
+    let y = selectedYear;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    setSelectedMonth(m);
+    setSelectedYear(y);
+  };
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch clients
       const { data: clientsData, error: cErr } = await (supabase as any)
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active")
@@ -87,19 +110,16 @@ export default function DashboardTarget() {
         .order("client_name");
       if (cErr) throw cErr;
 
-      // Fetch last 30 days of daily_metrics
-      const since = new Date();
-      since.setDate(since.getDate() - 30);
-      const sinceStr = since.toISOString().split("T")[0];
+      const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
       const { data: metricsData, error: mErr } = await (supabase as any)
         .from("daily_metrics")
         .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
-        .gte("date", sinceStr)
+        .gte("date", start)
+        .lt("date", end)
         .order("date", { ascending: true });
       if (mErr) throw mErr;
 
-      // Group metrics by client_config_id
       const metricsMap = new Map<string, DailyMetric[]>();
       (metricsData || []).forEach((m: any) => {
         if (!m.client_config_id) return;
@@ -116,7 +136,6 @@ export default function DashboardTarget() {
         });
       });
 
-      // Build client objects with aggregated metrics
       const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
         const metrics = metricsMap.get(c.id) || [];
         const totalSpend = metrics.reduce((s, m) => s + m.spend, 0);
@@ -125,12 +144,6 @@ export default function DashboardTarget() {
         const totalSales = metrics.reduce((s, m) => s + m.sales, 0);
         const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0);
         const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0);
-
-        // Last 7 days sparkline (leads per day)
-        const last7 = metrics.slice(-7);
-        const sparkline = last7.length > 0
-          ? last7.map(m => m.leads)
-          : [0, 0, 0, 0, 0, 0, 0];
 
         return {
           id: c.id,
@@ -143,7 +156,6 @@ export default function DashboardTarget() {
           totalSales,
           totalRevenue,
           totalClicks,
-          sparkline,
           cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
           hasData: metrics.length > 0,
         };
@@ -156,11 +168,10 @@ export default function DashboardTarget() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedYear, selectedMonth]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Realtime subscription on daily_metrics
   useEffect(() => {
     const ch = supabase
       .channel("target_metrics_rt")
@@ -169,7 +180,6 @@ export default function DashboardTarget() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchData]);
 
-  // Generate alerts dynamically
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = [];
     clients.forEach((c) => {
@@ -220,7 +230,7 @@ export default function DashboardTarget() {
     <DashboardLayout breadcrumb="Таргетолог">
       <StaggerContainer className="space-y-4">
         {/* Header */}
-        <FadeUpItem className="flex items-end justify-between">
+        <FadeUpItem className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-foreground tracking-tight flex items-center gap-2">
               <Megaphone className="h-5 w-5 text-primary" />
@@ -231,6 +241,28 @@ export default function DashboardTarget() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Month Picker */}
+            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-9">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => goMonth(-1)}>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <div className="flex items-center gap-1.5 px-2 min-w-[130px] justify-center">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {MONTH_NAMES[selectedMonth]} {selectedYear}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => goMonth(1)}
+                disabled={isCurrentMonth}
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+
             <Button variant="outline" size="sm" className="h-9 text-xs border-border gap-1.5" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
@@ -303,8 +335,8 @@ export default function DashboardTarget() {
         {/* Data table */}
         <FadeUpItem>
           <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="grid grid-cols-[1fr_100px_80px_70px_70px_80px_64px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
-              {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "7д", ""].map((h, i) => (
+            <div className="grid grid-cols-[1fr_100px_80px_70px_70px_80px_36px] items-center px-4 py-2 border-b border-border bg-secondary/20">
+              {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", ""].map((h, i) => (
                 <span key={i} className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground whitespace-nowrap">{h}</span>
               ))}
             </div>
@@ -324,7 +356,7 @@ export default function DashboardTarget() {
               return (
                 <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
                   <CollapsibleTrigger asChild>
-                    <div className={`grid grid-cols-[1fr_100px_80px_70px_70px_80px_64px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
+                    <div className={`grid grid-cols-[1fr_100px_80px_70px_70px_80px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
                       <div className="flex items-center gap-2">
                         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
                         <div className="min-w-0">
@@ -342,12 +374,6 @@ export default function DashboardTarget() {
                       <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
                       <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
                       <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
-                      <div className="w-14">
-                        <SparklineChart
-                          data={client.sparkline}
-                          color={client.cpl > 10000 ? "hsl(350 89% 60%)" : "hsl(160 84% 39%)"}
-                        />
-                      </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
@@ -370,7 +396,7 @@ export default function DashboardTarget() {
                       <div className="px-4 py-3 bg-secondary/5 border-b border-border">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                           {[
-                            { label: "Показы", value: fmt(clients.find(c => c.id === client.id)?.sparkline.reduce((a, b) => a + b, 0) || 0) },
+                            { label: "Показы", value: "—" },
                             { label: "Клики", value: fmt(client.totalClicks) },
                             { label: "CTR", value: client.totalClicks > 0 && client.totalLeads > 0 ? `${((client.totalClicks / (client.totalLeads * 100)) * 100).toFixed(1)}%` : "—" },
                             { label: "Выручка", value: client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—" },
