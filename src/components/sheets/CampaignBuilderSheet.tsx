@@ -159,14 +159,30 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
+      if (!res.ok) throw new Error(`Ошибка связи с сервером автоматизации (${res.status})`);
 
       toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Клиент: ${selectedClient.client_name}` });
       pushNotification("info", "Кампания отправлена на запуск", `Клиент: ${selectedClient.client_name}, бюджет: ${budgetAmount}₽`, "Управление рекламой");
+
+      // Reset form on success
+      setSelectedClientId("");
+      setObjective("whatsapp");
+      setBudgetAmount("");
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setCreativeFile(null);
+      setCreativePreview(null);
+      setSiteUrl("");
+      setPixel("");
+      setPixelEvent("");
+      setLeadForm("");
+      setUtmTags("?utm_source=meta&utm_medium=cpc&utm_campaign=");
+
       onOpenChange(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
-      toast({ title: "❌ Ошибка отправки", description: msg, variant: "destructive" });
+      console.error("Campaign launch error:", e);
+      toast({ title: "Ошибка связи с сервером автоматизации", description: msg, variant: "destructive" });
       pushNotification("error", "Ошибка запуска рекламы в n8n", msg, "Управление рекламой");
     } finally {
       setLaunching(false);

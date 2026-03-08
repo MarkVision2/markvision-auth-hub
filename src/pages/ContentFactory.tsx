@@ -211,10 +211,19 @@ export default function ContentFactory() {
       };
 
       try {
-        await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
+        const webhookRes = await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(n8nPayload),
         });
-      } catch (webhookErr) { console.error("n8n webhook error:", webhookErr); }
+        if (!webhookRes.ok) {
+          console.error("n8n webhook not ok:", webhookRes.status);
+          toast({ title: "Ошибка связи с сервером автоматизации", description: `Статус: ${webhookRes.status}`, variant: "destructive" });
+        } else {
+          toast({ title: "🚀 Генерация запущена!", description: "Следите за прогрессом ниже" });
+        }
+      } catch (webhookErr) {
+        console.error("n8n webhook error:", webhookErr);
+        toast({ title: "Ошибка связи с сервером автоматизации", description: "Проверьте подключение к n8n", variant: "destructive" });
+      }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally { setSubmitting(false); }
