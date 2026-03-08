@@ -125,14 +125,14 @@ function DecompositionTab() {
   ];
 
   const summaryRows = [
-    { label: "Кол-во диагностик", value: String(calc.diagnostics) },
-    { label: "Кол-во продаж", value: String(calc.sales) },
-    { label: "Средний чек", value: `${fmt(avgCheck)} ₸` },
-    { label: "CR лид → диагностика", value: `${crLeadToDiag}%` },
-    { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
-    { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
-    { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
     { label: "Выручка", value: `${fmt(calc.revenue)} ₸` },
+    { label: "Средний чек", value: `${fmt(avgCheck)} ₸` },
+    { label: "Кол-во продаж", value: String(calc.sales) },
+    { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
+    { label: "Кол-во диагностик", value: String(calc.diagnostics) },
+    { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
+    { label: "CR лид → диагностика", value: `${crLeadToDiag}%` },
+    { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
     { label: "ROMI", value: `${calc.romi}%` },
   ];
 
