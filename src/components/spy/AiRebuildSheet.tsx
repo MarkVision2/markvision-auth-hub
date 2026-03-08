@@ -26,7 +26,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
 
   return (
     <Sheet open={!!ad} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl p-0 bg-[hsl(var(--background))] border-l border-white/[0.06] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-3xl p-0 bg-background border-l border-border overflow-y-auto">
         {ad && (
           <>
             {/* Header */}
