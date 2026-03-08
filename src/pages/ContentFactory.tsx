@@ -683,29 +683,43 @@ export default function ContentFactory() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {history.map((h) => (
-                  <button
-                    key={h.id}
-                    onClick={() => loadHistoryItem(h)}
-                    className="text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 p-3 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-foreground">
-                        {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
-                      </span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                        h.status === "completed" ? "bg-primary/10 text-primary" :
-                        h.status === "error" ? "bg-destructive/10 text-destructive" :
-                        "bg-muted text-muted-foreground"
-                      }`}>
-                        {h.status === "completed" ? "✓" : h.status === "error" ? "✗" : "⏳"}
-                      </span>
-                    </div>
-                    {h.created_at && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
-                      </p>
-                    )}
-                  </button>
+                  <div key={h.id} className="relative group">
+                    <button
+                      onClick={() => loadHistoryItem(h)}
+                      className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 p-3 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground">
+                          {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                        </span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                          h.status === "completed" ? "bg-primary/10 text-primary" :
+                          h.status === "error" ? "bg-destructive/10 text-destructive" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {h.status === "completed" ? "✓" : h.status === "error" ? "✗" : "⏳"}
+                        </span>
+                      </div>
+                      {h.created_at && (
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
+                        </p>
+                      )}
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await (supabase as any).from("content_tasks").delete().eq("id", h.id);
+                          fetchHistory();
+                          toast({ title: "Удалено" });
+                        } catch { toast({ title: "Ошибка", variant: "destructive" }); }
+                      }}
+                      className="absolute top-2 right-2 h-5 w-5 rounded-md bg-background/80 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-muted-foreground"
+                    >
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
