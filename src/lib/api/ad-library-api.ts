@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const N8N_BASE = "https://n8n.zapoinov.com/webhook";
 
 export interface RebuildResult {
@@ -22,29 +24,45 @@ export interface SiteAnalysisResult {
   site_url: string;
 }
 
-export interface PreviewAd {
-  id: string;
-  page_name: string;
-  ad_archive_id: string;
-  ad_status: string;
-  start_date: string | null;
-  ad_text: string | null;
-  media_url: string | null;
-  preview: { has_image: boolean; thumbnail: string | null };
+export interface ScrapedAd {
+  advertiser_name: string;
+  ad_copy: string;
+  platform?: string;
+  media_type?: string;
+  is_active?: boolean;
 }
 
-// 1. Scrape competitor ads via Apify (async — data arrives in competitor_ads table)
-export async function startCompetitorScrape(competitorUrl: string) {
-  const res = await fetch(`${N8N_BASE}/ad-library-scrape`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ competitor_url: competitorUrl }),
+// 1. Scrape competitor ads via Supabase Edge Function (Firecrawl + AI)
+export async function scrapeCompetitorAds(input: { url?: string; query?: string; country?: string }): Promise<{ success: boolean; count: number; ads: ScrapedAd[]; error?: string }> {
+  const { data, error } = await supabase.functions.invoke("scrape-competitor-ads", {
+    body: input,
   });
-  if (!res.ok) throw new Error("Scrape failed");
-  return res.json();
+
+  if (error) {
+    throw new Error(error.message || "Edge function call failed");
+  }
+
+  if (!data?.success) {
+    throw new Error(data?.error || "Scraping failed");
+  }
+
+  return data;
 }
 
-// 2. AI Rebuild ad text (sync — returns improved version)
+// 2. Search local DB for existing competitor ads
+export async function searchLocalAds(query: string) {
+  const { data, error } = await supabase
+    .from("competitor_ads")
+    .select("*")
+    .or(`advertiser_name.ilike.%${query}%,page_name.ilike.%${query}%,ad_copy.ilike.%${query}%`)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// 3. AI Rebuild ad text via n8n (sync — returns improved version)
 export async function rebuildAdText(originalText: string): Promise<RebuildResult> {
   const res = await fetch(`${N8N_BASE}/ad-library-rebuild`, {
     method: "POST",
@@ -53,7 +71,6 @@ export async function rebuildAdText(originalText: string): Promise<RebuildResult
   });
   if (!res.ok) throw new Error("Rebuild failed");
   const json = await res.json();
-  // n8n returns { success: true, data: { weaknesses, improved_headline, new_script, cta, format_tip } }
   const data = json.data || json;
   return {
     weaknesses: data.weaknesses || "",
@@ -64,7 +81,7 @@ export async function rebuildAdText(originalText: string): Promise<RebuildResult
   };
 }
 
-// 3. Analyze competitor site (sync)
+// 4. Analyze competitor site (sync)
 export async function analyzeCompetitorSite(siteUrl: string): Promise<SiteAnalysisResult> {
   const res = await fetch(`${N8N_BASE}/ad-library-scrape-site`, {
     method: "POST",
@@ -74,16 +91,4 @@ export async function analyzeCompetitorSite(siteUrl: string): Promise<SiteAnalys
   if (!res.ok) throw new Error("Site analysis failed");
   const json = await res.json();
   return json.data || json;
-}
-
-// 4. Get ad previews from DB via n8n (sync)
-export async function fetchAdPreviews(query: string): Promise<PreviewAd[]> {
-  const res = await fetch(`${N8N_BASE}/ad-library-preview`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page_name: query, limit: 50 }),
-  });
-  if (!res.ok) throw new Error("Preview fetch failed");
-  const json = await res.json();
-  return json.ads || [];
 }

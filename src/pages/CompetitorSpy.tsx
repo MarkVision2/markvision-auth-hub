@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Radio, Loader2, RefreshCw, RotateCw } from "lucide-react";
+import { Search, Eye, Radio, Loader2, RefreshCw, RotateCw, Globe, ExternalLink } from "lucide-react";
 import { CompetitorAdCard } from "@/components/spy/CompetitorAdCard";
 import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
-import { startCompetitorScrape, rebuildAdText, fetchAdPreviews, type RebuildResult } from "@/lib/api/ad-library-api";
+import { scrapeCompetitorAds, searchLocalAds, rebuildAdText, type RebuildResult } from "@/lib/api/ad-library-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -24,7 +24,6 @@ export interface CompetitorAd {
   source_url: string | null;
 }
 
-/** Map Supabase row (which may have n8n columns) to CompetitorAd */
 function mapDbRow(d: any): CompetitorAd {
   return {
     id: d.id,
@@ -66,13 +65,11 @@ export default function CompetitorSpy() {
     };
     loadAds();
 
-    // Subscribe to realtime inserts with notifications
     const channel = supabase
       .channel("competitor_ads_realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "competitor_ads" }, (payload) => {
         const newAd = mapDbRow(payload.new);
         setAds((prev) => {
-          // Check if this advertiser is monitored
           const isMonitoredAdvertiser = prev.some(
             (a) => a.is_monitored && a.advertiser_name === newAd.advertiser_name
           );
@@ -90,69 +87,45 @@ export default function CompetitorSpy() {
     return () => { supabase.removeChannel(channel); };
   }, [toast]);
 
-  // Auto-sync monitored ads every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const monitored = ads.filter(a => a.is_monitored);
-      if (monitored.length === 0) return;
-      
-      const uniquePages = new Map<string, string>();
-      for (const ad of monitored) {
-        const pageId = (ad as any).page_id || ad.advertiser_name;
-        if (pageId && !uniquePages.has(pageId)) {
-          uniquePages.set(pageId, ad.advertiser_name);
-        }
-      }
-      
-      for (const [pageId] of uniquePages) {
-        fetch("https://n8n.zapoinov.com/webhook/competitor-spy-sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ page_id: pageId, project_id: null }),
-        }).catch(console.error);
-      }
-    }, 5 * 60 * 1000); // every 5 min
-
-    return () => clearInterval(interval);
-  }, [ads]);
-
   const handleSearch = async () => {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      // Determine if it's a URL or a name/query
       const isUrl = search.trim().startsWith("http");
 
-      if (isUrl) {
-        // Direct scrape via Apify (async — data via realtime)
-        await startCompetitorScrape(search.trim());
-        toast({ title: "Парсинг запущен", description: "Данные появятся через ~60 сек (Apify)" });
-      } else {
-        // Search by page name via preview endpoint (gets from DB)
-        const previews = await fetchAdPreviews(search.trim());
-        if (previews.length > 0) {
-          const previewAds: CompetitorAd[] = previews.map((p) => ({
-            id: p.id || `preview-${Date.now()}-${Math.random()}`,
-            advertiser_name: p.page_name || search.trim(),
-            advertiser_avatar: (p.page_name || search.trim()).slice(0, 2).toUpperCase(),
-            ad_copy: p.ad_text,
-            platform: "Instagram",
-            media_type: "4:5",
-            media_url: p.media_url,
-            is_active: p.ad_status === "ACTIVE",
-            active_since: p.start_date,
-            is_monitored: false,
-            source_url: null,
-          }));
-          setAds(previewAds);
-          toast({ title: "Готово", description: `Найдено ${previewAds.length} объявлений` });
-        } else {
-          toast({ title: "Нет результатов", description: "Попробуйте другой запрос или вставьте ссылку на Ad Library" });
+      // Step 1: Check local DB first
+      const localResults = await searchLocalAds(search.trim());
+      if (localResults.length > 0) {
+        setAds(localResults.map(mapDbRow));
+        toast({ title: "Найдено в базе", description: `${localResults.length} объявлений из локальной базы` });
+      }
+
+      // Step 2: Scrape fresh data via Edge Function (Firecrawl + AI)
+      toast({ title: "🔍 Сканирование...", description: isUrl ? "Парсинг рекламы по ссылке через Firecrawl..." : `Поиск рекламы "${search.trim()}" в Meta Ad Library...` });
+
+      const result = await scrapeCompetitorAds(
+        isUrl ? { url: search.trim() } : { query: search.trim(), country: "KZ" }
+      );
+
+      if (result.count > 0) {
+        // Reload from DB since edge function inserts into competitor_ads
+        const { data: freshData } = await supabase
+          .from("competitor_ads")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (freshData) {
+          setAds(freshData.map(mapDbRow));
         }
+        toast({ title: "✅ Готово!", description: `Найдено и сохранено ${result.count} новых объявлений` });
+        pushNotification("info", "Сканирование завершено", `Найдено ${result.count} объявлений`, "Радар конкурентов");
+      } else if (localResults.length === 0) {
+        toast({ title: "Нет результатов", description: "Объявления не найдены. Попробуйте другой запрос или ссылку на Ad Library." });
       }
     } catch (e: any) {
       toast({
-        title: "Ошибка",
+        title: "Ошибка сканирования",
         description: e.message || "Не удалось получить данные",
         variant: "destructive",
       });
@@ -202,32 +175,29 @@ export default function CompetitorSpy() {
       return;
     }
     setSyncing(true);
-    // Get unique page_ids from monitored ads
-    const uniquePages = new Map<string, string>();
-    for (const ad of monitored) {
-      // Use page_id from DB if available, otherwise extract from source_url
-      const pageId = (ad as any).page_id || ad.advertiser_name;
-      if (pageId && !uniquePages.has(pageId)) {
-        uniquePages.set(pageId, ad.advertiser_name);
-      }
-    }
     
+    const uniqueNames = [...new Set(monitored.map(a => a.advertiser_name))];
     let successCount = 0;
-    for (const [pageId] of uniquePages) {
+    
+    for (const name of uniqueNames) {
       try {
-        await fetch("https://n8n.zapoinov.com/webhook/competitor-spy-sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ page_id: pageId, project_id: null }),
-        });
+        await scrapeCompetitorAds({ query: name, country: "KZ" });
         successCount++;
       } catch (err) {
-        console.error("Spy sync error:", err);
+        console.error("Sync error for", name, err);
       }
     }
+
+    // Reload all
+    const { data } = await supabase
+      .from("competitor_ads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setAds(data.map(mapDbRow));
+
     toast({
-      title: "🔄 Синхронизация запущена",
-      description: `${successCount} из ${uniquePages.size} страниц отправлены на обновление. Новые данные появятся через ~90 сек.`,
+      title: "🔄 Синхронизация завершена",
+      description: `${successCount} из ${uniqueNames.length} конкурентов обновлены`,
     });
     setSyncing(false);
   };
@@ -258,6 +228,18 @@ export default function CompetitorSpy() {
           </div>
         </div>
 
+        {/* Hint */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/5 border border-primary/10 text-xs text-muted-foreground">
+          <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>
+            Вставьте ссылку из{" "}
+            <a href="https://www.facebook.com/ads/library/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-0.5">
+              Meta Ad Library <ExternalLink className="h-3 w-3" />
+            </a>
+            {" "}или введите название страницы конкурента (например «Клиника AIVA»)
+          </span>
+        </div>
+
         {/* Search Bar */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -266,7 +248,7 @@ export default function CompetitorSpy() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Ссылка на Ad Library или название страницы конкурента..."
+              placeholder="https://facebook.com/ads/library/...  или  Клиника AIVA"
               className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
             />
           </div>
@@ -312,7 +294,6 @@ export default function CompetitorSpy() {
           </button>
         </div>
 
-        {/* Sync button for monitoring tab */}
         {activeTab === "monitoring" && monitoredCount > 0 && (
           <Button
             variant="outline"
