@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -14,10 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Video, Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw } from "lucide-react";
+import { Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
@@ -29,21 +30,44 @@ interface ContentTask {
   content_type: string;
 }
 
-export default function ContentFactory() {
-  const [mainType, setMainType] = useState<"video" | "photo">("video");
-  const [videoMode, setVideoMode] = useState<"link" | "description">("link");
-  const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
-  const [photoFormat, setPhotoFormat] = useState("banner");
-  const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [designTab, setDesignTab] = useState<"ready" | "my">("ready");
-  const [designStyle, setDesignStyle] = useState("modern");
-  const [designTemplate, setDesignTemplate] = useState("tmpl1");
+/** n8n format IDs → display labels */
+const FORMAT_OPTIONS = [
+  { value: "fb-target", label: "ADS Баннер", sub: "1 изображение" },
+  { value: "insta-carousel", label: "Карусель", sub: "До 10 слайдов" },
+  { value: "stories", label: "Stories", sub: "Вертикальный формат" },
+  { value: "reels-cover", label: "Обложка Reels", sub: "Обложка для видео" },
+  { value: "ai-photo", label: "AI Фото", sub: "Фотореалистичное" },
+] as const;
 
-  // Form field values
+const ASPECT_OPTIONS = [
+  { value: "1:1", label: "1:1 Квадрат" },
+  { value: "4:5", label: "4:5 Лента" },
+  { value: "9:16", label: "9:16 Stories" },
+  { value: "16:9", label: "16:9 Широкий" },
+] as const;
+
+const STYLE_OPTIONS = [
+  { value: "modern", label: "Современный" },
+  { value: "tech", label: "Технологичный" },
+  { value: "stylish", label: "Стильный" },
+  { value: "minimal", label: "Минимализм" },
+  { value: "premium", label: "Премиум" },
+] as const;
+
+export default function ContentFactory() {
+  const location = useLocation();
+  const prefill = (location.state as any)?.prefill || "";
+
+  const [sourceMode, setSourceMode] = useState<"link" | "description">("description");
+  const [format, setFormat] = useState("fb-target");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [designStyle, setDesignStyle] = useState("modern");
+  const [slideCount, setSlideCount] = useState(1);
+
+  // Form fields
   const [sourceUrl, setSourceUrl] = useState("");
-  const [visualStyle, setVisualStyle] = useState("");
-  const [speakerText, setSpeakerText] = useState("");
-  const [mainText, setMainText] = useState("");
+  const [mainText, setMainText] = useState(prefill);
+  const [visualInstructions, setVisualInstructions] = useState("");
 
   // File uploads
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -56,20 +80,26 @@ export default function ContentFactory() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-set slide count based on format
+  useEffect(() => {
+    if (format === "insta-carousel") {
+      setSlideCount(7);
+    } else {
+      setSlideCount(1);
+    }
+    if (format === "stories" || format === "reels-cover") {
+      setAspectRatio("9:16");
+    }
+  }, [format]);
+
   // Realtime subscription
   useEffect(() => {
     if (!taskId) return;
-
     const channel = supabase
       .channel(`content_task_${taskId}`)
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "content_tasks",
-          filter: `id=eq.${taskId}`,
-        },
+        { event: "UPDATE", schema: "public", table: "content_tasks", filter: `id=eq.${taskId}` },
         (payload) => {
           const row = payload.new as any;
           setTask({
@@ -82,10 +112,7 @@ export default function ContentFactory() {
         }
       )
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [taskId]);
 
   const uploadFile = useCallback(async (file: File): Promise<string | null> => {
@@ -103,8 +130,16 @@ export default function ContentFactory() {
   }, []);
 
   const handleGenerate = async () => {
-    setSubmitting(true);
+    if (sourceMode === "link" && !sourceUrl.trim()) {
+      toast({ title: "Вставьте ссылку", variant: "destructive" });
+      return;
+    }
+    if (sourceMode === "description" && !mainText.trim() && !visualInstructions.trim()) {
+      toast({ title: "Заполните текст или описание визуала", variant: "destructive" });
+      return;
+    }
 
+    setSubmitting(true);
     try {
       // Upload logo if present
       let customLogoUrl: string | null = null;
@@ -112,30 +147,25 @@ export default function ContentFactory() {
         setUploading(true);
         customLogoUrl = await uploadFile(logoFile);
         setUploading(false);
-        if (!customLogoUrl) {
-          setSubmitting(false);
-          return;
-        }
+        if (!customLogoUrl) { setSubmitting(false); return; }
       }
 
-      // Build payload
-      const isVideo = mainType === "video";
-      const mode = isVideo ? videoMode : photoMode;
-      const payload: Record<string, any> = {
-        content_type: mainType,
-        source_type: mode,
-        source_url: mode === "link" ? sourceUrl : null,
-        visual_style: isVideo && mode === "description" ? visualStyle : null,
-        main_text: isVideo && mode === "description" ? speakerText : (!isVideo ? mainText : null),
-        format: isVideo ? null : photoFormat,
-        aspect_ratio: isVideo ? null : aspectRatio,
-        design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
+      // Insert task into Supabase
+      const dbPayload: Record<string, any> = {
+        content_type: "photo",
+        source_type: sourceMode,
+        source_url: sourceMode === "link" ? sourceUrl : null,
+        main_text: mainText || null,
+        visual_style: designStyle,
+        format: format,
+        aspect_ratio: aspectRatio,
+        design_template: designStyle,
         custom_logo_url: customLogoUrl,
       };
 
       const { data, error } = await (supabase as any)
         .from("content_tasks")
-        .insert(payload)
+        .insert(dbPayload)
         .select("id, status, progress_text, result_urls, content_type")
         .single();
 
@@ -144,25 +174,20 @@ export default function ContentFactory() {
       setTask(data as ContentTask);
       setTaskId(data.id);
 
-      // Map frontend format to n8n format
-      const formatMap: Record<string, string> = {
-        banner: "fb-target",
-        carousel7: "insta-carousel",
-        carousel10: "insta-carousel",
-      };
-
-      // Trigger n8n Content Factory workflow
+      // Send to n8n Content Factory v2
       const n8nPayload = {
         task_id: data.id,
-        content_type: mainType,
-        source_type: payload.source_type,
-        source_url: payload.source_url,
-        format: formatMap[photoFormat] || "fb-target",
+        content_type: format,             // n8n routes by this (= format)
+        source_type: sourceMode,
+        source_url: sourceMode === "link" ? sourceUrl : null,
+        format: format,                    // fb-target, insta-carousel, stories, reels-cover, ai-photo
         aspect_ratio: aspectRatio,
-        main_text: payload.main_text || "",
-        visual_style: payload.visual_style || payload.design_template || "",
-        slide_count: photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1,
-        custom_logo_url: payload.custom_logo_url,
+        main_text: mainText || "",
+        visual_instructions: visualInstructions || "",
+        visual_style: designStyle,
+        design_template_id: designStyle,
+        slide_count: slideCount,
+        custom_logo_url: customLogoUrl,
       };
 
       try {
@@ -185,8 +210,7 @@ export default function ContentFactory() {
     setTaskId(null);
     setTask(null);
     setSourceUrl("");
-    setVisualStyle("");
-    setSpeakerText("");
+    setVisualInstructions("");
     setMainText("");
     setLogoFile(null);
   };
@@ -216,23 +240,20 @@ export default function ContentFactory() {
     if (task.status === "completed") return 4;
     if (t.includes("отправ") || t.includes("загруз") || t.includes("готов")) return 3;
     if (t.includes("текст") || t.includes("шрифт") || t.includes("overlay")) return 2;
-    if (t.includes("генер") || t.includes("render") || t.includes("изображ") || t.includes("créat") || t.includes("рендер")) return 1;
+    if (t.includes("генер") || t.includes("render") || t.includes("изображ") || t.includes("рендер")) return 1;
     if (task.status === "processing") return 1;
     if (task.status === "pending") return 0;
     return 0;
   };
 
   const activeStep = getActiveStep();
-
   const progressPercent =
     !task ? 0
     : task.status === "completed" ? 100
     : activeStep >= 0 ? Math.min(95, ((activeStep + 1) / pipelineSteps.length) * 100)
     : 0;
 
-  // ---- RENDER ----
-
-  // RESULT VIEW
+  // ── RESULT VIEW ──
   if (task && task.status === "completed" && task.result_urls && task.result_urls.length > 0) {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
@@ -247,42 +268,27 @@ export default function ContentFactory() {
             className="rounded-xl border border-border bg-card p-6 space-y-6"
           >
             <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
               <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
             </div>
 
-            {task.content_type === "video" ? (
-              <div className="space-y-4">
-                {task.result_urls.map((url, i) => (
-                  <div key={i} className="rounded-lg overflow-hidden border border-border bg-black">
-                    <video
-                      src={url}
-                      controls
-                      className="w-full max-h-[500px]"
-                      poster=""
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-                {task.result_urls.map((url, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="flex-shrink-0 snap-center"
-                  >
-                    <img
-                      src={url}
-                      alt={`Слайд ${i + 1}`}
-                      className="rounded-lg border border-border max-h-[400px] object-contain"
-                    />
-                  </motion.div>
-                ))}
-              </div>
-            )}
+            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {task.result_urls.map((url, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex-shrink-0 snap-center"
+                >
+                  <img
+                    src={url}
+                    alt={`Слайд ${i + 1}`}
+                    className="rounded-lg border border-border max-h-[400px] object-contain"
+                  />
+                </motion.div>
+              ))}
+            </div>
 
             <div className="flex gap-3 pt-2">
               <Button
@@ -303,7 +309,7 @@ export default function ContentFactory() {
     );
   }
 
-  // PROGRESS VIEW
+  // ── PROGRESS VIEW ──
   if (task && (task.status === "pending" || task.status === "processing")) {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
@@ -316,7 +322,6 @@ export default function ContentFactory() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-xl border border-border bg-card p-8 space-y-8"
           >
-            {/* Progress bar */}
             <div className="space-y-2">
               <Progress
                 value={progressPercent}
@@ -328,13 +333,10 @@ export default function ContentFactory() {
               </div>
             </div>
 
-            {/* Pipeline steps */}
             <div className="space-y-1">
               {pipelineSteps.map((step, i) => {
                 const isDone = i < activeStep || task.status === "completed";
                 const isActive = i === activeStep && task.status !== "completed";
-                const isPending = i > activeStep && task.status !== "completed";
-
                 return (
                   <motion.div
                     key={step.key}
@@ -345,63 +347,35 @@ export default function ContentFactory() {
                       isActive ? "bg-primary/10 border border-primary/20" : isDone ? "bg-secondary/30" : "opacity-40"
                     }`}
                   >
-                    {/* Status indicator */}
                     <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base">
                       {isDone ? (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"
-                        >
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
                           <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
                         </motion.div>
                       ) : isActive ? (
-                        <motion.div
-                          animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                          className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center"
-                        >
+                        <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center">
                           <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
                         </motion.div>
                       ) : (
                         <span className="text-sm">{step.icon}</span>
                       )}
                     </div>
-
-                    {/* Label */}
-                    <span className={`text-sm font-medium ${
-                      isDone ? "text-primary" : isActive ? "text-foreground" : "text-muted-foreground"
-                    }`}>
+                    <span className={`text-sm font-medium ${isDone ? "text-primary" : isActive ? "text-foreground" : "text-muted-foreground"}`}>
                       {step.label}
                     </span>
-
-                    {/* Active badge */}
                     {isActive && (
-                      <motion.span
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="ml-auto text-[10px] font-medium text-primary tracking-wider uppercase"
-                      >
+                      <motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }} className="ml-auto text-[10px] font-medium text-primary tracking-wider uppercase">
                         в процессе
                       </motion.span>
                     )}
-                    {isDone && (
-                      <span className="ml-auto text-[10px] font-medium text-primary/60">готово</span>
-                    )}
+                    {isDone && <span className="ml-auto text-[10px] font-medium text-primary/60">готово</span>}
                   </motion.div>
                 );
               })}
             </div>
 
-            {/* Status text from backend */}
             <AnimatePresence mode="wait">
-              <motion.p
-                key={task.progress_text}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="text-center text-xs text-muted-foreground"
-              >
+              <motion.p key={task.progress_text} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="text-center text-xs text-muted-foreground">
                 {task.progress_text || "Запуск завода..."}
               </motion.p>
             </AnimatePresence>
@@ -411,7 +385,7 @@ export default function ContentFactory() {
     );
   }
 
-  // ERROR VIEW
+  // ── ERROR VIEW ──
   if (task && task.status === "error") {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
@@ -430,218 +404,160 @@ export default function ContentFactory() {
     );
   }
 
-  // FORM VIEW
+  // ── FORM VIEW ──
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
       <div className="mx-auto max-w-3xl py-4">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
-        <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
+            <Image className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
+            <p className="text-sm text-muted-foreground">Генерация фото-контента с помощью AI</p>
+          </div>
+        </div>
 
         <div className="rounded-xl border border-border bg-card p-6 space-y-8">
-          {/* Type toggle */}
-          <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
-            <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
-              <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                <Video className="mr-2 h-4 w-4" />
-                Видео (Sora 2)
-              </TabsTrigger>
-              <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                <Image className="mr-2 h-4 w-4" />
-                Фото / Карусель
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
 
-          {/* VIDEO MODE */}
-          {mainType === "video" && (
-            <div className="space-y-6">
-              <Tabs value={videoMode} onValueChange={(v) => setVideoMode(v as "link" | "description")}>
-                <TabsList className="h-9 bg-secondary/40">
-                  <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background">
-                    <Link className="mr-1.5 h-3.5 w-3.5" />По ссылке
-                  </TabsTrigger>
-                  <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background">
-                    <FileText className="mr-1.5 h-3.5 w-3.5" />По описанию
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+          {/* ── Source mode ── */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground">Источник</Label>
+            <Tabs value={sourceMode} onValueChange={(v) => setSourceMode(v as "link" | "description")}>
+              <TabsList className="h-9 bg-secondary/40">
+                <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background">
+                  <Link className="mr-1.5 h-3.5 w-3.5" />По ссылке
+                </TabsTrigger>
+                <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background">
+                  <FileText className="mr-1.5 h-3.5 w-3.5" />По описанию
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-              {videoMode === "link" ? (
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Ссылка на видео</Label>
-                  <Input
-                    type="url"
-                    value={sourceUrl}
-                    onChange={(e) => setSourceUrl(e.target.value)}
-                    placeholder="Вставьте ссылку на YouTube, TikTok или Reels"
-                    className="h-11 bg-secondary/30 border-border"
-                  />
-                  <p className="text-xs text-muted-foreground/70">AI проанализирует видео и создаст уникальный аналог.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Визуальный стиль и детали</Label>
-                    <Textarea
-                      value={visualStyle}
-                      onChange={(e) => setVisualStyle(e.target.value)}
-                      placeholder="Что должно происходить на экране — стиль, сцена, движение камеры…"
-                      className="min-h-[100px] bg-secondary/30 border-border resize-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Текст для AI-Спикера</Label>
-                    <Textarea
-                      value={speakerText}
-                      onChange={(e) => setSpeakerText(e.target.value)}
-                      placeholder="Точный текст, который будет озвучен (слово в слово)"
-                      className="min-h-[100px] bg-secondary/30 border-border resize-none"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* PHOTO MODE */}
-          {mainType === "photo" && (
-            <div className="space-y-8">
-              <Tabs value={photoMode} onValueChange={(v) => setPhotoMode(v as "link" | "description")}>
-                <TabsList className="h-9 bg-secondary/40">
-                  <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background">
-                    <Link className="mr-1.5 h-3.5 w-3.5" />По ссылке
-                  </TabsTrigger>
-                  <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background">
-                    <FileText className="mr-1.5 h-3.5 w-3.5" />По описанию
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {photoMode === "link" ? (
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Ссылка на референс</Label>
-                  <Input
-                    type="url"
-                    value={sourceUrl}
-                    onChange={(e) => setSourceUrl(e.target.value)}
-                    placeholder="Вставьте ссылку на пример дизайна, пост или рекламу"
-                    className="h-11 bg-secondary/30 border-border"
-                  />
-                  <p className="text-xs text-muted-foreground/70">AI проанализирует пример и создаст уникальный аналог в выбранном формате.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                  <Textarea
-                    value={visualStyle}
-                    onChange={(e) => setVisualStyle(e.target.value)}
-                    placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…"
-                    className="min-h-[100px] bg-secondary/30 border-border resize-none"
-                  />
-                </div>
-              )}
-
-              {/* Format */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-foreground">Формат</Label>
-                <RadioGroup value={photoFormat} onValueChange={setPhotoFormat} className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: "banner", label: "ADS Баннер", sub: "1 картинка" },
-                    { value: "carousel7", label: "Карусель", sub: "7 слайдов" },
-                    { value: "carousel10", label: "Карусель", sub: "10 слайдов" },
-                  ].map((opt) => (
-                    <Label
-                      key={opt.value}
-                      htmlFor={opt.value}
-                      className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
-                        photoFormat === opt.value
-                          ? "border-primary/60 bg-primary/[0.06]"
-                          : "border-border bg-secondary/20 hover:bg-secondary/40"
-                      }`}
-                    >
-                      <RadioGroupItem value={opt.value} id={opt.value} className="sr-only" />
-                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                      <span className="text-xs text-muted-foreground">{opt.sub}</span>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              {/* Aspect ratio */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-foreground">Соотношение сторон</Label>
-                <Tabs value={aspectRatio} onValueChange={setAspectRatio}>
-                  <TabsList className="h-9 bg-secondary/40">
-                    <TabsTrigger value="1:1" className="text-xs data-[state=active]:bg-background">1:1 Квадрат</TabsTrigger>
-                    <TabsTrigger value="4:5" className="text-xs data-[state=active]:bg-background">4:5 Лента</TabsTrigger>
-                    <TabsTrigger value="9:16" className="text-xs data-[state=active]:bg-background">9:16 Stories</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {/* Slide text */}
+            {sourceMode === "link" ? (
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
-                <Textarea
-                  value={mainText}
-                  onChange={(e) => setMainText(e.target.value)}
-                  placeholder="Каждая новая строка — новый слайд. Для баннера — одна строка."
-                  className="min-h-[120px] bg-secondary/30 border-border resize-none"
+                <Input
+                  type="url"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="Ссылка на пример дизайна, пост или рекламу"
+                  className="h-11 bg-secondary/30 border-border"
                 />
+                <p className="text-xs text-muted-foreground/70">AI проанализирует пример и создаст уникальный аналог.</p>
               </div>
-
-              {/* Design */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium text-foreground">Дизайн и стиль</Label>
-                <Tabs value={designTab} onValueChange={(v) => setDesignTab(v as "ready" | "my")}>
-                  <TabsList className="h-9 bg-secondary/40 mb-3">
-                    <TabsTrigger value="ready" className="text-xs data-[state=active]:bg-background">Готовые стили</TabsTrigger>
-                    <TabsTrigger value="my" className="text-xs data-[state=active]:bg-background">Мои шаблоны</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {designTab === "ready" ? (
-                  <Select value={designStyle} onValueChange={setDesignStyle}>
-                    <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="modern">Современный</SelectItem>
-                      <SelectItem value="tech">Технологичный</SelectItem>
-                      <SelectItem value="stylish">Стильный</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="space-y-3">
-                    <Select value={designTemplate} onValueChange={setDesignTemplate}>
-                      <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tmpl1">Шаблон «Минимализм»</SelectItem>
-                        <SelectItem value="tmpl2">Шаблон «Премиум»</SelectItem>
-                        <SelectItem value="tmpl3">Шаблон «Яркий»</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*,.woff,.woff2,.ttf,.otf"
-                      className="hidden"
-                      onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-border text-muted-foreground hover:text-foreground"
-                    >
-                      <Upload className="mr-2 h-3.5 w-3.5" />
-                      {logoFile ? logoFile.name : "Загрузить Логотип / Шрифт"}
-                    </Button>
-                  </div>
-                )}
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Описание визуала</Label>
+                  <Textarea
+                    value={visualInstructions}
+                    onChange={(e) => setVisualInstructions(e.target.value)}
+                    placeholder="Стиль, цвета, композиция, что должно быть изображено…"
+                    className="min-h-[80px] bg-secondary/30 border-border resize-none"
+                  />
+                </div>
               </div>
+            )}
+          </div>
+
+          {/* ── Format ── */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground">Формат</Label>
+            <RadioGroup value={format} onValueChange={setFormat} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {FORMAT_OPTIONS.map((opt) => (
+                <Label
+                  key={opt.value}
+                  htmlFor={`fmt-${opt.value}`}
+                  className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+                    format === opt.value
+                      ? "border-primary/60 bg-primary/[0.06]"
+                      : "border-border bg-secondary/20 hover:bg-secondary/40"
+                  }`}
+                >
+                  <RadioGroupItem value={opt.value} id={`fmt-${opt.value}`} className="sr-only" />
+                  <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                  <span className="text-xs text-muted-foreground">{opt.sub}</span>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          {/* ── Slide count (for carousel) ── */}
+          {format === "insta-carousel" && (
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-foreground">Количество слайдов</Label>
+              <Tabs value={String(slideCount)} onValueChange={(v) => setSlideCount(Number(v))}>
+                <TabsList className="h-9 bg-secondary/40">
+                  <TabsTrigger value="5" className="text-xs data-[state=active]:bg-background">5</TabsTrigger>
+                  <TabsTrigger value="7" className="text-xs data-[state=active]:bg-background">7</TabsTrigger>
+                  <TabsTrigger value="10" className="text-xs data-[state=active]:bg-background">10</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           )}
 
-          {/* Submit button */}
+          {/* ── Aspect ratio ── */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground">Соотношение сторон</Label>
+            <Tabs value={aspectRatio} onValueChange={setAspectRatio}>
+              <TabsList className="h-9 bg-secondary/40">
+                {ASPECT_OPTIONS.map((o) => (
+                  <TabsTrigger key={o.value} value={o.value} className="text-xs data-[state=active]:bg-background">{o.label}</TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* ── Text for slides ── */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
+            <Textarea
+              value={mainText}
+              onChange={(e) => setMainText(e.target.value)}
+              placeholder={format === "insta-carousel"
+                ? "Каждая новая строка — новый слайд"
+                : "Заголовок, описание, CTA — каждый с новой строки"
+              }
+              className="min-h-[120px] bg-secondary/30 border-border resize-none"
+            />
+          </div>
+
+          {/* ── Design style ── */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-foreground">Стиль дизайна</Label>
+            <div className="flex gap-3 items-end">
+              <div className="flex-1">
+                <Select value={designStyle} onValueChange={setDesignStyle}>
+                  <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STYLE_OPTIONS.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.woff,.woff2,.ttf,.otf"
+                  className="hidden"
+                  onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-border text-muted-foreground hover:text-foreground h-11 px-4"
+                >
+                  <Upload className="mr-2 h-3.5 w-3.5" />
+                  {logoFile ? logoFile.name : "Логотип"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Submit ── */}
           <div className="pt-2">
             <Button
               onClick={handleGenerate}
