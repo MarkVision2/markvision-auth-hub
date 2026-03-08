@@ -1345,6 +1345,7 @@ function SystemHealthTab() {
   const [errors, setErrors] = useState<any[]>([]);
   const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [restartingId, setRestartingId] = useState<string | null>(null);
 
   const callGateway = async (action: string) => {
     try {
