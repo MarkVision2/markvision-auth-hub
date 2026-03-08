@@ -1035,7 +1035,7 @@ function DynamicsTab() {
                   <TableCell className={`text-right tabular-nums text-sm font-semibold pr-6 ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(m.profit)}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="border-border/10 bg-secondary/20 hover:bg-secondary/30">
+              <TableRow className="bg-secondary/20 hover:bg-secondary/30">
                 <TableCell className="pl-6 text-sm font-bold text-foreground">Итого</TableCell>
                 <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totals.revenue)}</TableCell>
                 <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
