@@ -25,7 +25,7 @@ function fmtCurrency(v: number): string {
 }
 
 /* ── Shared inline-edit input style ── */
-const inlineInput = "h-9 bg-secondary/50 border-border/10 rounded-lg text-sm tabular-nums focus:border-primary/60 focus:bg-secondary/80 transition-colors placeholder:text-muted-foreground/40";
+const inlineInput = "h-9 bg-secondary/50 border-transparent rounded-lg text-sm tabular-nums focus:border-primary/60 focus:bg-secondary/80 transition-colors placeholder:text-muted-foreground/40";
 const inlineInputRight = `${inlineInput} text-right`;
 
 /* ── KPI Card ── */
