@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AutopostSheet from "@/components/sheets/AutopostSheet";
+import { PhoneMockup } from "@/components/content/PhoneMockup";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 type ContentMode = "photo" | "video";
@@ -484,7 +485,9 @@ export default function ContentFactory() {
 
   // ── THE PRECISION FORM ──
   const renderForm = () => (
-    <div className="space-y-6">
+    <div className="flex gap-6 items-start">
+      {/* Left: Form */}
+      <div className="flex-1 min-w-0 space-y-6">
       {/* ✨ MAGIC AI BUTTON */}
       <motion.button
         onClick={() => setMagicOpen(true)}
@@ -732,6 +735,20 @@ export default function ContentFactory() {
             </pre>
           </details>
         </div>
+      </div>
+      </div>
+
+      {/* Right: Phone Mockup - hidden on small screens */}
+      <div className="hidden lg:block sticky top-24 shrink-0">
+        <PhoneMockup
+          contentMode={contentMode}
+          format={format}
+          aspectRatio={aspectRatio}
+          designPrompt={designPrompt}
+          exactText={exactText}
+          referencePreview={referencePreview}
+          logoFile={logoFile}
+        />
       </div>
     </div>
   );
