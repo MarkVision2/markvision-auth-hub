@@ -8,6 +8,7 @@ import { AiRebuildSheet } from "@/components/spy/AiRebuildSheet";
 import { startCompetitorScrape, rebuildAdText, fetchAdPreviews, type RebuildResult } from "@/lib/api/ad-library-api";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export interface CompetitorAd {
   id: string;
