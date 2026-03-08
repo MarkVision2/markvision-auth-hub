@@ -45,6 +45,7 @@ const navGroups = [
     label: "АНАЛИТИКА",
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
+      { title: "Финансы", path: "/finance", icon: Coins },
     ],
   },
 ];
