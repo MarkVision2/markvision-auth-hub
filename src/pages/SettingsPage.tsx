@@ -120,6 +120,7 @@ const INITIAL_TEAM: TeamMember[] = [
 /* ── Sub-menu items ── */
 const SUB_TABS = [
   { key: "general", label: "Общие", icon: Settings },
+  { key: "notifications", label: "Уведомления", icon: Bell },
   { key: "integrations", label: "Интеграции", icon: Plug },
   { key: "team", label: "Команда и доступы", icon: Users },
   { key: "security", label: "Безопасность", icon: Shield },
