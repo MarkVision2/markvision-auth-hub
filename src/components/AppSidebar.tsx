@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   Activity,
+  Coins,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
