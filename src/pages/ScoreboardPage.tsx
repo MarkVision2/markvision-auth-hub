@@ -186,7 +186,7 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* FACT row */}
-                <TableRow className="bg-primary/[0.04] border-border/20 hover:bg-primary/[0.06]">
+                <TableRow className="bg-primary/[0.04] border-b border-border/10 hover:bg-primary/[0.06]">
                   {columns.map(col => (
                     <TableCell
                       key={col.key}
