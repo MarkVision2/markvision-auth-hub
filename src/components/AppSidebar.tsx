@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileBarChart,
-  ChevronsUpDown, Check, Building2,
+  ChevronsUpDown, Check, Building2, TableProperties,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
