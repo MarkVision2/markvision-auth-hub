@@ -99,7 +99,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                         <Loader2 className="h-5 w-5 text-primary animate-spin" />
                       </div>
                       <p className="text-sm text-muted-foreground">AI генерирует улучшенный оффер...</p>
-                      <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className="w-48 h-1 bg-secondary rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full animate-pulse" style={{ width: "60%" }} />
                       </div>
                     </div>
