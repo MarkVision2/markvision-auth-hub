@@ -1,18 +1,16 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   ChevronLeft, ChevronRight, Download, DollarSign, Eye,
-  ArrowRightLeft, Target, TrendingUp, Calculator, Save, Loader2, Pencil,
+  ArrowRightLeft, Target, TrendingUp, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/hooks/use-toast";
 
 /* ── helpers ── */
 const fmt = (v: number) => Math.round(v).toLocaleString("ru-RU");
@@ -34,32 +32,20 @@ interface DailyRow {
   revenue: number;
 }
 
-/* Editable plan keys that map to monthly_plans columns */
 type PlanKey = "spend" | "impressions" | "clicks" | "leads" | "followers" | "visits" | "sales" | "revenue";
-const PLAN_DB_MAP: Record<PlanKey, string> = {
-  spend: "plan_spend",
-  impressions: "plan_impressions",
-  clicks: "plan_clicks",
-  leads: "plan_leads",
-  followers: "plan_followers",
-  visits: "plan_visits",
-  sales: "plan_sales",
-  revenue: "plan_revenue",
-};
-
 type MetricKey = "spend" | "impressions" | "clicks" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
 
-const columns: { key: "date" | MetricKey; label: string; align: "left" | "right"; editable: boolean }[] = [
-  { key: "date", label: "Дата", align: "left", editable: false },
-  { key: "spend", label: "Расходы", align: "right", editable: true },
-  { key: "impressions", label: "Показы", align: "right", editable: true },
-  { key: "clicks", label: "Клики", align: "right", editable: true },
-  { key: "leads", label: "Лиды", align: "right", editable: true },
-  { key: "cpl", label: "CPL", align: "right", editable: false }, // calculated
-  { key: "followers", label: "Подписч.", align: "right", editable: true },
-  { key: "visits", label: "Визиты", align: "right", editable: true },
-  { key: "sales", label: "Оплаты", align: "right", editable: true },
-  { key: "revenue", label: "Выручка", align: "right", editable: true },
+const columns: { key: "date" | MetricKey; label: string; align: "left" | "right" }[] = [
+  { key: "date", label: "Дата", align: "left" },
+  { key: "spend", label: "Расходы", align: "right" },
+  { key: "impressions", label: "Показы", align: "right" },
+  { key: "clicks", label: "Клики", align: "right" },
+  { key: "leads", label: "Лиды", align: "right" },
+  { key: "cpl", label: "CPL", align: "right" },
+  { key: "followers", label: "Подписч.", align: "right" },
+  { key: "visits", label: "Визиты", align: "right" },
+  { key: "sales", label: "Оплаты", align: "right" },
+  { key: "revenue", label: "Выручка", align: "right" },
 ];
 
 const fmtDate = (iso: string) => {
@@ -68,44 +54,6 @@ const fmtDate = (iso: string) => {
   const wd = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][d.getDay()];
   return `${day} ${wd}`;
 };
-
-/* ── Inline Editable Cell ── */
-function EditableCell({ value, onChange, onCommit }: {
-  value: number;
-  onChange: (v: number) => void;
-  onCommit: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (editing) inputRef.current?.focus();
-  }, [editing]);
-
-  if (!editing) {
-    return (
-      <button
-        onClick={() => setEditing(true)}
-        className="w-full text-right font-mono text-xs tabular-nums text-blue-400/80 hover:text-blue-300 hover:bg-blue-500/10 rounded px-1.5 py-1 transition-colors cursor-text group"
-      >
-        {value > 0 ? fmt(value) : <span className="text-blue-400/30">0</span>}
-        <Pencil className="inline-block h-2.5 w-2.5 ml-1.5 opacity-0 group-hover:opacity-60 transition-opacity" />
-      </button>
-    );
-  }
-
-  return (
-    <Input
-      ref={inputRef}
-      type="number"
-      value={value || ""}
-      onChange={e => { const n = Number(e.target.value); if (!isNaN(n)) onChange(Math.max(0, n)); }}
-      onBlur={() => { setEditing(false); onCommit(); }}
-      onKeyDown={e => { if (e.key === "Enter") { setEditing(false); onCommit(); } }}
-      className="h-7 w-[100px] text-xs font-mono tabular-nums text-right bg-blue-500/10 border-blue-500/30 text-blue-300 rounded px-2 focus:border-blue-400"
-    />
-  );
-}
 
 /* ── KPI Card ── */
 function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
@@ -140,108 +88,6 @@ function PctCell({ value }: { value: number }) {
   );
 }
 
-/* ── Decomposition Panel ── */
-interface DecompPlan {
-  targetRevenue: number;
-  avgCheck: number;
-  cpl: number;
-  cr1: number;
-  cr2: number;
-  cr3: number;
-}
-
-const DEFAULT_DECOMP: DecompPlan = { targetRevenue: 5_000_000, avgCheck: 1_000_000, cpl: 3_000, cr1: 2, cr2: 30, cr3: 50 };
-const DECOMP_KEY = "scoreboard_decomp_plan";
-
-function loadDecomp(): DecompPlan {
-  try { const r = localStorage.getItem(DECOMP_KEY); if (r) return { ...DEFAULT_DECOMP, ...JSON.parse(r) }; } catch { /* */ }
-  return DEFAULT_DECOMP;
-}
-
-function calcDecomp(p: DecompPlan) {
-  const sales = p.avgCheck > 0 ? Math.ceil(p.targetRevenue / p.avgCheck) : 0;
-  const visits = p.cr3 > 0 ? Math.ceil(sales / (p.cr3 / 100)) : 0;
-  const leads = p.cr2 > 0 ? Math.ceil(visits / (p.cr2 / 100)) : 0;
-  const spend = leads * p.cpl;
-  const impressions = p.cr1 > 0 ? Math.ceil(leads / (p.cr1 / 100)) : 0;
-  return { spend, impressions, clicks: leads, leads, followers: 0, visits, sales, revenue: p.targetRevenue };
-}
-
-function DecompInput({ label, value, onChange, suffix }: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</label>
-      <div className="flex items-center gap-1.5">
-        <Input type="number" value={value || ""} onChange={e => { const n = Number(e.target.value); if (!isNaN(n)) onChange(Math.max(0, n)); }}
-          className="h-8 text-xs font-mono tabular-nums bg-secondary/50 border-transparent focus:border-primary/40 transition-colors" />
-        {suffix && <span className="text-[10px] text-muted-foreground shrink-0">{suffix}</span>}
-      </div>
-    </div>
-  );
-}
-
-function DecompositionPanel({ decomp, onChange, decompMetrics, onApplyToPlan }: {
-  decomp: DecompPlan; onChange: (d: DecompPlan) => void; decompMetrics: ReturnType<typeof calcDecomp>; onApplyToPlan: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-accent/30 transition-colors">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <Calculator className="h-4 w-4 text-primary" />
-          </div>
-          <div className="text-left">
-            <p className="text-sm font-semibold text-foreground">Декомпозиция цели</p>
-            <p className="text-[11px] text-muted-foreground">
-              {fmt(decomp.targetRevenue)} ₸ / чек {fmt(decomp.avgCheck)} ₸ → {decompMetrics.sales} продаж · {decompMetrics.leads} лидов · {fmt(decompMetrics.spend)} ₸ бюджет
-            </p>
-          </div>
-        </div>
-        <span className="text-xs text-muted-foreground">{open ? "▼" : "▶"}</span>
-      </button>
-
-      {open && (
-        <div className="px-5 pb-5 border-t border-border/50">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 pt-4">
-            <DecompInput label="Целевая выручка" value={decomp.targetRevenue} onChange={v => onChange({ ...decomp, targetRevenue: v })} suffix="₸" />
-            <DecompInput label="Средний чек" value={decomp.avgCheck} onChange={v => onChange({ ...decomp, avgCheck: v })} suffix="₸" />
-            <DecompInput label="CPL" value={decomp.cpl} onChange={v => onChange({ ...decomp, cpl: v })} suffix="₸" />
-            <DecompInput label="CR: Показ→Лид" value={decomp.cr1} onChange={v => onChange({ ...decomp, cr1: v })} suffix="%" />
-            <DecompInput label="CR: Лид→Визит" value={decomp.cr2} onChange={v => onChange({ ...decomp, cr2: v })} suffix="%" />
-            <DecompInput label="CR: Визит→Продажа" value={decomp.cr3} onChange={v => onChange({ ...decomp, cr3: v })} suffix="%" />
-          </div>
-
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            {[
-              { label: "Показы", value: fmt(decompMetrics.impressions) },
-              { label: "Лиды", value: String(decompMetrics.leads) },
-              { label: "Визиты", value: String(decompMetrics.visits) },
-              { label: "Продажи", value: String(decompMetrics.sales) },
-              { label: "Бюджет", value: `${fmt(decompMetrics.spend)} ₸` },
-            ].map((s, i, arr) => (
-              <div key={s.label} className="flex items-center gap-2">
-                <div className="bg-secondary/60 rounded-lg px-3 py-1.5 text-center">
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{s.label}</p>
-                  <p className="text-sm font-bold text-foreground tabular-nums font-mono">{s.value}</p>
-                </div>
-                {i < arr.length - 1 && <span className="text-muted-foreground/30">→</span>}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button onClick={onApplyToPlan} className="gap-2 text-xs h-8">
-              <Target className="h-3.5 w-3.5" />Применить к ПЛАНУ
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ══════════════════════════════════════════════
    MAIN PAGE
    ══════════════════════════════════════════════ */
@@ -256,14 +102,7 @@ export default function ScoreboardPage() {
   const [rows, setRows] = useState<DailyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [planValues, setPlanValues] = useState<PlanValues>({ ...EMPTY_PLAN });
-  const [planDirty, setPlanDirty] = useState(false);
-  const [savingPlan, setSavingPlan] = useState(false);
   const { active } = useWorkspace();
-
-  // Decomposition
-  const [decomp, setDecomp] = useState<DecompPlan>(loadDecomp);
-  useEffect(() => { localStorage.setItem(DECOMP_KEY, JSON.stringify(decomp)); }, [decomp]);
-  const decompMetrics = useMemo(() => calcDecomp(decomp), [decomp]);
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
@@ -291,7 +130,7 @@ export default function ScoreboardPage() {
     finally { setLoading(false); }
   }, [dateFrom, dateTo]);
 
-  // Fetch monthly plan
+  // Fetch monthly plan (read-only, set from Finance page)
   const fetchPlan = useCallback(async () => {
     try {
       const { data } = await (supabase as any).from("monthly_plans").select("*")
@@ -311,7 +150,6 @@ export default function ScoreboardPage() {
       } else {
         setPlanValues({ ...EMPTY_PLAN });
       }
-      setPlanDirty(false);
     } catch { setPlanValues({ ...EMPTY_PLAN }); }
   }, [monthYear]);
 
@@ -325,55 +163,13 @@ export default function ScoreboardPage() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchDaily]);
 
-  // Update a single plan field
-  const updatePlanField = (key: PlanKey, value: number) => {
-    setPlanValues(prev => ({ ...prev, [key]: value }));
-    setPlanDirty(true);
-  };
-
-  // Save plan to monthly_plans via upsert
-  const savePlan = async () => {
-    setSavingPlan(true);
-    try {
-      const payload: Record<string, any> = { month_year: monthYear };
-      for (const [k, dbCol] of Object.entries(PLAN_DB_MAP)) {
-        payload[dbCol] = planValues[k as PlanKey];
-      }
-
-      // Check if exists
-      const { data: existing } = await (supabase as any).from("monthly_plans")
-        .select("id").eq("month_year", monthYear).limit(1);
-
-      if (existing && existing.length > 0) {
-        const { error } = await (supabase as any).from("monthly_plans")
-          .update(payload).eq("id", existing[0].id);
-        if (error) throw error;
-      } else {
-        const { error } = await (supabase as any).from("monthly_plans").insert(payload);
-        if (error) throw error;
-      }
-
-      setPlanDirty(false);
-      toast({ title: "План сохранён", description: `${MONTHS[monthIndex]} ${year}` });
-    } catch (e: unknown) {
-      toast({ title: "Ошибка", description: e instanceof Error ? e.message : "Не удалось сохранить", variant: "destructive" });
-    } finally { setSavingPlan(false); }
-  };
-
-  // Apply decomposition → plan
-  const applyDecompToPlan = () => {
-    setPlanValues({
-      spend: decompMetrics.spend,
-      impressions: decompMetrics.impressions,
-      clicks: decompMetrics.clicks,
-      leads: decompMetrics.leads,
-      followers: decompMetrics.followers,
-      visits: decompMetrics.visits,
-      sales: decompMetrics.sales,
-      revenue: decompMetrics.revenue,
-    });
-    setPlanDirty(true);
-  };
+  // Realtime for monthly_plans (auto-update when saved from Finance)
+  useEffect(() => {
+    const ch = supabase.channel("scoreboard_plan_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "monthly_plans" }, () => fetchPlan())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchPlan]);
 
   // Aggregated fact
   const fact = useMemo(() => rows.reduce(
@@ -391,6 +187,8 @@ export default function ScoreboardPage() {
     return src[key] ?? 0;
   };
 
+  const hasPlan = Object.values(planValues).some(v => v > 0);
+
   const topCards = [
     { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
     { label: "CPV", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
@@ -402,9 +200,6 @@ export default function ScoreboardPage() {
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
       <div className="space-y-6">
-        {/* Decomposition */}
-        <DecompositionPanel decomp={decomp} onChange={setDecomp} decompMetrics={decompMetrics} onApplyToPlan={applyDecompToPlan} />
-
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {loading
@@ -421,11 +216,8 @@ export default function ScoreboardPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={next}><ChevronRight className="h-4 w-4" /></Button>
           </div>
           <div className="flex items-center gap-2">
-            {planDirty && (
-              <Button onClick={savePlan} disabled={savingPlan} className="gap-2 text-xs h-8 animate-in fade-in">
-                {savingPlan ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                💾 Сохранить план
-              </Button>
+            {!hasPlan && (
+              <p className="text-xs text-muted-foreground/60 mr-2">План не задан — задайте в разделе Финансы → Декомпозиция</p>
             )}
             <Button variant="outline" className="gap-2 text-xs h-8 border-border/50">
               <Download className="h-3.5 w-3.5" />Экспорт
@@ -447,23 +239,20 @@ export default function ScoreboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* ── PLAN ROW (editable) ── */}
+                {/* ── PLAN ROW (read-only, from monthly_plans) ── */}
                 <TableRow className="bg-blue-500/[0.06] border-b border-border/10 hover:bg-blue-500/[0.08]">
                   {columns.map(col => (
-                    <TableCell key={col.key} className={`px-3 py-2 whitespace-nowrap ${col.key === "date" ? "text-left" : "text-right"}`}>
+                    <TableCell key={col.key} className={`px-3 py-3 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
-                        <span className="font-semibold text-blue-400 font-mono text-xs">🎯 ПЛАН ({MONTHS[monthIndex]})</span>
-                      ) : col.editable ? (
-                        <EditableCell
-                          value={planValues[col.key as PlanKey] ?? 0}
-                          onChange={v => updatePlanField(col.key as PlanKey, v)}
-                          onCommit={() => { /* auto-save on dirty indicator */ }}
-                        />
-                      ) : col.key === "cpl" ? (
-                        <span className="font-mono text-xs tabular-nums text-blue-400/80">
-                          {planValues.leads > 0 ? fmt(cplCalc(planValues.spend, planValues.leads)) : "—"}
+                        <span className="font-semibold text-blue-400">🎯 ПЛАН</span>
+                      ) : (
+                        <span className="text-blue-400/80 font-semibold">
+                          {getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
+                            ? fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))
+                            : "—"
+                          }
                         </span>
-                      ) : null}
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>

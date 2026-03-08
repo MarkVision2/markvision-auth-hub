@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { useRole } from "@/hooks/useRole";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank,
   BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp,
-  ChevronLeft, ChevronRight, ChevronDown, Receipt, Percent, Target, CircleDollarSign
+  ChevronLeft, ChevronRight, ChevronDown, Receipt, Percent, Target, CircleDollarSign, Loader2
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Area, AreaChart } from "recharts";
 
@@ -88,6 +89,12 @@ interface Product { name: string; check: number; share: number; }
 interface Expense { name: string; value: number; isPercent: boolean; }
 
 function DecompositionTab() {
+  const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  const now = new Date();
+  const [planMonthIndex, setPlanMonthIndex] = useState(now.getMonth());
+  const [planYear, setPlanYear] = useState(now.getFullYear());
+  const [savingPlan, setSavingPlan] = useState(false);
+
   const [mode, setMode] = useState<"revenue" | "profit">("revenue");
   const [targetRevenue, setTargetRevenue] = useState(1_000_000);
   const [targetProfit, setTargetProfit] = useState(200_000);
@@ -320,14 +327,67 @@ function DecompositionTab() {
           </Section>
         </div>
 
-        <div className="flex gap-3">
-          <Button className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl">
-            <Save className="h-4 w-4" /> Сохранить медиаплан
-          </Button>
-          <Button variant="ghost" className="h-11 text-sm gap-2 rounded-xl">
-            <Download className="h-4 w-4" /> Excel
-          </Button>
+        {/* Month selector + Save to plan */}
+        <div className="rounded-2xl bg-card p-5 space-y-4">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Сохранить план в Таблицу данных</p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <button onClick={() => { if (planMonthIndex === 0) { setPlanMonthIndex(11); setPlanYear(y => y - 1); } else setPlanMonthIndex(i => i - 1); }}
+                className="h-8 w-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
+              <span className="text-sm font-semibold text-foreground px-3 select-none min-w-[130px] text-center">{MONTHS_RU[planMonthIndex]} {planYear}</span>
+              <button onClick={() => { if (planMonthIndex === 11) { setPlanMonthIndex(0); setPlanYear(y => y + 1); } else setPlanMonthIndex(i => i + 1); }}
+                className="h-8 w-8 rounded-lg bg-secondary hover:bg-accent flex items-center justify-center transition-colors">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <Button
+              disabled={savingPlan}
+              onClick={async () => {
+                setSavingPlan(true);
+                try {
+                  const monthYear = `${planYear}-${String(planMonthIndex + 1).padStart(2, "0")}`;
+                  const payload: Record<string, any> = {
+                    month_year: monthYear,
+                    plan_spend: Math.round(calc.marketingSpend),
+                    plan_leads: Math.round(calc.leads),
+                    plan_visits: Math.round(calc.sales), // visits = sales in this model context
+                    plan_sales: Math.round(calc.sales),
+                    plan_revenue: Math.round(calc.revenue),
+                  };
+
+                  const { data: existing } = await (supabase as any).from("monthly_plans")
+                    .select("id").eq("month_year", monthYear).limit(1);
+
+                  if (existing && existing.length > 0) {
+                    const { error } = await (supabase as any).from("monthly_plans")
+                      .update(payload).eq("id", existing[0].id);
+                    if (error) throw error;
+                  } else {
+                    const { error } = await (supabase as any).from("monthly_plans").insert(payload);
+                    if (error) throw error;
+                  }
+
+                  toast({ title: "План сохранён!", description: `${MONTHS_RU[planMonthIndex]} ${planYear} → Таблица показателей` });
+                } catch (e: unknown) {
+                  toast({ title: "Ошибка", description: e instanceof Error ? e.message : "Не удалось сохранить", variant: "destructive" });
+                } finally { setSavingPlan(false); }
+              }}
+              className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl"
+            >
+              {savingPlan ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Сохранить план на {MONTHS_RU[planMonthIndex]}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Рассчитано: {fmt(Math.round(calc.leads))} лидов · {fmt(Math.round(calc.sales))} продаж · {fmtCurrency(Math.round(calc.marketingSpend))} бюджет · {fmtCurrency(Math.round(calc.revenue))} выручка
+          </p>
         </div>
+
+        <Button variant="ghost" className="h-11 text-sm gap-2 rounded-xl w-full">
+          <Download className="h-4 w-4" /> Экспорт в Excel
+        </Button>
       </div>
     </div>
   );
