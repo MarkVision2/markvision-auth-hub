@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"; // v3
+import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +19,27 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-const accounts = [
-  { id: "1", name: "Клиника AIVA" },
-  { id: "2", name: "Beauty Lab" },
-  { id: "3", name: "NeoVision Eye" },
-  { id: "4", name: "Дентал Тайм" },
-];
+interface ClientConfig {
+  id: string;
+  client_name: string;
+  whatsapp_number: string | null;
+  fb_pixel_id: string | null;
+  pixel_event: string | null;
+  website_url: string | null;
+  ad_account_id: string | null;
+  page_id: string | null;
+  page_name: string | null;
+  fb_token: string | null;
+}
 
 type Objective = "whatsapp" | "website" | "leadform";
 
+const N8N_WEBHOOK_URL = "https://n8n.zapoinov.com/webhook/ai-target-launch";
+
 export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
-  const [account, setAccount] = useState("");
+  const [clients, setClients] = useState<ClientConfig[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [objective, setObjective] = useState<Objective>("whatsapp");
   const [utmTags, setUtmTags] = useState("?utm_source=meta&utm_medium=cpc&utm_campaign=");
   const [siteUrl, setSiteUrl] = useState("");
@@ -45,25 +55,49 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [creativeFile, setCreativeFile] = useState<File | null>(null);
   const [creativePreview, setCreativePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [launching, setLaunching] = useState(false);
+  const { toast } = useToast();
+
+  const selectedClient = clients.find((c) => c.id === selectedClientId);
+
+  // Load clients from Supabase
+  useEffect(() => {
+    if (!open) return;
+    setLoadingClients(true);
+    (supabase as any)
+      .from("clients_config")
+      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token")
+      .eq("is_active", true)
+      .order("client_name")
+      .then(({ data, error }: any) => {
+        if (!error && data) setClients(data);
+        setLoadingClients(false);
+      });
+  }, [open]);
+
+  // Auto-fill pixel/site when client changes
+  useEffect(() => {
+    if (selectedClient) {
+      if (selectedClient.fb_pixel_id) setPixel(selectedClient.fb_pixel_id);
+      if (selectedClient.pixel_event) setPixelEvent(selectedClient.pixel_event);
+      if (selectedClient.website_url) setSiteUrl(selectedClient.website_url);
+    }
+  }, [selectedClientId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setCreativeFile(file);
-    const url = URL.createObjectURL(file);
-    setCreativePreview(url);
+    setCreativePreview(URL.createObjectURL(file));
   };
-
-  const [launching, setLaunching] = useState(false);
-  const { toast } = useToast();
 
   const handleLaunch = async () => {
     if (!creativeFile) {
       toast({ title: "Загрузите креатив", description: "Выберите фото или видео перед запуском", variant: "destructive" });
       return;
     }
-    if (!account) {
-      toast({ title: "Выберите кабинет", variant: "destructive" });
+    if (!selectedClient) {
+      toast({ title: "Выберите клиента", variant: "destructive" });
       return;
     }
     setLaunching(true);
@@ -80,29 +114,44 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       const { data: urlData } = supabase.storage.from("content_assets").getPublicUrl(filePath);
       const mediaUrl = urlData?.publicUrl || "";
 
-      // 2. Build payload
-      const selectedAccount = accounts.find((a) => a.id === account);
+      // 2. Build payload matching n8n AI-targetolog workflow
+      const isVideo = creativeFile.type.startsWith("video/");
       const payload = {
-        ad_account_id: account,
-        ad_account_name: selectedAccount?.name || "",
-        objective: objective === "whatsapp" ? "WhatsApp" : objective === "website" ? "Website Leads" : "Lead Form",
-        utm_tags: objective === "website" ? utmTags : "",
+        // Client identification (used by Supabase lookup in n8n)
+        client_name: selectedClient.client_name,
+        client_id: selectedClient.id,
+        ad_account_id: selectedClient.ad_account_id || "",
+        page_id: selectedClient.page_id || "",
+        fb_token: selectedClient.fb_token || "",
+
+        // Media
+        media_url: mediaUrl,
+        media_type: isVideo ? "video" : "photo",
+        format: creativeTab === "feed" ? "1:1" : "9:16",
+
+        // Campaign config
+        objective: objective === "whatsapp" ? "OUTCOME_ENGAGEMENT" : objective === "website" ? "OUTCOME_TRAFFIC" : "OUTCOME_LEADS",
+        objective_label: objective === "whatsapp" ? "WhatsApp" : objective === "website" ? "Website" : "Lead Form",
+        whatsapp_number: objective === "whatsapp" ? (selectedClient.whatsapp_number || "") : "",
         site_url: objective === "website" ? siteUrl : "",
         pixel_id: objective === "website" ? pixel : "",
         pixel_event: objective === "website" ? pixelEvent : "",
+        utm_tags: objective === "website" ? utmTags : "",
         lead_form_id: objective === "leadform" ? leadForm : "",
-        whatsapp_number: objective === "whatsapp" ? (whatsappByAccount[account] || "") : "",
-        budget_type: budgetType === "daily" ? "Daily" : "Lifetime",
+
+        // Budget
+        budget_type: budgetType === "daily" ? "DAILY" : "LIFETIME",
         budget_amount: Number(budgetAmount.replace(/\s/g, "")) || 0,
         start_date: startDate ? format(startDate, "yyyy-MM-dd") : "",
         end_date: endDate ? format(endDate, "yyyy-MM-dd") : "",
-        schedule_time: launchTime === "now" ? "Now" : "Next Day",
-        media_url: mediaUrl,
+        schedule_time: launchTime,
+
+        // Source indicator (so n8n knows it's from webhook, not telegram)
+        source: "webhook",
       };
 
       // 3. POST to n8n webhook
-      const webhookUrl = import.meta.env.VITE_N8N_AD_WEBHOOK_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
-      const res = await fetch(webhookUrl, {
+      const res = await fetch(N8N_WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -110,39 +159,21 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
       if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
 
-      toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Кабинет: ${selectedAccount?.name}` });
+      toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Клиент: ${selectedClient.client_name}` });
       onOpenChange(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Ошибка отправки";
-      toast({ title: "❌ Ошибка отправки данных", description: msg, variant: "destructive" });
+      toast({ title: "❌ Ошибка отправки", description: msg, variant: "destructive" });
     } finally {
       setLaunching(false);
     }
   };
-
-  const pixels = [
-    { id: "px_1", name: "AIVA — Основной пиксель" },
-    { id: "px_2", name: "NeoVision — Сайт" },
-    { id: "px_3", name: "Дентал Тайм — Landing" },
-  ];
-
-  const pixelEvents = [
-    { id: "Lead", name: "Lead" },
-    { id: "Contact", name: "Contact" },
-  ];
 
   const leadForms = [
     { id: "form_1", name: "Запись на консультацию" },
     { id: "form_2", name: "Обратный звонок" },
     { id: "form_3", name: "Получить прайс" },
   ];
-
-  const whatsappByAccount: Record<string, string> = {
-    "1": "+7 701 123-45-67",
-    "2": "+7 702 987-65-43",
-    "3": "+7 700 555-12-34",
-    "4": "+7 700 333-22-11",
-  };
 
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
@@ -160,7 +191,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               Создать кампанию
             </SheetTitle>
             <SheetDescription className="text-xs text-muted-foreground">
-              Настройте параметры и отправьте на запуск
+              Настройте параметры и отправьте на запуск через Webhook
             </SheetDescription>
           </SheetHeader>
         </div>
@@ -173,17 +204,22 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             </h3>
 
             <div className="space-y-2">
-              <Label className="text-xs text-foreground/70">Рекламный кабинет</Label>
-              <Select value={account} onValueChange={setAccount}>
+              <Label className="text-xs text-foreground/70">Клиент</Label>
+              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
-                  <SelectValue placeholder="Выберите кабинет" />
+                  <SelectValue placeholder={loadingClients ? "Загрузка..." : "Выберите клиента"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id} className="text-xs">{a.name}</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id} className="text-xs">{c.client_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedClient?.ad_account_id && (
+                <p className="text-[10px] text-muted-foreground/60 font-mono">
+                  Ad Account: {selectedClient.ad_account_id}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -210,28 +246,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">Ссылка на сайт</Label>
-                  <Input
-                    value={siteUrl}
-                    onChange={(e) => setSiteUrl(e.target.value)}
-                    className="bg-secondary/30 border-border text-xs h-9"
-                    placeholder="https://example.com/landing"
-                  />
+                  <Input value={siteUrl} onChange={(e) => setSiteUrl(e.target.value)} className="bg-secondary/30 border-border text-xs h-9" placeholder="https://example.com/landing" />
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">Пиксель Meta</Label>
-                  <Select value={pixel} onValueChange={setPixel}>
-                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
-                      <SelectValue placeholder="Выберите пиксель" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pixels.map((p) => (
-                        <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input value={pixel} onChange={(e) => setPixel(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono" placeholder="ID пикселя" />
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">Событие оптимизации</Label>
                   <Select value={pixelEvent} onValueChange={setPixelEvent}>
@@ -239,22 +259,15 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                       <SelectValue placeholder="Выберите событие" />
                     </SelectTrigger>
                     <SelectContent>
-                      {pixelEvents.map((e) => (
-                        <SelectItem key={e.id} value={e.id} className="text-xs">{e.name}</SelectItem>
+                      {["Lead", "Contact", "Purchase", "CompleteRegistration"].map((e) => (
+                        <SelectItem key={e} value={e} className="text-xs">{e}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground/60">Список событий синхронизируется с Meta Pixel</p>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">UTM-метки</Label>
-                  <Input
-                    value={utmTags}
-                    onChange={(e) => setUtmTags(e.target.value)}
-                    className="bg-secondary/30 border-border text-xs h-9 font-mono"
-                    placeholder="?utm_source=meta..."
-                  />
+                  <Input value={utmTags} onChange={(e) => setUtmTags(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono" placeholder="?utm_source=meta..." />
                 </div>
               </div>
             )}
@@ -273,7 +286,6 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground/60">Формы синхронизируются из Meta Business Suite</p>
                 </div>
               </div>
             )}
@@ -281,14 +293,14 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             {objective === "whatsapp" && (
               <div className="space-y-2 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <Label className="text-xs text-foreground/70">Привязанный WhatsApp</Label>
-                {account ? (
+                {selectedClient ? (
                   <div className="rounded-lg border border-border bg-secondary/20 p-3 flex items-center justify-between">
-                    <span className="text-[11px] text-muted-foreground">{accounts.find(a => a.id === account)?.name}</span>
-                    <span className="text-xs font-mono text-primary">{whatsappByAccount[account] || "—"}</span>
+                    <span className="text-[11px] text-muted-foreground">{selectedClient.client_name}</span>
+                    <span className="text-xs font-mono text-primary">{selectedClient.whatsapp_number || "Не указан"}</span>
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground/60 rounded-lg border border-dashed border-border p-3 text-center">
-                    Сначала выберите кабинет
+                    Сначала выберите клиента
                   </p>
                 )}
               </div>
@@ -305,23 +317,14 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
             <Tabs value={budgetType} onValueChange={(v) => setBudgetType(v as "daily" | "lifetime")}>
               <TabsList className="bg-secondary/30 border border-border h-8">
-                <TabsTrigger value="daily" className="text-[11px] h-6 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                  Дневной
-                </TabsTrigger>
-                <TabsTrigger value="lifetime" className="text-[11px] h-6 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
-                  На всё время
-                </TabsTrigger>
+                <TabsTrigger value="daily" className="text-[11px] h-6 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Дневной</TabsTrigger>
+                <TabsTrigger value="lifetime" className="text-[11px] h-6 data-[state=active]:bg-primary/20 data-[state=active]:text-primary">На всё время</TabsTrigger>
               </TabsList>
 
               <TabsContent value="daily" className="mt-3 space-y-2">
                 <Label className="text-xs text-foreground/70">Дневной бюджет</Label>
                 <div className="relative">
-                  <Input
-                    value={budgetAmount}
-                    onChange={(e) => setBudgetAmount(e.target.value)}
-                    className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8"
-                    placeholder="5 000"
-                  />
+                  <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="5 000" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">₸</span>
                 </div>
               </TabsContent>
@@ -330,12 +333,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">Общий бюджет</Label>
                   <div className="relative">
-                    <Input
-                      value={budgetAmount}
-                      onChange={(e) => setBudgetAmount(e.target.value)}
-                      className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8"
-                      placeholder="150 000"
-                    />
+                    <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="150 000" />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">₸</span>
                   </div>
                 </div>
@@ -404,18 +402,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               Креатив и превью
             </h3>
 
-            {/* Upload zone */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 transition-colors bg-secondary/10 p-6 text-center cursor-pointer"
-            >
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" className="hidden" onChange={handleFileSelect} />
+            <div onClick={() => fileInputRef.current?.click()} className="rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 transition-colors bg-secondary/10 p-6 text-center cursor-pointer">
               {creativePreview ? (
                 <div className="space-y-2">
                   {creativeFile?.type.startsWith("video/") ? (
@@ -434,40 +422,27 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               )}
             </div>
 
-            {/* Preview tabs */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setCreativeTab("feed")}
-                  className={cn(
-                    "text-[11px] font-medium px-3 py-1 rounded-md transition-all",
-                    creativeTab === "feed"
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground/70"
-                  )}
-                >
-                  Лента (1:1)
-                </button>
-                <button
-                  onClick={() => setCreativeTab("stories")}
-                  className={cn(
-                    "text-[11px] font-medium px-3 py-1 rounded-md transition-all",
-                    creativeTab === "stories"
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground/70"
-                  )}
-                >
-                  Stories/Reels (9:16)
-                </button>
+                {(["feed", "stories"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setCreativeTab(tab)}
+                    className={cn(
+                      "text-[11px] font-medium px-3 py-1 rounded-md transition-all",
+                      creativeTab === tab ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground/70"
+                    )}
+                  >
+                    {tab === "feed" ? "Лента (1:1)" : "Stories/Reels (9:16)"}
+                  </button>
+                ))}
               </div>
 
-              {/* Phone mockup */}
               <div className="flex justify-center">
                 <div className={cn(
                   "rounded-2xl border border-border bg-secondary/20 overflow-hidden relative",
                   creativeTab === "feed" ? "w-48 h-48" : "w-32 h-56"
                 )}>
-                  {/* Crop guidelines */}
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-muted-foreground/15" style={{ left: `${(i + 1) * 25}%` }} />
@@ -509,7 +484,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             {launching ? "Загрузка..." : "Отправить на запуск AI"}
           </Button>
           <p className="text-[10px] text-center text-muted-foreground/60">
-            Креатив загружается в Storage, данные отправляются в n8n webhook
+            Webhook → n8n AI-Targetolog · Media → Supabase Storage
           </p>
         </div>
       </SheetContent>
