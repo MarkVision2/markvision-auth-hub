@@ -60,6 +60,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        status: {
+          good: "hsl(var(--status-good))",
+          warning: "hsl(var(--status-warning))",
+          critical: "hsl(var(--status-critical))",
+          ai: "hsl(var(--status-ai))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
