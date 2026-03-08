@@ -481,7 +481,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             onClick={handleLaunch}
           >
             {launching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
-            {launching ? "Загрузка..." : "Отправить на запуск AI"}
+            {launching ? "Отправка в Meta API..." : "🚀 Отправить на запуск AI"}
           </Button>
           <p className="text-[10px] text-center text-muted-foreground/60">
             Webhook → n8n AI-Targetolog · Media → Supabase Storage
