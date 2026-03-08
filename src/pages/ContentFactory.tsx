@@ -202,11 +202,32 @@ export default function ContentFactory() {
     }
   };
 
+  const pipelineSteps = [
+    { key: "analyze", label: "Обработка запроса", icon: "🔍" },
+    { key: "generate", label: "Создание изображения", icon: "🎨" },
+    { key: "text", label: "Добавление текста", icon: "✍️" },
+    { key: "prepare", label: "Подготовка к загрузке", icon: "📦" },
+    { key: "done", label: "Отправлено в группу", icon: "✅" },
+  ];
+
+  const getActiveStep = (): number => {
+    if (!task) return -1;
+    const t = (task.progress_text || "").toLowerCase();
+    if (task.status === "completed") return 4;
+    if (t.includes("отправ") || t.includes("загруз") || t.includes("готов")) return 3;
+    if (t.includes("текст") || t.includes("шрифт") || t.includes("overlay")) return 2;
+    if (t.includes("генер") || t.includes("render") || t.includes("изображ") || t.includes("créat") || t.includes("рендер")) return 1;
+    if (task.status === "processing") return 1;
+    if (task.status === "pending") return 0;
+    return 0;
+  };
+
+  const activeStep = getActiveStep();
+
   const progressPercent =
     !task ? 0
-    : task.status === "pending" ? 10
-    : task.status === "processing" ? 60
     : task.status === "completed" ? 100
+    : activeStep >= 0 ? Math.min(95, ((activeStep + 1) / pipelineSteps.length) * 100)
     : 0;
 
   // ---- RENDER ----
@@ -295,62 +316,95 @@ export default function ContentFactory() {
             animate={{ opacity: 1, y: 0 }}
             className="rounded-xl border border-border bg-card p-8 space-y-8"
           >
-            {/* Glowing orb animation */}
-            <div className="flex justify-center">
-              <div className="relative">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.15, 1],
-                    opacity: [0.6, 1, 0.6],
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                  className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center"
-                >
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.8, 1, 0.8],
-                    }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="w-16 h-16 rounded-full bg-primary/40 flex items-center justify-center"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-primary shadow-[0_0_30px_hsl(var(--primary)/0.5)]" />
-                  </motion.div>
-                </motion.div>
-              </div>
-            </div>
-
             {/* Progress bar */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Progress
                 value={progressPercent}
-                className="h-2.5 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-1000"
+                className="h-2 bg-secondary/40 [&>div]:bg-primary [&>div]:transition-all [&>div]:duration-1000"
               />
-              <div className="flex items-center justify-between">
-                <AnimatePresence mode="wait">
-                  <motion.p
-                    key={task.progress_text}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="text-sm font-medium text-foreground"
-                  >
-                    {task.progress_text || "Запуск завода..."}
-                  </motion.p>
-                </AnimatePresence>
-                <span className="text-xs text-muted-foreground tabular-nums">{progressPercent}%</span>
+              <div className="flex justify-between">
+                <span className="text-xs text-muted-foreground">Прогресс</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{Math.round(progressPercent)}%</span>
               </div>
             </div>
 
-            {task.status === "processing" && (
+            {/* Pipeline steps */}
+            <div className="space-y-1">
+              {pipelineSteps.map((step, i) => {
+                const isDone = i < activeStep || task.status === "completed";
+                const isActive = i === activeStep && task.status !== "completed";
+                const isPending = i > activeStep && task.status !== "completed";
+
+                return (
+                  <motion.div
+                    key={step.key}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.08 }}
+                    className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${
+                      isActive ? "bg-primary/10 border border-primary/20" : isDone ? "bg-secondary/30" : "opacity-40"
+                    }`}
+                  >
+                    {/* Status indicator */}
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-base">
+                      {isDone ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-6 h-6 rounded-full bg-primary flex items-center justify-center"
+                        >
+                          <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
+                        </motion.div>
+                      ) : isActive ? (
+                        <motion.div
+                          animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center"
+                        >
+                          <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
+                        </motion.div>
+                      ) : (
+                        <span className="text-sm">{step.icon}</span>
+                      )}
+                    </div>
+
+                    {/* Label */}
+                    <span className={`text-sm font-medium ${
+                      isDone ? "text-primary" : isActive ? "text-foreground" : "text-muted-foreground"
+                    }`}>
+                      {step.label}
+                    </span>
+
+                    {/* Active badge */}
+                    {isActive && (
+                      <motion.span
+                        animate={{ opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="ml-auto text-[10px] font-medium text-primary tracking-wider uppercase"
+                      >
+                        в процессе
+                      </motion.span>
+                    )}
+                    {isDone && (
+                      <span className="ml-auto text-[10px] font-medium text-primary/60">готово</span>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            {/* Status text from backend */}
+            <AnimatePresence mode="wait">
               <motion.p
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="text-center text-sm text-muted-foreground"
+                key={task.progress_text}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="text-center text-xs text-muted-foreground"
               >
-                AI рендерит материалы...
+                {task.progress_text || "Запуск завода..."}
               </motion.p>
-            )}
+            </AnimatePresence>
           </motion.div>
         </div>
       </DashboardLayout>
