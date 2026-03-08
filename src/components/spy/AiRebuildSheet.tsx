@@ -45,7 +45,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
             {/* Two columns */}
             <div className="grid md:grid-cols-2 gap-0 md:gap-0">
               {/* LEFT — Original */}
-              <div className="p-6 border-b md:border-b-0 md:border-r border-white/[0.06]">
+              <div className="p-6 border-b md:border-b-0 md:border-r border-border">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="h-6 w-6 rounded-md bg-destructive/10 flex items-center justify-center">
                     <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
