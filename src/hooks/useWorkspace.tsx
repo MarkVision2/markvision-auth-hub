@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Workspace {
   id: string;
@@ -9,12 +10,7 @@ export interface Workspace {
   clientName?: string;
 }
 
-const WORKSPACES: Workspace[] = [
-  { id: "hq", name: "MarkVision HQ", emoji: "🏢", type: "agency" },
-  { id: "clinic-aiva", name: "Клиника AIVA", emoji: "🏥", type: "client", clientName: "Клиника AIVA" },
-  { id: "kitarov", name: "Kitarov Clinic", emoji: "🦷", type: "client", clientName: "Kitarov Clinic" },
-  { id: "spine-tech", name: "Технология позвоночника", emoji: "✨", type: "client", clientName: "Технология позвоночника" },
-];
+const HQ: Workspace = { id: "hq", name: "MarkVision HQ", emoji: "🏢", type: "agency" };
 
 interface WorkspaceContextValue {
   workspaces: Workspace[];
@@ -25,12 +21,39 @@ interface WorkspaceContextValue {
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
+const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState("hq");
-  const active = WORKSPACES.find(w => w.id === activeId) || WORKSPACES[0];
+  const [clientWorkspaces, setClientWorkspaces] = useState<Workspace[]>([]);
+
+  useEffect(() => {
+    async function fetchClients() {
+      const { data } = await supabase
+        .from("clients_config")
+        .select("id, client_name")
+        .eq("project_id", PROJECT_ID)
+        .eq("is_active", true)
+        .order("client_name");
+
+      if (data) {
+        setClientWorkspaces(data.map(c => ({
+          id: c.id,
+          name: c.client_name,
+          emoji: "🦷",
+          type: "client" as const,
+          clientName: c.client_name,
+        })));
+      }
+    }
+    fetchClients();
+  }, []);
+
+  const workspaces = [HQ, ...clientWorkspaces];
+  const active = workspaces.find(w => w.id === activeId) || HQ;
 
   return (
-    <WorkspaceContext.Provider value={{ workspaces: WORKSPACES, active, setActiveId, isAgency: active.type === "agency" }}>
+    <WorkspaceContext.Provider value={{ workspaces, active, setActiveId, isAgency: active.type === "agency" }}>
       {children}
     </WorkspaceContext.Provider>
   );
