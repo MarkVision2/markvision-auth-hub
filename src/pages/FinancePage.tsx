@@ -613,12 +613,12 @@ function AgencyTab() {
               <tr className="border-b border-border/30">
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Клиент</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Услуги</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 px-4">Оплата</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 px-4">Расходы</th>
-                <th className="text-right text-xs font-medium text-muted-foreground py-3 px-4">Прибыль</th>
-                <th className="text-center text-xs font-medium text-muted-foreground py-3 px-2">Маржа</th>
-                <th className="text-center text-xs font-medium text-muted-foreground py-3 px-2">Оплата до</th>
-                <th className="text-center text-xs font-medium text-muted-foreground py-3 px-2">Статус</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Оплата</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Расходы</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Прибыль</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Маржа</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Оплата до</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Статус</th>
                 <th className="py-3 px-1" />
               </tr>
             </thead>
