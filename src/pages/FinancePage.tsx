@@ -249,7 +249,7 @@ function DecompositionTab() {
                 { label: "Выручка", value: fmt(calc.revenue), sub: null, highlight: true },
               ].map((step, i, arr) => (
                 <div key={step.label} className="flex items-center gap-3 flex-1">
-                  <div className={`rounded-xl p-4 flex-1 text-center border transition-colors ${step.highlight ? "border-primary/30 bg-primary/[0.06]" : "bg-secondary/40 border-border/30"}`}>
+                  <div className={`rounded-xl p-4 flex-1 text-center border transition-colors ${step.highlight ? "border-primary/30 bg-primary/[0.06]" : "bg-secondary/40 border-border/10"}`}>
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
                     <p className={`text-lg font-bold tabular-nums mt-1.5 ${step.highlight ? "text-primary" : "text-foreground"}`}>{step.value}</p>
                     {step.sub && <p className="text-[11px] text-muted-foreground mt-1">{step.sub}</p>}
