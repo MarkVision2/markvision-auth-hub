@@ -44,6 +44,7 @@ const navGroups = [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
       { title: "Финансы", path: "/finance", icon: Coins },
       { title: "AI Отчётность", path: "/ai-reports", icon: FileBarChart },
+      { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
     ],
   },
 ];
