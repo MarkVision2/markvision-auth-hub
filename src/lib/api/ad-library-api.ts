@@ -1,7 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const N8N_BASE = "https://n8n.zapoinov.com/webhook";
-
 export interface RebuildResult {
   weaknesses: string;
   improved_headline: string;
@@ -18,24 +16,20 @@ export interface ScrapedAd {
   is_active?: boolean;
 }
 
-// 1. Trigger competitor scrape via n8n → Apify → inserts into competitor_ads
-// This is ASYNC: data arrives via Supabase Realtime
+// 1. Trigger competitor scrape via Edge Function (authenticated)
 export async function triggerCompetitorScrape(handle: string): Promise<void> {
   const cleanHandle = handle.replace("@", "").trim();
 
-  const res = await fetch(`${N8N_BASE}/ad-library-scrape`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "spy_competitor",
-      competitor_handle: cleanHandle,
-      competitor_url: cleanHandle.startsWith("http") ? cleanHandle : undefined,
-    }),
+  const { data, error } = await supabase.functions.invoke("scrape-competitor-ads", {
+    body: { query: cleanHandle },
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    throw new Error(`Scrape trigger failed (${res.status}): ${text}`);
+  if (error) {
+    throw new Error(`Scrape trigger failed: ${error.message}`);
+  }
+
+  if (data && !data.success) {
+    throw new Error(data.error || "Scrape failed");
   }
 }
 
@@ -53,21 +47,21 @@ export async function searchLocalAds(query: string) {
   return data || [];
 }
 
-// 3. AI Rebuild ad text via n8n (sync — returns improved version)
-export async function rebuildAdText(originalText: string): Promise<RebuildResult> {
-  const res = await fetch(`${N8N_BASE}/ad-library-rebuild`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ original_text: originalText }),
+// 3. AI Rebuild ad text via Edge Function (authenticated)
+export async function rebuildAdText(originalText: string, advertiserName?: string): Promise<RebuildResult> {
+  const { data, error } = await supabase.functions.invoke("rebuild-ad-text", {
+    body: { ad_copy: originalText, advertiser_name: advertiserName },
   });
-  if (!res.ok) throw new Error("Rebuild failed");
-  const json = await res.json();
-  const data = json.data || json;
+
+  if (error) throw new Error(`Rebuild failed: ${error.message}`);
+  if (!data?.success) throw new Error(data?.error || "Rebuild failed");
+
+  const result = data.data;
   return {
-    weaknesses: data.weaknesses || "",
-    improved_headline: data.improved_headline || "",
-    new_script: data.new_script || "",
-    cta: data.cta || "",
-    format_tip: data.format_tip || "",
+    weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses.join("; ") : (result.weaknesses || ""),
+    improved_headline: result.improved_headline || "",
+    new_script: result.new_script || "",
+    cta: result.cta || "",
+    format_tip: result.suggested_format || "",
   };
 }
