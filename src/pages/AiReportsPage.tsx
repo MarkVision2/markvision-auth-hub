@@ -406,8 +406,9 @@ export default function AiReportsPage() {
 
             <div className="flex items-center gap-1">
               <AutomationDialog />
-              <Button className="gap-2 text-sm h-9 font-semibold">
-                <Download className="h-4 w-4" />Скачать PDF
+              <Button className="gap-2 text-sm h-9 font-semibold" onClick={handleDownloadPdf} disabled={downloading || loading || isEmpty}>
+                {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {downloading ? "Генерация…" : "Скачать PDF"}
               </Button>
             </div>
           </div>
