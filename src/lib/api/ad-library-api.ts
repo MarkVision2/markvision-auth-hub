@@ -10,20 +10,6 @@ export interface RebuildResult {
   format_tip: string;
 }
 
-export interface SiteAnalysisResult {
-  clinic_name: string;
-  services: string[];
-  prices: { service: string; price: string }[];
-  offers: string[];
-  unique_selling_points: string[];
-  tone_of_voice: string;
-  weaknesses: string[];
-  contact_info: { phone?: string; address?: string; instagram?: string };
-  recommendation: string;
-  screenshot_url: string | null;
-  site_url: string;
-}
-
 export interface ScrapedAd {
   advertiser_name: string;
   ad_copy: string;
@@ -32,29 +18,34 @@ export interface ScrapedAd {
   is_active?: boolean;
 }
 
-// 1. Scrape competitor ads via Supabase Edge Function (Firecrawl + AI)
-export async function scrapeCompetitorAds(input: { url?: string; query?: string; country?: string }): Promise<{ success: boolean; count: number; ads: ScrapedAd[]; error?: string }> {
-  const { data, error } = await supabase.functions.invoke("scrape-competitor-ads", {
-    body: input,
+// 1. Trigger competitor scrape via n8n → Apify → inserts into competitor_ads
+// This is ASYNC: data arrives via Supabase Realtime
+export async function triggerCompetitorScrape(handle: string): Promise<void> {
+  const cleanHandle = handle.replace("@", "").trim();
+
+  const res = await fetch(`${N8N_BASE}/ad-library-scrape`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "spy_competitor",
+      competitor_handle: cleanHandle,
+      competitor_url: cleanHandle.startsWith("http") ? cleanHandle : undefined,
+    }),
   });
 
-  if (error) {
-    throw new Error(error.message || "Edge function call failed");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "Unknown error");
+    throw new Error(`Scrape trigger failed (${res.status}): ${text}`);
   }
-
-  if (!data?.success) {
-    throw new Error(data?.error || "Scraping failed");
-  }
-
-  return data;
 }
 
 // 2. Search local DB for existing competitor ads
 export async function searchLocalAds(query: string) {
+  const clean = query.replace("@", "").trim();
   const { data, error } = await supabase
     .from("competitor_ads")
     .select("*")
-    .or(`advertiser_name.ilike.%${query}%,page_name.ilike.%${query}%,ad_copy.ilike.%${query}%`)
+    .or(`advertiser_name.ilike.%${clean}%,page_name.ilike.%${clean}%,ad_copy.ilike.%${clean}%`)
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -79,16 +70,4 @@ export async function rebuildAdText(originalText: string): Promise<RebuildResult
     cta: data.cta || "",
     format_tip: data.format_tip || "",
   };
-}
-
-// 4. Analyze competitor site (sync)
-export async function analyzeCompetitorSite(siteUrl: string): Promise<SiteAnalysisResult> {
-  const res = await fetch(`${N8N_BASE}/ad-library-scrape-site`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ site_url: siteUrl }),
-  });
-  if (!res.ok) throw new Error("Site analysis failed");
-  const json = await res.json();
-  return json.data || json;
 }
