@@ -137,9 +137,9 @@ function DecompositionTab() {
   ];
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="space-y-6 max-w-5xl">
       {/* ── Input Fields (Horizontal cards) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 },
           { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
@@ -147,48 +147,48 @@ function DecompositionTab() {
           { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
           { label: "💵 Стоимость лида (CPL)", value: cpl, onChange: setCpl, suffix: "₸", step: 100 },
         ].map((field) => (
-          <div key={field.label} className="rounded-2xl border border-border bg-card p-4 space-y-2">
-            <label className="text-[11px] text-muted-foreground font-medium">{field.label}</label>
+          <div key={field.label} className="rounded-xl border border-border bg-card p-4 space-y-2">
+            <label className="text-[11px] text-muted-foreground font-medium leading-tight">{field.label}</label>
             <div className="relative">
               <Input
                 type="number"
                 value={field.value || ""}
                 onChange={(e) => { const n = Number(e.target.value); if (!isNaN(n)) field.onChange(Math.max(0, n)); }}
                 step={field.step}
-                className="h-11 text-lg font-bold tabular-nums bg-secondary/50 border-transparent rounded-xl pr-10 focus:border-primary/40"
+                className="h-10 text-base font-bold tabular-nums bg-secondary/50 border-transparent rounded-lg pr-8 focus:border-primary/40"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">{field.suffix}</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">{field.suffix}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* ── Visual Reverse Funnel ── */}
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-6 flex items-center gap-2">
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
           <Calculator className="h-4 w-4 text-primary" />
           Обратная воронка — от выручки к бюджету
         </h3>
         <div className="flex items-stretch gap-0">
           {funnelSteps.map((step, i) => (
             <div key={step.label} className="flex items-center flex-1">
-              <div className={`rounded-2xl p-5 flex-1 text-center transition-all ${
+              <div className={`rounded-xl p-4 flex-1 text-center transition-all ${
                 step.accent
-                  ? "border-2 border-primary/30 bg-primary/[0.06] shadow-lg shadow-primary/5"
+                  ? "border-2 border-primary/30 bg-primary/[0.06]"
                   : "border border-border bg-secondary/20"
               }`}>
-                <div className={`h-10 w-10 rounded-xl mx-auto mb-3 flex items-center justify-center ${
+                <div className={`h-9 w-9 rounded-lg mx-auto mb-2.5 flex items-center justify-center ${
                   step.accent ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
                 }`}>
-                  <step.icon className="h-5 w-5" />
+                  <step.icon className="h-4 w-4" />
                 </div>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
-                <p className={`text-2xl font-black tabular-nums mt-2 font-mono ${step.accent ? "text-primary" : "text-foreground"}`}>{step.value}</p>
-                {step.sub && <p className="text-[11px] text-muted-foreground mt-1.5">{step.sub}</p>}
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium leading-tight">{step.label}</p>
+                <p className={`text-lg font-bold tabular-nums mt-1.5 font-mono ${step.accent ? "text-primary" : "text-foreground"}`}>{step.value}</p>
+                {step.sub && <p className="text-[10px] text-muted-foreground mt-1">{step.sub}</p>}
               </div>
               {i < funnelSteps.length - 1 && (
-                <div className="shrink-0 px-2">
-                  <ArrowRight className="h-5 w-5 text-muted-foreground/30" />
+                <div className="shrink-0 px-1.5">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground/30" />
                 </div>
               )}
             </div>
@@ -197,17 +197,17 @@ function DecompositionTab() {
       </div>
 
       {/* ── Summary Table ── */}
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Сводная таблица</h3>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border">
+          <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Сводная таблица</h3>
         </div>
         <div className="divide-y divide-border">
           {summaryRows.map((row, i) => (
-            <div key={i} className={`px-6 py-3.5 flex items-center justify-between ${
+            <div key={i} className={`px-5 py-3 flex items-center justify-between ${
               row.label === "ROMI" ? "bg-primary/[0.04]" : ""
             }`}>
               <span className="text-sm text-foreground">{row.label}</span>
-              <span className={`text-sm font-bold tabular-nums ${
+              <span className={`text-sm font-bold font-mono tabular-nums ${
                 row.label === "ROMI"
                   ? calc.romi >= 0 ? "text-primary" : "text-destructive"
                   : row.label === "Выручка" ? "text-primary" : "text-foreground"
@@ -218,9 +218,9 @@ function DecompositionTab() {
       </div>
 
       {/* ── KPI Summary Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
-        <KpiCard icon={Target} label="Стоимость продажи" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
+        <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
         <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} />
         <KpiCard icon={PiggyBank} label="Прибыль с рекламы" value={fmtCurrency(calc.revenue - calc.adBudget)} valueClass={calc.revenue - calc.adBudget >= 0 ? "text-primary" : "text-destructive"} sub="выручка − бюджет" />
       </div>
