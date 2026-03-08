@@ -63,13 +63,6 @@ const navGroups: NavGroup[] = [
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],
   },
-  {
-    label: "АГЕНТСТВО",
-    superadminOnly: true,
-    items: [
-      { title: "Агентская аналитика", path: "/agency-billing", icon: Receipt, superadminOnly: true },
-    ],
-  },
 ];
 
 export default function AppSidebar() {
