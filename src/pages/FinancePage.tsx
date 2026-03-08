@@ -131,7 +131,7 @@ function DecompositionTab() {
     { label: "CR лид → диагностика", value: `${crLeadToDiag}%` },
     { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
     { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
-    { label: "Стоимость пациента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
+    { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
     { label: "Выручка", value: `${fmt(calc.revenue)} ₸` },
     { label: "ROMI", value: `${calc.romi}%` },
   ];
