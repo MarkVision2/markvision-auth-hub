@@ -506,10 +506,10 @@ export default function ContentFactory() {
         <div className="px-6 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Image className="h-4 w-4 text-primary" />
+              {contentMode === "video" ? <Film className="h-4 w-4 text-primary" /> : <Image className="h-4 w-4 text-primary" />}
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Точное ТЗ для производства</h2>
+              <h2 className="text-sm font-semibold text-foreground">Точное ТЗ для производства {contentMode === "video" ? "видео" : "фото"}</h2>
               <p className="text-[11px] text-muted-foreground">Заполните поля — AI выполнит буквально</p>
             </div>
           </div>
