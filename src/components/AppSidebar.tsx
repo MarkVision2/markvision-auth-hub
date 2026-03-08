@@ -171,9 +171,10 @@ export default function AppSidebar() {
             </p>
             <div className="space-y-0.5">
               {group.items.map((item) => {
+                const currentPath = location.pathname;
                 const isActive = item.end
-                  ? location.pathname === item.path
-                  : location.pathname.startsWith(item.path);
+                  ? currentPath === item.path
+                  : currentPath === item.path || currentPath.startsWith(item.path + "/");
 
                 return (
                   <NavLink
