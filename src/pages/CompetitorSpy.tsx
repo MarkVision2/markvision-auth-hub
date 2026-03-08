@@ -64,16 +64,55 @@ export default function CompetitorSpy() {
     };
     loadAds();
 
-    // Subscribe to realtime inserts
+    // Subscribe to realtime inserts with notifications
     const channel = supabase
       .channel("competitor_ads_realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "competitor_ads" }, (payload) => {
-        setAds((prev) => [mapDbRow(payload.new), ...prev]);
+        const newAd = mapDbRow(payload.new);
+        setAds((prev) => {
+          // Check if this advertiser is monitored
+          const isMonitoredAdvertiser = prev.some(
+            (a) => a.is_monitored && a.advertiser_name === newAd.advertiser_name
+          );
+          if (isMonitoredAdvertiser) {
+            toast({
+              title: "🔔 Новое объявление конкурента",
+              description: `${newAd.advertiser_name} запустил новую рекламу`,
+            });
+          }
+          return [newAd, ...prev];
+        });
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [toast]);
+
+  // Auto-sync monitored ads every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const monitored = ads.filter(a => a.is_monitored);
+      if (monitored.length === 0) return;
+      
+      const uniquePages = new Map<string, string>();
+      for (const ad of monitored) {
+        const pageId = (ad as any).page_id || ad.advertiser_name;
+        if (pageId && !uniquePages.has(pageId)) {
+          uniquePages.set(pageId, ad.advertiser_name);
+        }
+      }
+      
+      for (const [pageId] of uniquePages) {
+        fetch("https://n8n.zapoinov.com/webhook/competitor-spy-sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page_id: pageId, project_id: null }),
+        }).catch(console.error);
+      }
+    }, 5 * 60 * 1000); // every 5 min
+
+    return () => clearInterval(interval);
+  }, [ads]);
 
   const handleSearch = async () => {
     if (!search.trim()) return;
