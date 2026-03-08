@@ -44,8 +44,7 @@ const PHOTO_FORMAT_CARDS = [
 ] as const;
 
 const VIDEO_FORMAT_CARDS = [
-  { value: "reels", label: "Reels", sub: "Instagram вертикалка", icon: "📱" },
-  { value: "shorts", label: "Shorts", sub: "YouTube / TikTok", icon: "⚡" },
+  { value: "reels", label: "Reels", sub: "Вертикальное видео 9:16", icon: "📱" },
   { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
 ] as const;
 
