@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.rebuild-ad-text]
 verify_jwt = false
+
+[functions.n8n-health-check]
+verify_jwt = false
