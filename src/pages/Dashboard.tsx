@@ -67,7 +67,7 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-2">
