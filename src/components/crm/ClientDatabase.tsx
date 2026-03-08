@@ -43,35 +43,40 @@ export default function ClientDatabase() {
       
       if (error) throw error;
 
-    // Aggregate by phone (or name if no phone)
-    const map = new Map<string, ClientRow>();
-    for (const lead of (data || [])) {
-      const key = lead.phone || lead.name;
-      const existing = map.get(key);
-      const isPaid = lead.status === "Оплачен";
-      const amt = isPaid ? (Number(lead.amount) || 0) : 0;
-      const score = lead.ai_score || 0;
-      const lastDate = lead.updated_at || lead.created_at || "";
+      // Aggregate by phone (or name if no phone)
+      const map = new Map<string, ClientRow>();
+      for (const lead of (data || [])) {
+        const key = lead.phone || lead.name;
+        const existing = map.get(key);
+        const isPaid = lead.status === "Оплачен";
+        const amt = isPaid ? (Number(lead.amount) || 0) : 0;
+        const score = lead.ai_score || 0;
+        const lastDate = lead.updated_at || lead.created_at || "";
 
-      if (existing) {
-        existing.ltv += amt;
-        existing.aiRating = Math.max(existing.aiRating, score);
-        existing.leadCount += 1;
-        if (lastDate > existing.lastVisit) existing.lastVisit = lastDate;
-      } else {
-        map.set(key, {
-          name: lead.name,
-          phone: lead.phone || "—",
-          source: lead.source || "—",
-          ltv: amt,
-          aiRating: score,
-          lastVisit: lastDate,
-          leadCount: 1,
-        });
+        if (existing) {
+          existing.ltv += amt;
+          existing.aiRating = Math.max(existing.aiRating, score);
+          existing.leadCount += 1;
+          if (lastDate > existing.lastVisit) existing.lastVisit = lastDate;
+        } else {
+          map.set(key, {
+            name: lead.name,
+            phone: lead.phone || "—",
+            source: lead.source || "—",
+            ltv: amt,
+            aiRating: score,
+            lastVisit: lastDate,
+            leadCount: 1,
+          });
+        }
       }
+      setClients(Array.from(map.values()));
+    } catch (err: any) {
+      console.error("ClientDatabase fetch error:", err);
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setClients(Array.from(map.values()));
-    setLoading(false);
   }, []);
 
   useEffect(() => { fetchClients(); }, [fetchClients]);
