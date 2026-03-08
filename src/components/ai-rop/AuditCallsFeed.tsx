@@ -3,10 +3,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { PhoneCall, PhoneIncoming, PhoneOutgoing, Bot, Eye } from "lucide-react";
-import { MOCK_AUDITS } from "./mockData";
+import { PhoneCall, PhoneIncoming, PhoneOutgoing, Bot, Eye, Inbox } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AuditRecord } from "./types";
 import AuditDetailSheet from "./AuditDetailSheet";
+
+interface Props { audits: AuditRecord[]; loading: boolean; }
 
 function formatDuration(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -23,26 +25,26 @@ function isAiAgent(name: string) {
 }
 
 function ScoreBadge({ score }: { score: number }) {
-  if (score >= 80) return (
-    <Badge className="bg-[hsl(var(--status-good)/0.12)] text-[hsl(var(--status-good))] border border-[hsl(var(--status-good)/0.25)] text-xs font-bold tabular-nums shadow-[0_0_10px_hsl(var(--status-good)/0.2)] hover:bg-[hsl(var(--status-good)/0.18)]">
-      {score}/100
-    </Badge>
-  );
-  if (score >= 50) return (
-    <Badge className="bg-[hsl(var(--status-warning)/0.12)] text-[hsl(var(--status-warning))] border border-[hsl(var(--status-warning)/0.25)] text-xs font-bold tabular-nums shadow-[0_0_10px_hsl(var(--status-warning)/0.2)] hover:bg-[hsl(var(--status-warning)/0.18)]">
-      {score}/100
-    </Badge>
-  );
-  return (
-    <Badge className="bg-[hsl(var(--status-critical)/0.12)] text-[hsl(var(--status-critical))] border border-[hsl(var(--status-critical)/0.25)] text-xs font-bold tabular-nums shadow-[0_0_10px_hsl(var(--status-critical)/0.2)] hover:bg-[hsl(var(--status-critical)/0.18)]">
-      {score}/100 <span className="ml-1 font-normal opacity-80">Слив</span>
-    </Badge>
-  );
+  if (score >= 80) return <Badge className="bg-[hsl(var(--status-good)/0.12)] text-[hsl(var(--status-good))] border border-[hsl(var(--status-good)/0.25)] text-xs font-bold tabular-nums hover:bg-[hsl(var(--status-good)/0.18)]">{score}/100</Badge>;
+  if (score >= 50) return <Badge className="bg-[hsl(var(--status-warning)/0.12)] text-[hsl(var(--status-warning))] border border-[hsl(var(--status-warning)/0.25)] text-xs font-bold tabular-nums hover:bg-[hsl(var(--status-warning)/0.18)]">{score}/100</Badge>;
+  return <Badge className="bg-[hsl(var(--status-critical)/0.12)] text-[hsl(var(--status-critical))] border border-[hsl(var(--status-critical)/0.25)] text-xs font-bold tabular-nums hover:bg-[hsl(var(--status-critical)/0.18)]">{score}/100 <span className="ml-1 font-normal opacity-80">Слив</span></Badge>;
 }
 
-export default function AuditCallsFeed() {
-  const calls = MOCK_AUDITS.filter(a => a.interaction_type === "call");
+export default function AuditCallsFeed({ audits, loading }: Props) {
+  const calls = audits.filter(a => a.interaction_type === "call");
   const [selected, setSelected] = useState<AuditRecord | null>(null);
+
+  if (loading) return <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>;
+
+  if (calls.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Inbox className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <p className="text-sm font-semibold text-foreground">Нет аудитов звонков</p>
+        <p className="text-xs text-muted-foreground mt-1">Данные появятся после загрузки записей в систему</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -55,7 +57,6 @@ export default function AuditCallsFeed() {
           Средний балл: {Math.round(calls.reduce((s, c) => s + c.ai_score, 0) / calls.length)}
         </span>
       </div>
-
       <div className="border border-border rounded-xl overflow-hidden">
         <Table>
           <TableHeader>
@@ -74,17 +75,8 @@ export default function AuditCallsFeed() {
               const passedCount = item.checklist.filter(c => c.passed).length;
               const totalCount = item.checklist.length;
               const isIncoming = idx % 2 === 0;
-
               return (
-                <TableRow
-                  key={item.id}
-                  className={`border-border cursor-pointer transition-colors ${
-                    item.ai_score < 50
-                      ? "hover:bg-[hsl(var(--status-critical)/0.04)] bg-[hsl(var(--status-critical)/0.02)]"
-                      : "hover:bg-accent/30"
-                  }`}
-                  onClick={() => setSelected(item)}
-                >
+                <TableRow key={item.id} className={`border-border cursor-pointer transition-colors ${item.ai_score < 50 ? "hover:bg-[hsl(var(--status-critical)/0.04)] bg-[hsl(var(--status-critical)/0.02)]" : "hover:bg-accent/30"}`} onClick={() => setSelected(item)}>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
                       <Avatar className="h-8 w-8">
@@ -100,33 +92,15 @@ export default function AuditCallsFeed() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      {isIncoming ? (
-                        <>
-                          <PhoneIncoming className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" />
-                          <span>Входящий</span>
-                        </>
-                      ) : (
-                        <>
-                          <PhoneOutgoing className="h-3.5 w-3.5 text-primary" />
-                          <span>Исходящий</span>
-                        </>
-                      )}
+                      {isIncoming ? <><PhoneIncoming className="h-3.5 w-3.5 text-[hsl(var(--status-good))]" /><span>Входящий</span></> : <><PhoneOutgoing className="h-3.5 w-3.5 text-primary" /><span>Исходящий</span></>}
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground tabular-nums">{formatDuration(item.duration_seconds)}</TableCell>
                   <TableCell><ScoreBadge score={item.ai_score} /></TableCell>
-                  <TableCell>
-                    <p className="text-xs text-foreground/70 max-w-[280px] truncate">{item.ai_summary}</p>
-                  </TableCell>
+                  <TableCell><p className="text-xs text-foreground/70 max-w-[280px] truncate">{item.ai_summary}</p></TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 text-xs gap-1.5 ${item.ai_score < 50 ? "text-[hsl(var(--status-critical))] hover:text-[hsl(var(--status-critical))] hover:bg-[hsl(var(--status-critical)/0.1)]" : "text-muted-foreground hover:text-foreground"}`}
-                      onClick={(e) => { e.stopPropagation(); setSelected(item); }}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Разбор
+                    <Button variant="ghost" size="sm" className={`h-7 text-xs gap-1.5 ${item.ai_score < 50 ? "text-[hsl(var(--status-critical))] hover:text-[hsl(var(--status-critical))] hover:bg-[hsl(var(--status-critical)/0.1)]" : "text-muted-foreground hover:text-foreground"}`} onClick={(e) => { e.stopPropagation(); setSelected(item); }}>
+                      <Eye className="h-3.5 w-3.5" />Разбор
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -135,7 +109,6 @@ export default function AuditCallsFeed() {
           </TableBody>
         </Table>
       </div>
-
       <AuditDetailSheet item={selected} open={!!selected} onOpenChange={(o) => !o && setSelected(null)} />
     </>
   );
