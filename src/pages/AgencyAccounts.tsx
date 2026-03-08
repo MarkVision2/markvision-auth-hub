@@ -359,6 +359,7 @@ export default function AgencyAccounts() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
 
       <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onSaved={fetchMetrics} />
