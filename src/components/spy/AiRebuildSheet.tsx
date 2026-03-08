@@ -173,7 +173,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
             </div>
 
             {/* Bottom bar */}
-            <div className="sticky bottom-0 p-6 border-t border-white/[0.06] bg-[hsl(var(--background))]/80 backdrop-blur-xl">
+            <div className="sticky bottom-0 p-6 border-t border-border bg-background/80 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <div className="hidden sm:flex items-center gap-2 flex-1 text-xs text-muted-foreground">
                   <ArrowRight className="h-3.5 w-3.5" />
