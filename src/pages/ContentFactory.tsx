@@ -178,7 +178,7 @@ export default function ContentFactory() {
         content_type: mainType,
         source_type: payload.source_type,
         source_url: payload.source_url,
-        format: isVideo ? "reels" : (formatMap[photoFormat] || "fb-target"),
+        format: isVideo ? videoFormat : (formatMap[photoFormat] || "fb-target"),
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         main_text: payload.main_text || "",
         visual_style: payload.visual_style || payload.design_template || "",
