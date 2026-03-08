@@ -646,7 +646,7 @@ export default function ContentFactory() {
             <div className="sticky top-4">
               <PhoneMockup
                 contentMode={mainType}
-                format={mainType === "video" ? "reels" : photoFormat}
+                format={mainType === "video" ? videoFormat : photoFormat}
                 aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
                 designPrompt={visualStyle}
                 exactText={mainType === "video" ? speakerText : mainText}
