@@ -100,6 +100,7 @@ const formatLabel = (val: string | null) => {
 export default function ContentFactory() {
   const location = useLocation();
   const prefill = (location.state as any)?.prefill || "";
+  const { pushNotification } = useNotifications();
 
   // Form state
   const [contentMode, setContentMode] = useState<ContentMode>("photo");
