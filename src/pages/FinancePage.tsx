@@ -147,15 +147,15 @@ function DecompositionTab() {
           { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
           { label: "💵 Стоимость лида (CPL)", value: cpl, onChange: setCpl, suffix: "₸", step: 100 },
         ].map((field) => (
-          <div key={field.label} className="rounded-xl border border-border bg-card p-4 space-y-2">
-            <label className="text-[11px] text-muted-foreground font-medium leading-tight">{field.label}</label>
-            <div className="relative">
+          <div key={field.label} className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between min-h-[88px]">
+            <label className="text-[11px] text-muted-foreground font-medium leading-tight line-clamp-2 min-h-[28px]">{field.label}</label>
+            <div className="relative mt-auto">
               <Input
                 type="number"
                 value={field.value || ""}
                 onChange={(e) => { const n = Number(e.target.value); if (!isNaN(n)) field.onChange(Math.max(0, n)); }}
                 step={field.step}
-                className="h-10 text-base font-bold tabular-nums bg-secondary/50 border-transparent rounded-lg pr-8 focus:border-primary/40"
+                className="h-10 text-sm font-bold tabular-nums font-mono bg-secondary/50 border-transparent rounded-lg pr-8 focus:border-primary/40"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">{field.suffix}</span>
             </div>
@@ -169,25 +169,25 @@ function DecompositionTab() {
           <Calculator className="h-4 w-4 text-primary" />
           Обратная воронка — от выручки к бюджету
         </h3>
-        <div className="flex items-stretch gap-0">
+        <div className="grid grid-cols-5 gap-0 items-stretch">
           {funnelSteps.map((step, i) => (
-            <div key={step.label} className="flex items-center flex-1">
-              <div className={`rounded-xl p-4 flex-1 text-center transition-all ${
+            <div key={step.label} className="flex items-stretch">
+              <div className={`rounded-xl p-4 flex-1 flex flex-col items-center justify-between text-center min-h-[160px] ${
                 step.accent
                   ? "border-2 border-primary/30 bg-primary/[0.06]"
                   : "border border-border bg-secondary/20"
               }`}>
-                <div className={`h-9 w-9 rounded-lg mx-auto mb-2.5 flex items-center justify-center ${
+                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${
                   step.accent ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
                 }`}>
                   <step.icon className="h-4 w-4" />
                 </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium leading-tight">{step.label}</p>
-                <p className={`text-lg font-bold tabular-nums mt-1.5 font-mono ${step.accent ? "text-primary" : "text-foreground"}`}>{step.value}</p>
-                {step.sub && <p className="text-[10px] text-muted-foreground mt-1">{step.sub}</p>}
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold leading-tight mt-2 min-h-[24px] flex items-center">{step.label}</p>
+                <p className={`text-lg font-bold tabular-nums font-mono mt-1 ${step.accent ? "text-primary" : "text-foreground"}`}>{step.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 min-h-[14px]">{step.sub || "\u00A0"}</p>
               </div>
               {i < funnelSteps.length - 1 && (
-                <div className="shrink-0 px-1.5">
+                <div className="shrink-0 flex items-center px-1.5">
                   <ArrowRight className="h-4 w-4 text-muted-foreground/30" />
                 </div>
               )}
