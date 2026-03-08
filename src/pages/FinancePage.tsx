@@ -636,7 +636,7 @@ function AgencyTab() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="text-xs text-primary gap-1.5 h-8"><Plus className="h-3.5 w-3.5" /> Добавить клиента</Button>
             </SheetTrigger>
-            <SheetContent className="w-[420px] border-border/10">
+            <SheetContent className="w-[420px]">
               <SheetHeader><SheetTitle className="text-lg">Новый клиент</SheetTitle></SheetHeader>
               <div className="space-y-5 mt-8">
                 <div className="space-y-2">
