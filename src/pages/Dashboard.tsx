@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"; // refresh
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import HqKpiCards from "@/components/hq/HqKpiCards";
 import HqAnomalyRadar from "@/components/hq/HqAnomalyRadar";
@@ -7,7 +7,7 @@ import HqRevenueChart from "@/components/hq/HqRevenueChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays } from "lucide-react";
+import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface ClientMetric {
@@ -34,30 +34,10 @@ function formatMoney(n: number): string {
 /* ── Client-specific KPI cards ── */
 function ClientKpiCards({ client }: { client: ClientMetric }) {
   const cards = [
-    {
-      icon: <DollarSign className="h-4 w-4 text-primary" />,
-      label: "Расходы на рекламу",
-      value: formatMoney(client.spend ?? 0),
-      accentClass: "text-foreground",
-    },
-    {
-      icon: <Users className="h-4 w-4 text-primary" />,
-      label: "Лиды",
-      value: String(client.meta_leads ?? 0),
-      accentClass: "text-primary",
-    },
-    {
-      icon: <BarChart3 className="h-4 w-4 text-primary" />,
-      label: "Выручка",
-      value: formatMoney(client.revenue ?? 0),
-      accentClass: "text-primary",
-    },
-    {
-      icon: <TrendingUp className="h-4 w-4 text-primary" />,
-      label: "ROMI",
-      value: `${(client.romi ?? 0).toFixed(0)}%`,
-      accentClass: (client.romi ?? 0) >= 0 ? "text-primary" : "text-destructive",
-    },
+    { icon: <DollarSign className="h-4 w-4 text-primary" />, label: "Расходы на рекламу", value: formatMoney(client.spend ?? 0), accentClass: "text-foreground" },
+    { icon: <Users className="h-4 w-4 text-primary" />, label: "Лиды", value: String(client.meta_leads ?? 0), accentClass: "text-primary" },
+    { icon: <BarChart3 className="h-4 w-4 text-primary" />, label: "Выручка", value: formatMoney(client.revenue ?? 0), accentClass: "text-primary" },
+    { icon: <TrendingUp className="h-4 w-4 text-primary" />, label: "ROMI", value: `${(client.romi ?? 0).toFixed(0)}%`, accentClass: (client.romi ?? 0) >= 0 ? "text-primary" : "text-destructive" },
   ];
 
   return (
@@ -87,7 +67,6 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
 
   return (
     <div className="space-y-5">
-      {/* Metrics grid */}
       <div className="grid grid-cols-5 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card p-4">
@@ -125,7 +104,6 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
         </div>
       </div>
 
-      {/* AI note */}
       <div className="rounded-2xl border border-primary/15 bg-primary/[0.03] p-5 flex gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
           <Activity className="h-4 w-4 text-primary" />
@@ -153,10 +131,28 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function fetch() {
+      setLoading(true);
       try {
-        const { data, error } = await supabase.from("agency_metrics_view").select("*");
-        if (error) throw error;
-        setClients((data as ClientMetric[]) || []);
+        if (isAgency) {
+          // Agency view: fetch ALL clients for overview
+          const { data, error } = await supabase.from("agency_metrics_view").select("*");
+          if (error) throw error;
+          setClients((data as ClientMetric[]) || []);
+        } else {
+          // Client view: fetch ONLY the matched client by name
+          const clientName = active.clientName;
+          if (!clientName) {
+            setClients([]);
+            return;
+          }
+          const { data, error } = await supabase
+            .from("agency_metrics_view")
+            .select("*")
+            .eq("client_name", clientName)
+            .limit(1);
+          if (error) throw error;
+          setClients((data as ClientMetric[]) || []);
+        }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "Ошибка загрузки данных";
         toast({ title: "Ошибка", description: msg, variant: "destructive" });
@@ -165,29 +161,20 @@ export default function Dashboard() {
       }
     }
     fetch();
-  }, []);
+  }, [active.id, isAgency]);
 
-  // Agency metrics
+  // Agency aggregated metrics — ONLY from filtered clients
   const agencyMetrics = loading
     ? null
     : (() => {
         const totalRevenue = clients.reduce((s, c) => s + (c.revenue ?? 0), 0);
         const totalSpend = clients.reduce((s, c) => s + (c.spend ?? 0), 0);
         const romi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
-        const activeProjects = clients.filter((c) => c.is_active).length;
-        return { totalRevenue, totalSpend, romi, activeProjects };
+        const activeAccounts = clients.filter((c) => c.is_active).length;
+        return { totalRevenue, totalSpend, romi, activeProjects: activeAccounts };
       })();
 
-  // Map workspace ID to a matching client
-  const WORKSPACE_CLIENT_MAP: Record<string, string> = {
-    "clinic-aiva": "Клиника AIVA",
-    "kitarov": "Kitarov Clinic",
-    "spine-tech": "Технология позвоночника",
-  };
-
-  const matchedClient = !isAgency
-    ? clients.find(c => c.client_name === WORKSPACE_CLIENT_MAP[active.id]) || null
-    : null;
+  const matchedClient = !isAgency && clients.length > 0 ? clients[0] : null;
 
   const breadcrumb = isAgency ? "Штаб-квартира" : `${active.emoji} ${active.name}`;
 

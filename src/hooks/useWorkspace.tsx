@@ -5,13 +5,15 @@ export interface Workspace {
   name: string;
   emoji: string;
   type: "agency" | "client";
+  /** Maps to clients_config.client_name for client workspaces */
+  clientName?: string;
 }
 
 const WORKSPACES: Workspace[] = [
   { id: "hq", name: "MarkVision HQ", emoji: "🏢", type: "agency" },
-  { id: "clinic-aiva", name: "Клиника AIVA", emoji: "🏥", type: "client" },
-  { id: "kitarov", name: "Kitarov Clinic", emoji: "🦷", type: "client" },
-  { id: "spine-tech", name: "Технология позвоночника", emoji: "✨", type: "client" },
+  { id: "clinic-aiva", name: "Клиника AIVA", emoji: "🏥", type: "client", clientName: "Клиника AIVA" },
+  { id: "kitarov", name: "Kitarov Clinic", emoji: "🦷", type: "client", clientName: "Kitarov Clinic" },
+  { id: "spine-tech", name: "Технология позвоночника", emoji: "✨", type: "client", clientName: "Технология позвоночника" },
 ];
 
 interface WorkspaceContextValue {
