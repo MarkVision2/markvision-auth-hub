@@ -156,7 +156,7 @@ export default function ScoreboardPage() {
         </div>
 
         {/* ── Master Table ── */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden [&_tr]:border-b-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
