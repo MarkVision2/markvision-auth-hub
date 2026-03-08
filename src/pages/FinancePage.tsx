@@ -671,7 +671,7 @@ function AgencyTab() {
                   </tr>
                 );
               })}
-              <tr className="bg-secondary/20 border-t border-border/30">
+              <tr className="bg-secondary/20">
                 <td className="py-4 px-4 text-sm font-bold text-foreground text-left">Итого</td>
                 <td className="py-4 px-4 text-sm text-muted-foreground text-left">{clientsData.reduce((s, c) => s + c.services.length, 0)} услуг</td>
                 <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalMrr)}</td>
