@@ -4,20 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, ChevronDown, TrendingUp, DollarSign, BarChart3, Crown, Image, Video, Layers, Film } from "lucide-react";
+import { ChevronRight, ChevronDown, TrendingUp, DollarSign, BarChart3, Crown, Image, Video, Layers, Film, Inbox } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { channels, organicPosts, funnelData, channelChartData, formatMoney, formatNum, calcRomi, type Channel, type Campaign } from "@/components/analytics/analyticsData";
+import { formatMoney, formatNum, calcRomi, type Channel, type Campaign } from "@/components/analytics/analyticsData";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { motion, AnimatePresence } from "framer-motion";
-
-/* ── helpers ── */
-const totalSpend = channels.reduce((s, c) => s + c.spend, 0);
-const totalRevenue = channels.reduce((s, c) => s + c.revenue, 0);
-const globalRomi = Math.round(((totalRevenue - totalSpend) / totalSpend) * 100);
-const topChannel = channels.reduce((best, c) => {
-  const r = c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : Infinity;
-  const bestR = best.spend > 0 ? ((best.revenue - best.spend) / best.spend) * 100 : Infinity;
-  return r > bestR ? c : best;
-}, channels[0]);
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatIcons: Record<string, React.ReactNode> = {
   Video: <Video className="h-3.5 w-3.5" />,
@@ -40,16 +32,34 @@ function KpiCard({ icon, label, value, sub }: { icon: React.ReactNode; label: st
   );
 }
 
+function KpiSkeleton() {
+  return (
+    <div className="glass rounded-xl p-5 flex flex-col gap-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-8 w-32" />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  );
+}
+
 /* ── Funnel ── */
-function FunnelVis() {
+function FunnelVis({ funnelData }: { funnelData: { stage: string; value: number; label: string }[] }) {
+  if (funnelData.every((d) => d.value === 0)) {
+    return (
+      <div className="glass rounded-xl p-6 h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Inbox className="h-10 w-10 opacity-40" />
+        <p className="text-sm">Нет данных для воронки</p>
+      </div>
+    );
+  }
   return (
     <div className="glass rounded-xl p-6 h-full">
       <h3 className="text-[13px] font-semibold text-foreground mb-5 uppercase tracking-wider">Воронка конверсий</h3>
       <div className="space-y-3">
         {funnelData.map((step, i) => {
-          const maxVal = funnelData[0].value;
+          const maxVal = funnelData[0].value || 1;
           const width = Math.max((step.value / maxVal) * 100, 8);
-          const dropoff = i > 0 ? ((1 - step.value / funnelData[i - 1].value) * 100).toFixed(1) : null;
+          const dropoff = i > 0 && funnelData[i - 1].value > 0 ? ((1 - step.value / funnelData[i - 1].value) * 100).toFixed(1) : null;
           return (
             <div key={step.stage}>
               <div className="flex justify-between text-[12px] mb-1">
@@ -80,12 +90,20 @@ function FunnelVis() {
 }
 
 /* ── Channel Chart ── */
-function ChannelChart() {
+function ChannelChart({ chartData }: { chartData: { name: string; spend: number; revenue: number; color: string }[] }) {
+  if (chartData.length === 0) {
+    return (
+      <div className="glass rounded-xl p-6 h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Inbox className="h-10 w-10 opacity-40" />
+        <p className="text-sm">Нет данных по каналам</p>
+      </div>
+    );
+  }
   return (
     <div className="glass rounded-xl p-6 h-full">
       <h3 className="text-[13px] font-semibold text-foreground mb-5 uppercase tracking-wider">Расход vs Выручка по каналам</h3>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={channelChartData} barGap={4}>
+        <BarChart data={chartData} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(0,0%,100%,0.04)" />
           <XAxis dataKey="name" tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fill: "hsl(0,0%,55%)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => formatMoney(v)} />
@@ -95,12 +113,12 @@ function ChannelChart() {
             formatter={(value: number) => [formatMoney(value)]}
           />
           <Bar dataKey="spend" name="Расход" radius={[4, 4, 0, 0]} maxBarSize={40}>
-            {channelChartData.map((entry, i) => (
+            {chartData.map((entry, i) => (
               <Cell key={i} fill={entry.color} fillOpacity={0.35} />
             ))}
           </Bar>
           <Bar dataKey="revenue" name="Выручка" radius={[4, 4, 0, 0]} maxBarSize={40}>
-            {channelChartData.map((entry, i) => (
+            {chartData.map((entry, i) => (
               <Cell key={i} fill={entry.color} />
             ))}
           </Bar>
@@ -212,148 +230,174 @@ function CampaignRow({ campaign, channelColor }: { campaign: Campaign; channelCo
 }
 
 /* ── Organic Table ── */
-function OrganicTracker() {
+function OrganicTracker({ posts }: { posts: { id: string; thumbnail: string; caption: string; triggerWord: string; dms: number; leads: number; sales: number; revenue: number; ltv: number }[] }) {
   return (
     <div className="glass rounded-xl overflow-hidden">
       <div className="p-5 border-b border-white/[0.04]">
         <h3 className="text-[13px] font-semibold text-foreground uppercase tracking-wider">Контент-Завод → Продажи</h3>
         <p className="text-[12px] text-muted-foreground mt-1">Органические посты с кодовыми словами</p>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow className="border-white/[0.04] hover:bg-transparent">
-            <TableHead className="text-[11px]">Пост</TableHead>
-            <TableHead className="text-[11px]">Кодовое слово</TableHead>
-            <TableHead className="text-[11px] text-right">DMs</TableHead>
-            <TableHead className="text-[11px] text-right">Лиды</TableHead>
-            <TableHead className="text-[11px] text-right">Продажи</TableHead>
-            <TableHead className="text-[11px] text-right">Выручка</TableHead>
-            <TableHead className="text-[11px] text-right">LTV</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {organicPosts.map((post) => (
-            <TableRow key={post.id} className="border-white/[0.04]">
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-lg">
-                    {post.thumbnail}
-                  </div>
-                  <span className="text-[12px] text-foreground max-w-[200px] truncate">{post.caption}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] font-mono">{post.triggerWord}</Badge>
-              </TableCell>
-              <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.dms)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.leads)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[12px] font-medium">{formatNum(post.sales)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[12px] font-semibold text-foreground">{formatMoney(post.revenue)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[12px]">{formatMoney(post.ltv)}</TableCell>
+      {posts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+          <Inbox className="h-10 w-10 opacity-40" />
+          <p className="text-sm">Нет данных по органике</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.04] hover:bg-transparent">
+              <TableHead className="text-[11px]">Пост</TableHead>
+              <TableHead className="text-[11px]">Кодовое слово</TableHead>
+              <TableHead className="text-[11px] text-right">DMs</TableHead>
+              <TableHead className="text-[11px] text-right">Лиды</TableHead>
+              <TableHead className="text-[11px] text-right">Продажи</TableHead>
+              <TableHead className="text-[11px] text-right">Выручка</TableHead>
+              <TableHead className="text-[11px] text-right">LTV</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {posts.map((post) => (
+              <TableRow key={post.id} className="border-white/[0.04]">
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-lg">
+                      {post.thumbnail}
+                    </div>
+                    <span className="text-[12px] text-foreground max-w-[200px] truncate">{post.caption}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] font-mono">{post.triggerWord}</Badge>
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.dms)}</TableCell>
+                <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.leads)}</TableCell>
+                <TableCell className="text-right tabular-nums text-[12px] font-medium">{formatNum(post.sales)}</TableCell>
+                <TableCell className="text-right tabular-nums text-[12px] font-semibold text-foreground">{formatMoney(post.revenue)}</TableCell>
+                <TableCell className="text-right tabular-nums text-[12px]">{formatMoney(post.ltv)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+
+/* ── Loading skeleton ── */
+function AnalyticsSkeleton() {
+  return (
+    <div className="space-y-6 max-w-[1600px] mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => <KpiSkeleton key={i} />)}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Skeleton className="h-[320px] rounded-xl" />
+        <Skeleton className="h-[320px] rounded-xl" />
+      </div>
+      <Skeleton className="h-[400px] rounded-xl" />
     </div>
   );
 }
 
 /* ── MAIN PAGE ── */
 export default function AnalyticsPage() {
+  const { channels, organicPosts, loading, totalSpend, totalRevenue, totalSales, globalRomi, topChannel, funnelData, channelChartData } = useAnalyticsData();
+
   return (
     <DashboardLayout breadcrumb="Сквозная аналитика">
-      <div className="space-y-6 max-w-[1600px] mx-auto">
-        {/* Header Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Сквозная аналитика</h1>
-            <p className="text-[13px] text-muted-foreground mt-0.5">End-to-End: от креатива до кассы</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Select defaultValue="clinic-almaty">
-              <SelectTrigger className="w-[180px] h-9 text-[13px] glass border-white/10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="clinic-almaty">Клиника Алматы</SelectItem>
-                <SelectItem value="clinic-astana">Клиника Астана</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="march">
-              <SelectTrigger className="w-[140px] h-9 text-[13px] glass border-white/10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="march">Март 2026</SelectItem>
-                <SelectItem value="feb">Февраль 2026</SelectItem>
-                <SelectItem value="q1">Q1 2026</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="last-click">
-              <SelectTrigger className="w-[150px] h-9 text-[13px] glass border-white/10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="last-click">Last Click</SelectItem>
-                <SelectItem value="first-click">First Click</SelectItem>
-                <SelectItem value="linear">Linear</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard icon={<DollarSign className="h-4 w-4" />} label="Общий расход" value={formatMoney(totalSpend)} sub="все каналы" />
-          <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Общая выручка" value={formatMoney(totalRevenue)} sub={`${formatNum(channels.reduce((s, c) => s + c.sales, 0))} продаж`} />
-          <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="ROMI" value={`${globalRomi}%`} sub="глобальный показатель" />
-          <KpiCard icon={<Crown className="h-4 w-4" />} label="Топ канал" value={topChannel.name} sub={`ROMI ${calcRomi(topChannel.revenue, topChannel.spend)}`} />
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ChannelChart />
-          <FunnelVis />
-        </div>
-
-        {/* Tabs: Drill-down + Organic */}
-        <Tabs defaultValue="drilldown" className="space-y-4">
-          <TabsList className="glass border border-white/[0.06]">
-            <TabsTrigger value="drilldown" className="text-[13px]">Детализация по каналам</TabsTrigger>
-            <TabsTrigger value="organic" className="text-[13px]">Органика & Контент</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="drilldown">
-            <div className="glass rounded-xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/[0.04] hover:bg-transparent">
-                    <TableHead className="text-[11px] w-[260px]">Название</TableHead>
-                    <TableHead className="text-[11px]">Формат</TableHead>
-                    <TableHead className="text-[11px]">Сайт</TableHead>
-                    <TableHead className="text-[11px]">Расходы</TableHead>
-                    <TableHead className="text-[11px]">Клики</TableHead>
-                    <TableHead className="text-[11px]">Лиды</TableHead>
-                    <TableHead className="text-[11px]">Визиты</TableHead>
-                    <TableHead className="text-[11px]">Продажи</TableHead>
-                    <TableHead className="text-[11px]">Выручка</TableHead>
-                    <TableHead className="text-[11px]">ROMI</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {channels.map((ch) => (
-                    <ChannelRow key={ch.id} channel={ch} />
-                  ))}
-                </TableBody>
-              </Table>
+      {loading ? (
+        <AnalyticsSkeleton />
+      ) : (
+        <div className="space-y-6 max-w-[1600px] mx-auto">
+          {/* Header Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Сквозная аналитика</h1>
+              <p className="text-[13px] text-muted-foreground mt-0.5">End-to-End: от креатива до кассы</p>
             </div>
-          </TabsContent>
+            <div className="flex items-center gap-3">
+              <Select defaultValue="all">
+                <SelectTrigger className="w-[180px] h-9 text-[13px] glass border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все клиенты</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="last-click">
+                <SelectTrigger className="w-[150px] h-9 text-[13px] glass border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="last-click">Last Click</SelectItem>
+                  <SelectItem value="first-click">First Click</SelectItem>
+                  <SelectItem value="linear">Linear</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-          <TabsContent value="organic">
-            <OrganicTracker />
-          </TabsContent>
-        </Tabs>
-      </div>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard icon={<DollarSign className="h-4 w-4" />} label="Общий расход" value={formatMoney(totalSpend)} sub="все каналы" />
+            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Общая выручка" value={formatMoney(totalRevenue)} sub={`${formatNum(totalSales)} продаж`} />
+            <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="ROMI" value={totalSpend > 0 ? `${globalRomi}%` : "—"} sub="глобальный показатель" />
+            <KpiCard icon={<Crown className="h-4 w-4" />} label="Топ канал" value={topChannel?.name || "—"} sub={topChannel ? `ROMI ${calcRomi(topChannel.revenue, topChannel.spend)}` : "нет данных"} />
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChannelChart chartData={channelChartData} />
+            <FunnelVis funnelData={funnelData} />
+          </div>
+
+          {/* Tabs */}
+          <Tabs defaultValue="drilldown" className="space-y-4">
+            <TabsList className="glass border border-white/[0.06]">
+              <TabsTrigger value="drilldown" className="text-[13px]">Детализация по каналам</TabsTrigger>
+              <TabsTrigger value="organic" className="text-[13px]">Органика & Контент</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="drilldown">
+              {channels.length === 0 ? (
+                <div className="glass rounded-xl flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+                  <Inbox className="h-10 w-10 opacity-40" />
+                  <p className="text-sm">Нет данных по каналам</p>
+                  <p className="text-xs">Добавьте каналы и кампании в таблицу analytics_channels</p>
+                </div>
+              ) : (
+                <div className="glass rounded-xl overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/[0.04] hover:bg-transparent">
+                        <TableHead className="text-[11px] w-[260px]">Название</TableHead>
+                        <TableHead className="text-[11px]">Формат</TableHead>
+                        <TableHead className="text-[11px]">Сайт</TableHead>
+                        <TableHead className="text-[11px]">Расходы</TableHead>
+                        <TableHead className="text-[11px]">Клики</TableHead>
+                        <TableHead className="text-[11px]">Лиды</TableHead>
+                        <TableHead className="text-[11px]">Визиты</TableHead>
+                        <TableHead className="text-[11px]">Продажи</TableHead>
+                        <TableHead className="text-[11px]">Выручка</TableHead>
+                        <TableHead className="text-[11px]">ROMI</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {channels.map((ch) => (
+                        <ChannelRow key={ch.id} channel={ch} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="organic">
+              <OrganicTracker posts={organicPosts} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
