@@ -7,8 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank, BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
+import {
+  Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank,
+  BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp,
+  ChevronLeft, ChevronRight, Receipt, Percent, Target, CircleDollarSign
+} from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line, Area, AreaChart } from "recharts";
 
 /* ── Formatting ── */
 function fmt(v: number): string {
@@ -18,19 +22,56 @@ function fmtCurrency(v: number): string {
   return fmt(v) + " ₸";
 }
 
-/* ── Reusable input field ── */
+/* ── Shared inline-edit input style ── */
+const inlineInput = "h-9 bg-secondary/50 border-border/50 rounded-lg text-sm tabular-nums focus:border-primary/60 focus:bg-secondary/80 transition-colors placeholder:text-muted-foreground/40";
+const inlineInputRight = `${inlineInput} text-right`;
+
+/* ── KPI Card ── */
+function KpiCard({ icon: Icon, label, value, valueClass = "text-foreground", sub }: {
+  icon: React.ElementType; label: string; value: string; valueClass?: string; sub?: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-card border border-border/50 p-5 flex flex-col gap-3 hover:border-border transition-colors">
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
+          <Icon className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+      </div>
+      <p className={`text-2xl font-bold tracking-tight tabular-nums ${valueClass}`}>{value}</p>
+      {sub && <p className="text-xs text-muted-foreground -mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+/* ── Section wrapper ── */
+function Section({ title, action, children, className = "" }: {
+  title: string; action?: React.ReactNode; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={`rounded-2xl bg-card border border-border/50 overflow-hidden ${className}`}>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ── Reusable input field (for decomposition) ── */
 function NumField({ label, value, onChange, suffix }: { label: string; value: number; onChange: (v: number) => void; suffix?: string }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-[12px] text-muted-foreground">{label}</label>
-        <span className="text-[12px] font-semibold text-foreground tabular-nums">{fmt(value)}{suffix}</span>
+        <label className="text-xs text-muted-foreground font-medium">{label}</label>
+        <span className="text-xs font-semibold text-foreground tabular-nums">{fmt(value)}{suffix}</span>
       </div>
       <Input
         type="number"
         value={value || ""}
         onChange={(e) => { const n = Number(e.target.value); if (!isNaN(n)) onChange(Math.max(0, n)); }}
-        className="h-9 text-[13px] tabular-nums bg-white/[0.03] border-white/[0.06] focus:border-primary/40"
+        className={inlineInput}
       />
     </div>
   );
@@ -44,24 +85,16 @@ interface Product { name: string; check: number; share: number; }
 interface Expense { name: string; value: number; isPercent: boolean; }
 
 function DecompositionTab() {
-  // Mode
   const [mode, setMode] = useState<"revenue" | "profit">("revenue");
-
-  // Target metrics
   const [targetRevenue, setTargetRevenue] = useState(1_000_000);
   const [targetProfit, setTargetProfit] = useState(200_000);
-
-  // Marketing
   const [cpl, setCpl] = useState(300);
   const [cr1, setCr1] = useState(2);
   const [cr2, setCr2] = useState(10);
 
-  // Products
   const [products, setProducts] = useState<Product[]>([
     { name: "Основной товар", check: 5000, share: 100 },
   ]);
-
-  // Expenses
   const [fixExpenses, setFixExpenses] = useState<Expense[]>([
     { name: "Офис", value: 50000, isPercent: false },
     { name: "ФОТ", value: 100000, isPercent: false },
@@ -71,7 +104,6 @@ function DecompositionTab() {
     { name: "Эквайринг", value: 2.5, isPercent: true },
   ]);
 
-  // Calculations
   const calc = useMemo(() => {
     const avgCheck = products.reduce((s, p) => s + p.check * (p.share / 100), 0);
     const revenue = targetRevenue;
@@ -79,7 +111,6 @@ function DecompositionTab() {
     const leads = cr2 > 0 ? sales / (cr2 / 100) : 0;
     const impressions = cr1 > 0 ? leads / (cr1 / 100) : 0;
     const marketingSpend = leads * cpl;
-
     const fixTotal = fixExpenses.reduce((s, e) => s + (e.isPercent ? revenue * e.value / 100 : e.value), 0);
     const varTotal = varExpenses.reduce((s, e) => s + (e.isPercent ? revenue * e.value / 100 : e.value), 0);
     const totalExpenses = marketingSpend + fixTotal + varTotal;
@@ -87,255 +118,210 @@ function DecompositionTab() {
     const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
     const romiMarketing = marketingSpend > 0 ? ((revenue - marketingSpend) / marketingSpend) * 100 : 0;
     const roiAll = totalExpenses > 0 ? ((revenue - totalExpenses) / totalExpenses) * 100 : 0;
-
     const cacMarketing = sales > 0 ? marketingSpend / sales : 0;
     const cacFull = sales > 0 ? (marketingSpend + fixTotal) / sales : 0;
     const marginPerClient = avgCheck - cacFull;
-
     return { avgCheck, revenue, sales, leads, impressions, marketingSpend, fixTotal, varTotal, totalExpenses, netProfit, margin, romiMarketing, roiAll, cacMarketing, cacFull, marginPerClient };
   }, [targetRevenue, cpl, cr1, cr2, products, fixExpenses, varExpenses]);
 
   const updateProduct = (i: number, field: keyof Product, val: string | number) => {
-    setProducts(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: typeof val === "string" ? val : val } : p));
+    setProducts(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: val } : p));
   };
   const addProduct = () => setProducts(prev => [...prev, { name: `Товар ${prev.length + 1}`, check: 0, share: 0 }]);
   const removeProduct = (i: number) => setProducts(prev => prev.filter((_, idx) => idx !== i));
-
   const addFix = () => setFixExpenses(prev => [...prev, { name: "Новый расход", value: 0, isPercent: false }]);
   const addVar = () => setVarExpenses(prev => [...prev, { name: "Новый расход", value: 0, isPercent: true }]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
-      {/* ═══ LEFT PANEL — Inputs ═══ */}
-      <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-200px)] pr-1">
-        {/* Mode selector */}
-        <div>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-2">Режим расчета</p>
-          <div className="grid grid-cols-2 gap-1 glass rounded-lg p-1">
-            <button onClick={() => setMode("revenue")} className={`text-[12px] font-medium py-2 rounded-md transition-colors ${mode === "revenue" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+    <div className="grid grid-cols-1 lg:grid-cols-[400px_1fr] gap-8">
+      {/* LEFT — Inputs */}
+      <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-220px)] pr-2">
+        {/* Mode */}
+        <div className="rounded-2xl bg-card border border-border/50 p-5">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3">Режим расчёта</p>
+          <div className="grid grid-cols-2 gap-1.5 bg-secondary/50 rounded-xl p-1.5">
+            <button onClick={() => setMode("revenue")}
+              className={`text-sm font-medium py-2.5 rounded-lg transition-all ${mode === "revenue" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               От Выручки
             </button>
-            <button onClick={() => setMode("profit")} className={`text-[12px] font-medium py-2 rounded-md transition-colors ${mode === "profit" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={() => setMode("profit")}
+              className={`text-sm font-medium py-2.5 rounded-lg transition-all ${mode === "profit" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               От Прибыли
             </button>
           </div>
         </div>
 
-        {/* Target Metrics */}
-        <div>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Целевые метрики</p>
-          <div className="space-y-3">
-            <NumField label="Целевая Выручка" value={targetRevenue} onChange={setTargetRevenue} />
-            <NumField label="Целевая Прибыль" value={targetProfit} onChange={setTargetProfit} />
-          </div>
+        {/* Targets */}
+        <div className="rounded-2xl bg-card border border-border/50 p-5 space-y-4">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Целевые метрики</p>
+          <NumField label="Целевая Выручка" value={targetRevenue} onChange={setTargetRevenue} />
+          <NumField label="Целевая Прибыль" value={targetProfit} onChange={setTargetProfit} />
         </div>
 
         {/* Marketing */}
-        <div>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Маркетинг</p>
-          <div className="space-y-3">
-            <NumField label="CPL (Стоимость лида)" value={cpl} onChange={setCpl} />
-            <NumField label="CR1: Просмотр → Лид" value={cr1} onChange={setCr1} suffix="%" />
-            <NumField label="CR2: Лид → Продажа" value={cr2} onChange={setCr2} suffix="%" />
-          </div>
+        <div className="rounded-2xl bg-card border border-border/50 p-5 space-y-4">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Маркетинг</p>
+          <NumField label="CPL (Стоимость лида)" value={cpl} onChange={setCpl} />
+          <NumField label="CR1: Просмотр → Лид" value={cr1} onChange={setCr1} suffix="%" />
+          <NumField label="CR2: Лид → Продажа" value={cr2} onChange={setCr2} suffix="%" />
         </div>
 
         {/* Products */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Товары / Услуги</p>
-            <button onClick={addProduct} className="text-[11px] text-primary hover:text-primary/80 font-medium flex items-center gap-1">
-              <Plus className="h-3 w-3" /> Товар
+        <div className="rounded-2xl bg-card border border-border/50 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Товары / Услуги</p>
+            <button onClick={addProduct} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1">
+              <Plus className="h-3.5 w-3.5" /> Добавить
             </button>
           </div>
           {products.map((p, i) => (
-            <div key={i} className="glass rounded-lg p-3 mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <Input
-                  value={p.name}
-                  onChange={(e) => updateProduct(i, "name", e.target.value)}
-                  className="h-7 text-[12px] font-medium bg-transparent border-none p-0 focus-visible:ring-0"
-                />
+            <div key={i} className="bg-secondary/40 rounded-xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Input value={p.name} onChange={(e) => updateProduct(i, "name", e.target.value)}
+                  className="h-8 text-sm font-medium bg-transparent border-none p-0 focus-visible:ring-0" />
                 {products.length > 1 && (
-                  <button onClick={() => removeProduct(i)} className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-3 w-3" />
+                  <button onClick={() => removeProduct(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Чек</label>
-                  <Input type="number" value={p.check || ""} onChange={(e) => updateProduct(i, "check", Number(e.target.value))} className="h-8 text-[12px] tabular-nums bg-white/[0.03] border-white/[0.06]" />
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Чек</label>
+                  <Input type="number" value={p.check || ""} onChange={(e) => updateProduct(i, "check", Number(e.target.value))} className={inlineInput} />
                 </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground">Доля %</label>
-                  <Input type="number" value={p.share || ""} onChange={(e) => updateProduct(i, "share", Number(e.target.value))} className="h-8 text-[12px] tabular-nums bg-white/[0.03] border-white/[0.06]" />
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Доля %</label>
+                  <Input type="number" value={p.share || ""} onChange={(e) => updateProduct(i, "share", Number(e.target.value))} className={inlineInput} />
                 </div>
               </div>
             </div>
           ))}
-          <p className="text-[11px] text-muted-foreground text-center mt-1">Средний чек: {fmt(calc.avgCheck)}</p>
+          <p className="text-xs text-muted-foreground text-center pt-1">Средний чек: <span className="font-semibold text-foreground">{fmt(calc.avgCheck)}</span></p>
         </div>
 
-        {/* Expenses Fix/Var */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Расходы (Fix/Var)</p>
+        {/* Expenses */}
+        <div className="rounded-2xl bg-card border border-border/50 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Расходы</p>
             <div className="flex gap-2">
-              <button onClick={addFix} className="text-[11px] text-primary hover:text-primary/80 font-medium">+ Fix</button>
-              <button onClick={addVar} className="text-[11px] text-destructive hover:text-destructive/80 font-medium">+ Var</button>
+              <button onClick={addFix} className="text-xs text-primary hover:text-primary/80 font-medium">+ Fix</button>
+              <button onClick={addVar} className="text-xs text-destructive hover:text-destructive/80 font-medium">+ Var</button>
             </div>
           </div>
           {fixExpenses.map((e, i) => (
-            <div key={`fix-${i}`} className="flex items-center gap-2 mb-2">
-              <Input value={e.name} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className="h-8 text-[12px] flex-1 bg-transparent border-white/[0.06]" />
-              <Input type="number" value={e.value || ""} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className="h-8 text-[12px] w-[100px] tabular-nums bg-white/[0.03] border-white/[0.06] text-right" />
-              <button onClick={() => setFixExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0"><Trash2 className="h-3 w-3" /></button>
+            <div key={`fix-${i}`} className="flex items-center gap-2">
+              <Input value={e.name} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className={`${inlineInput} flex-1`} />
+              <Input type="number" value={e.value || ""} onChange={(ev) => setFixExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className={`${inlineInputRight} w-[110px]`} />
+              <button onClick={() => setFixExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           ))}
           {varExpenses.map((e, i) => (
-            <div key={`var-${i}`} className="flex items-center gap-2 mb-2">
-              <Input value={e.name} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className="h-8 text-[12px] flex-1 bg-transparent border-white/[0.06]" />
+            <div key={`var-${i}`} className="flex items-center gap-2">
+              <Input value={e.name} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, name: ev.target.value } : x))} className={`${inlineInput} flex-1`} />
               <div className="flex items-center gap-1">
-                <Input type="number" value={e.value || ""} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className="h-8 text-[12px] w-[80px] tabular-nums bg-white/[0.03] border-white/[0.06] text-right" />
-                <span className="text-[11px] text-muted-foreground">%</span>
+                <Input type="number" value={e.value || ""} onChange={(ev) => setVarExpenses(prev => prev.map((x, idx) => idx === i ? { ...x, value: Number(ev.target.value) } : x))} className={`${inlineInputRight} w-[90px]`} />
+                <span className="text-xs text-muted-foreground">%</span>
               </div>
-              <button onClick={() => setVarExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0"><Trash2 className="h-3 w-3" /></button>
+              <button onClick={() => setVarExpenses(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive shrink-0 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* ═══ RIGHT PANEL — Results ═══ */}
-      <div className="space-y-5">
-        {/* Top 3 KPI cards */}
+      {/* RIGHT — Results */}
+      <div className="space-y-6">
         <div className="grid grid-cols-3 gap-4">
-          <div className="glass rounded-xl p-5 border-l-2 border-l-primary">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Чистая прибыль</p>
-            <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{fmt(calc.netProfit)}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">После всех расходов</p>
-          </div>
-          <div className="glass rounded-xl p-5 border-l-2 border-l-white/20">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">Выручка</p>
-            <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{fmt(calc.revenue)}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{fmt(calc.sales)} продаж · {calc.margin.toFixed(1)}% маржа</p>
-          </div>
-          <div className="glass rounded-xl p-5 border-l-2 border-l-white/20">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">ROI / ROMI</p>
-            <p className="text-2xl font-bold text-foreground tabular-nums mt-1">{Math.round(calc.romiMarketing)}%</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">ROMI на маркетинг · ROI (все расх.): {Math.round(calc.roiAll)}%</p>
-          </div>
+          <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmt(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="После всех расходов" />
+          <KpiCard icon={CircleDollarSign} label="Выручка" value={fmt(calc.revenue)} sub={`${fmt(calc.sales)} продаж · ${calc.margin.toFixed(1)}% маржа`} />
+          <KpiCard icon={TrendingUp} label="ROMI" value={`${Math.round(calc.romiMarketing)}%`} sub={`ROI (все расх.): ${Math.round(calc.roiAll)}%`} />
         </div>
 
         {/* Funnel */}
-        <div className="glass rounded-xl p-6">
-          <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4 flex items-center gap-1.5">↗ Визуализация воронки</p>
-          <div className="flex items-center justify-between gap-2">
-            {[
-              { label: "Просмотры", value: fmt(calc.impressions), sub: null, highlight: false },
-              { label: "Лиды", value: fmt(calc.leads), sub: `по ${fmt(cpl)}`, highlight: false },
-              { label: "Продажи", value: fmt(calc.sales), sub: `чек ${fmt(calc.avgCheck)}`, highlight: true },
-              { label: "Деньги", value: fmt(calc.revenue), sub: null, highlight: true },
-            ].map((step, i, arr) => (
-              <div key={step.label} className="flex items-center gap-2 flex-1">
-                <div className={`rounded-lg p-3 flex-1 text-center border ${step.highlight ? "border-primary/30 bg-primary/[0.04]" : "glass"}`}>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{step.label}</p>
-                  <p className={`text-[16px] font-bold tabular-nums mt-1 ${step.highlight ? "text-primary" : "text-foreground"}`}>{step.value}</p>
-                  {step.sub && <p className="text-[10px] text-muted-foreground mt-0.5">{step.sub}</p>}
-                </div>
-                {i < arr.length - 1 && (
-                  <div className="flex flex-col items-center shrink-0">
-                    <span className="text-[10px] text-primary font-semibold">{i === 0 ? `${cr1}%` : i === 1 ? `${cr2}%` : ""}</span>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+        <Section title="Визуализация воронки">
+          <div className="p-6">
+            <div className="flex items-center justify-between gap-3">
+              {[
+                { label: "Просмотры", value: fmt(calc.impressions), sub: null, highlight: false },
+                { label: "Лиды", value: fmt(calc.leads), sub: `по ${fmt(cpl)} ₸`, highlight: false },
+                { label: "Продажи", value: fmt(calc.sales), sub: `чек ${fmt(calc.avgCheck)}`, highlight: true },
+                { label: "Выручка", value: fmt(calc.revenue), sub: null, highlight: true },
+              ].map((step, i, arr) => (
+                <div key={step.label} className="flex items-center gap-3 flex-1">
+                  <div className={`rounded-xl p-4 flex-1 text-center border transition-colors ${step.highlight ? "border-primary/30 bg-primary/[0.06]" : "bg-secondary/40 border-border/30"}`}>
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
+                    <p className={`text-lg font-bold tabular-nums mt-1.5 ${step.highlight ? "text-primary" : "text-foreground"}`}>{step.value}</p>
+                    {step.sub && <p className="text-[11px] text-muted-foreground mt-1">{step.sub}</p>}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom: Unit Economics + Expense Structure */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Unit Economics */}
-          <div className="glass rounded-xl p-6">
-            <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Юнит-экономика (на 1 клиента)</p>
-            <div className="space-y-0">
-              <div className="flex justify-between py-3 border-b border-white/[0.04]">
-                <div>
-                  <p className="text-[13px] text-foreground">CAC (маркетинг)</p>
-                  <p className="text-[11px] text-muted-foreground">только стоимость лида</p>
+                  {i < arr.length - 1 && (
+                    <div className="flex flex-col items-center shrink-0 gap-0.5">
+                      <span className="text-[11px] text-primary font-semibold tabular-nums">{i === 0 ? `${cr1}%` : i === 1 ? `${cr2}%` : ""}</span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground/50" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-[15px] font-semibold text-foreground tabular-nums">{fmt(calc.cacMarketing)}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/[0.04]">
-                <div>
-                  <p className="text-[13px] text-foreground">CAC (полный)</p>
-                  <p className="text-[11px] text-muted-foreground">маркетинг + постоянные</p>
-                </div>
-                <span className="text-[15px] font-semibold text-foreground tabular-nums">{fmt(calc.cacFull)}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/[0.04]">
-                <p className="text-[13px] text-foreground">Средний чек</p>
-                <span className="text-[15px] font-semibold text-foreground tabular-nums">{fmt(calc.avgCheck)}</span>
-              </div>
-              <div className="flex justify-between py-3 bg-primary/[0.04] rounded-lg px-3 -mx-3 mt-2">
-                <div>
-                  <p className="text-[13px] text-primary font-medium">Маржа (до переменных)</p>
-                  <p className="text-[11px] text-muted-foreground">чек − полный CAC</p>
-                </div>
-                <span className="text-[15px] font-bold text-primary tabular-nums">{fmt(calc.marginPerClient)}</span>
-              </div>
+              ))}
             </div>
           </div>
+        </Section>
 
-          {/* Expense Structure */}
-          <div className="glass rounded-xl p-6">
-            <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Структура расходов</p>
-            <div className="space-y-4">
-              {/* Marketing bar */}
-              <div>
-                <div className="flex justify-between text-[12px] mb-1.5">
-                  <span className="text-foreground">Маркетинг</span>
-                  <span className="font-semibold tabular-nums text-foreground">{fmt(calc.marketingSpend)}</span>
+        {/* Bottom: Unit Economics + Expenses */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Section title="Юнит-экономика (на 1 клиента)">
+            <div className="p-6 space-y-0">
+              {[
+                { label: "CAC (маркетинг)", sub: "только стоимость лида", value: fmt(calc.cacMarketing) },
+                { label: "CAC (полный)", sub: "маркетинг + постоянные", value: fmt(calc.cacFull) },
+                { label: "Средний чек", sub: null, value: fmt(calc.avgCheck) },
+              ].map((item, i) => (
+                <div key={i} className="flex justify-between items-center py-3.5 border-b border-border/30 last:border-b-0">
+                  <div>
+                    <p className="text-sm text-foreground">{item.label}</p>
+                    {item.sub && <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>}
+                  </div>
+                  <span className="text-base font-semibold text-foreground tabular-nums">{item.value}</span>
                 </div>
-                <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
-                  <div className="h-full rounded-full bg-primary/70" style={{ width: `${calc.totalExpenses > 0 ? (calc.marketingSpend / calc.totalExpenses) * 100 : 0}%` }} />
+              ))}
+              <div className="flex justify-between items-center py-3.5 bg-primary/[0.06] rounded-xl px-4 -mx-2 mt-3 border border-primary/20">
+                <div>
+                  <p className="text-sm text-primary font-medium">Маржа на клиента</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">чек − полный CAC</p>
                 </div>
+                <span className="text-lg font-bold text-primary tabular-nums">{fmt(calc.marginPerClient)}</span>
               </div>
-              {/* Fix bar */}
-              <div>
-                <div className="flex justify-between text-[12px] mb-1.5">
-                  <span className="text-foreground">Постоянные (Fix)</span>
-                  <span className="font-semibold tabular-nums text-foreground">{fmt(calc.fixTotal)}</span>
+            </div>
+          </Section>
+
+          <Section title="Структура расходов">
+            <div className="p-6 space-y-5">
+              {[
+                { label: "Маркетинг", value: calc.marketingSpend, color: "bg-primary" },
+                { label: "Постоянные (Fix)", value: calc.fixTotal, color: "bg-blue-500" },
+                { label: "Переменные (Var)", value: calc.varTotal, color: "bg-destructive" },
+              ].map(item => (
+                <div key={item.label}>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-foreground">{item.label}</span>
+                    <span className="font-semibold tabular-nums text-foreground">{fmt(item.value)}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-secondary overflow-hidden">
+                    <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${calc.totalExpenses > 0 ? (item.value / calc.totalExpenses) * 100 : 0}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
-                  <div className="h-full rounded-full bg-blue-500/70" style={{ width: `${calc.totalExpenses > 0 ? (calc.fixTotal / calc.totalExpenses) * 100 : 0}%` }} />
-                </div>
-              </div>
-              {/* Var bar */}
-              <div>
-                <div className="flex justify-between text-[12px] mb-1.5">
-                  <span className="text-foreground">Переменные (Var)</span>
-                  <span className="font-semibold tabular-nums text-foreground">{fmt(calc.varTotal)}</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/[0.04] overflow-hidden">
-                  <div className="h-full rounded-full bg-destructive/70" style={{ width: `${calc.totalExpenses > 0 ? (calc.varTotal / calc.totalExpenses) * 100 : 0}%` }} />
-                </div>
-              </div>
-              {/* Total */}
-              <div className="flex justify-between text-[13px] pt-3 border-t border-white/[0.06]">
+              ))}
+              <div className="flex justify-between text-sm pt-4 border-t border-border/50">
                 <span className="font-semibold text-foreground">Всего расходов</span>
                 <span className="font-bold tabular-nums text-foreground">{fmt(calc.totalExpenses)}</span>
               </div>
             </div>
-          </div>
+          </Section>
         </div>
 
         <div className="flex gap-3">
-          <Button className="flex-1 h-10 text-[13px] font-semibold gap-2">
+          <Button className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl">
             <Save className="h-4 w-4" /> Сохранить медиаплан
           </Button>
-          <Button variant="outline" className="h-10 text-[13px] gap-2 glass border-white/10">
+          <Button variant="outline" className="h-11 text-sm gap-2 rounded-xl border-border/50">
             <Download className="h-4 w-4" /> Excel
           </Button>
         </div>
@@ -386,7 +372,7 @@ const initialTeam: TeamMember[] = [
 
 const billingLabels: Record<string, { text: string; cls: string }> = {
   paid: { text: "Оплачено", cls: "bg-primary/10 text-primary border-primary/20" },
-  upcoming: { text: "Ожидается", cls: "bg-amber-500/10 text-amber-400 border-amber-500/20" },
+  upcoming: { text: "Ожидается", cls: "bg-status-warning/10 text-status-warning border-status-warning/20" },
   overdue: { text: "Просрочено", cls: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
@@ -397,20 +383,14 @@ function AgencyTab() {
   const [team, setTeam] = useState<TeamMember[]>(initialTeam);
   const [services, setServices] = useState<string[]>(defaultServices);
   const [newServiceName, setNewServiceName] = useState("");
-
   const [addOpen, setAddOpen] = useState(false);
   const [newClient, setNewClient] = useState({ name: "", services: [] as string[], revenue: 0, nextBilling: "" });
 
   const handleAddClient = () => {
     if (!newClient.name) return;
     setClientsData(prev => [...prev, {
-      id: String(Date.now()),
-      name: newClient.name,
-      services: newClient.services,
-      revenue: newClient.revenue,
-      expenses: 0,
-      nextBilling: newClient.nextBilling || "2026-04-01",
-      billingStatus: "upcoming",
+      id: String(Date.now()), name: newClient.name, services: newClient.services,
+      revenue: newClient.revenue, expenses: 0, nextBilling: newClient.nextBilling || "2026-04-01", billingStatus: "upcoming",
     }]);
     setNewClient({ name: "", services: [], revenue: 0, nextBilling: "" });
     setAddOpen(false);
@@ -420,12 +400,10 @@ function AgencyTab() {
     setClientsData(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
   };
   const removeClient = (id: string) => setClientsData(prev => prev.filter(c => c.id !== id));
-
   const toggleClientService = (clientId: string, service: string) => {
     setClientsData(prev => prev.map(c => {
       if (c.id !== clientId) return c;
-      const has = c.services.includes(service);
-      return { ...c, services: has ? c.services.filter(s => s !== service) : [...c.services, service] };
+      return { ...c, services: c.services.includes(service) ? c.services.filter(s => s !== service) : [...c.services, service] };
     }));
   };
 
@@ -449,176 +427,210 @@ function AgencyTab() {
   const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-        <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">MRR</span></div>
-          <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalMrr)}</p>
-        </div>
-        <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">ФОТ команды</span></div>
-          <p className="text-2xl font-bold text-destructive tracking-tight">{fmtCurrency(totalSalaries)}</p>
-        </div>
-        <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Налоги (10%)</span></div>
-          <p className="text-2xl font-bold text-amber-400 tracking-tight">{fmtCurrency(totalTax)}</p>
-        </div>
-        <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground"><PiggyBank className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span></div>
-          <p className={`text-2xl font-bold tracking-tight ${totalProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totalProfit)}</p>
-        </div>
-        <div className="glass rounded-xl p-5 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-muted-foreground"><BarChart3 className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Маржинальность</span></div>
-          <p className="text-2xl font-bold text-foreground tracking-tight">{avgMargin}%</p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <KpiCard icon={Wallet} label="MRR" value={fmtCurrency(totalMrr)} />
+        <KpiCard icon={Users} label="ФОТ команды" value={fmtCurrency(totalSalaries)} valueClass="text-destructive" />
+        <KpiCard icon={Receipt} label="Налоги (10%)" value={fmtCurrency(totalTax)} valueClass="text-status-warning" />
+        <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(totalProfit)} valueClass={totalProfit >= 0 ? "text-primary" : "text-destructive"} />
+        <KpiCard icon={Percent} label="Маржинальность" value={`${avgMargin}%`} />
       </div>
 
-      {/* Services manager */}
-      <div className="glass rounded-xl p-4">
-        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">Услуги</p>
-        <div className="flex flex-wrap gap-2 items-center">
-          {services.map(s => (
-            <Badge key={s} variant="secondary" className="text-[11px] gap-1 pr-1">
-              {s}
-              <button onClick={() => setServices(prev => prev.filter(x => x !== s))} className="ml-0.5 hover:text-destructive"><X className="h-3 w-3" /></button>
-            </Badge>
-          ))}
-          <div className="flex items-center gap-1">
-            <Input value={newServiceName} onChange={(e) => setNewServiceName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addService()} placeholder="Новая услуга..." className="h-7 w-[130px] text-[11px] bg-transparent border-white/[0.06]" />
-            <button onClick={addService} className="text-primary hover:text-primary/80"><Plus className="h-3.5 w-3.5" /></button>
+      {/* Services */}
+      <Section title="Услуги">
+        <div className="px-6 py-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            {services.map(s => (
+              <Badge key={s} variant="secondary" className="text-xs gap-1.5 pr-1.5 py-1 rounded-lg">
+                {s}
+                <button onClick={() => setServices(prev => prev.filter(x => x !== s))} className="hover:text-destructive transition-colors"><X className="h-3 w-3" /></button>
+              </Badge>
+            ))}
+            <div className="flex items-center gap-1.5 ml-1">
+              <Input value={newServiceName} onChange={(e) => setNewServiceName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addService()}
+                placeholder="Новая услуга…" className="h-8 w-[140px] text-xs bg-secondary/50 border-border/50 rounded-lg" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={addService}><Plus className="h-3.5 w-3.5" /></Button>
+            </div>
           </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Clients Table */}
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.04]">
-          <p className="text-[13px] font-semibold text-foreground">Клиенты</p>
+      {/* Clients */}
+      <Section
+        title={`Клиенты · ${clientsData.length}`}
+        action={
           <Sheet open={addOpen} onOpenChange={setAddOpen}>
             <SheetTrigger asChild>
-              <button className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Добавить клиента</button>
+              <Button variant="ghost" size="sm" className="text-xs text-primary gap-1.5 h-8"><Plus className="h-3.5 w-3.5" /> Добавить клиента</Button>
             </SheetTrigger>
-            <SheetContent className="w-[400px]">
-              <SheetHeader><SheetTitle>Новый клиент</SheetTitle></SheetHeader>
-              <div className="space-y-4 mt-6">
-                <div className="space-y-1.5">
-                  <label className="text-[12px] text-muted-foreground">Имя клиента</label>
-                  <Input value={newClient.name} onChange={(e) => setNewClient(p => ({ ...p, name: e.target.value }))} placeholder="Название компании" className="h-9 text-[13px]" />
+            <SheetContent className="w-[420px] border-border/50">
+              <SheetHeader><SheetTitle className="text-lg">Новый клиент</SheetTitle></SheetHeader>
+              <div className="space-y-5 mt-8">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Имя клиента</label>
+                  <Input value={newClient.name} onChange={(e) => setNewClient(p => ({ ...p, name: e.target.value }))} placeholder="Название компании" className="h-10 rounded-xl" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[12px] text-muted-foreground">Услуги</label>
-                  <div className="flex flex-wrap gap-1.5">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Услуги</label>
+                  <div className="flex flex-wrap gap-2">
                     {services.map(s => {
                       const selected = newClient.services.includes(s);
                       return (
                         <button key={s} onClick={() => setNewClient(p => ({ ...p, services: selected ? p.services.filter(x => x !== s) : [...p.services, s] }))}
-                          className={`text-[11px] px-2.5 py-1 rounded-md border transition-colors ${selected ? "bg-primary/10 border-primary/30 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                          className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${selected ? "bg-primary/10 border-primary/30 text-primary font-medium" : "border-border text-muted-foreground hover:text-foreground hover:border-border"}`}>
                           {s}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[12px] text-muted-foreground">Оплата (₸)</label>
-                  <Input type="number" value={newClient.revenue || ""} onChange={(e) => setNewClient(p => ({ ...p, revenue: Number(e.target.value) }))} className="h-9 text-[13px]" />
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Оплата (₸)</label>
+                  <Input type="number" value={newClient.revenue || ""} onChange={(e) => setNewClient(p => ({ ...p, revenue: Number(e.target.value) }))} className="h-10 rounded-xl" />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[12px] text-muted-foreground">Дата оплаты</label>
-                  <Input type="date" value={newClient.nextBilling} onChange={(e) => setNewClient(p => ({ ...p, nextBilling: e.target.value }))} className="h-9 text-[13px]" />
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Дата оплаты</label>
+                  <Input type="date" value={newClient.nextBilling} onChange={(e) => setNewClient(p => ({ ...p, nextBilling: e.target.value }))} className="h-10 rounded-xl" />
                 </div>
-                <Button onClick={handleAddClient} className="w-full h-10 text-[13px] mt-4"><Plus className="h-4 w-4 mr-2" /> Добавить</Button>
+                <Button onClick={handleAddClient} className="w-full h-11 rounded-xl text-sm mt-2"><Plus className="h-4 w-4 mr-2" /> Добавить клиента</Button>
               </div>
             </SheetContent>
           </Sheet>
+        }
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="text-xs font-medium pl-6">Клиент</TableHead>
+                <TableHead className="text-xs font-medium">Услуги</TableHead>
+                <TableHead className="text-xs font-medium text-right">Оплата</TableHead>
+                <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
+                <TableHead className="text-xs font-medium text-right">Прибыль</TableHead>
+                <TableHead className="text-xs font-medium text-center">Маржа</TableHead>
+                <TableHead className="text-xs font-medium">Дата оплаты</TableHead>
+                <TableHead className="text-xs font-medium">Статус</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clientsData.map((c) => {
+                const profit = c.revenue - c.expenses;
+                const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
+                const statusStyle = billingLabels[c.billingStatus];
+                return (
+                  <TableRow key={c.id} className="border-border/20 group hover:bg-secondary/30">
+                    <TableCell className="pl-6">
+                      <Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)}
+                        className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-[180px]" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1.5 items-center max-w-[220px]">
+                        {c.services.map(s => (
+                          <Badge key={s} variant="outline" className="text-[11px] gap-1 pr-1 rounded-md border-border/50 cursor-pointer hover:border-destructive/50 transition-colors" onClick={() => toggleClientService(c.id, s)}>
+                            {s} <X className="h-2.5 w-2.5 opacity-50 hover:opacity-100" />
+                          </Badge>
+                        ))}
+                        <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
+                          <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden">
+                            <Plus className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
+                          </SelectTrigger>
+                          <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>))}</SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
+                        className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[120px] ml-auto" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
+                        className="h-9 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[110px] ml-auto" />
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-sm font-semibold text-primary pr-4">{fmtCurrency(profit)}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={`text-xs tabular-nums border-primary/20 text-primary rounded-lg px-2.5 ${margin >= 80 ? "bg-primary/5" : ""}`}>{margin}%</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
+                        className="h-9 text-xs tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-[140px]" />
+                    </TableCell>
+                    <TableCell>
+                      <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
+                        className={`h-8 text-xs rounded-lg px-2.5 py-1 border cursor-pointer transition-colors ${statusStyle.cls}`}>
+                        {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <button onClick={() => removeClient(c.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {/* Totals */}
+              <TableRow className="border-border/30 bg-secondary/20 hover:bg-secondary/30">
+                <TableCell className="pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totalMrr)}</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totalExpenses)}</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-primary pr-4">{fmtCurrency(totalMrr - totalExpenses)}</TableCell>
+                <TableCell colSpan={4} />
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="border-white/[0.04] hover:bg-transparent">
-              <TableHead className="text-[11px]">Клиент</TableHead>
-              <TableHead className="text-[11px]">Услуги</TableHead>
-              <TableHead className="text-[11px] text-right">Оплата</TableHead>
-              <TableHead className="text-[11px] text-right">Расходы</TableHead>
-              <TableHead className="text-[11px] text-right">Прибыль</TableHead>
-              <TableHead className="text-[11px] text-right">Маржа</TableHead>
-              <TableHead className="text-[11px]">След. оплата</TableHead>
-              <TableHead className="text-[11px]">Статус</TableHead>
-              <TableHead className="text-[11px] w-8" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {clientsData.map((c) => {
-              const profit = c.revenue - c.expenses;
-              const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
-              return (
-                <TableRow key={c.id} className="border-white/[0.04]">
-                  <TableCell><Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)} className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1" /></TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1 items-center">
-                      {c.services.map(s => (
-                        <Badge key={s} variant="secondary" className="text-[10px] gap-0.5 pr-0.5 cursor-pointer" onClick={() => toggleClientService(c.id, s)}>{s} <X className="h-2.5 w-2.5" /></Badge>
-                      ))}
-                      <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
-                        <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden"><Plus className="h-3 w-3 text-muted-foreground" /></SelectTrigger>
-                        <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-[12px]">{s}</SelectItem>))}</SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
-                  <TableCell><Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))} className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[110px] ml-auto" /></TableCell>
-                  <TableCell><Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))} className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[100px] ml-auto" /></TableCell>
-                  <TableCell className="text-right tabular-nums text-[13px] font-semibold text-primary">{fmtCurrency(profit)}</TableCell>
-                  <TableCell className="text-right"><Badge variant="outline" className="text-[11px] border-primary/20 text-primary">{margin}%</Badge></TableCell>
-                  <TableCell><Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)} className="h-8 text-[12px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 w-[130px]" /></TableCell>
-                  <TableCell>
-                    <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)} className="h-8 text-[11px] bg-transparent border border-transparent hover:border-white/[0.06] focus:border-primary/40 rounded-md px-1 cursor-pointer text-foreground">
-                      {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
-                    </select>
-                  </TableCell>
-                  <TableCell><button onClick={() => removeClient(c.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      </Section>
 
-      {/* Team Section */}
-      <div className="glass rounded-xl overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-white/[0.04]">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <p className="text-[13px] font-semibold text-foreground">Команда</p>
-            <Badge variant="secondary" className="text-[10px]">{team.length} чел.</Badge>
-          </div>
-          <button onClick={addTeamMember} className="text-[12px] text-primary hover:text-primary/80 font-medium flex items-center gap-1"><UserPlus className="h-3.5 w-3.5" /> Добавить</button>
-        </div>
+      {/* Team */}
+      <Section
+        title={`Команда · ${team.length} чел.`}
+        action={
+          <Button variant="ghost" size="sm" className="text-xs text-primary gap-1.5 h-8" onClick={addTeamMember}>
+            <UserPlus className="h-3.5 w-3.5" /> Добавить
+          </Button>
+        }
+      >
         <Table>
           <TableHeader>
-            <TableRow className="border-white/[0.04] hover:bg-transparent">
-              <TableHead className="text-[11px]">Имя</TableHead>
-              <TableHead className="text-[11px]">Должность</TableHead>
-              <TableHead className="text-[11px] text-right">Зарплата (₸)</TableHead>
-              <TableHead className="text-[11px] w-8" />
+            <TableRow className="border-border/30 hover:bg-transparent">
+              <TableHead className="text-xs font-medium pl-6">Имя</TableHead>
+              <TableHead className="text-xs font-medium">Должность</TableHead>
+              <TableHead className="text-xs font-medium text-right">Зарплата (₸)</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {team.map((m) => (
-              <TableRow key={m.id} className="border-white/[0.04]">
-                <TableCell><Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)} className="h-8 text-[13px] font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1" /></TableCell>
-                <TableCell><Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)} className="h-8 text-[12px] bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-muted-foreground" /></TableCell>
-                <TableCell><Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))} className="h-8 text-[13px] tabular-nums font-medium bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[130px] ml-auto" /></TableCell>
-                <TableCell><button onClick={() => removeMember(m.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button></TableCell>
+              <TableRow key={m.id} className="border-border/20 group hover:bg-secondary/30">
+                <TableCell className="pl-6">
+                  <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
+                    className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2" />
+                </TableCell>
+                <TableCell>
+                  <Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)}
+                    className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2" />
+                </TableCell>
+                <TableCell>
+                  <Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))}
+                    className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[150px] ml-auto" />
+                </TableCell>
+                <TableCell>
+                  <button onClick={() => removeMember(m.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </TableCell>
               </TableRow>
             ))}
-            <TableRow className="border-white/[0.04] bg-white/[0.01]">
-              <TableCell colSpan={2} className="text-[12px] font-semibold text-foreground">Итого ФОТ</TableCell>
-              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totalSalaries)}</TableCell>
+            <TableRow className="border-border/30 bg-secondary/20 hover:bg-secondary/30">
+              <TableCell className="pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого ФОТ</TableCell>
+              <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totalSalaries)}</TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
         </Table>
-      </div>
+      </Section>
     </div>
   );
 }
@@ -639,13 +651,9 @@ interface MonthData {
 }
 
 function generateDefaultMonths(year: number): MonthData[] {
-  return monthNames.map((m) => {
-    const revenue = 0;
-    const expenses = 0;
-    const salaries = 0;
-    const tax = revenue * 0.1;
-    return { month: `${m} ${year}`, revenue, expenses, salaries, tax, profit: revenue - expenses - salaries - tax };
-  });
+  return monthNames.map((m) => ({
+    month: `${m} ${year}`, revenue: 0, expenses: 0, salaries: 0, tax: 0, profit: 0,
+  }));
 }
 
 function DynamicsTab() {
@@ -679,128 +687,132 @@ function DynamicsTab() {
   const chartData = monthsData.map(m => ({
     name: m.month.split(" ")[0],
     Выручка: m.revenue,
-    Расходы: m.expenses,
-    ФОТ: m.salaries,
-    Налоги: m.tax,
+    Расходы: m.expenses + m.salaries + m.tax,
     Прибыль: m.profit,
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Year switcher */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeYear(-1)}>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/50" onClick={() => changeYear(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-lg font-bold text-foreground tabular-nums">{year}</span>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeYear(1)}>
+        <div className="rounded-xl bg-card border border-border/50 px-6 py-2">
+          <span className="text-lg font-bold text-foreground tabular-nums">{year}</span>
+        </div>
+        <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/50" onClick={() => changeYear(1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Totals KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        {[
-          { label: "Выручка за год", value: totals.revenue, cls: "text-foreground" },
-          { label: "Расходы", value: totals.expenses, cls: "text-destructive" },
-          { label: "ФОТ", value: totals.salaries, cls: "text-destructive" },
-          { label: "Налоги (10%)", value: totals.tax, cls: "text-amber-400" },
-          { label: "Чистая прибыль", value: totals.profit, cls: totals.profit >= 0 ? "text-primary" : "text-destructive" },
-        ].map(k => (
-          <div key={k.label} className="glass rounded-xl p-4">
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{k.label}</p>
-            <p className={`text-xl font-bold tabular-nums mt-1 ${k.cls}`}>{fmtCurrency(k.value)}</p>
+      {/* Year KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <KpiCard icon={CircleDollarSign} label="Выручка за год" value={fmtCurrency(totals.revenue)} />
+        <KpiCard icon={Target} label="Расходы" value={fmtCurrency(totals.expenses)} valueClass="text-destructive" />
+        <KpiCard icon={Users} label="ФОТ" value={fmtCurrency(totals.salaries)} valueClass="text-destructive" />
+        <KpiCard icon={Receipt} label="Налоги (10%)" value={fmtCurrency(totals.tax)} valueClass="text-status-warning" />
+        <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(totals.profit)} valueClass={totals.profit >= 0 ? "text-primary" : "text-destructive"} />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Section title="Выручка vs Расходы">
+          <div className="p-6">
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} barGap={4} barSize={16}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => v > 0 ? `${(v / 1000).toFixed(0)}k` : "0"} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 13, padding: "10px 14px" }}
+                    labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 4 }}
+                    formatter={(value: number) => fmtCurrency(value)}
+                    cursor={{ fill: "hsl(var(--muted) / 0.3)", radius: 8 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+                  <Bar dataKey="Выручка" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Расходы" fill="hsl(var(--destructive) / 0.7)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        ))}
-      </div>
+        </Section>
 
-      {/* Chart */}
-      <div className="glass rounded-xl p-6">
-        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Динамика по месяцам</p>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: "hsl(var(--foreground))" }}
-                formatter={(value: number) => fmtCurrency(value)}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="Выручка" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Расходы" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="ФОТ" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="Налоги" fill="#fb923c" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Profit line chart */}
-      <div className="glass rounded-xl p-6">
-        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Чистая прибыль по месяцам</p>
-        <div className="h-[200px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                formatter={(value: number) => fmtCurrency(value)}
-              />
-              <Line type="monotone" dataKey="Прибыль" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))", r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <Section title="Чистая прибыль">
+          <div className="p-6">
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => v !== 0 ? `${(v / 1000).toFixed(0)}k` : "0"} />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 13, padding: "10px 14px" }}
+                    labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 4 }}
+                    formatter={(value: number) => fmtCurrency(value)}
+                  />
+                  <Area type="monotone" dataKey="Прибыль" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#profitGrad)" dot={{ fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2, r: 5 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Section>
       </div>
 
       {/* Monthly table */}
-      <div className="glass rounded-xl overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-white/[0.04] hover:bg-transparent">
-              <TableHead className="text-[11px]">Месяц</TableHead>
-              <TableHead className="text-[11px] text-right">Выручка</TableHead>
-              <TableHead className="text-[11px] text-right">Расходы</TableHead>
-              <TableHead className="text-[11px] text-right">ФОТ</TableHead>
-              <TableHead className="text-[11px] text-right">Налоги (10%)</TableHead>
-              <TableHead className="text-[11px] text-right">Прибыль</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {monthsData.map((m, i) => (
-              <TableRow key={m.month} className="border-white/[0.04]">
-                <TableCell className="text-[13px] font-medium text-foreground">{m.month}</TableCell>
-                <TableCell>
-                  <Input type="number" value={m.revenue || ""} onChange={(e) => updateMonth(i, "revenue", Number(e.target.value))}
-                    className="h-8 text-[13px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
-                </TableCell>
-                <TableCell>
-                  <Input type="number" value={m.expenses || ""} onChange={(e) => updateMonth(i, "expenses", Number(e.target.value))}
-                    className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
-                </TableCell>
-                <TableCell>
-                  <Input type="number" value={m.salaries || ""} onChange={(e) => updateMonth(i, "salaries", Number(e.target.value))}
-                    className="h-8 text-[13px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-[13px] text-amber-400">{fmtCurrency(m.tax)}</TableCell>
-                <TableCell className={`text-right tabular-nums text-[13px] font-semibold ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(m.profit)}</TableCell>
+      <Section title="Помесячная таблица">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border/30 hover:bg-transparent">
+                <TableHead className="text-xs font-medium pl-6">Месяц</TableHead>
+                <TableHead className="text-xs font-medium text-right">Выручка</TableHead>
+                <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
+                <TableHead className="text-xs font-medium text-right">ФОТ</TableHead>
+                <TableHead className="text-xs font-medium text-right">Налоги (10%)</TableHead>
+                <TableHead className="text-xs font-medium text-right pr-6">Прибыль</TableHead>
               </TableRow>
-            ))}
-            <TableRow className="border-white/[0.04] bg-white/[0.02]">
-              <TableCell className="text-[13px] font-bold text-foreground">Итого</TableCell>
-              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totals.revenue)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[13px] font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totals.salaries)}</TableCell>
-              <TableCell className="text-right tabular-nums text-[13px] font-bold text-amber-400">{fmtCurrency(totals.tax)}</TableCell>
-              <TableCell className={`text-right tabular-nums text-[13px] font-bold ${totals.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totals.profit)}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {monthsData.map((m, i) => (
+                <TableRow key={m.month} className="border-border/20 hover:bg-secondary/30">
+                  <TableCell className="text-sm font-medium text-foreground pl-6">{m.month}</TableCell>
+                  <TableCell>
+                    <Input type="number" value={m.revenue || ""} onChange={(e) => updateMonth(i, "revenue", Number(e.target.value))}
+                      className="h-9 text-sm tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[130px] ml-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" value={m.expenses || ""} onChange={(e) => updateMonth(i, "expenses", Number(e.target.value))}
+                      className="h-9 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[130px] ml-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" value={m.salaries || ""} onChange={(e) => updateMonth(i, "salaries", Number(e.target.value))}
+                      className="h-9 text-sm tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[130px] ml-auto" />
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-sm text-status-warning pr-4">{fmtCurrency(m.tax)}</TableCell>
+                  <TableCell className={`text-right tabular-nums text-sm font-semibold pr-6 ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(m.profit)}</TableCell>
+                </TableRow>
+              ))}
+              <TableRow className="border-border/30 bg-secondary/20 hover:bg-secondary/30">
+                <TableCell className="pl-6 text-sm font-bold text-foreground">Итого</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totals.revenue)}</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totals.salaries)}</TableCell>
+                <TableCell className="text-right tabular-nums text-sm font-bold text-status-warning">{fmtCurrency(totals.tax)}</TableCell>
+                <TableCell className={`text-right tabular-nums text-sm font-bold pr-6 ${totals.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totals.profit)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </Section>
     </div>
   );
 }
@@ -812,36 +824,28 @@ function DynamicsTab() {
 export default function FinancePage() {
   return (
     <DashboardLayout breadcrumb="Финансы">
-      <div className="space-y-6 max-w-[1600px] mx-auto">
+      <div className="space-y-8 max-w-[1600px] mx-auto">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Финансы</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Юнит-экономика, агентская P&L и динамика</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Финансы</h1>
+          <p className="text-sm text-muted-foreground mt-1">Юнит-экономика, агентская P&L и динамика</p>
         </div>
 
-        <Tabs defaultValue="decomposition" className="space-y-5">
-          <TabsList className="glass border border-white/[0.06]">
-            <TabsTrigger value="decomposition" className="text-[13px] gap-1.5">
-              <Calculator className="h-3.5 w-3.5" /> Декомпозиция цели
+        <Tabs defaultValue="decomposition" className="space-y-6">
+          <TabsList className="bg-card border border-border/50 h-11 p-1 rounded-xl">
+            <TabsTrigger value="decomposition" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
+              <Calculator className="h-4 w-4" /> Декомпозиция
             </TabsTrigger>
-            <TabsTrigger value="agency" className="text-[13px] gap-1.5">
-              <DollarSign className="h-3.5 w-3.5" /> Агентская аналитика
+            <TabsTrigger value="agency" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
+              <DollarSign className="h-4 w-4" /> Агентская аналитика
             </TabsTrigger>
-            <TabsTrigger value="dynamics" className="text-[13px] gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5" /> Динамика по месяцам
+            <TabsTrigger value="dynamics" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
+              <TrendingUp className="h-4 w-4" /> Динамика по месяцам
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="decomposition">
-            <DecompositionTab />
-          </TabsContent>
-
-          <TabsContent value="agency">
-            <AgencyTab />
-          </TabsContent>
-
-          <TabsContent value="dynamics">
-            <DynamicsTab />
-          </TabsContent>
+          <TabsContent value="decomposition"><DecompositionTab /></TabsContent>
+          <TabsContent value="agency"><AgencyTab /></TabsContent>
+          <TabsContent value="dynamics"><DynamicsTab /></TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
