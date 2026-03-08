@@ -1,23 +1,18 @@
 import { useLocation } from "react-router-dom";
 import {
-  Zap,
-  LayoutDashboard,
-  Briefcase,
-  Target,
-  Wand2,
-  Radar,
-  Users,
-  ShieldCheck,
-  Settings,
-  Sun,
-  Moon,
-  Activity,
-  Coins,
-  FileBarChart,
+  Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
+  Users, ShieldCheck, Settings, Activity, Coins, FileBarChart,
+  ChevronsUpDown, Check, Building2,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { cn } from "@/lib/utils";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { useState } from "react";
 
 const navGroups = [
   {
@@ -54,18 +49,76 @@ const navGroups = [
 
 export default function AppSidebar() {
   const location = useLocation();
+  const { workspaces, active, setActiveId, isAgency } = useWorkspace();
+  const [wsOpen, setWsOpen] = useState(false);
 
   return (
     <aside className="w-64 shrink-0 h-screen flex flex-col border-r border-border bg-sidebar">
-      {/* Brand */}
-      <div className="h-14 flex items-center gap-2.5 px-5 shrink-0">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Zap className="h-4 w-4 text-primary" />
-        </div>
-        <span className="text-[15px] font-bold text-foreground tracking-tight">MarkVision</span>
-      </div>
+      {/* ── Workspace Switcher ── */}
+      <Popover open={wsOpen} onOpenChange={setWsOpen}>
+        <PopoverTrigger asChild>
+          <button className="h-14 flex items-center gap-3 px-4 shrink-0 w-full hover:bg-accent/30 transition-colors group">
+            <div className={cn(
+              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-base",
+              isAgency ? "bg-primary/10 border border-primary/20" : "bg-accent border border-border"
+            )}>
+              {active.emoji}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {isAgency ? "Все проекты" : "Клиентский проект"}
+              </p>
+            </div>
+            <ChevronsUpDown size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-60 p-1.5 border-border/30 bg-popover"
+          align="start"
+          sideOffset={4}
+        >
+          <div className="px-2 py-1.5 mb-1">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">Workspace</p>
+          </div>
+          {workspaces.map(ws => {
+            const selected = ws.id === active.id;
+            return (
+              <button
+                key={ws.id}
+                onClick={() => { setActiveId(ws.id); setWsOpen(false); }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left transition-colors",
+                  selected ? "bg-primary/10" : "hover:bg-accent/50"
+                )}
+              >
+                <div className={cn(
+                  "h-7 w-7 rounded-md flex items-center justify-center text-sm shrink-0",
+                  ws.type === "agency" ? "bg-primary/10 border border-primary/20" : "bg-accent border border-border/50"
+                )}>
+                  {ws.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn("text-[13px] truncate", selected ? "text-primary font-medium" : "text-foreground")}>{ws.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{ws.type === "agency" ? "Агентство" : "Клиент"}</p>
+                </div>
+                {selected && <Check size={14} className="text-primary shrink-0" />}
+              </button>
+            );
+          })}
+          <Separator className="my-1.5 bg-border/20" />
+          <button className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg text-left hover:bg-accent/50 transition-colors">
+            <div className="h-7 w-7 rounded-md bg-accent/50 border border-dashed border-border/50 flex items-center justify-center">
+              <Building2 size={12} className="text-muted-foreground" />
+            </div>
+            <span className="text-[13px] text-muted-foreground">Добавить проект…</span>
+          </button>
+        </PopoverContent>
+      </Popover>
 
-      {/* Nav groups */}
+      <Separator className="bg-border/50" />
+
+      {/* ── Nav groups ── */}
       <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
         {navGroups.map((group) => (
           <div key={group.label}>
@@ -100,7 +153,7 @@ export default function AppSidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* ── Footer ── */}
       <div className="shrink-0 px-3 pb-4 space-y-1">
         <Separator className="mb-3" />
         <NavLink
