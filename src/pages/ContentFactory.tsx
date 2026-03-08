@@ -18,7 +18,7 @@ import { Video, Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { PhoneMockup } from "@/components/content/PhoneMockup";
+
 import { format as dateFmt } from "date-fns";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
@@ -449,8 +449,7 @@ export default function ContentFactory() {
           );
         })()}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-8">
-          {/* LEFT: Form */}
+        <div className="max-w-3xl">
           <div className="rounded-xl border border-border bg-card p-6 space-y-8">
             {/* Type toggle */}
             <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
@@ -640,58 +639,42 @@ export default function ContentFactory() {
             </div>
           </div>
 
-          {/* RIGHT: Phone Mockup + History */}
-          <div className="space-y-6">
-            {/* Phone preview */}
-            <div className="sticky top-4">
-              <PhoneMockup
-                contentMode={mainType}
-                format={mainType === "video" ? videoFormat : photoFormat}
-                aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
-                designPrompt={visualStyle}
-                exactText={mainType === "video" ? speakerText : mainText}
-                referencePreview={referencePreview}
-                logoFile={logoFile}
-              />
-
-              {/* History */}
-              {history.length > 0 && (
-                <div className="mt-6 space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 text-muted-foreground/50" />
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">История</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {history.map((h) => (
-                      <button
-                        key={h.id}
-                        onClick={() => loadHistoryItem(h)}
-                        className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 p-2.5 transition-colors"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-foreground">
-                            {h.content_type === "video" ? "🎬" : "📸"} {h.content_type === "video" ? "Видео" : "Фото"}
-                          </span>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
-                            h.status === "completed" ? "bg-primary/10 text-primary" :
-                            h.status === "error" ? "bg-destructive/10 text-destructive" :
-                            "bg-muted text-muted-foreground"
-                          }`}>
-                            {h.status === "completed" ? "✓" : h.status === "error" ? "✗" : "⏳"}
-                          </span>
-                        </div>
-                        {h.created_at && (
-                          <p className="text-[9px] text-muted-foreground/50 mt-0.5">
-                            {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
-                          </p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* History */}
+          {history.length > 0 && (
+            <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Последние генерации</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {history.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => loadHistoryItem(h)}
+                    className="text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 p-3 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-foreground">
+                        {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                      </span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                        h.status === "completed" ? "bg-primary/10 text-primary" :
+                        h.status === "error" ? "bg-destructive/10 text-destructive" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {h.status === "completed" ? "✓" : h.status === "error" ? "✗" : "⏳"}
+                      </span>
+                    </div>
+                    {h.created_at && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
