@@ -141,7 +141,45 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const score = lead.ai_score ?? 0;
   const scoreBadge = getScoreLabel(score);
 
+  // CAPI status mapping (same as KanbanBoard)
+  const CAPI_STATUS_MAP: Record<string, string> = {
+    "Записан": "scheduled",
+    "Визит совершен": "diagnostic",
+    "Оплачен": "paid",
+  };
+
+  const fireCAPIWebhook = async (oldStatus: string, newStatus: string) => {
+    const capiKey = CAPI_STATUS_MAP[newStatus];
+    if (!capiKey) return;
+    try {
+      const res = await fetch("https://n8n.zapoinov.com/webhook/lead-status-changed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          table: "leads",
+          type: "UPDATE",
+          record: {
+            id: lead.id,
+            status: capiKey,
+            project_id: (lead as any).project_id || null,
+            deal_amount: Number(lead.amount) || 0,
+          },
+          old_record: { status: oldStatus },
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && !data.skipped) {
+          toast({ title: "📡 CAPI событие отправлено", description: `${data.event_name || capiKey} → Facebook Pixel` });
+        }
+      }
+    } catch (err) {
+      console.error("CAPI webhook error:", err);
+    }
+  };
+
   const handleStageChange = async (newStage: string) => {
+    const oldStatus = stage;
     setStage(newStage);
     const { error } = await (supabase as any)
       .from("leads").update({ status: newStage }).eq("id", lead.id);
@@ -150,6 +188,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       return;
     }
     toast({ title: "Статус обновлён", description: `${lead.name} → ${newStage}` });
+    // Fire CAPI conversion event
+    fireCAPIWebhook(oldStatus, newStage);
     onLeadUpdated?.();
   };
 
