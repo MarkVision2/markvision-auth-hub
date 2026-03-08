@@ -504,6 +504,8 @@ export default function DashboardTarget() {
                 </Collapsible>
               );
             })}
+            </div>
+            </div>
           </div>
         </FadeUpItem>
       </StaggerContainer>
