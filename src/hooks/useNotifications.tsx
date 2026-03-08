@@ -122,6 +122,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (prefs.soundEnabled && (type === "error" || type === "warning")) {
       playAlertSound();
     }
+
+    // Browser push notification when tab is not focused
+    if (prefs.browserPushEnabled && document.hidden && Notification.permission === "granted") {
+      try {
+        const iconMap: Record<string, string> = { error: "🔴", warning: "🟡", info: "🟢" };
+        new Notification(`${iconMap[type] || ""} ${title}`, {
+          body: description || "",
+          tag: newNotif.id,
+          silent: true, // we handle sound ourselves
+        });
+      } catch {}
+    }
   }, []);
 
   const markAllRead = useCallback(() => {
