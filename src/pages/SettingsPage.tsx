@@ -998,3 +998,190 @@ function SecurityTab() {
     </div>
   );
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SYSTEM HEALTH TAB
+   ══════════════════════════════════════════════════════════════ */
+
+const SERVICES = [
+  { name: "Supabase", sub: "База данных", icon: Database, status: "operational" as const, metric: "Latency: 18ms" },
+  { name: "n8n", sub: "Ядро автоматизации", icon: Workflow, status: "operational" as const, metric: "Uptime: 99.9%" },
+  { name: "Meta Graph API", sub: "Рекламный трафик", icon: Globe, status: "operational" as const, metric: "Token Valid" },
+  { name: "Apify", sub: "Радар конкурентов", icon: ScanSearch, status: "operational" as const, metric: "Last sync: 2m ago" },
+  { name: "Anthropic / OpenAI", sub: "AI Engine", icon: Cpu, status: "operational" as const, metric: "API Active" },
+  { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "operational" as const, metric: "Webhook OK" },
+];
+
+const STATUS_MAP = {
+  operational: { label: "Operational", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
+  degraded: { label: "Degraded", color: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10" },
+  outage: { label: "Outage", color: "bg-rose-500", text: "text-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10" },
+} as const;
+
+function generateUptimeBars() {
+  const bars: { day: number; status: "operational" | "degraded" | "outage"; uptime: number }[] = [];
+  for (let i = 30; i >= 1; i--) {
+    let status: "operational" | "degraded" | "outage" = "operational";
+    let uptime = 100;
+    if (i === 18) { status = "degraded"; uptime = 98.2; }
+    if (i === 9) { status = "outage"; uptime = 94.5; }
+    bars.push({ day: i, status, uptime });
+  }
+  return bars;
+}
+
+const HEALTH_LOGS = [
+  { time: "14:02:05", level: "INFO", msg: "n8n Webhook connection successful." },
+  { time: "13:45:10", level: "SUCCESS", msg: "Meta API token verified." },
+  { time: "13:30:00", level: "INFO", msg: "Supabase health check passed (18ms)." },
+  { time: "12:15:22", level: "INFO", msg: "Anthropic API key validated." },
+  { time: "11:20:00", level: "WARN", msg: "High latency detected on Apify API (Resolved)." },
+  { time: "10:05:44", level: "SUCCESS", msg: "Telegram bot webhook re-registered." },
+  { time: "09:00:00", level: "INFO", msg: "Daily system health sweep completed — all services green." },
+];
+
+const LEVEL_COLORS: Record<string, string> = {
+  INFO: "text-blue-400",
+  SUCCESS: "text-emerald-400",
+  WARN: "text-amber-400",
+  ERROR: "text-rose-400",
+};
+
+function SystemHealthTab() {
+  const uptimeBars = useMemo(() => generateUptimeBars(), []);
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+
+  const today = new Date();
+
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div>
+        <h1 className="text-xl font-bold text-foreground tracking-tight">Здоровье системы</h1>
+        <p className="text-sm text-muted-foreground mt-1">Мониторинг инфраструктуры и сервисов в реальном времени</p>
+      </div>
+
+      {/* ── Overall Status Banner ── */}
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-6 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="h-4 w-4 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="absolute inset-0 h-4 w-4 rounded-full bg-emerald-500/40 animate-ping" />
+          </div>
+          <div>
+            <p className="text-lg font-bold text-foreground">Все системы работают в штатном режиме</p>
+            <p className="text-xs text-muted-foreground mt-0.5">6 из 6 сервисов активны</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="sm" className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+          <RefreshCw size={13} />
+          <span>Последняя проверка: <span className="text-foreground font-medium">только что</span></span>
+        </Button>
+      </div>
+
+      {/* ── Microservices Grid ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Статус сервисов</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {SERVICES.map(svc => {
+            const s = STATUS_MAP[svc.status];
+            return (
+              <div
+                key={svc.name}
+                className={cn(
+                  "rounded-xl border p-4 transition-colors",
+                  s.border, s.bg
+                )}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-accent/30 border border-border/20 flex items-center justify-center">
+                      <svc.icon size={16} className="text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{svc.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{svc.sub}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className={cn("text-[10px] gap-1 border-none", s.bg, s.text)}>
+                    <div className={cn("h-1.5 w-1.5 rounded-full", s.color)} />
+                    {s.label}
+                  </Badge>
+                </div>
+                <div className="rounded-lg bg-accent/20 border border-border/10 px-3 py-2">
+                  <span className="text-[11px] font-mono text-muted-foreground">{svc.metric}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Uptime History Bar ── */}
+      <div className="rounded-xl border border-border/30 bg-card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">История доступности</h2>
+            <span className="text-[10px] text-muted-foreground/50 ml-1">Последние 30 дней</span>
+          </div>
+          <span className="text-[11px] text-emerald-400 font-semibold">99.87% Uptime</span>
+        </div>
+
+        <div className="relative">
+          <div className="flex items-end gap-[3px] h-10">
+            {uptimeBars.map((bar, i) => {
+              const barColor =
+                bar.status === "operational" ? "bg-emerald-500" :
+                bar.status === "degraded" ? "bg-amber-500" : "bg-rose-500";
+              const barDate = new Date(today);
+              barDate.setDate(today.getDate() - bar.day);
+              const dateStr = `${barDate.getDate()} ${["Янв","Фев","Мар","Апр","Май","Июн","Июл","Авг","Сен","Окт","Ноя","Дек"][barDate.getMonth()]}`;
+
+              return (
+                <div
+                  key={i}
+                  className="relative flex-1 group cursor-pointer"
+                  onMouseEnter={() => setHoveredBar(i)}
+                  onMouseLeave={() => setHoveredBar(null)}
+                >
+                  <div className={cn("w-full rounded-sm transition-all", barColor, hoveredBar === i ? "opacity-100 h-10" : "opacity-70 h-8")} />
+                  {hoveredBar === i && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-popover border border-border/30 shadow-xl whitespace-nowrap z-50">
+                      <p className="text-[11px] font-medium text-foreground">{dateStr}</p>
+                      <p className="text-[10px] text-muted-foreground">Uptime: {bar.uptime}%</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-[9px] text-muted-foreground/40">30 дней назад</span>
+            <span className="text-[9px] text-muted-foreground/40">Сегодня</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── System Logs ── */}
+      <div className="rounded-xl border border-border/30 bg-card overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-border/20 flex items-center gap-2">
+          <Terminal size={14} className="text-muted-foreground" />
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Системный лог</h2>
+          <span className="text-[10px] text-muted-foreground/40 ml-auto">Сегодня</span>
+        </div>
+        <div className="divide-y divide-border/10 font-mono text-[12px]">
+          {HEALTH_LOGS.map((log, i) => (
+            <div key={i} className="px-5 py-2.5 flex items-start gap-3 hover:bg-accent/10 transition-colors">
+              <span className="text-muted-foreground/40 shrink-0 tabular-nums">[{log.time}]</span>
+              <span className={cn("shrink-0 font-semibold w-16", LEVEL_COLORS[log.level] || "text-foreground")}>[{log.level}]</span>
+              <span className="text-muted-foreground">{log.msg}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
