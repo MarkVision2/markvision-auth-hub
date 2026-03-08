@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/hooks/useAuthReady";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoleProvider } from "@/hooks/useRole";
+import { NotificationProvider } from "@/hooks/useNotifications";
 import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import DashboardTarget from "./pages/DashboardTarget";

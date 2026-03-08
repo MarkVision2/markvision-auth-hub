@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import AppSidebar from "@/components/AppSidebar";
 import DevRoleToggle from "@/components/DevRoleToggle";
+import NotificationBell from "@/components/NotificationBell";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -39,6 +40,8 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
               </div>
             </div>
           </div>
+
+          <NotificationBell />
 
           <Button
             variant="ghost"
