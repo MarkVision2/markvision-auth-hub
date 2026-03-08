@@ -279,9 +279,14 @@ export default function ContentFactory() {
           <p className="text-sm text-muted-foreground mb-8">Результат генерации</p>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
-              <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
+                <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
+              </div>
+              <Button onClick={handleReset} variant="outline" size="sm" className="gap-1.5 border-border">
+                <RotateCcw className="h-3.5 w-3.5" /> Назад
+              </Button>
             </div>
 
             {task.content_type === "video" ? (
