@@ -143,6 +143,37 @@ export default function ContentFactory() {
 
       setTask(data as ContentTask);
       setTaskId(data.id);
+
+      // Map frontend format to n8n format
+      const formatMap: Record<string, string> = {
+        banner: "fb-target",
+        carousel7: "insta-carousel",
+        carousel10: "insta-carousel",
+      };
+
+      // Trigger n8n Content Factory workflow
+      const n8nPayload = {
+        task_id: data.id,
+        content_type: mainType,
+        source_type: payload.source_type,
+        source_url: payload.source_url,
+        format: formatMap[photoFormat] || "fb-target",
+        aspect_ratio: aspectRatio,
+        main_text: payload.main_text || "",
+        visual_style: payload.visual_style || payload.design_template || "",
+        slide_count: photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1,
+        custom_logo_url: payload.custom_logo_url,
+      };
+
+      try {
+        await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(n8nPayload),
+        });
+      } catch (webhookErr) {
+        console.error("n8n webhook error:", webhookErr);
+      }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
