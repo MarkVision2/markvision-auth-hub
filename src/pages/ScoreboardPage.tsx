@@ -99,7 +99,7 @@ function PctCell({ value }: { value: number }) {
    ══════════════════════════════════════════════ */
 
 type PlanValues = Record<PlanKey, number>;
-const EMPTY_PLAN: PlanValues = { spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
+const EMPTY_PLAN: PlanValues = { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
 
 export default function ScoreboardPage() {
   const now = new Date();
