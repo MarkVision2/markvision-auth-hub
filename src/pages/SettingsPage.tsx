@@ -1254,9 +1254,6 @@ function SystemHealthTab() {
   );
 }
 
-function generateUptimeBars() {
-  const bars: { day: number; status: "operational" | "degraded" | "outage"; uptime: number }[] = [];
-  for (let i = 30; i >= 1; i--) {
     let status: "operational" | "degraded" | "outage" = "operational";
     let uptime = 100;
     if (i === 18) { status = "degraded"; uptime = 98.2; }
