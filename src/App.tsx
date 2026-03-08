@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import FinancePage from "./pages/FinancePage";
 import AiReportsPage from "./pages/AiReportsPage";
+import ScoreboardPage from "./pages/ScoreboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
