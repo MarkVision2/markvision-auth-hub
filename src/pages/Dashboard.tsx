@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; // refresh
 import DashboardLayout from "@/components/DashboardLayout";
 import HqKpiCards from "@/components/hq/HqKpiCards";
 import HqAnomalyRadar from "@/components/hq/HqAnomalyRadar";
