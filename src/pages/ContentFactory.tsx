@@ -44,8 +44,8 @@ const PHOTO_FORMAT_CARDS = [
 ] as const;
 
 const VIDEO_FORMAT_CARDS = [
-  { value: "reels", label: "Reels / Shorts", sub: "Вертикальное видео", icon: "📱" },
-  { value: "promo-clip", label: "Промо-ролик", sub: "Рекламный клип", icon: "🎬" },
+  { value: "reels", label: "Reels", sub: "Instagram вертикалка", icon: "📱" },
+  { value: "shorts", label: "Shorts", sub: "YouTube / TikTok", icon: "⚡" },
   { value: "slideshow", label: "Слайдшоу", sub: "Фото → видео с музыкой", icon: "🎞" },
 ] as const;
 
@@ -53,12 +53,6 @@ const PHOTO_ASPECT_CARDS = [
   { value: "1:1", label: "1:1", sub: "Квадрат" },
   { value: "4:5", label: "4:5", sub: "Лента" },
   { value: "9:16", label: "9:16", sub: "Stories / Reels" },
-] as const;
-
-const VIDEO_ASPECT_CARDS = [
-  { value: "9:16", label: "9:16", sub: "Reels / Stories" },
-  { value: "16:9", label: "16:9", sub: "YouTube / Горизонт" },
-  { value: "1:1", label: "1:1", sub: "Квадрат" },
 ] as const;
 
 const photoPipelineSteps = [
