@@ -128,8 +128,13 @@ function PctCell({ value }: { value: number }) {
    MAIN PAGE
    ══════════════════════════════════════════════ */
 
+const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+
 export default function ScoreboardPage() {
-  const [monthLabel] = useState("Март 2026");
+  const [monthIndex, setMonthIndex] = useState(2); // Март
+
+  const prev = () => setMonthIndex(i => (i > 0 ? i - 1 : 11));
+  const next = () => setMonthIndex(i => (i < 11 ? i + 1 : 0));
 
   return (
     <DashboardLayout breadcrumb="Таблица показателей">
@@ -142,11 +147,11 @@ export default function ScoreboardPage() {
         {/* ── Controls Bar ── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={prev}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-semibold text-foreground px-2 select-none">{monthLabel}</span>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+            <span className="text-sm font-semibold text-foreground px-2 select-none min-w-[90px] text-center">{MONTHS[monthIndex]}</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={next}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
