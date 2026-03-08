@@ -40,14 +40,12 @@ interface ClientAccount {
   client_name: string;
 }
 
-type PlanKey = "spend" | "impressions" | "clicks" | "leads" | "followers" | "visits" | "sales" | "revenue";
-type MetricKey = "spend" | "impressions" | "clicks" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
+type PlanKey = "spend" | "leads" | "followers" | "visits" | "sales" | "revenue";
+type MetricKey = "spend" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
 
 const columns: { key: "date" | MetricKey; label: string; align: "left" | "right" }[] = [
   { key: "date", label: "Дата", align: "left" },
   { key: "spend", label: "Расходы", align: "right" },
-  { key: "impressions", label: "Показы", align: "right" },
-  { key: "clicks", label: "Клики", align: "right" },
   { key: "leads", label: "Лиды", align: "right" },
   { key: "cpl", label: "CPL", align: "right" },
   { key: "followers", label: "Подписч.", align: "right" },
