@@ -264,6 +264,7 @@ export default function SettingsPage() {
             />
           )}
           {activeTab === "general" && <GeneralTab />}
+          {activeTab === "notifications" && <NotificationsTab />}
           {activeTab === "integrations" && <IntegrationsTab />}
           {activeTab === "security" && <SecurityTab />}
           {activeTab === "health" && <SystemHealthTab />}
