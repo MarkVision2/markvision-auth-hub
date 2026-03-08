@@ -88,6 +88,12 @@ interface Product { name: string; check: number; share: number; }
 interface Expense { name: string; value: number; isPercent: boolean; }
 
 function DecompositionTab() {
+  const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  const now = new Date();
+  const [planMonthIndex, setPlanMonthIndex] = useState(now.getMonth());
+  const [planYear, setPlanYear] = useState(now.getFullYear());
+  const [savingPlan, setSavingPlan] = useState(false);
+
   const [mode, setMode] = useState<"revenue" | "profit">("revenue");
   const [targetRevenue, setTargetRevenue] = useState(1_000_000);
   const [targetProfit, setTargetProfit] = useState(200_000);
