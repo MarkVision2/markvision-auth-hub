@@ -36,7 +36,7 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-white/[0.03] border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
+        className="glass border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
       />
     </div>
   );
