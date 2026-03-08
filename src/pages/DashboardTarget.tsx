@@ -314,17 +314,6 @@ export default function DashboardTarget() {
           </div>
         </FadeUpItem>
 
-        {/* KPI Cards */}
-        <FadeUpItem>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <KpiCard icon={DollarSign} label="Расход" value={fmtCurrency(totals.spend)} color="bg-destructive/10 text-destructive" />
-            <KpiCard icon={Users} label="Лиды" value={String(totals.leads)} sub={totals.cpl > 0 ? `CPL: ${fmtCurrency(totals.cpl)}` : undefined} color="bg-primary/10 text-primary" />
-            <KpiCard icon={Eye} label="Визиты" value={fmt(clients.reduce((s, c) => s + c.totalVisits, 0))} color="bg-[hsl(var(--status-ai))]/10 text-[hsl(var(--status-ai))]" />
-            <KpiCard icon={ShoppingCart} label="Продажи" value={String(totals.sales)} color="bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))]" />
-            <KpiCard icon={BarChart3} label="Выручка" value={fmtCurrency(totals.revenue)} color="bg-[hsl(var(--status-warning))]/10 text-[hsl(var(--status-warning))]" />
-            <KpiCard icon={Target} label="ROMI" value={`${totals.romi}%`} sub={totals.romi > 0 ? "Прибыльно" : totals.romi < 0 ? "Убыточно" : "—"} color={totals.romi >= 0 ? "bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))]" : "bg-destructive/10 text-destructive"} />
-          </div>
-        </FadeUpItem>
 
         {/* Alerts */}
         {alerts.length > 0 && (
