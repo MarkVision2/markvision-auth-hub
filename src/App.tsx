@@ -22,6 +22,7 @@ import FinancePage from "./pages/FinancePage";
 import AiReportsPage from "./pages/AiReportsPage";
 import ScoreboardPage from "./pages/ScoreboardPage";
 import AgencyBillingPage from "./pages/AgencyBillingPage";
+import AutopostingPage from "./pages/AutopostingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
