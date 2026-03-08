@@ -611,20 +611,32 @@ function NotificationsTab() {
           <Switch
             checked={preferences.browserPushEnabled}
             onCheckedChange={async (v) => {
-              if (v && "Notification" in window) {
-                const perm = Notification.permission === "granted"
-                  ? "granted"
-                  : await Notification.requestPermission();
-                if (perm !== "granted") return;
+              if (v) {
+                if (!("Notification" in window)) {
+                  toast({ title: "Браузер не поддерживает уведомления", variant: "destructive" });
+                  return;
+                }
+                try {
+                  const perm = Notification.permission === "granted"
+                    ? "granted"
+                    : await Notification.requestPermission();
+                  if (perm === "denied") {
+                    toast({ title: "Уведомления заблокированы", description: "Разрешите их в настройках браузера для этого сайта", variant: "destructive" });
+                    return;
+                  }
+                  if (perm !== "granted") {
+                    toast({ title: "Разрешение не получено", variant: "destructive" });
+                    return;
+                  }
+                } catch {
+                  // In iframe/preview, permission API may fail — allow toggle anyway
+                  toast({ title: "Push включены", description: "Полная поддержка доступна на опубликованном сайте" });
+                }
               }
               updatePreferences({ browserPushEnabled: v });
             }}
             className="data-[state=checked]:bg-primary"
           />
-        </div>
-        {typeof Notification !== "undefined" && Notification.permission === "denied" && (
-          <p className="text-xs text-destructive">Уведомления заблокированы в браузере. Разрешите их в настройках сайта.</p>
-        )}
       </div>
 
       {/* Type filters */}
