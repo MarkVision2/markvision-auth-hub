@@ -932,7 +932,7 @@ function DynamicsTab() {
         <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/10" onClick={() => changeYear(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="rounded-xl bg-card border border-border/10 px-6 py-2">
+        <div className="rounded-xl bg-card px-6 py-2">
           <span className="text-lg font-bold text-foreground tabular-nums">{year}</span>
         </div>
         <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/10" onClick={() => changeYear(1)}>
