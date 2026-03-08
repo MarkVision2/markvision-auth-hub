@@ -201,6 +201,7 @@ function AutomationDialog() {
 export default function AiReportsPage() {
   const [client, setClient] = useState("clinic-aiva");
   const [compareEnabled, setCompareEnabled] = useState(true);
+  const [hasRevenueData, setHasRevenueData] = useState(true);
 
   return (
     <DashboardLayout breadcrumb="AI Отчётность">
