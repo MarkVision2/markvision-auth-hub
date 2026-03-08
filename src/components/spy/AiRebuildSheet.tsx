@@ -117,7 +117,7 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       )}
 
                       {/* Main improved text */}
-                      <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
+                      <div className="rounded-xl glass border-primary/20 p-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
                         <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{ad.improved}</p>
                       </div>
 
