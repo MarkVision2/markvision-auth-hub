@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileBarChart,
-  ChevronsUpDown, Check, Building2,
+  ChevronsUpDown, Check, Building2, TableProperties,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,6 +44,7 @@ const navGroups = [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
       { title: "Финансы", path: "/finance", icon: Coins },
       { title: "AI Отчётность", path: "/ai-reports", icon: FileBarChart },
+      { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
     ],
   },
 ];
