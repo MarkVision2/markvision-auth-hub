@@ -18,7 +18,7 @@ import { Video, Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { PhoneMockup } from "@/components/content/PhoneMockup";
+
 import { format as dateFmt } from "date-fns";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
