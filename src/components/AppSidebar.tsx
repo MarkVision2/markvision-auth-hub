@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
-  Users, ShieldCheck, Settings, Activity, Coins, FileBarChart,
+  Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, Building2, TableProperties,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -20,14 +20,14 @@ const navGroups = [
     label: "ГЛАВНОЕ",
     items: [
       { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true },
+      { title: "Агентские кабинеты", path: "/accounts", icon: Briefcase },
     ],
   },
   {
-    label: "ТРАФИК И КОНТЕНТ",
+    label: "МАРКЕТИНГ",
     items: [
-      { title: "Агентские кабинеты", path: "/accounts", icon: Briefcase },
-      { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
       { title: "Контент-Завод", path: "/content", icon: Wand2 },
+      { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
       { title: "Радар конкурентов", path: "/spy", icon: Radar },
     ],
   },
@@ -42,9 +42,9 @@ const navGroups = [
     label: "АНАЛИТИКА",
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
-      { title: "Финансы", path: "/finance", icon: Coins },
-      { title: "AI Отчётность", path: "/ai-reports", icon: FileBarChart },
       { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
+      { title: "Финансы", path: "/finance", icon: Coins },
+      { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],
   },
 ];
