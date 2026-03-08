@@ -258,6 +258,21 @@ export default function CompetitorSpy() {
     setPostLoading(false);
   }, [postUrl, toast]);
 
+  // ─── Delete Analysis ───
+  const handleDeleteAnalysis = useCallback(async (id: string) => {
+    if (id.startsWith("mock-")) {
+      // just hide mock
+      return;
+    }
+    const { error } = await (supabase as any).from("content_factory").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      return;
+    }
+    setAnalyses(prev => prev.filter(a => a.id !== id));
+    toast({ title: "🗑 Удалено", description: "Контент удалён из базы" });
+  }, [toast]);
+
   // ─── View Script ───
   const handleViewScript = useCallback((analysis: AnalysisResult) => {
     setScriptDialog({ open: true, script: analysis.generated_script, loading: false });
@@ -469,6 +484,14 @@ export default function CompetitorSpy() {
                             className="h-9 px-3 rounded-lg border-border text-xs"
                           >
                             Подробнее
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteAnalysis(analysis.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-9 w-9 p-0 rounded-lg text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
