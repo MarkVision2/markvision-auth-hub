@@ -224,14 +224,18 @@ export default function AgencyAccounts() {
     return "border-l-2 border-l-transparent";
   }
 
+  const pageTitle = isSuperadmin ? "Агентские кабинеты" : "Мои рекламные кабинеты";
+
   return (
-    <DashboardLayout breadcrumb="Агентские кабинеты">
+    <DashboardLayout breadcrumb={pageTitle}>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Агентские кабинеты</h1>
-        <Button onClick={() => setSheetOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Добавить кабинет
-        </Button>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
+        {isSuperadmin && (
+          <Button onClick={() => setSheetOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Добавить кабинет
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
