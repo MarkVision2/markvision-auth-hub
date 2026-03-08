@@ -164,6 +164,8 @@ export default function AiReportsPage() {
   const [selectedClient, setSelectedClient] = useState<string>("all");
   const [compareEnabled, setCompareEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const pagesRef = useRef<(HTMLDivElement | null)[]>([]);
 
   // Data state
   const [curMetrics, setCurMetrics] = useState<DailyRow[]>([]);
