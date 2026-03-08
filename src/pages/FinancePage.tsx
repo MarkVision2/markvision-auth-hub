@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank, BarChart3, Plus, Trash2, Download, Users, UserPlus, X } from "lucide-react";
+import { Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank, BarChart3, Plus, Trash2, Download, Users, UserPlus, X, TrendingUp, ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
 
 /* ── Formatting ── */
 function fmt(v: number): string {
@@ -442,13 +443,15 @@ function AgencyTab() {
   const totalMrr = clientsData.reduce((s, c) => s + c.revenue, 0);
   const totalExpenses = clientsData.reduce((s, c) => s + c.expenses, 0);
   const totalSalaries = team.reduce((s, m) => s + m.salary, 0);
-  const totalProfit = totalMrr - totalExpenses - totalSalaries;
+  const taxRate = 0.10;
+  const totalTax = totalMrr * taxRate;
+  const totalProfit = totalMrr - totalExpenses - totalSalaries - totalTax;
   const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
 
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">MRR</span></div>
           <p className="text-2xl font-bold text-foreground tracking-tight">{fmtCurrency(totalMrr)}</p>
@@ -456,6 +459,10 @@ function AgencyTab() {
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">ФОТ команды</span></div>
           <p className="text-2xl font-bold text-destructive tracking-tight">{fmtCurrency(totalSalaries)}</p>
+        </div>
+        <div className="glass rounded-xl p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground"><CalendarDays className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Налоги (10%)</span></div>
+          <p className="text-2xl font-bold text-amber-400 tracking-tight">{fmtCurrency(totalTax)}</p>
         </div>
         <div className="glass rounded-xl p-5 flex flex-col gap-2">
           <div className="flex items-center gap-2 text-muted-foreground"><PiggyBank className="h-4 w-4" /><span className="text-[12px] font-medium uppercase tracking-wider">Чистая прибыль</span></div>
@@ -617,6 +624,188 @@ function AgencyTab() {
 }
 
 /* ══════════════════════════════════════════════
+   TAB 3 — ДИНАМИКА ПО МЕСЯЦАМ
+   ══════════════════════════════════════════════ */
+
+const monthNames = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+
+interface MonthData {
+  month: string;
+  revenue: number;
+  expenses: number;
+  salaries: number;
+  tax: number;
+  profit: number;
+}
+
+function generateDefaultMonths(year: number): MonthData[] {
+  return monthNames.map((m) => {
+    const revenue = 0;
+    const expenses = 0;
+    const salaries = 0;
+    const tax = revenue * 0.1;
+    return { month: `${m} ${year}`, revenue, expenses, salaries, tax, profit: revenue - expenses - salaries - tax };
+  });
+}
+
+function DynamicsTab() {
+  const [year, setYear] = useState(2026);
+  const [monthsData, setMonthsData] = useState<MonthData[]>(generateDefaultMonths(2026));
+
+  const updateMonth = (idx: number, field: keyof MonthData, value: number) => {
+    setMonthsData(prev => prev.map((m, i) => {
+      if (i !== idx) return m;
+      const updated = { ...m, [field]: value };
+      updated.tax = updated.revenue * 0.1;
+      updated.profit = updated.revenue - updated.expenses - updated.salaries - updated.tax;
+      return updated;
+    }));
+  };
+
+  const changeYear = (delta: number) => {
+    const newYear = year + delta;
+    setYear(newYear);
+    setMonthsData(generateDefaultMonths(newYear));
+  };
+
+  const totals = useMemo(() => ({
+    revenue: monthsData.reduce((s, m) => s + m.revenue, 0),
+    expenses: monthsData.reduce((s, m) => s + m.expenses, 0),
+    salaries: monthsData.reduce((s, m) => s + m.salaries, 0),
+    tax: monthsData.reduce((s, m) => s + m.tax, 0),
+    profit: monthsData.reduce((s, m) => s + m.profit, 0),
+  }), [monthsData]);
+
+  const chartData = monthsData.map(m => ({
+    name: m.month.split(" ")[0],
+    Выручка: m.revenue,
+    Расходы: m.expenses,
+    ФОТ: m.salaries,
+    Налоги: m.tax,
+    Прибыль: m.profit,
+  }));
+
+  return (
+    <div className="space-y-6">
+      {/* Year switcher */}
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeYear(-1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="text-lg font-bold text-foreground tabular-nums">{year}</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => changeYear(1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Totals KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        {[
+          { label: "Выручка за год", value: totals.revenue, cls: "text-foreground" },
+          { label: "Расходы", value: totals.expenses, cls: "text-destructive" },
+          { label: "ФОТ", value: totals.salaries, cls: "text-destructive" },
+          { label: "Налоги (10%)", value: totals.tax, cls: "text-amber-400" },
+          { label: "Чистая прибыль", value: totals.profit, cls: totals.profit >= 0 ? "text-primary" : "text-destructive" },
+        ].map(k => (
+          <div key={k.label} className="glass rounded-xl p-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{k.label}</p>
+            <p className={`text-xl font-bold tabular-nums mt-1 ${k.cls}`}>{fmtCurrency(k.value)}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Chart */}
+      <div className="glass rounded-xl p-6">
+        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Динамика по месяцам</p>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+                formatter={(value: number) => fmtCurrency(value)}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="Выручка" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Расходы" fill="hsl(var(--destructive))" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="ФОТ" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="Налоги" fill="#fb923c" radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Profit line chart */}
+      <div className="glass rounded-xl p-6">
+        <p className="text-[12px] text-muted-foreground uppercase tracking-wider font-semibold mb-4">Чистая прибыль по месяцам</p>
+        <div className="h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                formatter={(value: number) => fmtCurrency(value)}
+              />
+              <Line type="monotone" dataKey="Прибыль" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: "hsl(var(--primary))", r: 4 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Monthly table */}
+      <div className="glass rounded-xl overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-white/[0.04] hover:bg-transparent">
+              <TableHead className="text-[11px]">Месяц</TableHead>
+              <TableHead className="text-[11px] text-right">Выручка</TableHead>
+              <TableHead className="text-[11px] text-right">Расходы</TableHead>
+              <TableHead className="text-[11px] text-right">ФОТ</TableHead>
+              <TableHead className="text-[11px] text-right">Налоги (10%)</TableHead>
+              <TableHead className="text-[11px] text-right">Прибыль</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {monthsData.map((m, i) => (
+              <TableRow key={m.month} className="border-white/[0.04]">
+                <TableCell className="text-[13px] font-medium text-foreground">{m.month}</TableCell>
+                <TableCell>
+                  <Input type="number" value={m.revenue || ""} onChange={(e) => updateMonth(i, "revenue", Number(e.target.value))}
+                    className="h-8 text-[13px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
+                </TableCell>
+                <TableCell>
+                  <Input type="number" value={m.expenses || ""} onChange={(e) => updateMonth(i, "expenses", Number(e.target.value))}
+                    className="h-8 text-[13px] tabular-nums text-destructive bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
+                </TableCell>
+                <TableCell>
+                  <Input type="number" value={m.salaries || ""} onChange={(e) => updateMonth(i, "salaries", Number(e.target.value))}
+                    className="h-8 text-[13px] tabular-nums bg-transparent border-transparent hover:border-white/[0.06] focus:border-primary/40 p-1 text-right w-[120px] ml-auto" />
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-[13px] text-amber-400">{fmtCurrency(m.tax)}</TableCell>
+                <TableCell className={`text-right tabular-nums text-[13px] font-semibold ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(m.profit)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="border-white/[0.04] bg-white/[0.02]">
+              <TableCell className="text-[13px] font-bold text-foreground">Итого</TableCell>
+              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totals.revenue)}</TableCell>
+              <TableCell className="text-right tabular-nums text-[13px] font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
+              <TableCell className="text-right tabular-nums text-[13px] font-bold text-foreground">{fmtCurrency(totals.salaries)}</TableCell>
+              <TableCell className="text-right tabular-nums text-[13px] font-bold text-amber-400">{fmtCurrency(totals.tax)}</TableCell>
+              <TableCell className={`text-right tabular-nums text-[13px] font-bold ${totals.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totals.profit)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════
    MAIN PAGE
    ══════════════════════════════════════════════ */
 
@@ -626,7 +815,7 @@ export default function FinancePage() {
       <div className="space-y-6 max-w-[1600px] mx-auto">
         <div>
           <h1 className="text-xl font-bold text-foreground">Финансы</h1>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Юнит-экономика и агентская P&L</p>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Юнит-экономика, агентская P&L и динамика</p>
         </div>
 
         <Tabs defaultValue="decomposition" className="space-y-5">
@@ -637,6 +826,9 @@ export default function FinancePage() {
             <TabsTrigger value="agency" className="text-[13px] gap-1.5">
               <DollarSign className="h-3.5 w-3.5" /> Агентская аналитика
             </TabsTrigger>
+            <TabsTrigger value="dynamics" className="text-[13px] gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5" /> Динамика по месяцам
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="decomposition">
@@ -645,6 +837,10 @@ export default function FinancePage() {
 
           <TabsContent value="agency">
             <AgencyTab />
+          </TabsContent>
+
+          <TabsContent value="dynamics">
+            <DynamicsTab />
           </TabsContent>
         </Tabs>
       </div>
