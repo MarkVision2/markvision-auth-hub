@@ -198,7 +198,7 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* PCT row */}
-                <TableRow className="border-b-2 border-border/40 bg-muted/10">
+                <TableRow className="border-b border-border/10 bg-muted/10">
                   {columns.map(col => (
                     <TableCell
                       key={col.key}
