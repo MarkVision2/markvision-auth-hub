@@ -16,6 +16,7 @@ import AiRopPage from "./pages/AiRopPage";
 import CompetitorSpy from "./pages/CompetitorSpy";
 import SettingsPage from "./pages/SettingsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import FinancePage from "./pages/FinancePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
