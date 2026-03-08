@@ -443,7 +443,9 @@ function AgencyTab() {
   const totalMrr = clientsData.reduce((s, c) => s + c.revenue, 0);
   const totalExpenses = clientsData.reduce((s, c) => s + c.expenses, 0);
   const totalSalaries = team.reduce((s, m) => s + m.salary, 0);
-  const totalProfit = totalMrr - totalExpenses - totalSalaries;
+  const taxRate = 0.10;
+  const totalTax = totalMrr * taxRate;
+  const totalProfit = totalMrr - totalExpenses - totalSalaries - totalTax;
   const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
 
   return (
