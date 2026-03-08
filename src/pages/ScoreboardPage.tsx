@@ -207,7 +207,32 @@ export default function ScoreboardPage() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchPlan]);
 
-  // Aggregated fact
+  // Build full month grid — all days from 1..end, merge with actual data
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const fullMonth = useMemo(() => {
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const rowMap = new Map(rows.map(r => [r.date, r]));
+    const result: (DailyRow & { hasData: boolean })[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const iso = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const existing = rowMap.get(iso);
+      if (existing) {
+        result.push({ ...existing, hasData: true });
+      } else {
+        result.push({
+          id: iso, date: iso,
+          spend: 0, impressions: 0, clicks: 0, leads: 0,
+          followers: 0, visits: 0, sales: 0, revenue: 0,
+          hasData: false,
+        });
+      }
+    }
+    return result;
+  }, [rows, year, monthIndex]);
+
+  // Aggregated fact (only rows with data)
   const fact = useMemo(() => rows.reduce(
     (acc, d) => ({
       spend: acc.spend + d.spend, impressions: acc.impressions + d.impressions,
