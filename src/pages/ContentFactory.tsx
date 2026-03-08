@@ -190,14 +190,22 @@ export default function ContentFactory() {
         custom_logo_url: customLogoUrl,
       };
 
+      const webhookUrl = import.meta.env.VITE_N8N_CONTENT_WEBHOOK_URL || "https://n8n.zapoinov.com/webhook/content-factory-v2";
       try {
-        await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
+        const resp = await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(n8nPayload),
         });
+        if (resp.ok) {
+          toast({ title: "✅ Задание отправлено", description: "Проверьте Telegram для результата" });
+        } else {
+          console.error("n8n response error:", resp.status);
+          toast({ title: "⚠️ Сервер ответил ошибкой", description: `Статус: ${resp.status}`, variant: "destructive" });
+        }
       } catch (webhookErr) {
         console.error("n8n webhook error:", webhookErr);
+        toast({ title: "⚠️ Не удалось отправить на n8n", description: "Проверьте подключение", variant: "destructive" });
       }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
