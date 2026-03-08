@@ -9,6 +9,8 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 const emptyForm = {
   client_name: "",
   daily_budget: "",
@@ -57,7 +59,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
     setSaving(true);
 
-    const row: Record<string, unknown> = { client_name: form.client_name };
+    const row: Record<string, unknown> = { client_name: form.client_name, project_id: PROJECT_ID };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
     if (form.region_key) row.region_key = form.region_key;
