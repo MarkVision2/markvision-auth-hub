@@ -5,6 +5,7 @@ import { useTheme } from "@/hooks/useTheme";
 import AppSidebar from "@/components/AppSidebar";
 import DevRoleToggle from "@/components/DevRoleToggle";
 import NotificationBell from "@/components/NotificationBell";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 interface DashboardLayoutProps {
   children: ReactNode;
