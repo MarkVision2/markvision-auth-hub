@@ -173,8 +173,6 @@ export default function ScoreboardPage() {
         const p = data[0];
         setPlanValues({
           spend: Number(p.plan_spend) || 0,
-          impressions: Number(p.plan_impressions) || 0,
-          clicks: Number(p.plan_clicks) || 0,
           leads: Number(p.plan_leads) || 0,
           followers: Number(p.plan_followers) || 0,
           visits: Number(p.plan_visits) || 0,
