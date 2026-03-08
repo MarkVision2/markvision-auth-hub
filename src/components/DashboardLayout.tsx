@@ -3,7 +3,7 @@ import { Sun, Moon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import AppSidebar from "@/components/AppSidebar";
-import DevRoleToggle from "@/components/DevRoleToggle";
+
 import NotificationBell from "@/components/NotificationBell";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
@@ -59,7 +59,6 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
         </main>
       </div>
 
-      <DevRoleToggle />
     </div>
   );
 }
