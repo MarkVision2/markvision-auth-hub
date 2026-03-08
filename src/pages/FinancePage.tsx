@@ -696,44 +696,52 @@ function AgencyTab() {
           </Button>
         }
       >
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="text-xs font-medium pl-6">Имя</TableHead>
-              <TableHead className="text-xs font-medium">Должность</TableHead>
-              <TableHead className="text-xs font-medium text-right">Зарплата (₸)</TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {team.map((m) => (
-              <TableRow key={m.id} className="border-border/20 group hover:bg-secondary/30">
-                <TableCell className="pl-6">
-                  <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
-                    className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2" />
-                </TableCell>
-                <TableCell>
-                  <Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)}
-                    className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2" />
-                </TableCell>
-                <TableCell>
-                  <Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))}
-                    className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[150px] ml-auto" />
-                </TableCell>
-                <TableCell>
-                  <button onClick={() => removeMember(m.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </TableCell>
-              </TableRow>
-            ))}
-            <TableRow className="border-border/30 bg-secondary/20 hover:bg-secondary/30">
-              <TableCell className="pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого ФОТ</TableCell>
-              <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totalSalaries)}</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <table className="w-full" style={{ tableLayout: "fixed" }}>
+            <colgroup>
+              <col style={{ width: "40%" }} />
+              <col style={{ width: "30%" }} />
+              <col style={{ width: "25%" }} />
+              <col style={{ width: "5%" }} />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-border/30">
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Имя</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Должность</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Зарплата (₸)</th>
+                <th className="py-3 px-1" />
+              </tr>
+            </thead>
+            <tbody>
+              {team.map((m) => (
+                <tr key={m.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                  <td className="py-4 px-4 align-middle text-left">
+                    <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
+                      className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                  </td>
+                  <td className="py-4 px-4 align-middle text-left">
+                    <Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)}
+                      className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                  </td>
+                  <td className="py-4 px-4 align-middle text-left">
+                    <Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))}
+                      className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                  </td>
+                  <td className="py-4 px-1 align-middle">
+                    <button onClick={() => removeMember(m.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              <tr className="bg-secondary/20 border-t border-border/30">
+                <td className="py-4 px-4 text-sm font-bold text-foreground text-left" colSpan={2}>Итого ФОТ</td>
+                <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalSalaries)}</td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </Section>
     </div>
   );
