@@ -160,7 +160,7 @@ export default function ScoreboardPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/30 bg-muted/30">
+                <TableRow className="border-b border-border/10 bg-muted/30">
                   {columns.map(col => (
                     <TableHead
                       key={col.key}
@@ -174,7 +174,7 @@ export default function ScoreboardPage() {
 
               <TableBody>
                 {/* PLAN row */}
-                <TableRow className="bg-blue-500/[0.06] border-border/20 hover:bg-blue-500/[0.08]">
+                <TableRow className="bg-blue-500/[0.06] border-b border-border/10 hover:bg-blue-500/[0.08]">
                   {columns.map(col => (
                     <TableCell
                       key={col.key}
@@ -186,7 +186,7 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* FACT row */}
-                <TableRow className="bg-primary/[0.04] border-border/20 hover:bg-primary/[0.06]">
+                <TableRow className="bg-primary/[0.04] border-b border-border/10 hover:bg-primary/[0.06]">
                   {columns.map(col => (
                     <TableCell
                       key={col.key}
@@ -198,7 +198,7 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* PCT row */}
-                <TableRow className="border-b-2 border-border/40 bg-muted/10">
+                <TableRow className="border-b border-border/10 bg-muted/10">
                   {columns.map(col => (
                     <TableCell
                       key={col.key}
@@ -217,7 +217,7 @@ export default function ScoreboardPage() {
                 {dailyData.map((row, i) => (
                   <TableRow
                     key={row.date}
-                    className={`border-border/10 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
+                    className={`border-b border-border/5 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
                   >
                     {columns.map(col => (
                       <TableCell
