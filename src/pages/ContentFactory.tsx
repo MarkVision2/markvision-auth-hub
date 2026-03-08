@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw,
   Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
