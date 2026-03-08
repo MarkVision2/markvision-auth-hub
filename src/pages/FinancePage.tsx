@@ -440,7 +440,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
 
         {/* Add existing service */}
         {availableServices.length > 0 && (
-          <div className="p-3 border-t border-border/10">
+          <div className="p-3">
             <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Добавить услугу</p>
             <div className="flex flex-wrap gap-1.5">
               {availableServices.map(s => (
