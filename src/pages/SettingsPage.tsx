@@ -1552,6 +1552,7 @@ function SystemHealthTab() {
                 <TableHead className="text-[10px] uppercase tracking-wider text-center w-20">Узлы</TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider text-right w-36">Обновлён</TableHead>
                 <TableHead className="text-[10px] uppercase tracking-wider text-right w-24">Статус</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-center w-20"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1580,6 +1581,18 @@ function SystemHealthTab() {
                     )}>
                       {wf.active ? "Active" : "Inactive"}
                     </span>
+                  </TableCell>
+                  <TableCell className="text-center py-2.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-primary"
+                      disabled={restartingId === wf.id}
+                      onClick={() => restartWorkflow(wf.id, wf.name)}
+                      title="Перезапустить workflow"
+                    >
+                      <RefreshCw size={13} className={restartingId === wf.id ? "animate-spin" : ""} />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
