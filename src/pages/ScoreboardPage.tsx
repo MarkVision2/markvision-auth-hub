@@ -217,7 +217,7 @@ export default function ScoreboardPage() {
                 {dailyData.map((row, i) => (
                   <TableRow
                     key={row.date}
-                    className={`border-border/10 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
+                    className={`border-b border-border/5 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}
                   >
                     {columns.map(col => (
                       <TableCell
