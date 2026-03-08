@@ -1254,14 +1254,6 @@ function SystemHealthTab() {
   );
 }
 
-
-
-const STATUS_MAP = {
-  operational: { label: "Operational", color: "bg-emerald-500", text: "text-emerald-400", border: "border-emerald-500/20", bg: "bg-emerald-500/10" },
-  degraded: { label: "Degraded", color: "bg-amber-500", text: "text-amber-400", border: "border-amber-500/20", bg: "bg-amber-500/10" },
-  outage: { label: "Outage", color: "bg-rose-500", text: "text-rose-400", border: "border-rose-500/20", bg: "bg-rose-500/10" },
-} as const;
-
 function generateUptimeBars() {
   const bars: { day: number; status: "operational" | "degraded" | "outage"; uptime: number }[] = [];
   for (let i = 30; i >= 1; i--) {
