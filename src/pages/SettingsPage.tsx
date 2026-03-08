@@ -151,6 +151,9 @@ export default function SettingsPage() {
   const [team, setTeam] = useState<TeamMember[]>(loadTeam);
   const [search, setSearch] = useState("");
 
+  // Persist team to localStorage
+  useEffect(() => { saveTeam(team); }, [team]);
+
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
