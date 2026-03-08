@@ -629,7 +629,7 @@ function AgencyTab() {
                 const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
                 const statusStyle = billingLabels[c.billingStatus];
                 return (
-                  <tr key={c.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                  <tr key={c.id} className="group hover:bg-secondary/20 transition-colors">
                     <td className="py-4 px-4 align-middle text-left">
                       <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
                     </td>
