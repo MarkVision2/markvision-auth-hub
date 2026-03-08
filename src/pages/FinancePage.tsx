@@ -630,40 +630,40 @@ function AgencyTab() {
                 const statusStyle = billingLabels[c.billingStatus];
                 return (
                   <tr key={c.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
-                    <td className="py-4 px-4 align-middle">
+                    <td className="py-4 px-4 align-middle text-left">
                       <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
                     </td>
-                    <td className="py-4 px-4 align-middle">
+                    <td className="py-4 px-4 align-middle text-left">
                       <ServicesPopover
                         client={c}
                         allServices={services}
                         onUpdate={(svcs) => updateClient(c.id, "services", svcs)}
                       />
                     </td>
-                    <td className="py-4 px-4 align-middle text-right">
+                    <td className="py-4 px-4 align-middle text-left">
                       <span className="text-sm font-semibold text-foreground tabular-nums">{fmtCurrency(revenue)}</span>
                     </td>
-                    <td className="py-4 px-4 align-middle text-right">
+                    <td className="py-4 px-4 align-middle text-left">
                       <span className="text-sm font-semibold text-destructive tabular-nums">{fmtCurrency(c.expenses)}</span>
                     </td>
-                    <td className="py-4 px-4 align-middle text-right">
+                    <td className="py-4 px-4 align-middle text-left">
                       <span className={`text-sm font-semibold tabular-nums ${profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(profit)}</span>
                     </td>
-                    <td className="py-4 px-2 align-middle text-center">
+                    <td className="py-4 px-4 align-middle text-left">
                       <span className={`text-xs font-semibold tabular-nums ${margin >= 50 ? "text-primary" : "text-muted-foreground"}`}>
                         {margin}%
                       </span>
                     </td>
-                    <td className="py-4 px-2 align-middle text-center">
+                    <td className="py-4 px-4 align-middle text-left">
                       <span className="text-xs tabular-nums text-muted-foreground">{c.nextBilling.split("-").reverse().join(".")}</span>
                     </td>
-                    <td className="py-4 px-2 align-middle text-center">
+                    <td className="py-4 px-4 align-middle text-left">
                       <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
                         className={`h-7 text-[11px] rounded-lg px-2 border cursor-pointer transition-colors ${statusStyle.cls}`}>
                         {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
                       </select>
                     </td>
-                    <td className="py-4 px-1 align-middle text-center">
+                    <td className="py-4 px-1 align-middle">
                       <button onClick={() => removeClient(c.id)} className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -672,11 +672,11 @@ function AgencyTab() {
                 );
               })}
               <tr className="bg-secondary/20 border-t border-border/30">
-                <td className="py-4 px-4 text-sm font-bold text-foreground">Итого</td>
-                <td className="py-4 px-4 text-sm text-muted-foreground">{clientsData.reduce((s, c) => s + c.services.length, 0)} услуг</td>
-                <td className="py-4 px-4 text-right text-sm font-bold text-foreground tabular-nums">{fmtCurrency(totalMrr)}</td>
-                <td className="py-4 px-4 text-right text-sm font-bold text-destructive tabular-nums">{fmtCurrency(totalExpenses)}</td>
-                <td className="py-4 px-4 text-right text-sm font-bold text-primary tabular-nums">{fmtCurrency(totalMrr - totalExpenses)}</td>
+                <td className="py-4 px-4 text-sm font-bold text-foreground text-left">Итого</td>
+                <td className="py-4 px-4 text-sm text-muted-foreground text-left">{clientsData.reduce((s, c) => s + c.services.length, 0)} услуг</td>
+                <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalMrr)}</td>
+                <td className="py-4 px-4 text-sm font-bold text-destructive tabular-nums text-left">{fmtCurrency(totalExpenses)}</td>
+                <td className="py-4 px-4 text-sm font-bold text-primary tabular-nums text-left">{fmtCurrency(totalMrr - totalExpenses)}</td>
                 <td colSpan={4} />
               </tr>
             </tbody>
