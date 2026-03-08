@@ -13,14 +13,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const apiKey = Deno.env.get("N8N_CONTROL_API_KEY");
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "N8N_CONTROL_API_KEY not configured" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  }
-
   try {
     const body = await req.json();
     const action = body.action; // ping | list_workflows | last_errors
@@ -36,7 +28,6 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-N8N-API-Key": apiKey,
       },
       body: JSON.stringify({ action }),
     });
