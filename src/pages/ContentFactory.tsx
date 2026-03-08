@@ -675,6 +675,8 @@ export default function ContentFactory() {
               </div>
             </div>
           )}
+        </div>
+      </div>
     </DashboardLayout>
   );
 }
