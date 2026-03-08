@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
   Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut, Clock, Zap,
-  Send, Workflow, ScanSearch, ExternalLink, HeartPulse,
+  Send, Workflow, ScanSearch, ExternalLink, HeartPulse, Bell, Volume2, VolumeX,
   Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
