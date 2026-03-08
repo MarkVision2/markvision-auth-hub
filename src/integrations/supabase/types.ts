@@ -533,6 +533,9 @@ export type Database = {
           expenses: number
           id: string
           month_index: number
+          plan_expenses: number
+          plan_revenue: number
+          plan_salaries: number
           revenue: number
           salaries: number
           updated_at: string | null
@@ -543,6 +546,9 @@ export type Database = {
           expenses?: number
           id?: string
           month_index: number
+          plan_expenses?: number
+          plan_revenue?: number
+          plan_salaries?: number
           revenue?: number
           salaries?: number
           updated_at?: string | null
@@ -553,6 +559,9 @@ export type Database = {
           expenses?: number
           id?: string
           month_index?: number
+          plan_expenses?: number
+          plan_revenue?: number
+          plan_salaries?: number
           revenue?: number
           salaries?: number
           updated_at?: string | null
