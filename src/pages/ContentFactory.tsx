@@ -485,7 +485,9 @@ export default function ContentFactory() {
 
   // ── THE PRECISION FORM ──
   const renderForm = () => (
-    <div className="space-y-6">
+    <div className="flex gap-6 items-start">
+      {/* Left: Form */}
+      <div className="flex-1 min-w-0 space-y-6">
       {/* ✨ MAGIC AI BUTTON */}
       <motion.button
         onClick={() => setMagicOpen(true)}
