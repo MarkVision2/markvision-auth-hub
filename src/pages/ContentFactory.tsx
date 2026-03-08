@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Image, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw,
   Megaphone, CalendarClock, RefreshCw, MessageSquareText, ChevronLeft, Eye,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -117,8 +118,19 @@ export default function ContentFactory() {
         .from("content_tasks")
         .select("id, status, progress_text, result_urls, content_type, format, visual_style, main_text, source_type, aspect_ratio, created_at")
         .order("created_at", { ascending: false })
-        .limit(20);
-      if (data) setHistory(data);
+        .limit(6);
+      if (data) {
+        setHistory(data);
+        // Auto-cleanup: delete items beyond the latest 6
+        const { data: allIds } = await (supabase as any)
+          .from("content_tasks")
+          .select("id")
+          .order("created_at", { ascending: false });
+        if (allIds && allIds.length > 6) {
+          const idsToDelete = allIds.slice(6).map((r: any) => r.id);
+          await (supabase as any).from("content_tasks").delete().in("id", idsToDelete);
+        }
+      }
       setLoadingHistory(false);
     };
     loadHistory();
@@ -519,14 +531,26 @@ export default function ContentFactory() {
     );
   };
 
+  // ── DELETE TASK ──
+  const handleDeleteTask = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    await (supabase as any).from("content_tasks").delete().eq("id", id);
+    setHistory(prev => prev.filter(h => h.id !== id));
+    if (viewingTask?.id === id) setViewingTask(null);
+    toast({ title: "🗑 Контент удалён" });
+  };
+
   // ── HISTORY SECTION ──
   const renderHistory = () => {
-    const completedTasks = history.filter((h) => h.status === "completed" && h.result_urls && h.result_urls.length > 0);
+    const completedTasks = history.filter((h) => h.status === "completed" && h.result_urls && h.result_urls.length > 0).slice(0, 6);
     if (completedTasks.length === 0) return null;
 
     return (
       <div className="space-y-4 mt-8">
-        <h2 className="text-lg font-semibold text-foreground">📋 Созданный контент</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">📋 Созданный контент</h2>
+          <span className="text-xs text-muted-foreground">Последние 6 · старые удаляются автоматически</span>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {completedTasks.map((h) => (
             <motion.div
@@ -560,9 +584,17 @@ export default function ContentFactory() {
                 </p>
               </div>
               {/* Hover overlay */}
-              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <Button variant="secondary" size="sm" className="gap-1.5">
                   <Eye className="h-3.5 w-3.5" /> Открыть
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={(e) => handleDeleteTask(h.id, e)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </motion.div>
