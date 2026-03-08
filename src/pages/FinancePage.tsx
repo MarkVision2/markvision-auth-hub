@@ -717,15 +717,15 @@ function AgencyTab() {
                 <tr key={m.id} className="group hover:bg-secondary/20 transition-colors">
                   <td className="py-4 px-4 align-middle text-left">
                     <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
-                      className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                      className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
                   </td>
                   <td className="py-4 px-4 align-middle text-left">
                     <Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)}
-                      className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                      className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
                   </td>
                   <td className="py-4 px-4 align-middle text-left">
                     <Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))}
-                      className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                      className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
                   </td>
                   <td className="py-4 px-1 align-middle">
                     <button onClick={() => removeMember(m.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
