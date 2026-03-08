@@ -324,7 +324,7 @@ export default function DashboardTarget() {
               return (
                 <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
                   <CollapsibleTrigger asChild>
-                    <div className={`grid grid-cols-[1fr_100px_80px_60px_60px_60px_64px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
+                    <div className={`grid grid-cols-[1fr_100px_80px_70px_70px_80px_64px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
                       <div className="flex items-center gap-2">
                         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
                         <div className="min-w-0">
