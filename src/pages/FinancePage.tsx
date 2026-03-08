@@ -154,7 +154,7 @@ function DecompositionTab() {
         </div>
 
         {/* Targets */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-4">
+        <div className="rounded-2xl bg-card p-5 space-y-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Целевые метрики</p>
           <NumField label="Целевая Выручка" value={targetRevenue} onChange={setTargetRevenue} />
           <NumField label="Целевая Прибыль" value={targetProfit} onChange={setTargetProfit} />
