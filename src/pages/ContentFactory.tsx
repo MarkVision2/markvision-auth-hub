@@ -394,8 +394,9 @@ export default function ContentFactory() {
 
   // ── PROGRESS VIEW ──
   const renderProgressView = (t: ContentTask) => {
+    const steps = t.content_type === "video" ? videoPipelineSteps : photoPipelineSteps;
     const step = getActiveStep(t);
-    const pct = t.status === "completed" ? 100 : step >= 0 ? Math.min(95, ((step + 1) / pipelineSteps.length) * 100) : 0;
+    const pct = t.status === "completed" ? 100 : step >= 0 ? Math.min(95, ((step + 1) / steps.length) * 100) : 0;
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border bg-card p-8 space-y-8">
         <div className="space-y-2">
@@ -406,7 +407,7 @@ export default function ContentFactory() {
           </div>
         </div>
         <div className="space-y-1">
-          {pipelineSteps.map((s, i) => {
+          {steps.map((s, i) => {
             const isDone = i < step || t.status === "completed";
             const isActive = i === step && t.status !== "completed";
             return (
