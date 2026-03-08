@@ -33,7 +33,7 @@ function KpiCard({ icon: Icon, label, value, valueClass = "text-foreground", sub
   icon: React.ElementType; label: string; value: string; valueClass?: string; sub?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-card border border-border/10 p-5 flex flex-col gap-3 hover:border-border/20 transition-colors">
+    <div className="rounded-2xl bg-card p-5 flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
           <Icon className="h-4 w-4 text-muted-foreground" />
