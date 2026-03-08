@@ -884,7 +884,7 @@ function DynamicsTab() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border/30 hover:bg-transparent">
+              <TableRow className="border-border/10 hover:bg-transparent">
                 <TableHead className="text-xs font-medium pl-6">Месяц</TableHead>
                 <TableHead className="text-xs font-medium text-right">Выручка</TableHead>
                 <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
