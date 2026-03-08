@@ -118,8 +118,19 @@ export default function ContentFactory() {
         .from("content_tasks")
         .select("id, status, progress_text, result_urls, content_type, format, visual_style, main_text, source_type, aspect_ratio, created_at")
         .order("created_at", { ascending: false })
-        .limit(20);
-      if (data) setHistory(data);
+        .limit(6);
+      if (data) {
+        setHistory(data);
+        // Auto-cleanup: delete items beyond the latest 6
+        const { data: allIds } = await (supabase as any)
+          .from("content_tasks")
+          .select("id")
+          .order("created_at", { ascending: false });
+        if (allIds && allIds.length > 6) {
+          const idsToDelete = allIds.slice(6).map((r: any) => r.id);
+          await (supabase as any).from("content_tasks").delete().in("id", idsToDelete);
+        }
+      }
       setLoadingHistory(false);
     };
     loadHistory();
