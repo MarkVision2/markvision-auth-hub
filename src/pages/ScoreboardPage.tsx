@@ -384,37 +384,40 @@ export default function ScoreboardPage() {
                   </TableRow>
                 )}
 
-                {/* ── Empty daily data ── */}
-                {!loading && rows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center py-12">
-                      <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Нет данных за {MONTHS[monthIndex]} {year}
-                        {selectedAccountId !== "all" && ` · ${selectedAccountLabel}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground/50 mt-1.5">Ожидание синхронизации с рекламными кабинетами</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {/* ── Daily rows ── */}
-                {!loading && rows.map((row, i) => (
-                  <TableRow key={row.id} className={`border-b border-border/50 transition-colors hover:bg-accent/30 ${i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"}`}>
-                    {columns.map(col => (
-                      <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date" ? "text-left text-muted-foreground font-medium" : "text-right text-foreground/80"}`}>
-                        {col.key === "date"
-                          ? fmtDate(row.date)
-                          : col.key === "cpl"
-                            ? (row.leads > 0 ? fmt(cplCalc(row.spend, row.leads)) : "—")
-                            : ((row as unknown as Record<string, number>)[col.key] ?? 0) > 0
-                              ? fmt((row as unknown as Record<string, number>)[col.key])
-                              : "—"
-                        }
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                {/* ── Daily rows (full month) ── */}
+                {!loading && fullMonth.map((row, i) => {
+                  const isToday = row.date === todayIso;
+                  const isFuture = row.date > todayIso;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className={`border-b border-border/50 transition-colors hover:bg-accent/30 ${
+                        isToday
+                          ? "bg-primary/[0.07] border-l-2 border-l-primary"
+                          : i % 2 === 0 ? "bg-transparent" : "bg-muted/[0.03]"
+                      } ${isFuture ? "opacity-40" : ""}`}
+                    >
+                      {columns.map(col => (
+                        <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${
+                          col.key === "date"
+                            ? `text-left font-medium ${isToday ? "text-primary font-bold" : "text-muted-foreground"}`
+                            : "text-right text-foreground/80"
+                        }`}>
+                          {col.key === "date"
+                            ? <>{fmtDate(row.date)}{isToday && <span className="ml-1.5 text-[9px] text-primary font-semibold">●</span>}</>
+                            : isFuture
+                              ? <span className="text-muted-foreground/30">—</span>
+                              : col.key === "cpl"
+                                ? (row.leads > 0 ? fmt(cplCalc(row.spend, row.leads)) : "—")
+                                : ((row as unknown as Record<string, number>)[col.key] ?? 0) > 0
+                                  ? fmt((row as unknown as Record<string, number>)[col.key])
+                                  : "—"
+                          }
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
