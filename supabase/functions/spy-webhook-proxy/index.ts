@@ -108,12 +108,9 @@ serve(async (req) => {
     }
 
     if (action === "analyze_post") {
-      // For single post analysis — save the URL to content_factory for processing
-      // The workflow will pick it up on next run
-      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      // Use service role for insert (needed to bypass RLS for content_factory)
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, serviceKey);
 
       const { data, error } = await supabase
         .from("content_factory")

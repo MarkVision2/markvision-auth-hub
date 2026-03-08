@@ -1127,6 +1127,7 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          project_id: string | null
           role: string
           salary: number
         }
@@ -1134,6 +1135,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
+          project_id?: string | null
           role?: string
           salary?: number
         }
@@ -1141,10 +1143,19 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
+          project_id?: string | null
           role?: string
           salary?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "finance_team_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {
