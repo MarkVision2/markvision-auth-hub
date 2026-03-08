@@ -458,9 +458,9 @@ function ServicesPopover({ client, allServices, onUpdate }: {
           <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Новая услуга</p>
           <div className="flex items-center gap-2">
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Название"
-              className="h-8 text-xs flex-1 bg-secondary/50 border-border/10 rounded-md" />
+              className="h-8 text-xs flex-1 bg-secondary/50 border-transparent rounded-md" />
             <Input type="number" value={newPrice || ""} onChange={(e) => setNewPrice(Number(e.target.value))} placeholder="₸"
-              className="h-8 w-[80px] text-xs text-right bg-secondary/50 border-border/10 rounded-md tabular-nums" />
+              className="h-8 w-[80px] text-xs text-right bg-secondary/50 border-transparent rounded-md tabular-nums" />
             <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-primary" onClick={addNewService}><Plus className="h-3.5 w-3.5" /></Button>
           </div>
         </div>
