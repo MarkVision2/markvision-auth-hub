@@ -491,12 +491,22 @@ export default function ContentFactory() {
                 ) : (
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                      <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">Описание визуала</Label>
+                        <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                          {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                        </Button>
+                      </div>
+                      <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт в полное описание…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
-                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Каждая строка — новый слайд с текстом" : "Точный текст, который будет озвучен (слово в слово)"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
+                        <Button variant="ghost" size="sm" disabled={expandingField === "speakerText"} onClick={() => handleMagicExpand("speakerText", speakerText, setSpeakerText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                          {expandingField === "speakerText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                        </Button>
+                      </div>
+                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Напишите кратко тему слайдов…" : "Напишите кратко суть, AI развернёт…"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                     </div>
                   </div>
                 )}
