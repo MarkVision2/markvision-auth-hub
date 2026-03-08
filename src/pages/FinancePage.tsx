@@ -25,7 +25,7 @@ function fmtCurrency(v: number): string {
 }
 
 /* ── Shared inline-edit input style ── */
-const inlineInput = "h-9 bg-secondary/50 border-border/10 rounded-lg text-sm tabular-nums focus:border-primary/60 focus:bg-secondary/80 transition-colors placeholder:text-muted-foreground/40";
+const inlineInput = "h-9 bg-secondary/50 border-transparent rounded-lg text-sm tabular-nums focus:border-primary/60 focus:bg-secondary/80 transition-colors placeholder:text-muted-foreground/40";
 const inlineInputRight = `${inlineInput} text-right`;
 
 /* ── KPI Card ── */
@@ -33,7 +33,7 @@ function KpiCard({ icon: Icon, label, value, valueClass = "text-foreground", sub
   icon: React.ElementType; label: string; value: string; valueClass?: string; sub?: string;
 }) {
   return (
-    <div className="rounded-2xl bg-card border border-border/10 p-5 flex flex-col gap-3 hover:border-border/20 transition-colors">
+    <div className="rounded-2xl bg-card p-5 flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
         <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center">
           <Icon className="h-4 w-4 text-muted-foreground" />
@@ -51,8 +51,8 @@ function Section({ title, action, children, className = "" }: {
   title: string; action?: React.ReactNode; children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`rounded-2xl bg-card border border-border/10 overflow-hidden ${className}`}>
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/10">
+    <div className={`rounded-2xl bg-card overflow-hidden ${className}`}>
+      <div className="flex items-center justify-between px-6 py-4">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {action}
       </div>
@@ -139,7 +139,7 @@ function DecompositionTab() {
       {/* LEFT — Inputs */}
       <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-220px)] pr-2">
         {/* Mode */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5">
+        <div className="rounded-2xl bg-card p-5">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-3">Режим расчёта</p>
           <div className="grid grid-cols-2 gap-1.5 bg-secondary/50 rounded-xl p-1.5">
             <button onClick={() => setMode("revenue")}
@@ -154,14 +154,14 @@ function DecompositionTab() {
         </div>
 
         {/* Targets */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-4">
+        <div className="rounded-2xl bg-card p-5 space-y-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Целевые метрики</p>
           <NumField label="Целевая Выручка" value={targetRevenue} onChange={setTargetRevenue} />
           <NumField label="Целевая Прибыль" value={targetProfit} onChange={setTargetProfit} />
         </div>
 
         {/* Marketing */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-4">
+        <div className="rounded-2xl bg-card p-5 space-y-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Маркетинг</p>
           <NumField label="CPL (Стоимость лида)" value={cpl} onChange={setCpl} />
           <NumField label="CR1: Просмотр → Лид" value={cr1} onChange={setCr1} suffix="%" />
@@ -169,7 +169,7 @@ function DecompositionTab() {
         </div>
 
         {/* Products */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-3">
+        <div className="rounded-2xl bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Товары / Услуги</p>
             <button onClick={addProduct} className="text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1">
@@ -203,7 +203,7 @@ function DecompositionTab() {
         </div>
 
         {/* Expenses */}
-        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-3">
+        <div className="rounded-2xl bg-card p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Расходы</p>
             <div className="flex gap-2">
@@ -250,7 +250,7 @@ function DecompositionTab() {
                 { label: "Выручка", value: fmt(calc.revenue), sub: null, highlight: true },
               ].map((step, i, arr) => (
                 <div key={step.label} className="flex items-center gap-3 flex-1">
-                  <div className={`rounded-xl p-4 flex-1 text-center border transition-colors ${step.highlight ? "border-primary/30 bg-primary/[0.06]" : "bg-secondary/40 border-border/10"}`}>
+                  <div className={`rounded-xl p-4 flex-1 text-center transition-colors ${step.highlight ? "border border-primary/30 bg-primary/[0.06]" : "bg-secondary/40"}`}>
                     <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{step.label}</p>
                     <p className={`text-lg font-bold tabular-nums mt-1.5 ${step.highlight ? "text-primary" : "text-foreground"}`}>{step.value}</p>
                     {step.sub && <p className="text-[11px] text-muted-foreground mt-1">{step.sub}</p>}
@@ -276,7 +276,7 @@ function DecompositionTab() {
                 { label: "CAC (полный)", sub: "маркетинг + постоянные", value: fmt(calc.cacFull) },
                 { label: "Средний чек", sub: null, value: fmt(calc.avgCheck) },
               ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center py-3.5 border-b border-border/10 last:border-b-0">
+                <div key={i} className="flex justify-between items-center py-3.5 last:border-b-0">
                   <div>
                     <p className="text-sm text-foreground">{item.label}</p>
                     {item.sub && <p className="text-xs text-muted-foreground mt-0.5">{item.sub}</p>}
@@ -311,7 +311,7 @@ function DecompositionTab() {
                   </div>
                 </div>
               ))}
-              <div className="flex justify-between text-sm pt-4 border-t border-border/10">
+              <div className="flex justify-between text-sm pt-4">
                 <span className="font-semibold text-foreground">Всего расходов</span>
                 <span className="font-bold tabular-nums text-foreground">{fmt(calc.totalExpenses)}</span>
               </div>
@@ -323,7 +323,7 @@ function DecompositionTab() {
           <Button className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl">
             <Save className="h-4 w-4" /> Сохранить медиаплан
           </Button>
-          <Button variant="outline" className="h-11 text-sm gap-2 rounded-xl border-border/10">
+          <Button variant="ghost" className="h-11 text-sm gap-2 rounded-xl">
             <Download className="h-4 w-4" /> Excel
           </Button>
         </div>
@@ -415,7 +415,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[340px] p-0" align="start">
-        <div className="p-4 border-b border-border/10">
+        <div className="p-4">
           <p className="text-sm font-semibold text-foreground">{client.name}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Итого: <span className="font-semibold text-foreground">{fmtCurrency(totalRevenue)}</span></p>
         </div>
@@ -429,7 +429,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
             <div key={sv.name} className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-secondary/40 transition-colors">
               <span className="text-sm text-foreground flex-1 truncate">{sv.name}</span>
               <Input type="number" value={sv.price || ""} onChange={(e) => updateServicePrice(sv.name, Number(e.target.value))}
-                className="h-7 w-[100px] text-xs tabular-nums text-right bg-secondary/50 border-border/10 rounded-md px-2" placeholder="Сумма" />
+                className="h-7 w-[100px] text-xs tabular-nums text-right bg-secondary/50 border-transparent rounded-md px-2" placeholder="Сумма" />
               <span className="text-[10px] text-muted-foreground shrink-0">₸</span>
               <button onClick={() => removeService(sv.name)} className="text-muted-foreground/50 hover:text-destructive transition-colors shrink-0">
                 <X className="h-3.5 w-3.5" />
@@ -440,12 +440,12 @@ function ServicesPopover({ client, allServices, onUpdate }: {
 
         {/* Add existing service */}
         {availableServices.length > 0 && (
-          <div className="p-3 border-t border-border/10">
+          <div className="p-3">
             <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Добавить услугу</p>
             <div className="flex flex-wrap gap-1.5">
               {availableServices.map(s => (
                 <button key={s} onClick={() => addExistingService(s)}
-                  className="text-[11px] px-2.5 py-1 rounded-md border border-border/10 text-muted-foreground hover:text-foreground hover:border-primary/40 hover:bg-primary/5 transition-all">
+                  className="text-[11px] px-2.5 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-primary/5 transition-all">
                   + {s}
                 </button>
               ))}
@@ -454,13 +454,13 @@ function ServicesPopover({ client, allServices, onUpdate }: {
         )}
 
         {/* Add custom service */}
-        <div className="p-3 border-t border-border/10">
+        <div className="p-3">
           <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2">Новая услуга</p>
           <div className="flex items-center gap-2">
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Название"
-              className="h-8 text-xs flex-1 bg-secondary/50 border-border/10 rounded-md" />
+              className="h-8 text-xs flex-1 bg-secondary/50 border-transparent rounded-md" />
             <Input type="number" value={newPrice || ""} onChange={(e) => setNewPrice(Number(e.target.value))} placeholder="₸"
-              className="h-8 w-[80px] text-xs text-right bg-secondary/50 border-border/10 rounded-md tabular-nums" />
+              className="h-8 w-[80px] text-xs text-right bg-secondary/50 border-transparent rounded-md tabular-nums" />
             <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-primary" onClick={addNewService}><Plus className="h-3.5 w-3.5" /></Button>
           </div>
         </div>
@@ -636,7 +636,7 @@ function AgencyTab() {
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="text-xs text-primary gap-1.5 h-8"><Plus className="h-3.5 w-3.5" /> Добавить клиента</Button>
             </SheetTrigger>
-            <SheetContent className="w-[420px] border-border/10">
+            <SheetContent className="w-[420px]">
               <SheetHeader><SheetTitle className="text-lg">Новый клиент</SheetTitle></SheetHeader>
               <div className="space-y-5 mt-8">
                 <div className="space-y-2">
@@ -698,7 +698,7 @@ function AgencyTab() {
               <col style={{ width: "3%" }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-border/10">
+              <tr>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Клиент</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Услуги</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Оплата</th>
@@ -793,7 +793,7 @@ function AgencyTab() {
               <col style={{ width: "5%" }} />
             </colgroup>
             <thead>
-              <tr className="border-b border-border/10">
+              <tr>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Имя</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Должность</th>
                 <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Зарплата (₸)</th>
@@ -929,13 +929,13 @@ function DynamicsTab() {
     <div className="space-y-8">
       {/* Year switcher */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/10" onClick={() => changeYear(-1)}>
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => changeYear(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <div className="rounded-xl bg-card border border-border/10 px-6 py-2">
+        <div className="rounded-xl bg-card px-6 py-2">
           <span className="text-lg font-bold text-foreground tabular-nums">{year}</span>
         </div>
-        <Button variant="outline" size="icon" className="h-9 w-9 rounded-xl border-border/10" onClick={() => changeYear(1)}>
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => changeYear(1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -1006,7 +1006,7 @@ function DynamicsTab() {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-border/10 hover:bg-transparent">
+              <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs font-medium pl-6">Месяц</TableHead>
                 <TableHead className="text-xs font-medium text-right">Выручка</TableHead>
                 <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
@@ -1017,7 +1017,7 @@ function DynamicsTab() {
             </TableHeader>
             <TableBody>
               {monthsData.map((m, i) => (
-                <TableRow key={m.month} className="border-border/10 hover:bg-secondary/30">
+                <TableRow key={m.month} className="hover:bg-secondary/30">
                   <TableCell className="text-sm font-medium text-foreground pl-6">{m.month}</TableCell>
                   <TableCell>
                     <Input type="number" value={m.revenue || ""} onChange={(e) => updateMonth(i, "revenue", Number(e.target.value))}
@@ -1035,7 +1035,7 @@ function DynamicsTab() {
                   <TableCell className={`text-right tabular-nums text-sm font-semibold pr-6 ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(m.profit)}</TableCell>
                 </TableRow>
               ))}
-              <TableRow className="border-border/10 bg-secondary/20 hover:bg-secondary/30">
+              <TableRow className="bg-secondary/20 hover:bg-secondary/30">
                 <TableCell className="pl-6 text-sm font-bold text-foreground">Итого</TableCell>
                 <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totals.revenue)}</TableCell>
                 <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
@@ -1065,7 +1065,7 @@ export default function FinancePage() {
         </div>
 
         <Tabs defaultValue="decomposition" className="space-y-6">
-          <TabsList className="bg-card border border-border/10 h-11 p-1 rounded-xl">
+          <TabsList className="bg-card h-11 p-1 rounded-xl">
             <TabsTrigger value="decomposition" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
               <Calculator className="h-4 w-4" /> Декомпозиция
             </TabsTrigger>
