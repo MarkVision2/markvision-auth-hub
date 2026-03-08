@@ -637,6 +637,10 @@ function NotificationsTab() {
             }}
             className="data-[state=checked]:bg-primary"
           />
+        </div>
+        {typeof Notification !== "undefined" && Notification.permission === "denied" && (
+          <p className="text-xs text-destructive">Уведомления заблокированы в браузере. Разрешите их в настройках сайта.</p>
+        )}
       </div>
 
       {/* Type filters */}
