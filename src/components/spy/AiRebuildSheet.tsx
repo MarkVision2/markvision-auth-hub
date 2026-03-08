@@ -1,12 +1,17 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Rocket, AlertTriangle, Zap, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, Rocket, AlertTriangle, Zap, ArrowRight, Loader2, Lightbulb, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { MockAd } from "./CompetitorAdCard";
 
+interface ExtendedAd extends MockAd {
+  improved_headline?: string;
+  cta?: string;
+}
+
 interface Props {
-  ad: MockAd | null;
+  ad: ExtendedAd | null;
   loading?: boolean;
   onClose: () => void;
 }
@@ -60,15 +65,14 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       AI анализирует...
                     </div>
                   ) : ad.weaknesses.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {ad.weaknesses.map((w) => (
-                        <Badge
-                          key={w}
-                          variant="outline"
-                          className="text-[11px] bg-destructive/5 text-destructive/80 border-destructive/20 rounded-lg px-2.5 py-1"
+                    <div className="space-y-1.5">
+                      {ad.weaknesses.map((w, i) => (
+                        <div
+                          key={i}
+                          className="text-[12px] bg-destructive/5 text-destructive/80 border border-destructive/20 rounded-lg px-3 py-2 leading-relaxed"
                         >
                           ⚠️ {w}
-                        </Badge>
+                        </div>
                       ))}
                     </div>
                   ) : (
@@ -100,8 +104,33 @@ export function AiRebuildSheet({ ad, loading, onClose }: Props) {
                       </div>
                     </div>
                   ) : ad.improved ? (
-                    <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-4 mb-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
-                      <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{ad.improved}</p>
+                    <div className="space-y-3 mb-4">
+                      {/* Improved headline */}
+                      {ad.improved_headline && (
+                        <div className="rounded-xl bg-primary/5 border border-primary/15 p-3">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Lightbulb className="h-3 w-3 text-primary" />
+                            <p className="text-[10px] uppercase tracking-wider text-primary/70 font-medium">Заголовок-хук</p>
+                          </div>
+                          <p className="text-sm font-semibold text-foreground">{ad.improved_headline}</p>
+                        </div>
+                      )}
+
+                      {/* Main improved text */}
+                      <div className="rounded-xl bg-white/[0.03] border border-primary/20 p-4 shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)]">
+                        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{ad.improved}</p>
+                      </div>
+
+                      {/* CTA */}
+                      {ad.cta && (
+                        <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/15 p-3">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Target className="h-3 w-3 text-emerald-500" />
+                            <p className="text-[10px] uppercase tracking-wider text-emerald-500/70 font-medium">Призыв к действию</p>
+                          </div>
+                          <p className="text-sm font-medium text-foreground">{ad.cta}</p>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-8 mb-4 text-center">

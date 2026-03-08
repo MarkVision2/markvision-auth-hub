@@ -23,6 +23,23 @@ export interface CompetitorAd {
   source_url: string | null;
 }
 
+/** Map Supabase row (which may have n8n columns) to CompetitorAd */
+function mapDbRow(d: any): CompetitorAd {
+  return {
+    id: d.id,
+    advertiser_name: d.advertiser_name || d.page_name || "—",
+    advertiser_avatar: d.advertiser_avatar || (d.page_name || d.advertiser_name || "??").slice(0, 2).toUpperCase(),
+    ad_copy: d.ad_copy || d.ad_text || null,
+    platform: d.platform || "Instagram",
+    media_type: d.media_type || "4:5",
+    media_url: d.media_url ?? null,
+    is_active: d.is_active ?? (d.ad_status === "ACTIVE"),
+    active_since: d.active_since || d.start_date || null,
+    is_monitored: d.is_monitored ?? false,
+    source_url: d.source_url,
+  };
+}
+
 export default function CompetitorSpy() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -42,19 +59,7 @@ export default function CompetitorSpy() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        setAds(data.map((d: any) => ({
-          id: d.id,
-          advertiser_name: d.advertiser_name,
-          advertiser_avatar: d.advertiser_avatar,
-          ad_copy: d.ad_copy,
-          platform: d.platform,
-          media_type: d.media_type,
-          media_url: d.media_url ?? null,
-          is_active: d.is_active,
-          active_since: d.active_since,
-          is_monitored: d.is_monitored,
-          source_url: d.source_url,
-        })));
+        setAds(data.map(mapDbRow));
       }
     };
     loadAds();
@@ -63,20 +68,7 @@ export default function CompetitorSpy() {
     const channel = supabase
       .channel("competitor_ads_realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "competitor_ads" }, (payload) => {
-        const d = payload.new as any;
-        setAds((prev) => [{
-          id: d.id,
-          advertiser_name: d.advertiser_name,
-          advertiser_avatar: d.advertiser_avatar,
-          ad_copy: d.ad_copy,
-          platform: d.platform,
-          media_type: d.media_type,
-          media_url: d.media_url ?? null,
-          is_active: d.is_active,
-          active_since: d.active_since,
-          is_monitored: d.is_monitored,
-          source_url: d.source_url,
-        }, ...prev]);
+        setAds((prev) => [mapDbRow(payload.new), ...prev]);
       })
       .subscribe();
 
@@ -87,28 +79,35 @@ export default function CompetitorSpy() {
     if (!search.trim()) return;
     setScraping(true);
     try {
-      // Try preview endpoint first for instant results with media
-      const previews = await fetchAdPreviews(search.trim());
-      if (Array.isArray(previews) && previews.length > 0) {
-        const previewAds: CompetitorAd[] = previews.map((p, i) => ({
-          id: `preview-${Date.now()}-${i}`,
-          advertiser_name: p.advertiser_name || search.trim(),
-          advertiser_avatar: null,
-          ad_copy: p.ad_copy,
-          platform: p.platform,
-          media_type: p.media_type,
-          media_url: p.media_url,
-          is_active: p.is_active,
-          active_since: p.active_since,
-          is_monitored: false,
-          source_url: p.source_url,
-        }));
-        setAds(previewAds);
-        toast({ title: "Готово", description: `Найдено ${previewAds.length} объявлений` });
-      } else {
-        // Fallback to scrape (async, data arrives via realtime)
+      // Determine if it's a URL or a name/query
+      const isUrl = search.trim().startsWith("http");
+
+      if (isUrl) {
+        // Direct scrape via Apify (async — data via realtime)
         await startCompetitorScrape(search.trim());
-        toast({ title: "Парсинг запущен", description: "Данные появятся через ~60 сек" });
+        toast({ title: "Парсинг запущен", description: "Данные появятся через ~60 сек (Apify)" });
+      } else {
+        // Search by page name via preview endpoint (gets from DB)
+        const previews = await fetchAdPreviews(search.trim());
+        if (previews.length > 0) {
+          const previewAds: CompetitorAd[] = previews.map((p) => ({
+            id: p.id || `preview-${Date.now()}-${Math.random()}`,
+            advertiser_name: p.page_name || search.trim(),
+            advertiser_avatar: (p.page_name || search.trim()).slice(0, 2).toUpperCase(),
+            ad_copy: p.ad_text,
+            platform: "Instagram",
+            media_type: "4:5",
+            media_url: p.media_url,
+            is_active: p.ad_status === "ACTIVE",
+            active_since: p.start_date,
+            is_monitored: false,
+            source_url: null,
+          }));
+          setAds(previewAds);
+          toast({ title: "Готово", description: `Найдено ${previewAds.length} объявлений` });
+        } else {
+          toast({ title: "Нет результатов", description: "Попробуйте другой запрос или вставьте ссылку на Ad Library" });
+        }
       }
     } catch (e: any) {
       toast({
@@ -185,7 +184,7 @@ export default function CompetitorSpy() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              placeholder="Введите Instagram ник, ссылку на Ad Library или название страницы..."
+              placeholder="Ссылка на Ad Library или название страницы конкурента..."
               className="pl-11 h-12 bg-card/50 border-border/50 text-sm rounded-xl backdrop-blur-sm focus-visible:ring-primary/30"
             />
           </div>
@@ -273,9 +272,11 @@ export default function CompetitorSpy() {
           media: (selectedAd.media_type as "4:5" | "9:16") || "4:5",
           copy: selectedAd.ad_copy || "",
           platform: selectedAd.platform || "Instagram",
-          weaknesses: rebuildResult?.weaknesses || [],
+          weaknesses: rebuildResult?.weaknesses ? [rebuildResult.weaknesses] : [],
           improved: rebuildResult?.new_script || "",
-          suggestedFormat: rebuildResult?.cta || "",
+          suggestedFormat: rebuildResult?.format_tip || "",
+          improved_headline: rebuildResult?.improved_headline || "",
+          cta: rebuildResult?.cta || "",
         } : null}
         loading={rebuildLoading}
         onClose={() => { setSelectedAd(null); setRebuildResult(null); }}
