@@ -91,6 +91,7 @@ const formatLabel = (val: string | null) => {
     single: "Баннер", "carousel-7": "Карусель 7", "carousel-10": "Карусель 10",
     "fb-target": "ADS Баннер", "insta-carousel": "Карусель", stories: "Stories",
     "reels-cover": "Обложка Reels", "ai-photo": "AI Фото",
+    reels: "Reels", "promo-clip": "Промо-ролик", slideshow: "Слайдшоу",
   };
   return map[val || ""] || val || "—";
 };
