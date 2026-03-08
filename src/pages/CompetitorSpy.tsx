@@ -485,6 +485,14 @@ export default function CompetitorSpy() {
                           >
                             Подробнее
                           </Button>
+                          <Button
+                            onClick={() => handleDeleteAnalysis(analysis.id)}
+                            size="sm"
+                            variant="ghost"
+                            className="h-9 w-9 p-0 rounded-lg text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </motion.div>
