@@ -323,7 +323,7 @@ function DecompositionTab() {
           <Button className="flex-1 h-11 text-sm font-semibold gap-2 rounded-xl">
             <Save className="h-4 w-4" /> Сохранить медиаплан
           </Button>
-          <Button variant="outline" className="h-11 text-sm gap-2 rounded-xl border-border/10">
+          <Button variant="ghost" className="h-11 text-sm gap-2 rounded-xl">
             <Download className="h-4 w-4" /> Excel
           </Button>
         </div>
