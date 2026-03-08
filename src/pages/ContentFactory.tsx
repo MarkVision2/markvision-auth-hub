@@ -277,13 +277,20 @@ export default function ContentFactory() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(n8nPayload),
         });
-        if (resp.ok) toast({ title: "✅ Задание отправлено в производство" });
-        else toast({ title: "⚠️ Ошибка сервера", description: `Статус: ${resp.status}`, variant: "destructive" });
+        if (resp.ok) {
+          toast({ title: "✅ Задание отправлено в производство" });
+          pushNotification("info", "Контент отправлен в производство", `Формат: ${format}, ${aspectRatio}`, "Контент-Завод");
+        } else {
+          toast({ title: "⚠️ Ошибка сервера", description: `Статус: ${resp.status}`, variant: "destructive" });
+          pushNotification("error", "Ошибка отправки в n8n", `HTTP ${resp.status}`, "Контент-Завод");
+        }
       } catch {
         toast({ title: "⚠️ Не удалось отправить на n8n", description: "Проверьте подключение", variant: "destructive" });
+        pushNotification("error", "Сбой подключения к n8n", "Контент-Завод не может связаться с сервером производства", "Контент-Завод");
       }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+      pushNotification("error", "Ошибка создания контента", err.message, "Контент-Завод");
     } finally {
       setSubmitting(false);
       setShowFeedbackInput(false);
