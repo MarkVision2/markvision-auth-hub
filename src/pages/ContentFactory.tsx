@@ -573,7 +573,7 @@ export default function ContentFactory() {
               <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
               <Label className="text-sm font-semibold text-foreground">Формат</Label>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className={`grid gap-3 ${contentMode === "video" ? "grid-cols-2" : "grid-cols-3"}`}>
               {(contentMode === "video" ? VIDEO_FORMAT_CARDS : PHOTO_FORMAT_CARDS).map(f => (
                 <button key={f.value} onClick={() => setFormat(f.value)}
                   className={`relative rounded-xl border p-4 text-left transition-all duration-200 ${
