@@ -431,7 +431,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[340px] p-0" align="start">
-        <div className="p-4 border-b border-border/30">
+        <div className="p-4 border-b border-border/10">
           <p className="text-sm font-semibold text-foreground">{client.name}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Итого: <span className="font-semibold text-foreground">{fmtCurrency(totalRevenue)}</span></p>
         </div>
