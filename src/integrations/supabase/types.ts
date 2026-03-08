@@ -443,6 +443,147 @@ export type Database = {
           },
         ]
       }
+      finance_client_billing: {
+        Row: {
+          billing_status: string
+          client_config_id: string
+          created_at: string | null
+          expenses: number
+          id: string
+          next_billing: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_status?: string
+          client_config_id: string
+          created_at?: string | null
+          expenses?: number
+          id?: string
+          next_billing?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_status?: string
+          client_config_id?: string
+          created_at?: string | null
+          expenses?: number
+          id?: string
+          next_billing?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_client_billing_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: true
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "finance_client_billing_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: true
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_client_services: {
+        Row: {
+          client_config_id: string
+          created_at: string | null
+          id: string
+          price: number
+          service_name: string
+        }
+        Insert: {
+          client_config_id: string
+          created_at?: string | null
+          id?: string
+          price?: number
+          service_name: string
+        }
+        Update: {
+          client_config_id?: string
+          created_at?: string | null
+          id?: string
+          price?: number
+          service_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_client_services_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "finance_client_services_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_months: {
+        Row: {
+          created_at: string | null
+          expenses: number
+          id: string
+          month_index: number
+          revenue: number
+          salaries: number
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          expenses?: number
+          id?: string
+          month_index: number
+          revenue?: number
+          salaries?: number
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          expenses?: number
+          id?: string
+          month_index?: number
+          revenue?: number
+          salaries?: number
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      finance_team: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          role: string
+          salary: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          role?: string
+          salary?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          role?: string
+          salary?: number
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           ai_score: number | null

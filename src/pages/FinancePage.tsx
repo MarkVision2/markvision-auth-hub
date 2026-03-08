@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -358,23 +359,6 @@ interface TeamMember {
 
 const defaultServices = ["Таргет", "СММ", "Маркетинг", "Контент", "SEO", "Разработка", "Дизайн", "CRM"];
 
-const initialClients: ClientFinance[] = [
-  { id: "1", name: "Технология позвоночника", services: [{ name: "Таргет", price: 200_000 }, { name: "СММ", price: 100_000 }], expenses: 25_000, nextBilling: "2026-04-01", billingStatus: "paid" },
-  { id: "2", name: "DentalPro Алматы", services: [{ name: "Маркетинг", price: 250_000 }, { name: "Контент", price: 100_000 }, { name: "Таргет", price: 100_000 }], expenses: 48_000, nextBilling: "2026-03-11", billingStatus: "upcoming" },
-  { id: "3", name: "EsteticLine", services: [{ name: "Таргет", price: 150_000 }, { name: "CRM", price: 50_000 }], expenses: 18_000, nextBilling: "2026-03-05", billingStatus: "overdue" },
-  { id: "4", name: "MedCity Астана", services: [{ name: "Маркетинг", price: 300_000 }], expenses: 32_000, nextBilling: "2026-04-15", billingStatus: "paid" },
-  { id: "5", name: "SmileLab", services: [{ name: "Контент", price: 150_000 }], expenses: 12_000, nextBilling: "2026-03-20", billingStatus: "paid" },
-  { id: "6", name: "Клиника Доктора Иванова", services: [{ name: "Таргет", price: 180_000 }, { name: "СММ", price: 100_000 }, { name: "SEO", price: 100_000 }], expenses: 41_000, nextBilling: "2026-03-08", billingStatus: "overdue" },
-  { id: "7", name: "BeautyMed", services: [{ name: "Таргет", price: 120_000 }], expenses: 9_500, nextBilling: "2026-04-10", billingStatus: "paid" },
-];
-
-const initialTeam: TeamMember[] = [
-  { id: "t1", name: "Алексей Ким", role: "Таргетолог", salary: 350_000 },
-  { id: "t2", name: "Мария Иванова", role: "СММ-менеджер", salary: 280_000 },
-  { id: "t3", name: "Дамир Нурланов", role: "Дизайнер", salary: 300_000 },
-  { id: "t4", name: "Айгуль Сатпаева", role: "Контент-менеджер", salary: 250_000 },
-];
-
 const billingLabels: Record<string, { text: string; cls: string }> = {
   paid: { text: "Оплачено", cls: "bg-primary/10 text-primary border-primary/20" },
   upcoming: { text: "Ожидается", cls: "bg-status-warning/10 text-status-warning border-status-warning/20" },
@@ -486,31 +470,131 @@ function ServicesPopover({ client, allServices, onUpdate }: {
 }
 
 function AgencyTab() {
-  const [clientsData, setClientsData] = useState<ClientFinance[]>(initialClients);
-  const [team, setTeam] = useState<TeamMember[]>(initialTeam);
+  const [clientsData, setClientsData] = useState<ClientFinance[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const [services, setServices] = useState<string[]>(defaultServices);
   const [newServiceName, setNewServiceName] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [newClient, setNewClient] = useState({ name: "", services: [] as ClientService[], nextBilling: "" });
+  const [loading, setLoading] = useState(true);
 
-  const handleAddClient = () => {
+  // Fetch data from Supabase
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch clients from clients_config
+      const { data: clients } = await supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true);
+      
+      // Fetch all services
+      const { data: allServices } = await supabase.from("finance_client_services").select("*");
+      
+      // Fetch all billing
+      const { data: allBilling } = await supabase.from("finance_client_billing").select("*");
+      
+      // Fetch team
+      const { data: teamData } = await supabase.from("finance_team").select("*").order("created_at");
+
+      if (clients) {
+        const mapped: ClientFinance[] = clients.map(c => {
+          const svcs = (allServices || []).filter(s => s.client_config_id === c.id).map(s => ({ name: s.service_name, price: Number(s.price) }));
+          const billing = (allBilling || []).find(b => b.client_config_id === c.id);
+          return {
+            id: c.id,
+            name: c.client_name,
+            services: svcs,
+            expenses: billing ? Number(billing.expenses) : 0,
+            nextBilling: billing?.next_billing || "",
+            billingStatus: (billing?.billing_status || "upcoming") as ClientFinance["billingStatus"],
+          };
+        });
+        setClientsData(mapped);
+      }
+
+      if (teamData) {
+        setTeam(teamData.map(t => ({ id: t.id, name: t.name, role: t.role, salary: Number(t.salary) })));
+      }
+    } catch (err) {
+      console.error("Finance fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Save services to Supabase
+  const saveServices = async (clientId: string, svcs: ClientService[]) => {
+    // Delete existing and re-insert
+    await supabase.from("finance_client_services").delete().eq("client_config_id", clientId);
+    if (svcs.length > 0) {
+      await supabase.from("finance_client_services").insert(
+        svcs.map(s => ({ client_config_id: clientId, service_name: s.name, price: s.price }))
+      );
+    }
+  };
+
+  // Save billing to Supabase
+  const saveBilling = async (clientId: string, expenses: number, nextBilling: string, billingStatus: string) => {
+    await supabase.from("finance_client_billing").upsert({
+      client_config_id: clientId,
+      expenses,
+      next_billing: nextBilling || null,
+      billing_status: billingStatus,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "client_config_id" });
+  };
+
+  const handleAddClient = async () => {
     if (!newClient.name) return;
-    setClientsData(prev => [...prev, {
-      id: String(Date.now()), name: newClient.name, services: newClient.services,
-      expenses: 0, nextBilling: newClient.nextBilling || "2026-04-01", billingStatus: "upcoming",
-    }]);
+    // Create client in clients_config
+    const { data: inserted } = await supabase.from("clients_config").insert({ client_name: newClient.name }).select("id").single();
+    if (inserted) {
+      if (newClient.services.length > 0) {
+        await saveServices(inserted.id, newClient.services);
+      }
+      await saveBilling(inserted.id, 0, newClient.nextBilling, "upcoming");
+    }
     setNewClient({ name: "", services: [], nextBilling: "" });
     setAddOpen(false);
+    fetchData();
   };
 
-  const updateClient = (id: string, field: keyof ClientFinance, value: unknown) => {
+  const updateClient = async (id: string, field: keyof ClientFinance, value: unknown) => {
     setClientsData(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
-  };
-  const removeClient = (id: string) => setClientsData(prev => prev.filter(c => c.id !== id));
+    const client = clientsData.find(c => c.id === id);
+    if (!client) return;
 
-  const addTeamMember = () => setTeam(prev => [...prev, { id: String(Date.now()), name: "Новый сотрудник", role: "Должность", salary: 0 }]);
-  const updateMember = (id: string, field: keyof TeamMember, value: string | number) => setTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
-  const removeMember = (id: string) => setTeam(prev => prev.filter(m => m.id !== id));
+    if (field === "services") {
+      await saveServices(id, value as ClientService[]);
+    } else if (field === "expenses" || field === "nextBilling" || field === "billingStatus") {
+      const updated = { ...client, [field]: value };
+      await saveBilling(id, updated.expenses, updated.nextBilling, updated.billingStatus);
+    }
+  };
+
+  const removeClient = async (id: string) => {
+    setClientsData(prev => prev.filter(c => c.id !== id));
+    await supabase.from("finance_client_services").delete().eq("client_config_id", id);
+    await supabase.from("finance_client_billing").delete().eq("client_config_id", id);
+    // Deactivate client instead of deleting
+    await supabase.from("clients_config").update({ is_active: false }).eq("id", id);
+  };
+
+  const addTeamMember = async () => {
+    const { data } = await supabase.from("finance_team").insert({ name: "Новый сотрудник", role: "Должность", salary: 0 }).select().single();
+    if (data) {
+      setTeam(prev => [...prev, { id: data.id, name: data.name, role: data.role, salary: Number(data.salary) }]);
+    }
+  };
+
+  const updateMember = async (id: string, field: keyof TeamMember, value: string | number) => {
+    setTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+    await supabase.from("finance_team").update({ [field]: value }).eq("id", id);
+  };
+
+  const removeMember = async (id: string) => {
+    setTeam(prev => prev.filter(m => m.id !== id));
+    await supabase.from("finance_team").delete().eq("id", id);
+  };
 
   const addService = () => {
     if (newServiceName.trim() && !services.includes(newServiceName.trim())) {
@@ -528,6 +612,10 @@ function AgencyTab() {
   const totalTax = totalMrr * taxRate;
   const totalProfit = totalMrr - totalExpenses - totalSalaries - totalTax;
   const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
+
+  if (loading) {
+    return <div className="text-center py-20 text-muted-foreground">Загрузка данных...</div>;
+  }
 
   return (
     <div className="space-y-8">
@@ -627,7 +715,7 @@ function AgencyTab() {
                 const revenue = getClientRevenue(c);
                 const profit = revenue - c.expenses;
                 const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
-                const statusStyle = billingLabels[c.billingStatus];
+                const statusStyle = billingLabels[c.billingStatus] || billingLabels.upcoming;
                 return (
                   <tr key={c.id} className="group hover:bg-secondary/20 transition-colors">
                     <td className="py-4 px-4 align-middle text-left">
@@ -655,7 +743,7 @@ function AgencyTab() {
                       </span>
                     </td>
                     <td className="py-4 px-4 align-middle text-left">
-                      <span className="text-xs tabular-nums text-muted-foreground">{c.nextBilling.split("-").reverse().join(".")}</span>
+                      <span className="text-xs tabular-nums text-muted-foreground">{c.nextBilling ? c.nextBilling.split("-").reverse().join(".") : "—"}</span>
                     </td>
                     <td className="py-4 px-4 align-middle text-left">
                       <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
@@ -772,7 +860,31 @@ function DynamicsTab() {
   const [year, setYear] = useState(2026);
   const [monthsData, setMonthsData] = useState<MonthData[]>(generateDefaultMonths(2026));
 
-  const updateMonth = (idx: number, field: keyof MonthData, value: number) => {
+  // Fetch months from Supabase
+  const fetchMonths = useCallback(async (y: number) => {
+    const { data } = await supabase.from("finance_months").select("*").eq("year", y).order("month_index");
+    const defaults = generateDefaultMonths(y);
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        if (row.month_index >= 0 && row.month_index < 12) {
+          const revenue = Number(row.revenue);
+          const expenses = Number(row.expenses);
+          const salaries = Number(row.salaries);
+          const tax = revenue * 0.1;
+          defaults[row.month_index] = {
+            ...defaults[row.month_index],
+            revenue, expenses, salaries, tax,
+            profit: revenue - expenses - salaries - tax,
+          };
+        }
+      });
+    }
+    setMonthsData(defaults);
+  }, []);
+
+  useEffect(() => { fetchMonths(year); }, [year, fetchMonths]);
+
+  const updateMonth = async (idx: number, field: keyof MonthData, value: number) => {
     setMonthsData(prev => prev.map((m, i) => {
       if (i !== idx) return m;
       const updated = { ...m, [field]: value };
@@ -780,12 +892,22 @@ function DynamicsTab() {
       updated.profit = updated.revenue - updated.expenses - updated.salaries - updated.tax;
       return updated;
     }));
+
+    // Save to Supabase
+    const current = monthsData[idx];
+    const updated = { ...current, [field]: value };
+    await supabase.from("finance_months").upsert({
+      year,
+      month_index: idx,
+      revenue: field === "revenue" ? value : current.revenue,
+      expenses: field === "expenses" ? value : current.expenses,
+      salaries: field === "salaries" ? value : current.salaries,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "year,month_index" });
   };
 
   const changeYear = (delta: number) => {
-    const newYear = year + delta;
-    setYear(newYear);
-    setMonthsData(generateDefaultMonths(newYear));
+    setYear(prev => prev + delta);
   };
 
   const totals = useMemo(() => ({
