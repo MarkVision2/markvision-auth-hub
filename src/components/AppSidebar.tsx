@@ -35,7 +35,7 @@ const navGroups: NavGroup[] = [
     label: "ГЛАВНОЕ",
     items: [
       { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true },
-      { title: "Агентские кабинеты", path: "/accounts", icon: Briefcase, superadminOnly: true },
+      { title: "Рекламные кабинеты", path: "/accounts", icon: Briefcase },
     ],
   },
   {
