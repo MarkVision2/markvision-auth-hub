@@ -231,12 +231,12 @@ export default function ScoreboardPage() {
   // Aggregated fact (only rows with data)
   const fact = useMemo(() => rows.reduce(
     (acc, d) => ({
-      spend: acc.spend + d.spend, impressions: acc.impressions + d.impressions,
-      clicks: acc.clicks + d.clicks, leads: acc.leads + d.leads,
+      spend: acc.spend + d.spend,
+      leads: acc.leads + d.leads,
       followers: acc.followers + d.followers, visits: acc.visits + d.visits,
       sales: acc.sales + d.sales, revenue: acc.revenue + d.revenue,
     }),
-    { spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
+    { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
   ), [rows]);
 
   const getVal = (src: Record<string, number>, key: MetricKey): number => {
