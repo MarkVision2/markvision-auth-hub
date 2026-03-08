@@ -500,86 +500,99 @@ function AgencyTab() {
         }
       >
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border/30 hover:bg-transparent">
-                <TableHead className="text-xs font-medium pl-6">Клиент</TableHead>
-                <TableHead className="text-xs font-medium">Услуги</TableHead>
-                <TableHead className="text-xs font-medium text-right">Оплата</TableHead>
-                <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
-                <TableHead className="text-xs font-medium text-right">Прибыль</TableHead>
-                <TableHead className="text-xs font-medium text-center">Маржа</TableHead>
-                <TableHead className="text-xs font-medium">Дата оплаты</TableHead>
-                <TableHead className="text-xs font-medium">Статус</TableHead>
-                <TableHead className="w-10" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className="border-b border-border/30">
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 pl-6 w-[200px]">Клиент</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[200px]">Услуги</th>
+                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[120px]">Оплата</th>
+                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[110px]">Расходы</th>
+                <th className="text-right text-xs font-medium text-muted-foreground py-3 w-[120px]">Прибыль</th>
+                <th className="text-center text-xs font-medium text-muted-foreground py-3 w-[70px]">Маржа</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[130px]">Дата оплаты</th>
+                <th className="text-left text-xs font-medium text-muted-foreground py-3 w-[120px]">Статус</th>
+                <th className="w-[44px] py-3" />
+              </tr>
+            </thead>
+            <tbody>
               {clientsData.map((c) => {
                 const profit = c.revenue - c.expenses;
                 const margin = c.revenue > 0 ? Math.round((profit / c.revenue) * 100) : 0;
                 const statusStyle = billingLabels[c.billingStatus];
                 return (
-                  <TableRow key={c.id} className="border-border/20 group hover:bg-secondary/30">
-                    <TableCell className="pl-6">
+                  <tr key={c.id} className="border-b border-border/10 group hover:bg-secondary/20 transition-colors">
+                    {/* Client name — plain text, editable on click */}
+                    <td className="py-4 pl-6 align-middle">
                       <Input value={c.name} onChange={(e) => updateClient(c.id, "name", e.target.value)}
-                        className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-[180px]" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1.5 items-center max-w-[220px]">
+                        className="h-auto py-1 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full truncate" />
+                    </td>
+                    {/* Services */}
+                    <td className="py-4 align-middle">
+                      <div className="flex flex-wrap gap-1.5 items-center">
                         {c.services.map(s => (
-                          <Badge key={s} variant="outline" className="text-[11px] gap-1 pr-1 rounded-md border-border/50 cursor-pointer hover:border-destructive/50 transition-colors" onClick={() => toggleClientService(c.id, s)}>
-                            {s} <X className="h-2.5 w-2.5 opacity-50 hover:opacity-100" />
+                          <Badge key={s} variant="outline" className="text-[11px] gap-1 pr-1 rounded-md border-border/50 cursor-pointer hover:border-destructive/50 transition-colors whitespace-nowrap" onClick={() => toggleClientService(c.id, s)}>
+                            {s} <X className="h-2.5 w-2.5 opacity-40 hover:opacity-100" />
                           </Badge>
                         ))}
                         <Select onValueChange={(v) => { if (!c.services.includes(v)) updateClient(c.id, "services", [...c.services, v]); }}>
-                          <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden">
+                          <SelectTrigger className="h-6 w-6 p-0 border-none bg-transparent [&>svg]:hidden shrink-0">
                             <Plus className="h-3 w-3 text-muted-foreground hover:text-primary transition-colors" />
                           </SelectTrigger>
                           <SelectContent>{services.filter(s => !c.services.includes(s)).map(s => (<SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>))}</SelectContent>
                         </Select>
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    {/* Revenue */}
+                    <td className="py-4 align-middle text-right">
                       <Input type="number" value={c.revenue || ""} onChange={(e) => updateClient(c.id, "revenue", Number(e.target.value))}
-                        className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[120px] ml-auto" />
-                    </TableCell>
-                    <TableCell>
+                        className="h-auto py-1 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-full" />
+                    </td>
+                    {/* Expenses */}
+                    <td className="py-4 align-middle text-right">
                       <Input type="number" value={c.expenses || ""} onChange={(e) => updateClient(c.id, "expenses", Number(e.target.value))}
-                        className="h-9 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[110px] ml-auto" />
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-sm font-semibold text-primary pr-4">{fmtCurrency(profit)}</TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className={`text-xs tabular-nums border-primary/20 text-primary rounded-lg px-2.5 ${margin >= 80 ? "bg-primary/5" : ""}`}>{margin}%</Badge>
-                    </TableCell>
-                    <TableCell>
+                        className="h-auto py-1 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-full" />
+                    </td>
+                    {/* Profit */}
+                    <td className="py-4 align-middle text-right pr-3">
+                      <span className="text-sm font-semibold tabular-nums text-primary">{fmtCurrency(profit)}</span>
+                    </td>
+                    {/* Margin */}
+                    <td className="py-4 align-middle text-center">
+                      <span className={`inline-flex items-center justify-center text-xs font-medium tabular-nums rounded-full h-8 w-12 border ${margin >= 80 ? "bg-primary/8 border-primary/20 text-primary" : "bg-secondary/50 border-border/30 text-muted-foreground"}`}>
+                        {margin}%
+                      </span>
+                    </td>
+                    {/* Date */}
+                    <td className="py-4 align-middle">
                       <Input type="date" value={c.nextBilling} onChange={(e) => updateClient(c.id, "nextBilling", e.target.value)}
-                        className="h-9 text-xs tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-[140px]" />
-                    </TableCell>
-                    <TableCell>
+                        className="h-auto py-1 text-xs tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 w-full" />
+                    </td>
+                    {/* Status */}
+                    <td className="py-4 align-middle">
                       <select value={c.billingStatus} onChange={(e) => updateClient(c.id, "billingStatus", e.target.value)}
-                        className={`h-8 text-xs rounded-lg px-2.5 py-1 border cursor-pointer transition-colors ${statusStyle.cls}`}>
+                        className={`h-8 text-xs rounded-lg px-2.5 py-1 border cursor-pointer transition-colors w-full ${statusStyle.cls}`}>
                         {statusOptions.map(s => (<option key={s} value={s} className="bg-popover text-foreground">{billingLabels[s].text}</option>))}
                       </select>
-                    </TableCell>
-                    <TableCell>
-                      <button onClick={() => removeClient(c.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
+                    </td>
+                    {/* Delete */}
+                    <td className="py-4 align-middle text-center">
+                      <button onClick={() => removeClient(c.id)} className="text-muted-foreground/30 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
               })}
               {/* Totals */}
-              <TableRow className="border-border/30 bg-secondary/20 hover:bg-secondary/30">
-                <TableCell className="pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого</TableCell>
-                <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totalMrr)}</TableCell>
-                <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totalExpenses)}</TableCell>
-                <TableCell className="text-right tabular-nums text-sm font-bold text-primary pr-4">{fmtCurrency(totalMrr - totalExpenses)}</TableCell>
-                <TableCell colSpan={4} />
-              </TableRow>
-            </TableBody>
-          </Table>
+              <tr className="bg-secondary/20 border-t border-border/30">
+                <td className="py-4 pl-6 text-sm font-bold text-foreground" colSpan={2}>Итого</td>
+                <td className="py-4 text-right text-sm font-bold text-foreground tabular-nums pr-2">{fmtCurrency(totalMrr)}</td>
+                <td className="py-4 text-right text-sm font-bold text-destructive tabular-nums pr-2">{fmtCurrency(totalExpenses)}</td>
+                <td className="py-4 text-right text-sm font-bold text-primary tabular-nums pr-3">{fmtCurrency(totalMrr - totalExpenses)}</td>
+                <td colSpan={4} />
+              </tr>
+            </tbody>
+          </table>
         </div>
       </Section>
 
