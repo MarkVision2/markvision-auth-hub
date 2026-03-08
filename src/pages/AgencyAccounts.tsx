@@ -4,6 +4,8 @@ import { startOfMonth, endOfMonth } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useRole } from "@/hooks/useRole";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
