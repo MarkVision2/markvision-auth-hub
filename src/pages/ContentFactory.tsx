@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
+import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AutopostSheet from "@/components/sheets/AutopostSheet";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
