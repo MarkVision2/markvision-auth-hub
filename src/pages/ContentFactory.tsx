@@ -92,6 +92,7 @@ export default function ContentFactory() {
   const prefill = (location.state as any)?.prefill || "";
 
   // Form state
+  const [contentMode, setContentMode] = useState<ContentMode>("photo");
   const [format, setFormat] = useState("single");
   const [aspectRatio, setAspectRatio] = useState("4:5");
   const [designPrompt, setDesignPrompt] = useState("");
