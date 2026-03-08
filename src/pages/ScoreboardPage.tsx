@@ -160,7 +160,7 @@ export default function ScoreboardPage() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-border/30 bg-muted/30">
+                <TableRow className="border-b border-border/10 bg-muted/30">
                   {columns.map(col => (
                     <TableHead
                       key={col.key}
