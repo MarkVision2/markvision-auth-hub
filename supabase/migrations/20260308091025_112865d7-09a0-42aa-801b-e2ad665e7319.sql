@@ -1,0 +1,1 @@
+DELETE FROM public.clients_config WHERE project_id = 'c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5';
