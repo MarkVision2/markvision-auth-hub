@@ -91,7 +91,7 @@ export default function HqKpiCards({ metrics }: { metrics: AgencyMetrics | null 
       />
       <KpiCard
         icon={<Briefcase className="h-4 w-4 text-primary" />}
-        label="Активные проекты"
+        label="Активные кабинеты"
         value={String(metrics.activeProjects)}
         target={String(projTarget)}
         targetPct={Math.min(100, Math.round((metrics.activeProjects / projTarget) * 100))}
