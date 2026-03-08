@@ -546,8 +546,13 @@ export default function ContentFactory() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                    <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Опишите стиль, цвета, композицию и что должно быть изображено…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-muted-foreground">Описание визуала</Label>
+                      <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
+                        {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
+                      </Button>
+                    </div>
+                    <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
                   </div>
                 )}
 
