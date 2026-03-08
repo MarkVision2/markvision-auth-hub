@@ -118,6 +118,21 @@ const INITIAL_TEAM: TeamMember[] = [
   { id: "4", name: "Дмитрий Козлов", email: "d.kozlov@markvision.io", role: "analyst", status: "invited", lastLogin: null, permissions: ROLE_PRESETS.analyst },
 ];
 
+function loadTeam(): TeamMember[] {
+  try {
+    const raw = localStorage.getItem("mv_team_members");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return INITIAL_TEAM;
+}
+
+function saveTeam(team: TeamMember[]) {
+  localStorage.setItem("mv_team_members", JSON.stringify(team));
+}
+
 /* ── Sub-menu items ── */
 const SUB_TABS = [
   { key: "general", label: "Общие", icon: Settings },
@@ -133,7 +148,7 @@ type SubTab = typeof SUB_TABS[number]["key"];
 /* ── Page ── */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SubTab>("team");
-  const [team, setTeam] = useState<TeamMember[]>(INITIAL_TEAM);
+  const [team, setTeam] = useState<TeamMember[]>(loadTeam);
   const [search, setSearch] = useState("");
 
   // Sheet state
