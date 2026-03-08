@@ -160,7 +160,7 @@ function DecompositionTab() {
         </div>
 
         {/* Marketing */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5 space-y-4">
+        <div className="rounded-2xl bg-card border border-border/10 p-5 space-y-4">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Маркетинг</p>
           <NumField label="CPL (Стоимость лида)" value={cpl} onChange={setCpl} />
           <NumField label="CR1: Просмотр → Лид" value={cr1} onChange={setCr1} suffix="%" />
