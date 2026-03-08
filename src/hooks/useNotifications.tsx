@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
 
 export type NotificationType = "error" | "warning" | "info";
 
@@ -12,6 +12,55 @@ export interface AppNotification {
   module?: string;
 }
 
+export interface NotificationPreferences {
+  soundEnabled: boolean;
+  errorEnabled: boolean;
+  warningEnabled: boolean;
+  infoEnabled: boolean;
+  moduleFilters: Record<string, boolean>; // module name -> enabled
+}
+
+const DEFAULT_PREFS: NotificationPreferences = {
+  soundEnabled: true,
+  errorEnabled: true,
+  warningEnabled: true,
+  infoEnabled: true,
+  moduleFilters: {},
+};
+
+function loadPrefs(): NotificationPreferences {
+  try {
+    const raw = localStorage.getItem("mv_notification_prefs");
+    if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_PREFS };
+}
+
+function savePrefs(prefs: NotificationPreferences) {
+  localStorage.setItem("mv_notification_prefs", JSON.stringify(prefs));
+}
+
+// Simple beep using Web Audio API — no external files needed
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Two-tone alert: 880Hz then 660Hz
+    [880, 660].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.value = 0.15;
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15 + i * 0.18);
+      osc.start(ctx.currentTime + i * 0.18);
+      osc.stop(ctx.currentTime + 0.15 + i * 0.18);
+    });
+    setTimeout(() => ctx.close(), 500);
+  } catch {}
+}
+
 interface NotificationContextValue {
   notifications: AppNotification[];
   unreadCount: number;
@@ -19,6 +68,8 @@ interface NotificationContextValue {
   markAllRead: () => void;
   clearAll: () => void;
   dismissNotification: (id: string) => void;
+  preferences: NotificationPreferences;
+  updatePreferences: (partial: Partial<NotificationPreferences>) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
@@ -28,12 +79,32 @@ const NotificationContext = createContext<NotificationContextValue>({
   markAllRead: () => {},
   clearAll: () => {},
   dismissNotification: () => {},
+  preferences: DEFAULT_PREFS,
+  updatePreferences: () => {},
 });
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [preferences, setPreferences] = useState<NotificationPreferences>(loadPrefs);
+
+  const updatePreferences = useCallback((partial: Partial<NotificationPreferences>) => {
+    setPreferences(prev => {
+      const next = { ...prev, ...partial };
+      savePrefs(next);
+      return next;
+    });
+  }, []);
 
   const pushNotification = useCallback((type: NotificationType, title: string, description?: string, module?: string) => {
+    // Check type filter
+    const prefs = loadPrefs(); // read fresh to avoid stale closure
+    if (type === "error" && !prefs.errorEnabled) return;
+    if (type === "warning" && !prefs.warningEnabled) return;
+    if (type === "info" && !prefs.infoEnabled) return;
+
+    // Check module filter
+    if (module && prefs.moduleFilters[module] === false) return;
+
     const newNotif: AppNotification = {
       id: crypto.randomUUID(),
       type,
@@ -44,6 +115,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       module,
     };
     setNotifications(prev => [newNotif, ...prev].slice(0, 50));
+
+    // Play sound for errors and warnings if enabled
+    if (prefs.soundEnabled && (type === "error" || type === "warning")) {
+      playAlertSound();
+    }
   }, []);
 
   const markAllRead = useCallback(() => {
@@ -61,7 +137,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, pushNotification, markAllRead, clearAll, dismissNotification }}>
+    <NotificationContext.Provider value={{
+      notifications, unreadCount, pushNotification,
+      markAllRead, clearAll, dismissNotification,
+      preferences, updatePreferences,
+    }}>
       {children}
     </NotificationContext.Provider>
   );
@@ -70,3 +150,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 export function useNotifications() {
   return useContext(NotificationContext);
 }
+
+/** All known modules for filter settings */
+export const KNOWN_MODULES = [
+  "Контент-Завод",
+  "CRM",
+  "Радар конкурентов",
+  "Управление рекламой",
+  "Аналитика",
+  "AI-РОП",
+  "Финансы",
+] as const;
