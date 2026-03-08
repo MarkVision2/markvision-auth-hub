@@ -449,7 +449,10 @@ export type Database = {
       competitor_ads: {
         Row: {
           active_since: string | null
+          ad_archive_id: string | null
           ad_copy: string | null
+          ad_status: string | null
+          ad_text: string | null
           advertiser_avatar: string | null
           advertiser_name: string
           created_at: string | null
@@ -459,15 +462,20 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           page_id: string | null
+          page_name: string | null
           platform: string | null
           project_id: string | null
           scrape_status: string | null
           source_url: string | null
+          start_date: string | null
           updated_at: string | null
         }
         Insert: {
           active_since?: string | null
+          ad_archive_id?: string | null
           ad_copy?: string | null
+          ad_status?: string | null
+          ad_text?: string | null
           advertiser_avatar?: string | null
           advertiser_name: string
           created_at?: string | null
@@ -477,15 +485,20 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           page_id?: string | null
+          page_name?: string | null
           platform?: string | null
           project_id?: string | null
           scrape_status?: string | null
           source_url?: string | null
+          start_date?: string | null
           updated_at?: string | null
         }
         Update: {
           active_since?: string | null
+          ad_archive_id?: string | null
           ad_copy?: string | null
+          ad_status?: string | null
+          ad_text?: string | null
           advertiser_avatar?: string | null
           advertiser_name?: string
           created_at?: string | null
@@ -495,10 +508,12 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           page_id?: string | null
+          page_name?: string | null
           platform?: string | null
           project_id?: string | null
           scrape_status?: string | null
           source_url?: string | null
+          start_date?: string | null
           updated_at?: string | null
         }
         Relationships: [
