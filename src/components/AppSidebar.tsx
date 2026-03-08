@@ -74,10 +74,15 @@ export default function AppSidebar() {
 
   useEffect(() => {
     const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
-      if (data) setProfile(data);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+        if (error) throw error;
+        if (data) setProfile(data);
+      } catch (err) {
+        console.error("Sidebar profile load error:", err);
+      }
     };
     load();
 

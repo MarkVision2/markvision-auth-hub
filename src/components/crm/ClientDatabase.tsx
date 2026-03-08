@@ -37,14 +37,11 @@ export default function ClientDatabase() {
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("leads").select("name, phone, source, amount, ai_score, status, updated_at, created_at").order("created_at", { ascending: false });
-    
-    if (error) {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-      setLoading(false);
-      return;
-    }
+    try {
+      const { data, error } = await (supabase as any)
+        .from("leads").select("name, phone, source, amount, ai_score, status, updated_at, created_at").order("created_at", { ascending: false });
+      
+      if (error) throw error;
 
     // Aggregate by phone (or name if no phone)
     const map = new Map<string, ClientRow>();

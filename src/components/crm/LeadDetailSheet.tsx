@@ -93,16 +93,27 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   const fetchMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
-    const { data } = await (supabase as any)
-      .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
-    setMessages((data as CrmMessage[]) ?? []);
-    setMessagesLoading(false);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+      if (error) throw error;
+      setMessages((data as CrmMessage[]) ?? []);
+    } catch (err: any) {
+      console.error("fetchMessages error:", err);
+    } finally {
+      setMessagesLoading(false);
+    }
   }, []);
 
   const fetchNotes = useCallback(async (leadId: string) => {
-    const { data } = await (supabase as any)
-      .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
-    setNotes((data as CrmNote[]) ?? []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
+      if (error) throw error;
+      setNotes((data as CrmNote[]) ?? []);
+    } catch (err: any) {
+      console.error("fetchNotes error:", err);
+    }
   }, []);
 
   useEffect(() => {

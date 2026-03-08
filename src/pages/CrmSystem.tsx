@@ -36,11 +36,16 @@ export default function CrmSystem() {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase as any)
-        .from("leads").select("id, status, amount, ai_score, created_at").order("created_at", { ascending: false });
-      if (data) {
-        setPrevLeadsCount(leads.length);
-        setLeads(data);
+      try {
+        const { data, error } = await (supabase as any)
+          .from("leads").select("id, status, amount, ai_score, created_at").order("created_at", { ascending: false });
+        if (error) throw error;
+        if (data) {
+          setPrevLeadsCount(leads.length);
+          setLeads(data);
+        }
+      } catch (err: any) {
+        console.error("CRM leads fetch error:", err);
       }
     };
     load();
