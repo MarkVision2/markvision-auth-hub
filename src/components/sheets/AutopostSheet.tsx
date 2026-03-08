@@ -16,9 +16,10 @@ import { CalendarIcon, Loader2, Sparkles, Send } from "lucide-react";
 const SOCIAL_CHANNELS = [
   { id: "instagram", label: "Instagram", emoji: "📸" },
   { id: "telegram", label: "Telegram", emoji: "✈️" },
-  { id: "facebook", label: "Facebook", emoji: "📘" },
   { id: "tiktok", label: "TikTok", emoji: "🎵" },
   { id: "youtube", label: "YouTube", emoji: "▶️" },
+  { id: "threads", label: "Threads", emoji: "🔗" },
+  { id: "blog", label: "Блог / Сайт", emoji: "🌐" },
 ];
 
 const MOCK_CAPTIONS = [

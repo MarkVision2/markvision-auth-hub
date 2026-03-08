@@ -1,21 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { CalendarIcon, Upload, Send, BarChart3, Target, Clock, Image, Trash2, RefreshCw } from "lucide-react";
+import {
+  CalendarIcon, Upload, Send, Target, Clock, Image as ImageIcon,
+  Trash2, RefreshCw, Eye, MousePointerClick, Users, DollarSign,
+  Sparkles, Loader2, ChevronDown, Play, GripVertical, MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatMoney, formatNum } from "@/components/analytics/analyticsData";
+import { motion, AnimatePresence } from "framer-motion";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 
 interface AutopostItem {
@@ -37,12 +38,16 @@ interface AutopostItem {
 }
 
 const SOCIAL_CHANNELS = [
-  { id: "instagram", label: "Instagram", emoji: "📸" },
-  { id: "telegram", label: "Telegram", emoji: "✈️" },
-  { id: "facebook", label: "Facebook", emoji: "📘" },
-  { id: "tiktok", label: "TikTok", emoji: "🎵" },
-  { id: "youtube", label: "YouTube", emoji: "▶️" },
+  { id: "instagram", label: "Instagram", emoji: "📸", color: "from-pink-500 to-purple-500" },
+  { id: "telegram", label: "Telegram", emoji: "✈️", color: "from-blue-400 to-blue-600" },
+  { id: "tiktok", label: "TikTok", emoji: "🎵", color: "from-gray-800 to-gray-900" },
+  { id: "youtube", label: "YouTube", emoji: "▶️", color: "from-red-500 to-red-700" },
+  { id: "threads", label: "Threads", emoji: "🔗", color: "from-gray-700 to-black" },
+  { id: "blog", label: "Блог / Сайт", emoji: "🌐", color: "from-emerald-500 to-teal-600" },
 ];
+
+const fmt = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v);
+const fmtMoney = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M ₸` : v >= 1000 ? `${(v / 1000).toFixed(0)}K ₸` : `${v} ₸`;
 
 export default function AutopostingPage() {
   const { toast } = useToast();
@@ -50,20 +55,23 @@ export default function AutopostingPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Form state
+  // Form
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState("12:00");
+  const [generatingCaption, setGeneratingCaption] = useState(false);
 
   // Ad launcher
   const [adSheetOpen, setAdSheetOpen] = useState(false);
-  const [selectedAdImage, setSelectedAdImage] = useState<string | null>(null);
 
   // Filter
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Expanded analytics
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -75,19 +83,21 @@ export default function AutopostingPage() {
   }, []);
 
   async function fetchItems() {
-    const { data, error } = await supabase
-      .from("autopost_items")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      const { data, error } = await supabase
+        .from("autopost_items")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
       setItems((data || []).map((d: any) => ({
         ...d,
         channels: Array.isArray(d.channels) ? d.channels : [],
       })));
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -99,6 +109,14 @@ export default function AutopostingPage() {
 
   function toggleChannel(id: string) {
     setSelectedChannels(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  }
+
+  async function handleAutoCaption() {
+    setGeneratingCaption(true);
+    await new Promise(r => setTimeout(r, 1500));
+    setCaption("🔥 Готовы к переменам? Мы подготовили для вас нечто особенное!\n\nЭто не просто контент — это стратегия, которая работает на результат.\n\n💡 Сохраняйте, делитесь и применяйте!\n\n#маркетинг #реклама #бизнес");
+    setGeneratingCaption(false);
+    toast({ title: "✨ Описание сгенерировано" });
   }
 
   async function handleSubmit() {
@@ -119,7 +137,6 @@ export default function AutopostingPage() {
       if (uploadErr) throw uploadErr;
 
       const { data: urlData } = supabase.storage.from("content_assets").getPublicUrl(path);
-      const mediaUrl = urlData.publicUrl;
 
       let scheduledAt: string | null = null;
       if (scheduleDate) {
@@ -130,7 +147,7 @@ export default function AutopostingPage() {
       }
 
       const { error: insertErr } = await supabase.from("autopost_items").insert({
-        media_url: mediaUrl,
+        media_url: urlData.publicUrl,
         media_type: mediaFile.type.startsWith("video") ? "video" : "image",
         caption: caption || null,
         channels: selectedChannels,
@@ -139,7 +156,7 @@ export default function AutopostingPage() {
       });
       if (insertErr) throw insertErr;
 
-      toast({ title: "✅ Контент добавлен в автопостинг!" });
+      toast({ title: "✅ Контент добавлен!" });
       setMediaFile(null);
       setMediaPreview(null);
       setCaption("");
@@ -163,249 +180,342 @@ export default function AutopostingPage() {
     toast({ title: "✅ Опубликовано!" });
   }
 
-  function openAdLauncher(mediaUrl: string) {
-    setSelectedAdImage(mediaUrl);
-    setAdSheetOpen(true);
-  }
-
   const filtered = statusFilter === "all" ? items : items.filter(i => i.status === statusFilter);
 
-  const totalImpressions = items.reduce((s, i) => s + i.impressions, 0);
-  const totalClicks = items.reduce((s, i) => s + i.clicks, 0);
-  const totalLeads = items.reduce((s, i) => s + i.leads, 0);
-  const totalRevenue = items.reduce((s, i) => s + i.revenue, 0);
+  const stats = useMemo(() => ({
+    total: items.length,
+    published: items.filter(i => i.status === "published").length,
+    scheduled: items.filter(i => i.status === "scheduled").length,
+    impressions: items.reduce((s, i) => s + i.impressions, 0),
+    clicks: items.reduce((s, i) => s + i.clicks, 0),
+    leads: items.reduce((s, i) => s + i.leads, 0),
+    revenue: items.reduce((s, i) => s + i.revenue, 0),
+  }), [items]);
+
+  const statusCounts = useMemo(() => ({
+    all: items.length,
+    draft: items.filter(i => i.status === "draft").length,
+    scheduled: items.filter(i => i.status === "scheduled").length,
+    published: items.filter(i => i.status === "published").length,
+  }), [items]);
 
   return (
-    <DashboardLayout>
-      <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+    <DashboardLayout breadcrumb="Автопостинг">
+      <div className="space-y-5">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">📅 Автопостинг</h1>
-            <p className="text-sm text-muted-foreground mt-1">Загружайте контент, выбирайте соцсети и планируйте публикации</p>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Send className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground tracking-tight">Автопостинг</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {stats.published} опубликовано · {stats.scheduled} в очереди · {stats.total} всего
+              </p>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchItems}>
-            <RefreshCw size={14} className="mr-1" /> Обновить
+          <Button variant="outline" size="sm" onClick={fetchItems} className="gap-1.5 text-xs border-border rounded-xl">
+            <RefreshCw className="h-3.5 w-3.5" /> Обновить
           </Button>
         </div>
 
-        {/* KPI Summary */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Охваты", value: formatNum(totalImpressions), icon: "👁" },
-            { label: "Клики", value: formatNum(totalClicks), icon: "👆" },
-            { label: "Лиды", value: formatNum(totalLeads), icon: "🎯" },
-            { label: "Выручка", value: formatMoney(totalRevenue), icon: "💰" },
+            { label: "Охваты", value: fmt(stats.impressions), icon: Eye, sub: "Суммарно" },
+            { label: "Клики", value: fmt(stats.clicks), icon: MousePointerClick, sub: "По постам" },
+            { label: "Лиды", value: fmt(stats.leads), icon: Users, sub: "Из контента" },
+            { label: "Выручка", value: fmtMoney(stats.revenue), icon: DollarSign, sub: "Атрибуция" },
           ].map(k => (
-            <Card key={k.label} className="bg-card border-border/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <span className="text-2xl">{k.icon}</span>
-                <div>
-                  <p className="text-xs text-muted-foreground">{k.label}</p>
-                  <p className="text-lg font-bold text-foreground">{k.value}</p>
+            <div key={k.label} className="rounded-xl border border-border bg-card p-4 hover:border-primary/20 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-7 w-7 rounded-lg bg-secondary border border-border flex items-center justify-center">
+                  <k.icon className="h-3.5 w-3.5 text-primary" />
                 </div>
-              </CardContent>
-            </Card>
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{k.label}</span>
+              </div>
+              <p className="text-xl font-mono font-bold text-foreground tabular-nums">{k.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{k.sub}</p>
+            </div>
           ))}
         </div>
 
         {/* Upload Form */}
-        <Card className="border-primary/20 bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Upload size={18} /> Добавить контент
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              {/* Left: file + preview */}
-              <div className="space-y-3">
+        <div className="rounded-xl border border-primary/15 bg-card overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-primary/[0.02] flex items-center gap-2">
+            <Upload className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Новая публикация</span>
+          </div>
+          <div className="p-5">
+            <div className="grid md:grid-cols-2 gap-5">
+              {/* Left: file + caption */}
+              <div className="space-y-4">
                 <div
-                  className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 transition-colors relative"
+                  className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-primary/40 transition-colors relative group"
                   onClick={() => document.getElementById("autopost-file")?.click()}
                 >
                   {mediaPreview ? (
-                    <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
+                    <div className="relative">
+                      {mediaFile?.type.startsWith("video") ? (
+                        <video src={mediaPreview} className="max-h-48 mx-auto rounded-lg object-cover" />
+                      ) : (
+                        <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
+                      )}
+                      <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                        <p className="text-xs font-medium text-foreground">Заменить файл</p>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
-                      <Image size={32} className="mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Нажмите для загрузки изображения или видео</p>
+                    <div className="space-y-2 py-4">
+                      <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">Загрузите фото или видео</p>
+                      <p className="text-[10px] text-muted-foreground/50">JPG, PNG, MP4 до 100MB</p>
                     </div>
                   )}
                   <input id="autopost-file" type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
                 </div>
-                <Textarea
-                  placeholder="Текст публикации / caption..."
-                  value={caption}
-                  onChange={e => setCaption(e.target.value)}
-                  rows={3}
-                  className="bg-background"
-                />
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Описание</span>
+                    <Button
+                      variant="ghost" size="sm"
+                      onClick={handleAutoCaption}
+                      disabled={generatingCaption}
+                      className="h-6 text-[10px] text-primary hover:text-primary gap-1"
+                    >
+                      {generatingCaption ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      AI Caption
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Текст публикации, хэштеги, CTA..."
+                    value={caption}
+                    onChange={e => setCaption(e.target.value)}
+                    rows={4}
+                    className="bg-secondary/20 border-border resize-none text-sm"
+                  />
+                </div>
               </div>
 
               {/* Right: channels + schedule */}
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Соцсети для публикации</p>
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground">Каналы публикации</span>
+                  <div className="grid grid-cols-2 gap-2">
                     {SOCIAL_CHANNELS.map(ch => (
                       <button
                         key={ch.id}
                         onClick={() => toggleChannel(ch.id)}
                         className={cn(
-                          "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-all",
+                          "flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium border transition-all",
                           selectedChannels.includes(ch.id)
-                            ? "bg-primary/10 border-primary text-primary"
-                            : "bg-background border-border text-muted-foreground hover:border-primary/30"
+                            ? "bg-primary/10 border-primary/40 text-foreground shadow-sm"
+                            : "bg-secondary/20 border-border text-muted-foreground hover:border-primary/20 hover:bg-secondary/40"
                         )}
                       >
-                        <span>{ch.emoji}</span> {ch.label}
+                        <span className="text-base">{ch.emoji}</span>
+                        <span>{ch.label}</span>
+                        {selectedChannels.includes(ch.id) && (
+                          <span className="ml-auto h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-2">Запланировать публикацию</p>
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground">Дата и время</span>
                   <div className="flex gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("flex-1 justify-start text-left", !scheduleDate && "text-muted-foreground")}>
-                          <CalendarIcon size={14} className="mr-2" />
-                          {scheduleDate ? format(scheduleDate, "dd MMM yyyy", { locale: ru }) : "Выберите дату"}
+                        <Button variant="outline" className={cn("flex-1 justify-start text-left text-xs border-border rounded-lg h-10", !scheduleDate && "text-muted-foreground")}>
+                          <CalendarIcon className="h-3.5 w-3.5 mr-2" />
+                          {scheduleDate ? format(scheduleDate, "dd MMM yyyy", { locale: ru }) : "Дата"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={scheduleDate}
-                          onSelect={setScheduleDate}
-                          className="p-3 pointer-events-auto"
-                        />
+                        <Calendar mode="single" selected={scheduleDate} onSelect={setScheduleDate} className="p-3 pointer-events-auto" />
                       </PopoverContent>
                     </Popover>
                     <Input
                       type="time"
                       value={scheduleTime}
                       onChange={e => setScheduleTime(e.target.value)}
-                      className="w-28 bg-background"
+                      className="w-24 bg-secondary/20 border-border text-xs rounded-lg"
                     />
                   </div>
+                  {!scheduleDate && (
+                    <p className="text-[10px] text-muted-foreground/50">Без даты → сохранится как черновик</p>
+                  )}
                 </div>
 
-                <Button onClick={handleSubmit} disabled={uploading} className="w-full mt-2">
-                  {uploading ? "Загрузка..." : "📤 Добавить в автопостинг"}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={uploading || !mediaFile}
+                  className="w-full h-11 gap-2 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl mt-2"
+                >
+                  {uploading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Загрузка...</>
+                  ) : (
+                    <><Send className="h-4 w-4" /> Добавить в автопостинг</>
+                  )}
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Filter */}
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-foreground">Фильтр:</p>
-          {["all", "draft", "scheduled", "published"].map(s => (
-            <Button
-              key={s}
-              variant={statusFilter === s ? "default" : "outline"}
-              size="sm"
-              onClick={() => setStatusFilter(s)}
-            >
-              {{ all: "Все", draft: "Черновик", scheduled: "Запланировано", published: "Опубликовано" }[s]}
-            </Button>
-          ))}
+          </div>
         </div>
 
-        {/* Content List with Analytics */}
+        {/* Filters */}
+        <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card p-1">
+          {(["all", "draft", "scheduled", "published"] as const).map(s => {
+            const labels: Record<string, string> = { all: "Все", draft: "Черновики", scheduled: "В очереди", published: "Опубликовано" };
+            const count = statusCounts[s];
+            return (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                  statusFilter === s
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                )}
+              >
+                {labels[s]}
+                {count > 0 && (
+                  <span className={cn(
+                    "text-[9px] tabular-nums px-1.5 py-0.5 rounded-full",
+                    statusFilter === s ? "bg-primary-foreground/20" : "bg-secondary"
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Content List */}
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Загрузка...</div>
+          <div className="text-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-xs text-muted-foreground mt-2">Загрузка...</p>
+          </div>
         ) : filtered.length === 0 ? (
-          <Card className="bg-card">
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">Пока нет контента в автопостинге</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-xl border border-border bg-card py-16 text-center">
+            <Send className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-foreground">Пока нет контента</p>
+            <p className="text-xs text-muted-foreground mt-1">Загрузите файл выше, чтобы начать</p>
+          </div>
         ) : (
-          <div className="space-y-3">
-            {filtered.map(item => (
-              <Card key={item.id} className="bg-card border-border/50 overflow-hidden">
-                <div className="flex flex-col md:flex-row">
-                  {/* Preview */}
-                  <div className="w-full md:w-40 h-40 md:h-auto shrink-0 bg-muted">
-                    {item.media_type === "video" ? (
-                      <video src={item.media_url} className="w-full h-full object-cover" />
-                    ) : (
-                      <img src={item.media_url} alt="" className="w-full h-full object-cover" />
-                    )}
-                  </div>
+          <div className="space-y-2">
+            <AnimatePresence>
+              {filtered.map((item, idx) => {
+                const isExpanded = expandedId === item.id;
+                const channelInfos = item.channels.map(ch => SOCIAL_CHANNELS.find(s => s.id === ch)).filter(Boolean);
+                const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
+                  draft: { bg: "bg-secondary", text: "text-muted-foreground", label: "Черновик" },
+                  scheduled: { bg: "bg-primary/10", text: "text-primary", label: "В очереди" },
+                  published: { bg: "bg-[hsl(var(--status-good)/0.1)]", text: "text-[hsl(var(--status-good))]", label: "Опубликовано" },
+                };
+                const st = statusStyles[item.status] || statusStyles.draft;
 
-                  {/* Info + Analytics */}
-                  <div className="flex-1 p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm text-foreground line-clamp-2">{item.caption || "Без подписи"}</p>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          {item.channels.map(ch => {
-                            const info = SOCIAL_CHANNELS.find(s => s.id === ch);
-                            return (
-                              <Badge key={ch} variant="secondary" className="text-[11px]">
-                                {info?.emoji} {info?.label}
-                              </Badge>
-                            );
-                          })}
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ delay: idx * 0.03 }}
+                    className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/15 transition-colors"
+                  >
+                    <div className="flex">
+                      {/* Thumbnail */}
+                      <div className="w-24 h-24 sm:w-32 sm:h-32 shrink-0 bg-secondary/30 relative overflow-hidden">
+                        {item.media_type === "video" ? (
+                          <>
+                            <video src={item.media_url} className="w-full h-full object-cover" muted />
+                            <div className="absolute inset-0 flex items-center justify-center bg-background/20">
+                              <Play className="h-6 w-6 text-primary-foreground drop-shadow-lg" fill="currentColor" />
+                            </div>
+                          </>
+                        ) : (
+                          <img src={item.media_url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 p-3 sm:p-4 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
+                              {item.caption || <span className="text-muted-foreground italic">Без описания</span>}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                              {channelInfos.map(ch => ch && (
+                                <span key={ch.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-secondary/60 text-[10px] font-medium text-muted-foreground">
+                                  {ch.emoji} {ch.label}
+                                </span>
+                              ))}
+                              {item.scheduled_at && (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/70">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(item.scheduled_at), "dd MMM, HH:mm", { locale: ru })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={cn("px-2 py-1 rounded-md text-[10px] font-semibold", st.bg, st.text)}>
+                              {st.label}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Compact metrics */}
+                        <div className="flex items-center gap-4 mt-3">
+                          {[
+                            { v: item.impressions, icon: Eye },
+                            { v: item.clicks, icon: MousePointerClick },
+                            { v: item.leads, icon: Users },
+                            { v: item.revenue, icon: DollarSign, money: true },
+                          ].map((m, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground tabular-nums font-mono">
+                              <m.icon className="h-3 w-3" />
+                              {m.money ? fmtMoney(m.v) : fmt(m.v)}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 mt-3">
+                          {item.status !== "published" && (
+                            <Button size="sm" className="h-7 text-[10px] gap-1 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => handlePublishNow(item.id)}>
+                              <Send className="h-3 w-3" /> Опубликовать
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 rounded-lg border-border" onClick={() => { setAdSheetOpen(true); }}>
+                            <Target className="h-3 w-3" /> В рекламу
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive rounded-lg"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <Badge variant={item.status === "published" ? "default" : item.status === "scheduled" ? "secondary" : "outline"}>
-                          {{ draft: "Черновик", scheduled: "📅 Запланировано", published: "✅ Опубликовано" }[item.status] || item.status}
-                        </Badge>
-                      </div>
                     </div>
-
-                    {/* Schedule info */}
-                    {item.scheduled_at && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock size={12} />
-                        {format(new Date(item.scheduled_at), "dd MMM yyyy, HH:mm", { locale: ru })}
-                      </p>
-                    )}
-
-                    {/* Analytics Row */}
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 bg-muted/50 rounded-lg p-3">
-                      {[
-                        { label: "Охваты", value: item.impressions },
-                        { label: "Клики", value: item.clicks },
-                        { label: "Лиды", value: item.leads },
-                        { label: "Визиты", value: item.visits },
-                        { label: "Продажи", value: item.sales },
-                        { label: "Выручка", value: item.revenue, money: true },
-                      ].map(m => (
-                        <div key={m.label} className="text-center">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
-                          <p className="text-sm font-bold text-foreground">
-                            {m.money ? formatMoney(m.value) : formatNum(m.value)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {item.status !== "published" && (
-                        <Button size="sm" onClick={() => handlePublishNow(item.id)}>
-                          <Send size={14} className="mr-1" /> Опубликовать сейчас
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => openAdLauncher(item.media_url)}>
-                        <Target size={14} className="mr-1" /> В рекламу
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(item.id)}>
-                        <Trash2 size={14} className="mr-1" /> Удалить
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </div>
