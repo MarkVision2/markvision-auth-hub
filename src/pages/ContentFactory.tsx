@@ -156,7 +156,7 @@ export default function ContentFactory() {
         source_url: mode === "link" ? sourceUrl : null,
         visual_style: (isVideo && mode === "description") ? visualStyle : (!isVideo && photoMode === "description" ? visualStyle : null),
         main_text: isVideo && mode === "description" ? speakerText : (!isVideo ? mainText : null),
-        format: isVideo ? "reels" : photoFormat,
+        format: isVideo ? videoFormat : photoFormat,
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
         custom_logo_url: customLogoUrl,
