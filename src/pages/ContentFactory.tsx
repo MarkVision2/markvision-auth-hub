@@ -224,7 +224,7 @@ export default function ContentFactory() {
       const sourceUrl = referenceUrl.trim() || null;
 
       const dbPayload: Record<string, any> = {
-        content_type: "photo",
+        content_type: contentMode,
         source_type: sourceUrl ? "link" : referenceImageUrl ? "reference" : "description",
         source_url: sourceUrl,
         main_text: exactText || null,
