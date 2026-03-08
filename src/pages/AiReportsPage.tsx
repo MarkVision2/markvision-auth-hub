@@ -638,7 +638,7 @@ export default function AiReportsPage() {
             </div>
 
             {/* ═══ PAGE 3: LEAD QUALITY & UNIT ECONOMICS ═══ */}
-            <div className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
+            <div ref={el => { pagesRef.current[2] = el; }} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
               <MiniHeader clientName={clientName} dateRange={dateRange} subtitle="Продажи и Юнит-экономика" />
 
               {/* Lead Quality */}
