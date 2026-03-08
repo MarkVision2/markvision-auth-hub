@@ -12,7 +12,7 @@ import {
   Download, Send, Calendar, TrendingUp, TrendingDown,
   Eye, DollarSign, Users, BarChart3, Trophy, Sparkles,
   CheckCircle2, Target, Image as ImageIcon,
-  Zap, Clock, Bell, ShoppingCart, Flame, MapPin,
+  Zap, Clock, Bell, ShoppingCart, Flame, MapPin, Lock,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
