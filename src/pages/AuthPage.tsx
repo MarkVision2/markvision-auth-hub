@@ -177,6 +177,8 @@ const AuthPage = forwardRef<HTMLDivElement>((_, ref) => {
       </div>
     </div>
   );
-};
+});
+
+AuthPage.displayName = "AuthPage";
 
 export default AuthPage;
