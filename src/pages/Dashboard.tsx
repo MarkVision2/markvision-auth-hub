@@ -213,7 +213,6 @@ export default function Dashboard() {
         {isAgency ? (
           /* ── AGENCY VIEW ── */
           <>
-            <HqAiSearch />
             <HqKpiCards metrics={agencyMetrics} />
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
               <div className="lg:col-span-3">
@@ -224,7 +223,6 @@ export default function Dashboard() {
               </div>
             </div>
             <HqRevenueChart clients={clients} />
-            <HqRolePanels />
           </>
         ) : (
           /* ── CLIENT VIEW ── */
