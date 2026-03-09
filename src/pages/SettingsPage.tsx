@@ -1147,6 +1147,7 @@ function IntegrationsTab() {
           <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">API Подключения</h2>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <WhatsAppGreenApiCard />
           <IntegrationCard
             icon={<span className="text-lg">📘</span>}
             name="Meta Ads"
