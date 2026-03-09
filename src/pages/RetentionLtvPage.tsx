@@ -281,7 +281,7 @@ export default function RetentionLtvPage() {
       setSheetOpen(false);
       setFormLeadId("");
       setFormTemplateId("");
-      setFormDate("");
+      setFormDate(undefined);
       setFormPromo("");
       fetchData();
     } catch (err: any) {
