@@ -219,6 +219,9 @@ export default function RetentionLtvPage() {
               <TabsTrigger value="templates" className="text-xs gap-1.5">
                 <FileText size={13} /> Аналитика шаблонов
               </TabsTrigger>
+              <TabsTrigger value="promos" className="text-xs gap-1.5">
+                <TicketPercent size={13} /> Промокоды
+              </TabsTrigger>
             </TabsList>
             <Button size="sm" className="gap-1.5 text-xs" onClick={() => setSheetOpen(true)}>
               <Plus size={13} /> Запланировать касание
@@ -335,6 +338,11 @@ export default function RetentionLtvPage() {
                 </TableBody>
               </Table>
             </div>
+          </TabsContent>
+
+          {/* ── Tab 3: Promo Code Analytics ── */}
+          <TabsContent value="promos">
+            <PromoAnalytics tasks={tasks} loading={loading} />
           </TabsContent>
         </Tabs>
       </div>
