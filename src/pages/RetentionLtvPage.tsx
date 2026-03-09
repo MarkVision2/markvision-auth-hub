@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import {
   DollarSign, RefreshCw, Clock, TrendingUp, Plus, Send,
-  CalendarDays, FileText, Users,
+  CalendarDays, FileText, Users, Tag, TicketPercent,
 } from "lucide-react";
 
 const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
