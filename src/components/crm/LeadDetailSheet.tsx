@@ -9,14 +9,20 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   Brain, Send, MessageCircle, Bot, User, Phone, Calendar,
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
-  Copy, ChevronRight, Sparkles, Globe, Hash, Loader2, Check, CheckCheck,
+  Globe, Hash, Loader2, Check, CheckCheck, Trash2, Copy, Sparkles,
   Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
@@ -181,6 +187,7 @@ function AiCallResultCard({ record }: { record: CallRecord }) {
 }
 
 export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated, onTaskGenerated }: LeadDetailSheetProps) {
+  const { isSuperadmin } = useRole();
   const [stage, setStage] = useState("");
   const [aiMode, setAiMode] = useState(true);
   const [message, setMessage] = useState("");
@@ -310,6 +317,17 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     onLeadUpdated?.();
   };
 
+  const handleDeleteLead = async () => {
+    const { error } = await (supabase as any).from("leads").delete().eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Сделка удалена", description: lead.name });
+    onOpenChange(false);
+    onLeadUpdated?.();
+  };
+
   const handleCopyPhone = () => {
     if (lead.phone) {
       navigator.clipboard.writeText(lead.phone);
@@ -409,6 +427,27 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               <Badge variant="outline" className={`text-xs font-medium ${stageColorMap[stage] || "border-border text-muted-foreground"}`}>
                 {stage}
               </Badge>
+              {isSuperadmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10 ml-2">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Удалить сделку?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Это действие необратимо. Сделка и вся история взаимодействия будут удалены навсегда.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="border-border">Отмена</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteLead} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Удалить</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </div>
         </SheetHeader>
@@ -590,8 +629,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                                   )}
                                   {isInbound && isConsecutive && <div className="w-6 shrink-0" />}
                                   <div className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${isInbound
-                                      ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
-                                      : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
+                                    ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
+                                    : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
                                     }`}>
                                     <p className="whitespace-pre-wrap break-words">{msg.message_text}</p>
                                     <div className={`flex items-center gap-1 mt-0.5 ${isInbound ? "text-muted-foreground/40" : "text-primary-foreground/50"}`}>
@@ -718,6 +757,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           </div>
         </div>
       </SheetContent>
-    </Sheet>
+    </Sheet >
   );
 }

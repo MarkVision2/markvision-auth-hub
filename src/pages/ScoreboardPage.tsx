@@ -75,16 +75,14 @@ function PctCell({ value }: { value: number }) {
   const warn = value >= 70;
   return (
     <div className="flex flex-col items-end gap-1">
-      <span className={`text-xs font-bold font-mono tabular-nums ${
-        hit ? "text-[hsl(var(--status-good))]" : warn ? "text-[hsl(var(--status-warning))]" : "text-destructive"
-      }`}>
+      <span className={`text-xs font-bold font-mono tabular-nums ${hit ? "text-[hsl(var(--status-good))]" : warn ? "text-[hsl(var(--status-warning))]" : "text-destructive"
+        }`}>
         {value}%
       </span>
       <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden max-w-[60px]">
         <div
-          className={`h-full rounded-full transition-all ${
-            hit ? "bg-[hsl(var(--status-good))]" : warn ? "bg-[hsl(var(--status-warning))]" : "bg-destructive"
-          }`}
+          className={`h-full rounded-full transition-all ${hit ? "bg-[hsl(var(--status-good))]" : warn ? "bg-[hsl(var(--status-warning))]" : "bg-destructive"
+            }`}
           style={{ width: `${Math.min(value, 100)}%` }}
         />
       </div>
@@ -421,9 +419,8 @@ export default function ScoreboardPage() {
                   {columns.map(col => (
                     <TableHead
                       key={col.key}
-                      className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground whitespace-nowrap px-3 py-3 ${
-                        col.align === "right" ? "text-right" : "text-left"
-                      }`}
+                      className={`text-[10px] uppercase tracking-wider font-semibold text-muted-foreground whitespace-nowrap px-3 py-3 ${col.align === "right" ? "text-right" : "text-left"
+                        }`}
                     >
                       {col.label}
                     </TableHead>
@@ -527,20 +524,18 @@ export default function ScoreboardPage() {
                   return (
                     <TableRow
                       key={row.id}
-                      className={`border-b border-border/40 transition-colors ${
-                        isToday
+                      className={`border-b border-border/40 transition-colors ${isToday
                           ? "bg-primary/[0.06] border-l-2 border-l-primary"
                           : isWeekend && !isFuture
-                          ? "bg-muted/[0.06]"
-                          : ""
-                      } ${isFuture ? "opacity-30" : "hover:bg-accent/20"}`}
+                            ? "bg-muted/[0.06]"
+                            : ""
+                        } ${isFuture ? "opacity-60" : "hover:bg-accent/20"}`}
                     >
                       {columns.map(col => (
-                        <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${
-                          col.key === "date"
+                        <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date"
                             ? `text-left font-medium ${isToday ? "text-primary font-bold" : isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`
                             : "text-right text-foreground/80"
-                        }`}>
+                          }`}>
                           {col.key === "date" ? (
                             <div className="flex items-center gap-1.5">
                               <span>{fmtDate(row.date)}</span>
