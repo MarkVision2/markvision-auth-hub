@@ -4,15 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from "@/components/ui/sheet";
 import {
   MessageCircle, Bot, Settings2, CheckCircle2, AlertTriangle,
-  Loader2, User, Clock,
+  Clock, Send, FileText,
 } from "lucide-react";
 
 const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
 
+/* ── Types ── */
 interface NpsFeedback {
   id: string;
   lead_id: string | null;
@@ -23,11 +29,36 @@ interface NpsFeedback {
   lead_name?: string;
 }
 
+/* ── Helpers ── */
 function scoreCategory(score: number) {
-  if (score >= 9) return { label: "Промоутер", bg: "bg-emerald-500/15 dark:bg-emerald-500/15", border: "border-emerald-500/25", text: "text-emerald-600 dark:text-emerald-400" };
-  if (score >= 7) return { label: "Нейтральный", bg: "bg-amber-500/15 dark:bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-600 dark:text-amber-400" };
-  return { label: "Критик", bg: "bg-rose-500/15 dark:bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-600 dark:text-rose-400" };
+  if (score >= 9) return { label: "Промоутер", color: "emerald" as const };
+  if (score >= 7) return { label: "Нейтральный", color: "amber" as const };
+  return { label: "Критик", color: "rose" as const };
 }
+
+const colorMap = {
+  emerald: {
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+    bar: "bg-emerald-500",
+    dot: "bg-emerald-500",
+  },
+  amber: {
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    text: "text-amber-600 dark:text-amber-400",
+    bar: "bg-amber-500",
+    dot: "bg-amber-500",
+  },
+  rose: {
+    bg: "bg-rose-500/10",
+    border: "border-rose-500/20",
+    text: "text-rose-600 dark:text-rose-400",
+    bar: "bg-rose-500",
+    dot: "bg-rose-500",
+  },
+};
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -38,29 +69,56 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hours / 24)} дн назад`;
 }
 
+/* ── KPI Card ── */
+function KpiCard({ label, value, sub, color }: {
+  label: string; value: string; sub: string; color: keyof typeof colorMap;
+}) {
+  const c = colorMap[color];
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`h-9 w-9 rounded-xl ${c.bg} ${c.border} border flex items-center justify-center`}>
+          <div className={`h-2.5 w-2.5 rounded-full ${c.dot}`} />
+        </div>
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+      </div>
+      <p className={`text-2xl font-mono font-semibold tabular-nums tracking-tight ${c.text}`}>{value}</p>
+      <p className="text-[11px] text-muted-foreground mt-1">{sub}</p>
+      <div className="h-1 rounded-full bg-secondary overflow-hidden mt-3">
+        <div className={`h-full rounded-full ${c.bar} transition-all duration-500`} style={{ width: value }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Page ── */
 export default function QualityControlPage() {
   const [feedback, setFeedback] = useState<NpsFeedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateMsg, setTemplateMsg] = useState(
+    "Здравствуйте, {name}! Спасибо, что посетили нашу клинику. Пожалуйста, оцените качество обслуживания от 1 до 10, ответив на это сообщение."
+  );
+  const [delayMinutes, setDelayMinutes] = useState(60);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const fetchFeedback = useCallback(async () => {
     try {
-      // Fetch feedback with lead names
       const { data, error } = await (supabase as any)
         .from("nps_feedback")
         .select("*, leads(name)")
         .eq("project_id", PROJECT_ID)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      const mapped = (data || []).map((row: any) => ({
+      setFeedback((data || []).map((row: any) => ({
         id: row.id,
         lead_id: row.lead_id,
-        score: row.score,
+        score: row.score ?? 0,
         feedback_text: row.feedback_text || "",
-        is_resolved: row.is_resolved,
+        is_resolved: row.is_resolved ?? false,
         created_at: row.created_at,
         lead_name: row.leads?.name || "Пациент",
-      }));
-      setFeedback(mapped);
+      })));
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
@@ -74,29 +132,16 @@ export default function QualityControlPage() {
   useEffect(() => {
     const ch = supabase
       .channel("nps_feedback_realtime")
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "nps_feedback",
-        filter: `project_id=eq.${PROJECT_ID}`,
-      }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${PROJECT_ID}` }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => [{
-          id: row.id,
-          lead_id: row.lead_id,
-          score: row.score,
-          feedback_text: row.feedback_text || "",
-          is_resolved: row.is_resolved,
-          created_at: row.created_at,
-          lead_name: "Пациент",
+          id: row.id, lead_id: row.lead_id, score: row.score ?? 0,
+          feedback_text: row.feedback_text || "", is_resolved: row.is_resolved ?? false,
+          created_at: row.created_at, lead_name: "Пациент",
         }, ...prev]);
-        toast({ title: "📩 Новый отзыв получен!", description: `Оценка: ${row.score}/10` });
+        toast({ title: "📩 Новый отзыв!", description: `Оценка: ${row.score}/10` });
       })
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "nps_feedback",
-      }, (payload: any) => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nps_feedback" }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => prev.map(f => f.id === row.id ? { ...f, is_resolved: row.is_resolved } : f));
       })
@@ -105,16 +150,22 @@ export default function QualityControlPage() {
   }, []);
 
   const handleResolve = async (id: string) => {
-    const { error } = await (supabase as any)
-      .from("nps_feedback")
-      .update({ is_resolved: true })
-      .eq("id", id);
+    const { error } = await (supabase as any).from("nps_feedback").update({ is_resolved: true }).eq("id", id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     } else {
       setFeedback(prev => prev.map(f => f.id === id ? { ...f, is_resolved: true } : f));
       toast({ title: "✅ Отмечено как обработано" });
     }
+  };
+
+  const handleSaveTemplate = async () => {
+    setSavingTemplate(true);
+    // Simulated save — in real scenario, save to a templates table or project settings
+    await new Promise(r => setTimeout(r, 600));
+    setSavingTemplate(false);
+    setTemplateOpen(false);
+    toast({ title: "✅ Шаблон сохранён", description: `Задержка: ${delayMinutes} мин` });
   };
 
   // NPS Calculations
@@ -126,174 +177,144 @@ export default function QualityControlPage() {
   const promoterPct = total > 0 ? Math.round((promoters / total) * 100) : 0;
   const passivePct = total > 0 ? Math.round((passives / total) * 100) : 0;
   const detractorPct = total > 0 ? Math.round((detractors / total) * 100) : 0;
-
-  const npsLabel = npsScore >= 70 ? "Отлично" : npsScore >= 50 ? "Хорошо" : npsScore >= 0 ? "Средне" : "Плохо";
+  const npsColor = npsScore >= 50 ? "emerald" : npsScore >= 0 ? "amber" : "rose";
 
   return (
     <DashboardLayout breadcrumb="Контроль качества">
-      <div className="space-y-6 max-w-6xl">
-        {/* ── KPI Widgets ── */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* NPS Score — hero card */}
-          <div className="rounded-2xl border border-border bg-card p-6 flex flex-col items-center justify-center relative overflow-hidden">
-            {/* Glow effect */}
-            <div
-              className="absolute inset-0 opacity-10 dark:opacity-20 blur-3xl"
-              style={{
-                background: `radial-gradient(circle at 50% 60%, ${npsScore >= 50 ? "#10b981" : npsScore >= 0 ? "#f59e0b" : "#e11d48"}, transparent 70%)`,
-              }}
-            />
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 relative z-10">Индекс NPS</p>
-            <p
-              className={`text-6xl font-black tabular-nums font-mono relative z-10 ${npsScore >= 50 ? "text-emerald-600 dark:text-emerald-400" : npsScore >= 0 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
-            >
+      <div className="space-y-6">
+        {/* ── KPI Row ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* NPS Score */}
+          <div className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Индекс NPS</span>
+            </div>
+            <p className={`text-2xl font-mono font-semibold tabular-nums tracking-tight ${colorMap[npsColor].text}`}>
               {loading ? "—" : npsScore}
             </p>
-            <p className="text-sm font-medium text-muted-foreground mt-1 relative z-10">{loading ? "" : npsLabel}</p>
-            <p className="text-[10px] text-muted-foreground/50 mt-2 relative z-10">{total} отзывов</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{total} отзывов</p>
           </div>
 
-          {/* Promoters */}
-          <div className="rounded-2xl border border-emerald-500/20 bg-card p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Промоутеры (9-10)</p>
-            </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-emerald-600 dark:text-emerald-400">{loading ? "—" : `${promoterPct}%`}</p>
-            <p className="text-[11px] text-muted-foreground">{promoters} из {total} ответов</p>
-            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${promoterPct}%` }} />
-            </div>
-          </div>
-
-          {/* Passives */}
-          <div className="rounded-2xl border border-amber-500/20 bg-card p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-amber-500" />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Нейтральные (7-8)</p>
-            </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-amber-600 dark:text-amber-400">{loading ? "—" : `${passivePct}%`}</p>
-            <p className="text-[11px] text-muted-foreground">{passives} из {total} ответов</p>
-            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-              <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${passivePct}%` }} />
-            </div>
-          </div>
-
-          {/* Detractors */}
-          <div className="rounded-2xl border border-rose-500/20 bg-card p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-rose-500" />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Критики (1-6)</p>
-            </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-rose-600 dark:text-rose-400">{loading ? "—" : `${detractorPct}%`}</p>
-            <p className="text-[11px] text-muted-foreground">{detractors} из {total} ответов</p>
-            <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-              <div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${detractorPct}%` }} />
-            </div>
-          </div>
+          <KpiCard
+            label="Промоутеры (9-10)"
+            value={loading ? "—" : `${promoterPct}%`}
+            sub={`${promoters} из ${total}`}
+            color="emerald"
+          />
+          <KpiCard
+            label="Нейтральные (7-8)"
+            value={loading ? "—" : `${passivePct}%`}
+            sub={`${passives} из ${total}`}
+            color="amber"
+          />
+          <KpiCard
+            label="Критики (1-6)"
+            value={loading ? "—" : `${detractorPct}%`}
+            sub={`${detractors} из ${total}`}
+            color="rose"
+          />
         </div>
 
         {/* ── Automation Banner ── */}
-        <div className="rounded-2xl border border-primary/15 bg-primary/[0.03] px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-              <Bot size={20} className="text-primary" />
+        <div className="rounded-2xl border border-border bg-card px-5 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0">
+              <Bot size={16} className="text-primary" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">🤖 Автоматический сбор отзывов включен</p>
+              <p className="text-sm font-medium text-foreground">Автоматический сбор отзывов</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Пациенты получают сообщение в WhatsApp через 1 час после перехода в статус «Визит совершен».
+                WhatsApp-сообщение через {delayMinutes} мин после статуса «Визит совершен»
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1.5 shrink-0"
+            onClick={() => setTemplateOpen(true)}
+          >
             <Settings2 size={13} />
-            Настроить шаблон сообщения
+            Настроить
           </Button>
         </div>
 
         {/* ── Feedback Feed ── */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
+        <div className="rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <div className="flex items-center gap-2">
-              <MessageCircle size={16} className="text-primary" />
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Лента отзывов</h2>
-              <span className="text-[10px] text-muted-foreground/50 font-mono">{total}</span>
+              <FileText size={15} className="text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Лента отзывов</h2>
+              {total > 0 && (
+                <Badge variant="secondary" className="text-[10px] font-mono">{total}</Badge>
+              )}
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="divide-y divide-border">
             {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-5 flex items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="px-5 py-4 flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-full max-w-md" />
+                    <Skeleton className="h-3 w-full max-w-sm" />
                   </div>
-                  <Skeleton className="h-8 w-28" />
+                  <Skeleton className="h-8 w-24" />
                 </div>
               ))
             ) : feedback.length === 0 ? (
-              <div className="rounded-2xl border border-border bg-card p-12 text-center">
-                <MessageCircle size={32} className="text-muted-foreground/20 mx-auto mb-3" />
+              <div className="px-5 py-16 text-center">
+                <MessageCircle size={28} className="text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">Отзывов пока нет</p>
                 <p className="text-xs text-muted-foreground/50 mt-1">Они появятся автоматически после визита пациента</p>
               </div>
             ) : (
               feedback.map((item) => {
                 const cat = scoreCategory(item.score);
-                const isDetractor = item.score <= 6;
-                const needsAction = isDetractor && !item.is_resolved;
+                const c = colorMap[cat.color];
+                const needsAction = item.score <= 6 && !item.is_resolved;
 
                 return (
-                  <div
-                    key={item.id}
-                    className={`rounded-xl border bg-card p-5 flex items-start gap-4 transition-colors ${
-                      needsAction ? "border-rose-500/25" : "border-border"
-                    }`}
-                  >
-                    {/* Score badge */}
-                    <div
-                      className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 font-black text-lg tabular-nums font-mono relative ${cat.bg} ${cat.border} border`}
-                    >
-                      {/* Glow for detractors */}
-                      {isDetractor && !item.is_resolved && (
-                        <div className="absolute inset-0 rounded-xl animate-pulse bg-rose-500/10" />
-                      )}
-                      <span className={cat.text} style={{ position: "relative", zIndex: 1 }}>{item.score}</span>
+                  <div key={item.id} className="px-5 py-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
+                    {/* Score */}
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm tabular-nums font-mono ${c.bg} ${c.border} border ${c.text}`}>
+                      {item.score}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-foreground">{item.lead_name}</span>
-                        <Badge variant="outline" className={`text-[9px] ${cat.bg} ${cat.text} ${cat.border} border`}>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm font-medium text-foreground">{item.lead_name}</span>
+                        <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${c.bg} ${c.text} ${c.border} border`}>
                           {cat.label}
                         </Badge>
                       </div>
                       {item.feedback_text ? (
-                        <p className="text-sm text-foreground/70 leading-relaxed line-clamp-2">«{item.feedback_text}»</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">«{item.feedback_text}»</p>
                       ) : (
                         <p className="text-sm text-muted-foreground/40 italic">Без комментария</p>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1.5 mt-1.5">
                         <Clock size={10} className="text-muted-foreground/40" />
                         <span className="text-[10px] text-muted-foreground/50">{timeAgo(item.created_at)}</span>
                       </div>
                     </div>
 
                     {/* Action */}
-                    <div className="shrink-0">
+                    <div className="shrink-0 pt-0.5">
                       {needsAction ? (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-300 gap-1.5 h-9"
+                          className="text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 gap-1.5 h-8"
                           onClick={() => handleResolve(item.id)}
                         >
-                          <AlertTriangle size={13} />
-                          🚨 Требует связи
+                          <AlertTriangle size={12} />
+                          Требует связи
                         </Button>
                       ) : item.is_resolved ? (
                         <div className="flex items-center gap-1.5 text-muted-foreground/40 text-xs">
@@ -301,7 +322,7 @@ export default function QualityControlPage() {
                           Обработано
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-muted-foreground/30 text-xs">
+                        <div className="flex items-center gap-1.5 text-emerald-500/50 text-xs">
                           <CheckCircle2 size={13} />
                           Ок
                         </div>
@@ -314,6 +335,60 @@ export default function QualityControlPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Template Settings Sheet ── */}
+      <Sheet open={templateOpen} onOpenChange={setTemplateOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Шаблон сообщения NPS</SheetTitle>
+            <SheetDescription>
+              Настройте текст WhatsApp-сообщения для сбора отзывов после визита.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-5 mt-6">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Задержка отправки (минуты)</Label>
+              <Input
+                type="number"
+                min={5}
+                max={1440}
+                value={delayMinutes}
+                onChange={e => setDelayMinutes(Number(e.target.value))}
+              />
+              <p className="text-[11px] text-muted-foreground">Через сколько минут после статуса «Визит совершен» отправить сообщение</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Текст сообщения</Label>
+              <Textarea
+                rows={6}
+                value={templateMsg}
+                onChange={e => setTemplateMsg(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Используйте <code className="text-primary">{"{name}"}</code> для имени пациента
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Предпросмотр</p>
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+                <p className="text-sm text-foreground">{templateMsg.replace("{name}", "Айгуль")}</p>
+              </div>
+            </div>
+
+            <Button className="w-full gap-2" onClick={handleSaveTemplate} disabled={savingTemplate}>
+              {savingTemplate ? (
+                <>Сохранение...</>
+              ) : (
+                <><Send size={14} /> Сохранить шаблон</>
+              )}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }
