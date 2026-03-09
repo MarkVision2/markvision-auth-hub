@@ -1095,6 +1095,7 @@ function WebhookLeadCard() {
   );
 }
 
+function IntegrationsTab() {
   const [wfStatuses, setWfStatuses] = useState<Record<string, { status: "active" | "inactive" | "error" | "loading"; lastRun: string | null; errors: number }>>({});
   const [checking, setChecking] = useState(false);
 
