@@ -205,7 +205,7 @@ export default function RetentionLtvPage() {
   // Form state
   const [formLeadId, setFormLeadId] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
-  const [formDate, setFormDate] = useState("");
+  const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formPromo, setFormPromo] = useState("");
   const [saving, setSaving] = useState(false);
 
