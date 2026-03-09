@@ -1,42 +1,15 @@
 
--- Add/Ensure fields in clients_config
+-- 1. Добавляем поля в таблицу (если еще не добавлены)
 ALTER TABLE public.clients_config
   ADD COLUMN IF NOT EXISTS visits integer DEFAULT 0,
   ADD COLUMN IF NOT EXISTS sales integer DEFAULT 0,
   ADD COLUMN IF NOT EXISTS revenue numeric DEFAULT 0,
   ADD COLUMN IF NOT EXISTS romi numeric DEFAULT 0;
 
--- Restore RLS for clients_config
-ALTER TABLE public.clients_config ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Project members manage clients_config" ON public.clients_config;
-CREATE POLICY "Project members manage clients_config"
-ON public.clients_config
-FOR ALL
-TO authenticated
-USING (public.is_project_member(project_id))
-WITH CHECK (public.is_project_member(project_id));
+-- 2. Удаляем старое представление, чтобы избежать ошибки изменения типов данных (integer -> bigint)
+DROP VIEW IF EXISTS public.agency_metrics_view;
 
--- Restore RLS for leads
-ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Project members manage leads" ON public.leads;
-CREATE POLICY "Project members manage leads"
-ON public.leads
-FOR ALL
-TO authenticated
-USING (public.is_project_member(project_id))
-WITH CHECK (public.is_project_member(project_id));
-
--- Restore RLS for daily_metrics
-ALTER TABLE public.daily_metrics ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Project members manage daily_metrics" ON public.daily_metrics;
-CREATE POLICY "Project members manage daily_metrics"
-ON public.daily_metrics
-FOR ALL
-TO authenticated
-USING (public.is_project_member(project_id))
-WITH CHECK (public.is_project_member(project_id));
-
--- Redefine agency_metrics_view to be additive (Manual + Tracked)
+-- 3. Создаем новое представление с поддержкой сложения данных
 CREATE OR REPLACE VIEW public.agency_metrics_view AS
 WITH aggregated_metrics AS (
   SELECT 
@@ -74,17 +47,14 @@ SELECT
     ELSE 0 
   END as cac,
   CASE 
-    -- If revenue is 0, ROMI is 0 as requested
     WHEN (COALESCE(m.total_revenue, 0) + COALESCE(c.revenue, 0)) = 0 THEN 0
-    -- If spend is > 0, calculate ROMI
     WHEN (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0)) > 0 
     THEN (( (COALESCE(m.total_revenue, 0) + COALESCE(c.revenue, 0))::numeric - (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric) / (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric * 100)
-    -- Fallback to manual ROMI if spend is 0 but revenue is non-zero (or just fallback)
-    ELSE COALESCE(c.romi, 0)
+    ELSE 0
   END as romi
 FROM public.clients_config c
 LEFT JOIN aggregated_metrics m ON c.id = m.client_config_id;
 
--- Grant access to the view
+-- 4. Даем права на чтение
 GRANT SELECT ON public.agency_metrics_view TO authenticated;
 GRANT SELECT ON public.agency_metrics_view TO service_role;
