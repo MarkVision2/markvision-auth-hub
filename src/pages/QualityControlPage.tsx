@@ -289,7 +289,7 @@ export default function QualityControlPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 gap-1.5 h-9"
+                          className="text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-300 gap-1.5 h-9"
                           onClick={() => handleResolve(item.id)}
                         >
                           <AlertTriangle size={13} />
