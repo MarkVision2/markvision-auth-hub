@@ -24,9 +24,9 @@ interface NpsFeedback {
 }
 
 function scoreCategory(score: number) {
-  if (score >= 9) return { label: "Промоутер", color: "#10b981", bg: "bg-emerald-500/15", border: "border-emerald-500/25", text: "text-emerald-400" };
-  if (score >= 7) return { label: "Нейтральный", color: "#f59e0b", bg: "bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-400" };
-  return { label: "Критик", color: "#e11d48", bg: "bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-400" };
+  if (score >= 9) return { label: "Промоутер", bg: "bg-emerald-500/15 dark:bg-emerald-500/15", border: "border-emerald-500/25", text: "text-emerald-600 dark:text-emerald-400" };
+  if (score >= 7) return { label: "Нейтральный", bg: "bg-amber-500/15 dark:bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-600 dark:text-amber-400" };
+  return { label: "Критик", bg: "bg-rose-500/15 dark:bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-600 dark:text-rose-400" };
 }
 
 function timeAgo(dateStr: string) {
@@ -135,18 +135,17 @@ export default function QualityControlPage() {
         {/* ── KPI Widgets ── */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* NPS Score — hero card */}
-          <div className="rounded-2xl border border-border/30 bg-[#0a0a0a] p-6 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card p-6 flex flex-col items-center justify-center relative overflow-hidden">
             {/* Glow effect */}
             <div
-              className="absolute inset-0 opacity-20 blur-3xl"
+              className="absolute inset-0 opacity-10 dark:opacity-20 blur-3xl"
               style={{
                 background: `radial-gradient(circle at 50% 60%, ${npsScore >= 50 ? "#10b981" : npsScore >= 0 ? "#f59e0b" : "#e11d48"}, transparent 70%)`,
               }}
             />
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 relative z-10">Индекс NPS</p>
             <p
-              className="text-6xl font-black tabular-nums font-mono relative z-10"
-              style={{ color: npsScore >= 50 ? "#10b981" : npsScore >= 0 ? "#f59e0b" : "#e11d48" }}
+              className={`text-6xl font-black tabular-nums font-mono relative z-10 ${npsScore >= 50 ? "text-emerald-600 dark:text-emerald-400" : npsScore >= 0 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
             >
               {loading ? "—" : npsScore}
             </p>
@@ -155,12 +154,12 @@ export default function QualityControlPage() {
           </div>
 
           {/* Promoters */}
-          <div className="rounded-2xl border border-emerald-500/15 bg-[#0a0a0a] p-5 space-y-3">
+          <div className="rounded-2xl border border-emerald-500/20 bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Промоутеры (9-10)</p>
             </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-emerald-400">{loading ? "—" : `${promoterPct}%`}</p>
+            <p className="text-3xl font-black tabular-nums font-mono text-emerald-600 dark:text-emerald-400">{loading ? "—" : `${promoterPct}%`}</p>
             <p className="text-[11px] text-muted-foreground">{promoters} из {total} ответов</p>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
               <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${promoterPct}%` }} />
@@ -168,12 +167,12 @@ export default function QualityControlPage() {
           </div>
 
           {/* Passives */}
-          <div className="rounded-2xl border border-amber-500/15 bg-[#0a0a0a] p-5 space-y-3">
+          <div className="rounded-2xl border border-amber-500/20 bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-amber-500" />
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Нейтральные (7-8)</p>
             </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-amber-400">{loading ? "—" : `${passivePct}%`}</p>
+            <p className="text-3xl font-black tabular-nums font-mono text-amber-600 dark:text-amber-400">{loading ? "—" : `${passivePct}%`}</p>
             <p className="text-[11px] text-muted-foreground">{passives} из {total} ответов</p>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
               <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${passivePct}%` }} />
@@ -181,12 +180,12 @@ export default function QualityControlPage() {
           </div>
 
           {/* Detractors */}
-          <div className="rounded-2xl border border-rose-500/15 bg-[#0a0a0a] p-5 space-y-3">
+          <div className="rounded-2xl border border-rose-500/20 bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-rose-500" />
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Критики (1-6)</p>
             </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-rose-400">{loading ? "—" : `${detractorPct}%`}</p>
+            <p className="text-3xl font-black tabular-nums font-mono text-rose-600 dark:text-rose-400">{loading ? "—" : `${detractorPct}%`}</p>
             <p className="text-[11px] text-muted-foreground">{detractors} из {total} ответов</p>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
               <div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${detractorPct}%` }} />
@@ -226,7 +225,7 @@ export default function QualityControlPage() {
           <div className="space-y-2">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border/20 bg-[#0a0a0a] p-5 flex items-center gap-4">
+                <div key={i} className="rounded-xl border border-border bg-card p-5 flex items-center gap-4">
                   <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-32" />
@@ -236,7 +235,7 @@ export default function QualityControlPage() {
                 </div>
               ))
             ) : feedback.length === 0 ? (
-              <div className="rounded-2xl border border-border/20 bg-[#0a0a0a] p-12 text-center">
+              <div className="rounded-2xl border border-border bg-card p-12 text-center">
                 <MessageCircle size={32} className="text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">Отзывов пока нет</p>
                 <p className="text-xs text-muted-foreground/50 mt-1">Они появятся автоматически после визита пациента</p>
@@ -250,8 +249,8 @@ export default function QualityControlPage() {
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-xl border bg-[#0a0a0a] p-5 flex items-start gap-4 transition-colors ${
-                      needsAction ? "border-rose-500/25" : "border-border/20"
+                    className={`rounded-xl border bg-card p-5 flex items-start gap-4 transition-colors ${
+                      needsAction ? "border-rose-500/25" : "border-border"
                     }`}
                   >
                     {/* Score badge */}
@@ -290,7 +289,7 @@ export default function QualityControlPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 gap-1.5 h-9"
+                          className="text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 dark:hover:text-rose-300 gap-1.5 h-9"
                           onClick={() => handleResolve(item.id)}
                         >
                           <AlertTriangle size={13} />

@@ -1450,6 +1450,102 @@ export type Database = {
         }
         Relationships: []
       }
+      retention_tasks: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          project_id: string | null
+          promo_code: string | null
+          status: string | null
+          template_id: string | null
+          trigger_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          project_id?: string | null
+          promo_code?: string | null
+          status?: string | null
+          template_id?: string | null
+          trigger_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          project_id?: string | null
+          promo_code?: string | null
+          status?: string | null
+          template_id?: string | null
+          trigger_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retention_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "retention_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "retention_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      retention_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_prompt: string
+          name: string
+          project_id: string | null
+          return_count: number | null
+          revenue_generated: number | null
+          sent_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_prompt: string
+          name: string
+          project_id?: string | null
+          return_count?: number | null
+          revenue_generated?: number | null
+          sent_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_prompt?: string
+          name?: string
+          project_id?: string | null
+          return_count?: number | null
+          revenue_generated?: number | null
+          sent_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retention_templates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scoreboard_daily_facts: {
         Row: {
           clicks: number
