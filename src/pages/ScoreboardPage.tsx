@@ -501,19 +501,8 @@ export default function ScoreboardPage() {
                   </TableRow>
                 )}
 
-                {/* No account selected */}
-                {!loading && selectedAccountId === "__none__" && (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center py-12">
-                      <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
-                      <p className="text-sm font-semibold text-foreground">Выберите рекламный кабинет</p>
-                      <p className="text-xs text-muted-foreground mt-1">Данные отображаются по конкретному кабинету</p>
-                    </TableCell>
-                  </TableRow>
-                )}
-
                 {/* ── Daily rows ── */}
-                {!loading && selectedAccountId !== "__none__" && fullMonth.map((row, i) => {
+                {!loading && fullMonth.map((row, i) => {
                   const isToday = row.date === todayIso;
                   const isFuture = row.date > todayIso;
                   const isWeekend = (() => {
@@ -525,16 +514,16 @@ export default function ScoreboardPage() {
                     <TableRow
                       key={row.id}
                       className={`border-b border-border/40 transition-colors ${isToday
-                          ? "bg-primary/[0.06] border-l-2 border-l-primary"
-                          : isWeekend && !isFuture
-                            ? "bg-muted/[0.06]"
-                            : ""
+                        ? "bg-primary/[0.06] border-l-2 border-l-primary"
+                        : isWeekend && !isFuture
+                          ? "bg-muted/[0.06]"
+                          : ""
                         } ${isFuture ? "opacity-60" : "hover:bg-accent/20"}`}
                     >
                       {columns.map(col => (
                         <TableCell key={col.key} className={`px-3 py-2.5 whitespace-nowrap font-mono text-xs tabular-nums ${col.key === "date"
-                            ? `text-left font-medium ${isToday ? "text-primary font-bold" : isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`
-                            : "text-right text-foreground/80"
+                          ? `text-left font-medium ${isToday ? "text-primary font-bold" : isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`
+                          : "text-right text-foreground/80"
                           }`}>
                           {col.key === "date" ? (
                             <div className="flex items-center gap-1.5">
