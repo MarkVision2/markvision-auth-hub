@@ -1276,24 +1276,7 @@ function IntegrationsTab() {
               { label: "Chat ID", value: "-1003746647686" },
             ]}
           />
-          <IntegrationCard
-            icon={<ScanSearch size={18} className="text-muted-foreground" />}
-            name="Apify"
-            description="Парсинг рекламы конкурентов"
-            connected={true}
-            fields={[
-              { label: "API Token", value: "apify_api_b0Tc...", type: "password" },
-            ]}
-          />
-          <IntegrationCard
-            icon={<Globe size={18} className="text-orange-400" />}
-            name="Firecrawl"
-            description="AI-скрейпинг сайтов конкурентов"
-            connected={true}
-            fields={[
-              { label: "API Key", value: "fc-••••••••", type: "password" },
-            ]}
-          />
+          <WebhookLeadCard />
         </div>
       </div>
     </div>

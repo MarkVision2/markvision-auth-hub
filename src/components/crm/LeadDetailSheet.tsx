@@ -13,6 +13,7 @@ import {
   Brain, Send, MessageCircle, Bot, User, Phone, Calendar,
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Copy, ChevronRight, Sparkles, Globe, Hash, Loader2, Check, CheckCheck,
+  Timer,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
