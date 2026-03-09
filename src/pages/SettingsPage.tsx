@@ -1060,6 +1060,41 @@ function WhatsAppGreenApiCard() {
   );
 }
 
+function WebhookLeadCard() {
+  const webhookUrl = "https://n8n.markvision.kz/webhook/client-leads-XYZ";
+  const handleCopy = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    toast({ title: "📋 Скопировано", description: "Webhook URL в буфере обмена" });
+  };
+  return (
+    <div className="rounded-xl border border-border/30 bg-card p-5 space-y-4">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-accent border border-border/30 flex items-center justify-center shrink-0">
+            <Globe size={18} className="text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Сайт / Лид-форма (Webhook)</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Ссылка для передачи заявок с вашего сайта (Tilda, WordPress) в CRM</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="text-[10px] shrink-0 border-primary/30 text-primary">🟢 Активен</Badge>
+      </div>
+      <Separator className="bg-border/15" />
+      <div className="space-y-1.5">
+        <Label className="text-[11px] text-muted-foreground">Webhook URL</Label>
+        <div className="flex gap-2">
+          <Input value={webhookUrl} readOnly className="bg-accent/20 border-border/20 text-sm font-mono flex-1" />
+          <Button variant="outline" size="sm" className="h-10 text-xs gap-1.5 shrink-0" onClick={handleCopy}>
+            <Copy size={12} /> Копировать
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground/60">Вставьте этот URL в настройки формы на вашем сайте для автоматической передачи заявок.</p>
+      </div>
+    </div>
+  );
+}
+
 function IntegrationsTab() {
   const [wfStatuses, setWfStatuses] = useState<Record<string, { status: "active" | "inactive" | "error" | "loading"; lastRun: string | null; errors: number }>>({});
   const [checking, setChecking] = useState(false);
@@ -1276,24 +1311,7 @@ function IntegrationsTab() {
               { label: "Chat ID", value: "-1003746647686" },
             ]}
           />
-          <IntegrationCard
-            icon={<ScanSearch size={18} className="text-muted-foreground" />}
-            name="Apify"
-            description="Парсинг рекламы конкурентов"
-            connected={true}
-            fields={[
-              { label: "API Token", value: "apify_api_b0Tc...", type: "password" },
-            ]}
-          />
-          <IntegrationCard
-            icon={<Globe size={18} className="text-orange-400" />}
-            name="Firecrawl"
-            description="AI-скрейпинг сайтов конкурентов"
-            connected={true}
-            fields={[
-              { label: "API Key", value: "fc-••••••••", type: "password" },
-            ]}
-          />
+          <WebhookLeadCard />
         </div>
       </div>
     </div>
