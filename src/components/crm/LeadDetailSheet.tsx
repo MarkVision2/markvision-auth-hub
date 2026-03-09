@@ -25,14 +25,11 @@ interface LeadDetailSheetProps {
   onLeadUpdated?: () => void;
 }
 
-interface CrmMessage {
+interface ChatMessage {
   id: string;
   lead_id: string;
-  direction: string;
-  sender_type: string;
-  body: string;
-  channel: string | null;
-  read: boolean;
+  message_text: string;
+  is_inbound: boolean;
   created_at: string;
 }
 
@@ -80,26 +77,40 @@ function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
+function formatDateSeparator(dateStr: string) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Сегодня";
+  if (d.toDateString() === yesterday.toDateString()) return "Вчера";
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+}
+
 export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) {
   const [stage, setStage] = useState("");
   const [aiMode, setAiMode] = useState(true);
   const [message, setMessage] = useState("");
   const [noteText, setNoteText] = useState("");
   const [notes, setNotes] = useState<CrmNote[]>([]);
-  const [messages, setMessages] = useState<CrmMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
-  const [rightTab, setRightTab] = useState<"chat" | "activity" | "notes">("chat");
+  const [sending, setSending] = useState(false);
+  const [rightTab, setRightTab] = useState<"chat" | "notes">("chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchMessages = useCallback(async (leadId: string) => {
+  const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
+        .from("chat_messages")
+        .select("*")
+        .eq("lead_id", leadId)
+        .order("created_at", { ascending: true });
       if (error) throw error;
-      setMessages((data as CrmMessage[]) ?? []);
+      setChatMessages((data as ChatMessage[]) ?? []);
     } catch (err: any) {
-      console.error("fetchMessages error:", err);
+      console.error("fetchChatMessages error:", err);
     } finally {
       setMessagesLoading(false);
     }
@@ -119,31 +130,47 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   useEffect(() => {
     if (lead && open) {
       setStage(lead.status || "Новая заявка");
-      fetchMessages(lead.id);
+      fetchChatMessages(lead.id);
       fetchNotes(lead.id);
     }
-  }, [lead, open, fetchMessages, fetchNotes]);
+  }, [lead, open, fetchChatMessages, fetchNotes]);
 
-  // Realtime for messages
+  // Realtime for chat_messages and crm_notes
   useEffect(() => {
     if (!lead || !open) return;
     const ch = supabase
-      .channel(`lead_detail_${lead.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_messages", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
-        setMessages(prev => [...prev, payload.new as CrmMessage]);
+      .channel(`lead_chat_${lead.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "chat_messages",
+        filter: `lead_id=eq.${lead.id}`,
+      }, (payload: any) => {
+        setChatMessages(prev => {
+          const newMsg = payload.new as ChatMessage;
+          // Avoid duplicates (optimistic insert)
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "crm_notes",
+        filter: `lead_id=eq.${lead.id}`,
+      }, (payload: any) => {
         setNotes(prev => [payload.new as CrmNote, ...prev]);
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [lead, open]);
 
+  // Auto-scroll on new messages
   useEffect(() => {
     if (open && rightTab === "chat") {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
-  }, [open, rightTab, messages]);
+  }, [open, rightTab, chatMessages]);
 
   if (!lead) return null;
 
@@ -152,7 +179,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const score = lead.ai_score ?? 0;
   const scoreBadge = getScoreLabel(score);
 
-  // CAPI status mapping (same as KanbanBoard)
   const CAPI_STATUS_MAP: Record<string, string> = {
     "Записан": "scheduled",
     "Визит совершен": "diagnostic",
@@ -199,7 +225,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       return;
     }
     toast({ title: "Статус обновлён", description: `${lead.name} → ${newStage}` });
-    // Fire CAPI conversion event
     fireCAPIWebhook(oldStatus, newStage);
     onLeadUpdated?.();
   };
@@ -212,18 +237,38 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || sending) return;
     const body = message.trim();
     setMessage("");
-    const { error } = await (supabase as any).from("crm_messages").insert({
-      lead_id: lead.id,
-      direction: "outbound",
-      sender_type: "manager",
-      body,
-      channel: "web",
-      read: true,
-    });
-    if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    setSending(true);
+
+    try {
+      // 1. Insert into chat_messages
+      const { error } = await (supabase as any).from("chat_messages").insert({
+        lead_id: lead.id,
+        message_text: body,
+        is_inbound: false,
+      });
+      if (error) throw error;
+
+      // 2. Fire n8n webhook to send via Green-API
+      const webhookUrl = import.meta.env.VITE_N8N_WA_SEND_WEBHOOK;
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            phone: lead.phone || "",
+            message: body,
+          }),
+        }).catch(err => console.error("WA send webhook error:", err));
+      }
+    } catch (err: any) {
+      toast({ title: "Ошибка отправки", description: err.message, variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
   };
 
   const addNote = async () => {
@@ -237,6 +282,18 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     });
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
   };
+
+  // Group messages by date for separators
+  const groupedMessages = chatMessages.reduce<{ date: string; messages: ChatMessage[] }[]>((acc, msg) => {
+    const dateKey = new Date(msg.created_at).toDateString();
+    const last = acc[acc.length - 1];
+    if (last && last.date === dateKey) {
+      last.messages.push(msg);
+    } else {
+      acc.push({ date: dateKey, messages: [msg] });
+    }
+    return acc;
+  }, []);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -345,7 +402,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
             </div>
           </div>
 
-          {/* RIGHT — Chat / Activity / Notes */}
+          {/* RIGHT — Chat / Notes */}
           <div className="w-[65%] flex flex-col">
             <div className="flex items-center justify-between px-5 py-2 border-b border-border">
               <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as any)}>
@@ -362,7 +419,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               {rightTab === "chat" && (
                 <div className="flex items-center gap-2">
                   {aiMode ? <Bot className="h-3.5 w-3.5 text-primary" /> : <User className="h-3.5 w-3.5 text-muted-foreground" />}
-                  <span className="text-[10px] text-muted-foreground">{aiMode ? "AI-Агент" : "Ручной"}</span>
+                  <span className="text-[10px] text-muted-foreground">{aiMode ? "🤖 AI-Агент" : "Ручной"}</span>
                   <Switch checked={aiMode} onCheckedChange={setAiMode} className="scale-75" />
                 </div>
               )}
@@ -371,73 +428,116 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
             {/* CHAT TAB */}
             {rightTab === "chat" && (
               <>
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {/* Messages area — iMessage style */}
+                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1 bg-background">
                   {messagesLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
-                  ) : messages.length === 0 ? (
-                    <div className="text-center py-12 text-sm text-muted-foreground">Нет сообщений</div>
+                  ) : chatMessages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="h-14 w-14 rounded-full bg-[hsl(142,70%,45%)]/10 flex items-center justify-center mb-4">
+                        <MessageCircle className="h-6 w-6 text-[hsl(142,70%,45%)]" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground/60">Начните диалог</p>
+                      <p className="text-xs text-muted-foreground mt-1">Сообщения из WhatsApp появятся здесь</p>
+                    </div>
                   ) : (
                     <>
-                      <div className="flex items-center gap-3 py-1">
-                        <Separator className="flex-1" />
-                        <span className="text-[10px] text-muted-foreground font-medium">Диалог</span>
-                        <Separator className="flex-1" />
-                      </div>
-                      {messages.map((msg) => {
-                        const isClient = msg.sender_type === "client";
-                        return (
-                          <div key={msg.id} className={`flex ${isClient ? "justify-start" : "justify-end"}`}>
-                            <div className="flex items-end gap-1.5 max-w-[78%]">
-                              {isClient && (
-                                <Avatar className="h-6 w-6 shrink-0">
-                                  <AvatarFallback className="bg-secondary text-muted-foreground text-[9px]">{initials}</AvatarFallback>
-                                </Avatar>
-                              )}
-                              <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                                isClient ? "bg-secondary text-foreground rounded-bl-md" : "bg-primary/15 text-foreground rounded-br-md"
-                              }`}>
-                                <p>{msg.body}</p>
-                                <div className={`flex items-center gap-1 mt-1 ${isClient ? "text-muted-foreground/50" : "text-primary/40"}`}>
-                                  {msg.sender_type === "ai" && <Bot className="h-2.5 w-2.5" />}
-                                  {msg.sender_type === "manager" && <User className="h-2.5 w-2.5" />}
-                                  <span className="text-[10px]">{formatTime(msg.created_at)}</span>
-                                  {!isClient && (msg.read ? <CheckCheck className="h-2.5 w-2.5 text-primary/60" /> : <Check className="h-2.5 w-2.5" />)}
+                      {groupedMessages.map((group) => (
+                        <div key={group.date}>
+                          {/* Date separator */}
+                          <div className="flex items-center gap-3 py-3">
+                            <div className="flex-1 h-px bg-border/40" />
+                            <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+                              {formatDateSeparator(group.messages[0].created_at)}
+                            </span>
+                            <div className="flex-1 h-px bg-border/40" />
+                          </div>
+
+                          {/* Messages */}
+                          {group.messages.map((msg, idx) => {
+                            const isInbound = msg.is_inbound;
+                            const prevMsg = idx > 0 ? group.messages[idx - 1] : null;
+                            const isConsecutive = prevMsg && prevMsg.is_inbound === msg.is_inbound;
+
+                            return (
+                              <div
+                                key={msg.id}
+                                className={`flex ${isInbound ? "justify-start" : "justify-end"} ${isConsecutive ? "mt-0.5" : "mt-3"}`}
+                              >
+                                <div className={`flex items-end gap-1.5 max-w-[75%] ${isInbound ? "flex-row" : "flex-row-reverse"}`}>
+                                  {/* Avatar — only show on first of consecutive group */}
+                                  {isInbound && !isConsecutive && (
+                                    <Avatar className="h-6 w-6 shrink-0 mb-0.5">
+                                      <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">{initials}</AvatarFallback>
+                                    </Avatar>
+                                  )}
+                                  {isInbound && isConsecutive && <div className="w-6 shrink-0" />}
+
+                                  {/* Bubble */}
+                                  <div
+                                    className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${
+                                      isInbound
+                                        ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
+                                        : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
+                                    }`}
+                                  >
+                                    <p className="whitespace-pre-wrap break-words">{msg.message_text}</p>
+                                    <div className={`flex items-center gap-1 mt-0.5 ${isInbound ? "text-muted-foreground/40" : "text-primary-foreground/50"}`}>
+                                      <span className="text-[10px]">{formatTime(msg.created_at)}</span>
+                                      {!isInbound && <CheckCheck className="h-2.5 w-2.5" />}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                              {msg.sender_type === "ai" && (
-                                <Avatar className="h-6 w-6 shrink-0">
-                                  <AvatarFallback className="bg-primary/15 text-primary text-[9px]"><Bot className="h-3 w-3" /></AvatarFallback>
-                                </Avatar>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      ))}
                     </>
                   )}
                   <div ref={chatEndRef} />
                 </div>
 
-                <div className="px-5 py-3 border-t border-border">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder={aiMode ? "AI отвечает автоматически..." : "Написать сообщение..."}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      disabled={aiMode}
-                      className="bg-secondary/50 border-border text-sm flex-1 h-9"
-                      onKeyDown={(e) => { if (e.key === "Enter" && !aiMode) handleSendMessage(); }}
-                    />
-                    <Button size="sm" className="shrink-0 gap-1.5 h-9" disabled={aiMode || !message.trim()} onClick={handleSendMessage}>
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  {aiMode && (
-                    <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
-                      <Bot className="h-2.5 w-2.5" /> AI-агент обрабатывает этот диалог автоматически
-                    </p>
+                {/* Input area */}
+                <div className="px-4 py-3 border-t border-border bg-background/80 backdrop-blur-sm">
+                  {aiMode ? (
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-secondary/60 border border-border/30">
+                      <Bot className="h-4 w-4 text-primary shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        ИИ ведет диалог. Переключите в ручной режим для ответа.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <Input
+                          placeholder="Написать сообщение..."
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          className="bg-secondary/50 border-border/30 text-sm h-10 rounded-full px-4 pr-12"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button
+                        size="icon"
+                        className="h-10 w-10 rounded-full shrink-0"
+                        disabled={!message.trim() || sending}
+                        onClick={handleSendMessage}
+                      >
+                        {sending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </>
