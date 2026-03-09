@@ -27,6 +27,7 @@ const AiReportsPage = lazy(() => import("./pages/AiReportsPage"));
 const ScoreboardPage = lazy(() => import("./pages/ScoreboardPage"));
 const AgencyBillingPage = lazy(() => import("./pages/AgencyBillingPage"));
 const AutopostingPage = lazy(() => import("./pages/AutopostingPage"));
+const QualityControlPage = lazy(() => import("./pages/QualityControlPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
