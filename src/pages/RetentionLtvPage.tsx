@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -201,7 +205,7 @@ export default function RetentionLtvPage() {
   // Form state
   const [formLeadId, setFormLeadId] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
-  const [formDate, setFormDate] = useState("");
+  const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formPromo, setFormPromo] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -258,7 +262,7 @@ export default function RetentionLtvPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCreate = async () => {
-    if (!formLeadId || !formTemplateId || !formDate) {
+     if (!formLeadId || !formTemplateId || !formDate) {
       toast({ title: "Заполните все поля", variant: "destructive" });
       return;
     }
@@ -267,7 +271,7 @@ export default function RetentionLtvPage() {
       const { error } = await (supabase as any).from("retention_tasks").insert({
         lead_id: formLeadId,
         template_id: formTemplateId,
-        trigger_date: formDate,
+        trigger_date: formDate ? format(formDate, "yyyy-MM-dd") : "",
         promo_code: formPromo || null,
         project_id: PROJECT_ID,
         status: "pending",
@@ -277,7 +281,7 @@ export default function RetentionLtvPage() {
       setSheetOpen(false);
       setFormLeadId("");
       setFormTemplateId("");
-      setFormDate("");
+      setFormDate(undefined);
       setFormPromo("");
       fetchData();
     } catch (err: any) {
@@ -485,7 +489,31 @@ export default function RetentionLtvPage() {
 
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Дата отправки</Label>
-              <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {formDate ? format(formDate, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formDate}
+                    onSelect={setFormDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    locale={ru}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
