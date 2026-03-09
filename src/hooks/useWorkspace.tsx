@@ -34,7 +34,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           .from("clients_config")
           .select("id, client_name")
           .eq("project_id", PROJECT_ID)
-          .eq("is_active", true)
           .order("client_name");
 
         if (error) throw error;

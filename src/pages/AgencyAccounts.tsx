@@ -47,7 +47,7 @@ const statusCfg = {
   paused: { label: "Остановлен", dot: "bg-muted-foreground", text: "text-muted-foreground" },
 };
 
-type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "romi";
+type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "revenue" | "romi";
 type SortDir = "asc" | "desc";
 
 function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string; clientId: string; onDeleted: () => void }) {
@@ -279,6 +279,7 @@ export default function AgencyAccounts() {
                 <SortableHead label="Лиды" sortField="meta_leads" />
                 <SortableHead label="Визиты" sortField="visits" />
                 <SortableHead label="Продажи" sortField="sales" />
+                <SortableHead label="Сумма продаж" sortField="revenue" />
                 <SortableHead label="ROMI" sortField="romi" />
                 <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
               </TableRow>
@@ -335,10 +336,11 @@ export default function AgencyAccounts() {
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">
-                          {sales > 0 ? `${sales} шт.` : "—"}
-                          {revenue > 0 && <span className="text-muted-foreground font-normal"> / {fmt(revenue, " ₸")}</span>}
-                        </p>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{sales || "—"}</p>
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
                       </TableCell>
 
                       <TableCell className="py-4">
