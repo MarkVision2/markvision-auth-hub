@@ -16,9 +16,9 @@ export const Page2CreativesChannels = forwardRef<HTMLDivElement, Page2Props>(
             <div ref={ref} className="rounded-2xl bg-card border border-border/30 overflow-hidden shadow-2xl shadow-black/30">
                 <MiniHeader clientName={clientName} dateRange={dateRange} subtitle="Креативы и Каналы" />
 
-                {topCreatives.length > 0 && (
-                    <div className="px-10 py-7">
-                        <SectionTitle>Топ креативов</SectionTitle>
+                <div className="px-10 py-7">
+                    <SectionTitle>Топ креативов</SectionTitle>
+                    {topCreatives.length > 0 ? (
                         <div className="grid grid-cols-3 gap-4">
                             {topCreatives.map(c => (
                                 <div key={c.title} className={`rounded-xl border p-5 space-y-3 ${c.color}`}>
@@ -38,12 +38,16 @@ export const Page2CreativesChannels = forwardRef<HTMLDivElement, Page2Props>(
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="rounded-xl border border-dashed border-border/20 p-8 text-center bg-accent/5">
+                            <p className="text-xs text-muted-foreground italic">Креативы не найдены в базе данных</p>
+                        </div>
+                    )}
+                </div>
 
-                {channelPie.length > 0 && (
-                    <div className="px-10 py-7 border-t border-border/10">
-                        <SectionTitle>Каналы трафика</SectionTitle>
+                <div className="px-10 py-7 border-t border-border/10">
+                    <SectionTitle>Каналы трафика</SectionTitle>
+                    {channelPie.length > 0 ? (
                         <div className="grid grid-cols-[1fr_1fr] gap-6">
                             <div className="rounded-xl bg-accent/10 border border-border/15 p-5">
                                 <p className="text-xs text-muted-foreground mb-3 font-medium">Выручка по каналам</p>
@@ -86,8 +90,12 @@ export const Page2CreativesChannels = forwardRef<HTMLDivElement, Page2Props>(
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <div className="rounded-xl border border-dashed border-border/20 p-12 text-center bg-accent/5">
+                            <p className="text-xs text-muted-foreground italic">Каналы не настроены или нет данных</p>
+                        </div>
+                    )}
+                </div>
 
                 <PageFooter page={2} total={3} />
             </div>

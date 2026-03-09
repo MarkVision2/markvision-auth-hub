@@ -42,7 +42,7 @@ export const Page3LeadQualityUnitEcon = forwardRef<HTMLDivElement, Page3Props>(
                 <div className="px-10 py-7 border-t border-border/10">
                     <SectionTitle>Юнит-экономика</SectionTitle>
                     <div className="relative">
-                        <div className={hasRevenue ? "" : "blur-md opacity-40 pointer-events-none select-none"}>
+                        <div>
                             <div className="rounded-xl bg-primary/[0.04] border border-primary/15 overflow-hidden">
                                 <div className="px-6 py-4 border-b border-primary/10 flex items-center gap-3">
                                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -77,14 +77,11 @@ export const Page3LeadQualityUnitEcon = forwardRef<HTMLDivElement, Page3Props>(
                             </div>
                         </div>
 
-                        {!hasRevenue && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm border border-border/30">
-                                <div className="h-14 w-14 rounded-2xl bg-muted/80 border border-border flex items-center justify-center mb-4">
-                                    <Lock className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                                <p className="text-base font-semibold text-foreground mb-1.5">Данные о выручке не переданы</p>
-                                <p className="text-xs text-muted-foreground text-center max-w-xs leading-relaxed mb-5">
-                                    Укажите суммы успешных сделок в CRM или daily_metrics, чтобы разблокировать ROMI и Средний чек.
+                        {!hasRevenue && cur.spend > 0 && (
+                            <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
+                                <Lock className="h-3 w-3 text-amber-500" />
+                                <p className="text-[10px] text-amber-500 font-medium">
+                                    Данные о выручке не переданы. ROMI и Средний чек рассчитаны как 0.
                                 </p>
                             </div>
                         )}

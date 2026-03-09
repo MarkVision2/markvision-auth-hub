@@ -42,17 +42,19 @@ const navGroups: NavGroup[] = [
   {
     label: "МАРКЕТИНГ",
     items: [
+      { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
       { title: "Контент-Завод", path: "/content", icon: Wand2 },
       { title: "Автопостинг", path: "/autoposting", icon: CalendarClock },
-      { title: "Управление рекламой", path: "/dashboard/target", icon: Target },
       { title: "Мониторинг конкурентов", path: "/spy", icon: Radar },
     ],
   },
   {
-    label: "ПРОДАЖИ",
+    label: "ПРОДАЖИ И СЕРВИС",
     items: [
       { title: "CRM Система", path: "/crm", icon: Users },
       { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
+      { title: "Контроль качества", path: "/quality", icon: HeartHandshake },
+      { title: "Генератор LTV", path: "/retention", icon: Repeat },
     ],
   },
   {
@@ -60,8 +62,6 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
       { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
-      { title: "Контроль качества", path: "/quality", icon: HeartHandshake },
-      { title: "Генератор LTV", path: "/retention", icon: Repeat },
       { title: "Финансы", path: "/finance", icon: Coins },
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],

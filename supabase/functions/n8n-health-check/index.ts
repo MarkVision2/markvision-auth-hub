@@ -38,7 +38,7 @@ serve(async (req) => {
     const body = await req.json();
     const action = body.action;
 
-    if (!action || !["ping", "list_workflows", "last_errors", "activate_workflow"].includes(action)) {
+    if (!action || !["ping", "list_workflows", "last_errors", "activate_workflow", "check_integrations"].includes(action)) {
       return new Response(
         JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors, activate_workflow" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -171,6 +171,27 @@ serve(async (req) => {
       } catch {
         data = [];
       }
+    }
+
+    if (action === "check_integrations") {
+      const checkService = async (url: string, name: string) => {
+        const start = performance.now();
+        try {
+          const res = await fetch(url, { method: "GET" });
+          const latency = Math.round(performance.now() - start);
+          return { name, status: res.ok || res.status === 405 || res.status === 401 ? "operational" : "degraded", metric: `${latency}ms`, code: res.status };
+        } catch (e) {
+          return { name, status: "outage", metric: "Unreachable", error: e instanceof Error ? e.message : "unknown" };
+        }
+      };
+
+      const results = await Promise.all([
+        checkService("https://graph.facebook.com/v19.0/", "Meta"),
+        checkService("https://api.firecrawl.dev/v2/scrape", "Firecrawl"),
+        checkService("https://ai.gateway.lovable.dev/v1/chat/completions", "AI Gateway"),
+        checkService("https://api.telegram.org/", "Telegram"),
+      ]);
+      data = results;
     }
 
     return new Response(JSON.stringify({ success: true, action, data }), {

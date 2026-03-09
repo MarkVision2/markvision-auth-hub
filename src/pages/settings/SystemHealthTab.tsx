@@ -111,8 +111,25 @@ export default function SystemHealthTab() {
                 newLogs.push({ time: now(), level: "SUCCESS", msg: "n8n: No recent execution errors" });
             }
         }
+        const integrationsResult = await callGateway("check_integrations");
+        if (integrationsResult?.success && Array.isArray(integrationsResult.data)) {
+            const results = integrationsResult.data;
+            setServices(prev => prev.map(s => {
+                const match = results.find((r: any) =>
+                    (s.name === "Meta Graph API" && r.name === "Meta") ||
+                    (s.name === "Apify" && r.name === "Firecrawl") ||
+                    (s.name === "Anthropic / Gemini" && r.name === "AI Gateway") ||
+                    (s.name === "Telegram Bot" && r.name === "Telegram")
+                );
+                if (match) {
+                    newLogs.push({ time: now(), level: match.status === "operational" ? "SUCCESS" : "ERROR", msg: `${match.name} status: ${match.status} (${match.metric})` });
+                    return { ...s, status: match.status, metric: match.metric };
+                }
+                return s;
+            }));
+        }
 
-        setServices(prev => prev.map(s => s.status === "loading" ? { ...s, status: "operational", metric: "Check via n8n" } : s));
+        setServices(prev => prev.map(s => s.status === "loading" ? { ...s, status: "operational", metric: "Ready" } : s));
         newLogs.push({ time: now(), level: "INFO", msg: "System health sweep completed" });
         setLogs(newLogs);
         setLastCheck(now());

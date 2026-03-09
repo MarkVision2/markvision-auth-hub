@@ -230,17 +230,7 @@ export default function AiReportsPage() {
           </div>
         )}
 
-        {isEmpty && (
-          <div className="max-w-4xl mx-auto flex items-center justify-center py-32">
-            <div className="text-center space-y-3">
-              <div className="h-16 w-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto"><BarChart3 className="h-8 w-8 text-muted-foreground/30" /></div>
-              <p className="text-base font-medium text-foreground">Нет данных за текущую неделю</p>
-              <p className="text-sm text-muted-foreground">Данные появятся когда daily_metrics заполнятся метриками</p>
-            </div>
-          </div>
-        )}
-
-        {!loading && !isEmpty && (
+        {!loading && (
           <div className="max-w-4xl mx-auto space-y-8 pb-12">
             <Suspense fallback={<div className="h-96 w-full animate-pulse bg-card rounded-2xl border border-border/30" />}>
               <Page1KpiFunnel
