@@ -34,14 +34,14 @@ export default function AiReportsPage() {
   const [channels, setChannels] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
 
-  const { weekStart, weekEnd, prevWeekStart, prevWeekEnd, dateRange } = useMemo(() => {
-    const now = new Date();
-    const ws = startOfWeek(now, { weekStartsOn: 1 });
-    const we = endOfWeek(now, { weekStartsOn: 1 });
-    const pws = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-    const pwe = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+  const { now, weekStart, weekEnd, prevWeekStart, prevWeekEnd, dateRange } = useMemo(() => {
+    const n = new Date();
+    const ws = startOfWeek(n, { weekStartsOn: 1 });
+    const we = endOfWeek(n, { weekStartsOn: 1 });
+    const pws = startOfWeek(subWeeks(n, 1), { weekStartsOn: 1 });
+    const pwe = endOfWeek(subWeeks(n, 1), { weekStartsOn: 1 });
     const dr = `${format(ws, "d MMM", { locale: ru })} – ${format(we, "d MMM yyyy", { locale: ru })}`;
-    return { weekStart: ws, weekEnd: we, prevWeekStart: pws, prevWeekEnd: pwe, dateRange: dr };
+    return { now: n, weekStart: ws, weekEnd: we, prevWeekStart: pws, prevWeekEnd: pwe, dateRange: dr };
   }, []);
 
   useEffect(() => {
