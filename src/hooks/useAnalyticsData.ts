@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import type { Channel, Campaign, Creative, OrganicPost } from "@/components/analytics/analyticsData";
 
-const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
 
 interface RawCreative {
   id: string; name: string; format: string; landing: string | null; thumbnail: string | null;
@@ -149,10 +149,10 @@ export function useAnalyticsData() {
 
   const topChannel = channels.length > 0
     ? channels.reduce((best, c) => {
-        const r = c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : -Infinity;
-        const bestR = best.spend > 0 ? ((best.revenue - best.spend) / best.spend) * 100 : -Infinity;
-        return r > bestR ? c : best;
-      }, channels[0])
+      const r = c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : -Infinity;
+      const bestR = best.spend > 0 ? ((best.revenue - best.spend) / best.spend) * 100 : -Infinity;
+      return r > bestR ? c : best;
+    }, channels[0])
     : null;
 
   const funnelData = [

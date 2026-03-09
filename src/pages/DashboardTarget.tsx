@@ -72,6 +72,9 @@ const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ];
+import { type DailyMetric, type ProjectPerformance } from "./agency/types";
+
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
 
 function getMonthRange(year: number, month: number) {
   const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -130,6 +133,7 @@ export default function DashboardTarget() {
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active")
         .eq("is_active", true)
+        .eq("project_id", PROJECT_ID)
         .order("client_name");
       if (cErr) throw cErr;
 
@@ -353,11 +357,10 @@ export default function DashboardTarget() {
               <button
                 key={f.value}
                 onClick={() => setStatusFilter(f.value)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-all ${
-                  statusFilter === f.value
+                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-all ${statusFilter === f.value
                     ? "bg-primary/15 text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground/70"
-                }`}
+                  }`}
               >
                 {f.label}
               </button>
@@ -374,137 +377,137 @@ export default function DashboardTarget() {
         <FadeUpItem>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-            <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
-              {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
-                <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
-              ))}
-            </div>
-
-            {filteredClients.length === 0 && (
-              <div className="px-4 py-16 text-center">
-                <div className="h-14 w-14 rounded-2xl glass flex items-center justify-center mx-auto mb-3">
-                  <Megaphone className="h-6 w-6 text-muted-foreground/30" />
-                </div>
-                <p className="text-sm font-medium text-foreground/60">Данных пока нет</p>
-                <p className="text-xs text-muted-foreground/50 mt-1">Попробуйте изменить фильтры</p>
+              <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
+                {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
+                  <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
+                ))}
               </div>
-            )}
 
-            <div className="min-w-[700px]">
-            {filteredClients.map((client) => {
-              const isOpen = expandedAccounts.has(client.name);
-              const hasAlert = alerts.some(a => a.account === client.name);
-              const budgetPct = client.daily_budget > 0 ? Math.min(100, Math.round((client.totalSpend / (client.daily_budget * 30)) * 100)) : 0;
+              {filteredClients.length === 0 && (
+                <div className="px-4 py-16 text-center">
+                  <div className="h-14 w-14 rounded-2xl glass flex items-center justify-center mx-auto mb-3">
+                    <Megaphone className="h-6 w-6 text-muted-foreground/30" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground/60">Данных пока нет</p>
+                  <p className="text-xs text-muted-foreground/50 mt-1">Попробуйте изменить фильтры</p>
+                </div>
+              )}
 
-              return (
-                <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
-                  <CollapsibleTrigger asChild>
-                    <div className={`grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
-                      <div className="flex items-center gap-2.5">
-                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-foreground truncate">{client.name}</p>
-                            {client.hasData && <div className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--status-good))]" />}
+              <div className="min-w-[700px]">
+                {filteredClients.map((client) => {
+                  const isOpen = expandedAccounts.has(client.name);
+                  const hasAlert = alerts.some(a => a.account === client.name);
+                  const budgetPct = client.daily_budget > 0 ? Math.min(100, Math.round((client.totalSpend / (client.daily_budget * 30)) * 100)) : 0;
+
+                  return (
+                    <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
+                      <CollapsibleTrigger asChild>
+                        <div className={`grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
+                          <div className="flex items-center gap-2.5">
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-semibold text-foreground truncate">{client.name}</p>
+                                {client.hasData && <div className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--status-good))]" />}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground font-mono truncate">
+                                {client.ad_account_id || "Нет ad account"}
+                              </p>
+                            </div>
                           </div>
-                          <p className="text-[10px] text-muted-foreground font-mono truncate">
-                            {client.ad_account_id || "Нет ad account"}
-                          </p>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
+                          <span className={`text-sm font-mono tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-[hsl(var(--status-warning))]" : "text-foreground/80"}`}>
+                            {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
+                          </span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
+                          <span className={`text-sm font-mono tabular-nums font-semibold ${client.romi > 0 ? "text-[hsl(var(--status-good))]" : client.romi < 0 ? "text-destructive" : "text-muted-foreground"}`}>
+                            {client.hasData ? `${client.romi}%` : "—"}
+                          </span>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Настройки", description: client.name })}>
+                                <Pencil className="h-3.5 w-3.5" /> Настройки
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Дублировано", description: client.name })}>
+                                <Copy className="h-3.5 w-3.5" /> Дублировать
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                      </div>
-                      <span className="text-sm font-mono tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
-                      <span className={`text-sm font-mono tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-[hsl(var(--status-warning))]" : "text-foreground/80"}`}>
-                        {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
-                      </span>
-                      <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
-                      <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
-                      <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
-                      <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
-                      <span className={`text-sm font-mono tabular-nums font-semibold ${client.romi > 0 ? "text-[hsl(var(--status-good))]" : client.romi < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                        {client.hasData ? `${client.romi}%` : "—"}
-                      </span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Настройки", description: client.name })}>
-                            <Pencil className="h-3.5 w-3.5" /> Настройки
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Дублировано", description: client.name })}>
-                            <Copy className="h-3.5 w-3.5" /> Дублировать
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    {client.hasData ? (
-                      <div className="px-4 py-4 bg-secondary/5 border-b border-border space-y-4">
-                        {/* Budget progress */}
-                        {client.daily_budget > 0 && (
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Бюджет ({fmtCurrency(client.totalSpend)} / {fmtCurrency(client.daily_budget * 30)})</span>
-                              <span className={`font-mono font-semibold ${budgetPct >= 90 ? "text-destructive" : budgetPct >= 70 ? "text-[hsl(var(--status-warning))]" : "text-muted-foreground"}`}>{budgetPct}%</span>
-                            </div>
-                            <Progress value={budgetPct} className="h-1.5 bg-secondary" />
-                          </div>
-                        )}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        {client.hasData ? (
+                          <div className="px-4 py-4 bg-secondary/5 border-b border-border space-y-4">
+                            {/* Budget progress */}
+                            {client.daily_budget > 0 && (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">Бюджет ({fmtCurrency(client.totalSpend)} / {fmtCurrency(client.daily_budget * 30)})</span>
+                                  <span className={`font-mono font-semibold ${budgetPct >= 90 ? "text-destructive" : budgetPct >= 70 ? "text-[hsl(var(--status-warning))]" : "text-muted-foreground"}`}>{budgetPct}%</span>
+                                </div>
+                                <Progress value={budgetPct} className="h-1.5 bg-secondary" />
+                              </div>
+                            )}
 
-                        {/* Detail metrics grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                          {[
-                            { label: "Показы", value: fmt(client.totalImpressions) },
-                            { label: "Клики", value: fmt(client.totalClicks) },
-                            { label: "CTR", value: client.totalImpressions > 0 ? `${((client.totalClicks / client.totalImpressions) * 100).toFixed(2)}%` : "—" },
-                            { label: "CR Лид→Продажа", value: client.totalLeads > 0 ? `${((client.totalSales / client.totalLeads) * 100).toFixed(1)}%` : "—" },
-                            { label: "CAC", value: client.totalSales > 0 ? fmtCurrency(Math.round(client.totalSpend / client.totalSales)) : "—" },
-                          ].map((m) => (
-                            <div key={m.label} className="rounded-lg border border-border bg-card p-2.5">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
-                              <p className="text-sm font-bold font-mono tabular-nums text-foreground mt-0.5">{m.value}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Daily metrics mini-table */}
-                        {client.dailyMetrics.length > 0 && (
-                          <div className="rounded-lg border border-border overflow-hidden">
-                            <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 bg-secondary/30 border-b border-border">
-                              {["Дата", "Расход", "Лиды", "CPL", "Визиты", "Продажи"].map(h => (
-                                <span key={h} className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</span>
-                              ))}
-                            </div>
-                            <div className="max-h-[200px] overflow-y-auto">
-                              {client.dailyMetrics.slice(-10).reverse().map(dm => (
-                                <div key={dm.date} className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 border-b border-border/50 hover:bg-accent/20 transition-colors">
-                                  <span className="text-[11px] text-muted-foreground font-mono">{dm.date.slice(5)}</span>
-                                  <span className="text-[11px] font-mono tabular-nums text-foreground/80">{fmtCurrency(dm.spend)}</span>
-                                  <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads || "—"}</span>
-                                  <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads > 0 ? fmtCurrency(Math.round(dm.spend / dm.leads)) : "—"}</span>
-                                  <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.visits || "—"}</span>
-                                  <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.sales || "—"}</span>
+                            {/* Detail metrics grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                              {[
+                                { label: "Показы", value: fmt(client.totalImpressions) },
+                                { label: "Клики", value: fmt(client.totalClicks) },
+                                { label: "CTR", value: client.totalImpressions > 0 ? `${((client.totalClicks / client.totalImpressions) * 100).toFixed(2)}%` : "—" },
+                                { label: "CR Лид→Продажа", value: client.totalLeads > 0 ? `${((client.totalSales / client.totalLeads) * 100).toFixed(1)}%` : "—" },
+                                { label: "CAC", value: client.totalSales > 0 ? fmtCurrency(Math.round(client.totalSpend / client.totalSales)) : "—" },
+                              ].map((m) => (
+                                <div key={m.label} className="rounded-lg border border-border bg-card p-2.5">
+                                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
+                                  <p className="text-sm font-bold font-mono tabular-nums text-foreground mt-0.5">{m.value}</p>
                                 </div>
                               ))}
                             </div>
+
+                            {/* Daily metrics mini-table */}
+                            {client.dailyMetrics.length > 0 && (
+                              <div className="rounded-lg border border-border overflow-hidden">
+                                <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 bg-secondary/30 border-b border-border">
+                                  {["Дата", "Расход", "Лиды", "CPL", "Визиты", "Продажи"].map(h => (
+                                    <span key={h} className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</span>
+                                  ))}
+                                </div>
+                                <div className="max-h-[200px] overflow-y-auto">
+                                  {client.dailyMetrics.slice(-10).reverse().map(dm => (
+                                    <div key={dm.date} className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 border-b border-border/50 hover:bg-accent/20 transition-colors">
+                                      <span className="text-[11px] text-muted-foreground font-mono">{dm.date.slice(5)}</span>
+                                      <span className="text-[11px] font-mono tabular-nums text-foreground/80">{fmtCurrency(dm.spend)}</span>
+                                      <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads || "—"}</span>
+                                      <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads > 0 ? fmtCurrency(Math.round(dm.spend / dm.leads)) : "—"}</span>
+                                      <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.visits || "—"}</span>
+                                      <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.sales || "—"}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="px-4 py-8 bg-secondary/5 border-b border-border text-center">
+                            <Zap className="h-5 w-5 mx-auto text-muted-foreground/30 mb-2" />
+                            <p className="text-xs text-muted-foreground">Данные появятся после сбора статистики из Meta Ads</p>
+                            <p className="text-[10px] text-muted-foreground/50 mt-1">n8n синхронизирует данные ежедневно</p>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="px-4 py-8 bg-secondary/5 border-b border-border text-center">
-                        <Zap className="h-5 w-5 mx-auto text-muted-foreground/30 mb-2" />
-                        <p className="text-xs text-muted-foreground">Данные появятся после сбора статистики из Meta Ads</p>
-                        <p className="text-[10px] text-muted-foreground/50 mt-1">n8n синхронизирует данные ежедневно</p>
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
-            </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </FadeUpItem>

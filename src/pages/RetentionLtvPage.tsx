@@ -29,7 +29,7 @@ import {
   CalendarDays, FileText, Users, Tag, TicketPercent,
 } from "lucide-react";
 
-const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
 
 /* ── Types ── */
 interface RetentionTask {
@@ -177,8 +177,8 @@ function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: b
                         convRate >= 20
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
                           : convRate > 0
-                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                          : "text-muted-foreground"
+                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            : "text-muted-foreground"
                       )}
                     >
                       {convRate}%
@@ -262,7 +262,7 @@ export default function RetentionLtvPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCreate = async () => {
-     if (!formLeadId || !formTemplateId || !formDate) {
+    if (!formLeadId || !formTemplateId || !formDate) {
       toast({ title: "Заполните все поля", variant: "destructive" });
       return;
     }

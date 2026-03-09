@@ -38,9 +38,10 @@ serve(async (req) => {
     const body = await req.json();
     const action = body.action;
 
-    if (!action || !["ping", "list_workflows", "last_errors", "activate_workflow", "check_integrations"].includes(action)) {
+    const allowedActions = ["ping", "list_workflows", "last_errors", "activate_workflow", "check_integrations", "cleanup_test_data"];
+    if (!action || !allowedActions.includes(action)) {
       return new Response(
-        JSON.stringify({ error: "Invalid action. Use: ping, list_workflows, last_errors, activate_workflow" }),
+        JSON.stringify({ error: `Invalid action. Use: ${allowedActions.join(", ")}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -191,6 +192,42 @@ serve(async (req) => {
         checkService("https://ai.gateway.lovable.dev/v1/chat/completions", "AI Gateway"),
         checkService("https://api.telegram.org/", "Telegram"),
       ]);
+      data = results;
+    }
+
+    if (action === "cleanup_test_data") {
+      const projectId = body.projectId;
+      if (!projectId) {
+        return new Response(JSON.stringify({ error: "projectId is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      console.log(`[Cleanup] Starting data cleanup for project: ${projectId}`);
+
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const tables = [
+        "daily_metrics", "leads", "analytics_channels", "analytics_campaigns",
+        "analytics_creatives", "analytics_organic_posts", "retention_tasks",
+        "retention_templates", "ai_rop_audits", "nps_feedback", "competitor_ads"
+      ];
+
+      const results: Record<string, any> = {};
+      for (const table of tables) {
+        // We use supabaseAdmin (service_role) to bypass RLS for cleanup
+        const { error, count } = await supabaseAdmin
+          .from(table)
+          .delete({ count: "exact" })
+          .eq("project_id", projectId);
+
+        results[table] = { success: !error, count: count || 0, error };
+        if (error) console.error(`[Cleanup] Error in table ${table}:`, error.message);
+      }
+
       data = results;
     }
 

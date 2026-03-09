@@ -20,6 +20,8 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 interface Lead {
   id: string;
   status: string | null;
@@ -44,7 +46,10 @@ export default function CrmSystem() {
     const load = async () => {
       try {
         const { data, error } = await (supabase as any)
-          .from("leads").select("id, status, amount, ai_score, created_at").order("created_at", { ascending: false });
+          .from("leads")
+          .select("id, status, amount, ai_score, created_at")
+          .eq("project_id", PROJECT_ID)
+          .order("created_at", { ascending: false });
         if (error) throw error;
         if (data) {
           setPrevLeadsCount(leads.length);
