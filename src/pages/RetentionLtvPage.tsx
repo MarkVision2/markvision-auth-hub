@@ -91,6 +91,104 @@ function KpiCard({ icon: Icon, label, value, loading }: {
   );
 }
 
+/* ── Promo Analytics ── */
+function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: boolean }) {
+  // Aggregate promo code usage from tasks
+  const promoMap = new Map<string, { total: number; sent: number; converted: number; pending: number }>();
+  tasks.forEach(t => {
+    if (!t.promo_code) return;
+    const code = t.promo_code;
+    const existing = promoMap.get(code) || { total: 0, sent: 0, converted: 0, pending: 0 };
+    existing.total++;
+    if (t.status === "sent") existing.sent++;
+    else if (t.status === "converted") existing.converted++;
+    else existing.pending++;
+    promoMap.set(code, existing);
+  });
+  const promos = Array.from(promoMap.entries())
+    .sort((a, b) => b[1].total - a[1].total);
+
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+        <TicketPercent size={15} className="text-primary" />
+        <span className="text-sm font-semibold text-foreground">Аналитика промокодов</span>
+        <Badge variant="outline" className="ml-auto text-[10px]">{promos.length} кодов</Badge>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow className="border-border hover:bg-transparent">
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Промокод</TableHead>
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Выдано</TableHead>
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">В ожидании</TableHead>
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Отправлено</TableHead>
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Использовано</TableHead>
+            <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Конверсия</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            Array.from({ length: 3 }).map((_, i) => (
+              <TableRow key={i} className="border-border">
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
+              </TableRow>
+            ))
+          ) : promos.length === 0 ? (
+            <TableRow className="border-border">
+              <TableCell colSpan={6} className="text-center py-12">
+                <Tag size={24} className="text-muted-foreground/20 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Промокоды ещё не назначены</p>
+                <p className="text-xs text-muted-foreground/50 mt-1">Добавьте промокод при планировании касания</p>
+              </TableCell>
+            </TableRow>
+          ) : (
+            promos.map(([code, data]) => {
+              const convRate = data.total > 0 ? Math.round((data.converted / data.total) * 100) : 0;
+              return (
+                <TableRow key={code} className="border-border hover:bg-muted/30">
+                  <TableCell>
+                    <code className="text-xs bg-secondary px-2 py-1 rounded-md text-primary font-mono font-semibold tracking-wider">{code}</code>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground font-mono tabular-nums text-right">{data.total}</TableCell>
+                  <TableCell className="text-sm font-mono tabular-nums text-right">
+                    <span className="text-amber-600 dark:text-amber-400">{data.pending}</span>
+                  </TableCell>
+                  <TableCell className="text-sm font-mono tabular-nums text-right">
+                    <span className="text-blue-600 dark:text-blue-400">{data.sent}</span>
+                  </TableCell>
+                  <TableCell className="text-sm font-mono tabular-nums text-right">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{data.converted}</span>
+                  </TableCell>
+                  <TableCell className="text-sm font-mono tabular-nums text-right">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] font-mono",
+                        convRate >= 20
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          : convRate > 0
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {convRate}%
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 /* ── Main Page ── */
 export default function RetentionLtvPage() {
   const [tasks, setTasks] = useState<RetentionTask[]>([]);
