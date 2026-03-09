@@ -311,6 +311,9 @@ export default function AgencyAccounts() {
                   const romi = Number(c.romi) || 0;
                   const cac = Number(c.cac) || 0;
 
+                  const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
+                  const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
+
                   return (
                     <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
                       <TableCell className="py-4">
@@ -322,30 +325,36 @@ export default function AgencyAccounts() {
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-base font-bold text-foreground tabular-nums tracking-tight">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-base font-bold text-foreground tabular-nums tracking-tight">{leads || "—"}</p>
-                        {cpl > 0 && <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider tabular-nums">CPL: {fmt(cpl, " ₸")}</p>}
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{leads || "—"}</p>
+                        {cpl > 0 && <p className="text-[11px] text-muted-foreground tabular-nums mt-0.5">CPL: {fmt(cpl, " ₸")}</p>}
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-base font-bold text-foreground tabular-nums tracking-tight">{visits || "—"}</p>
-                        {cpv > 0 && <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider tabular-nums">CPV: {fmt(cpv, " ₸")}</p>}
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          {cpv > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</span>}
+                          {leadToVisitCr > 0 && <span className="text-[11px] text-muted-foreground/70 tabular-nums">CR: {leadToVisitCr.toFixed(1)}%</span>}
+                        </div>
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-base font-bold text-foreground tabular-nums tracking-tight">{sales || "—"}</p>
-                        {cac > 0 && <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider tabular-nums">CAC: {fmt(cac, " ₸")}</p>}
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{sales || "—"}</p>
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          {cac > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</span>}
+                          {visitToSaleCr > 0 && <span className="text-[11px] text-muted-foreground/70 tabular-nums">CR: {visitToSaleCr.toFixed(1)}%</span>}
+                        </div>
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className="text-base font-bold text-foreground tabular-nums tracking-tight">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className={`text-base font-bold tabular-nums tracking-tight ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
+                        <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
                           {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
                         </p>
                       </TableCell>
