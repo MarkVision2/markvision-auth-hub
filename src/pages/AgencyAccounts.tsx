@@ -230,12 +230,10 @@ export default function AgencyAccounts() {
     <DashboardLayout breadcrumb={pageTitle}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
         <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
-        {isSuperadmin && (
-          <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
-            <Plus className="h-4 w-4" />
-            Добавить кабинет
-          </Button>
-        )}
+        <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
+          <Plus className="h-4 w-4" />
+          Добавить кабинет
+        </Button>
       </div>
 
       <div className="flex flex-col gap-4 mb-4 md:mb-6">
@@ -273,92 +271,92 @@ export default function AgencyAccounts() {
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
-        <Table className="min-w-[700px]">
-          <TableHeader>
-            <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
-              <TableHead className="text-xs font-medium text-muted-foreground w-[180px]">Кабинет</TableHead>
-              <SortableHead label="Расходы" sortField="spend" />
-              <SortableHead label="Лиды" sortField="meta_leads" />
-              <SortableHead label="Визиты" sortField="visits" />
-              <SortableHead label="Продажи" sortField="sales" />
-              <SortableHead label="ROMI" sortField="romi" />
-              <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12">
-                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                </TableCell>
+          <Table className="min-w-[700px]">
+            <TableHeader>
+              <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
+                <TableHead className="text-xs font-medium text-muted-foreground w-[180px]">Кабинет</TableHead>
+                <SortableHead label="Расходы" sortField="spend" />
+                <SortableHead label="Лиды" sortField="meta_leads" />
+                <SortableHead label="Визиты" sortField="visits" />
+                <SortableHead label="Продажи" sortField="sales" />
+                <SortableHead label="ROMI" sortField="romi" />
+                <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  Нет кабинетов
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((c) => {
-                const active = c.is_active !== false;
-                const s = active ? statusCfg.active : statusCfg.paused;
-                const spend = Number(c.spend) || 0;
-                const leads = Number(c.meta_leads) || 0;
-                const cpl = Number(c.cpl) || 0;
-                const visits = Number(c.visits) || 0;
-                const cpv = Number(c.cpv) || 0;
-                const sales = Number(c.sales) || 0;
-                const revenue = Number(c.revenue) || 0;
-                const romi = Number(c.romi) || 0;
-                const cac = Number(c.cac) || 0;
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    Нет кабинетов
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((c) => {
+                  const active = c.is_active !== false;
+                  const s = active ? statusCfg.active : statusCfg.paused;
+                  const spend = Number(c.spend) || 0;
+                  const leads = Number(c.meta_leads) || 0;
+                  const cpl = Number(c.cpl) || 0;
+                  const visits = Number(c.visits) || 0;
+                  const cpv = Number(c.cpv) || 0;
+                  const sales = Number(c.sales) || 0;
+                  const revenue = Number(c.revenue) || 0;
+                  const romi = Number(c.romi) || 0;
+                  const cac = Number(c.cac) || 0;
 
-                return (
-                  <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
-                    <TableCell className="py-4">
-                      <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                        {s.label}
-                      </span>
-                    </TableCell>
+                  return (
+                    <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                          {s.label}
+                        </span>
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
-                    </TableCell>
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <p className="text-sm font-semibold text-foreground tabular-nums">{leads || "—"}</p>
-                      {cpl > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPL: {fmt(cpl, " ₸")}</p>}
-                    </TableCell>
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{leads || "—"}</p>
+                        {cpl > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPL: {fmt(cpl, " ₸")}</p>}
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
-                      {cpv > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</p>}
-                    </TableCell>
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
+                        {cpv > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</p>}
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <p className="text-sm font-semibold text-foreground tabular-nums">
-                        {sales > 0 ? `${sales} шт.` : "—"}
-                        {revenue > 0 && <span className="text-muted-foreground font-normal"> / {fmt(revenue, " ₸")}</span>}
-                      </p>
-                    </TableCell>
+                      <TableCell className="py-4">
+                        <p className="text-sm font-semibold text-foreground tabular-nums">
+                          {sales > 0 ? `${sales} шт.` : "—"}
+                          {revenue > 0 && <span className="text-muted-foreground font-normal"> / {fmt(revenue, " ₸")}</span>}
+                        </p>
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
-                        {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
-                      </p>
-                      {cac > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>}
-                    </TableCell>
+                      <TableCell className="py-4">
+                        <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
+                          {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
+                        </p>
+                        {cac > 0 && <p className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</p>}
+                      </TableCell>
 
-                    <TableCell className="py-4">
-                      <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                      <TableCell className="py-4">
+                        <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
