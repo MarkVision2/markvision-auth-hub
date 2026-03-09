@@ -235,7 +235,7 @@ export default function QualityControlPage() {
                 </div>
               ))
             ) : feedback.length === 0 ? (
-              <div className="rounded-2xl border border-border/20 bg-[#0a0a0a] p-12 text-center">
+              <div className="rounded-2xl border border-border bg-card p-12 text-center">
                 <MessageCircle size={32} className="text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">Отзывов пока нет</p>
                 <p className="text-xs text-muted-foreground/50 mt-1">Они появятся автоматически после визита пациента</p>
