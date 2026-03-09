@@ -8,7 +8,7 @@ import {
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
   Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut, Clock, Zap,
   Send, Workflow, ScanSearch, ExternalLink, HeartPulse, Bell, Volume2, VolumeX,
-  Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu,
+  Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu, MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
