@@ -3,6 +3,7 @@ import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock, HeartHandshake, Repeat,
+  Bot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
