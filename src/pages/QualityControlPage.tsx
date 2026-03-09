@@ -180,12 +180,12 @@ export default function QualityControlPage() {
           </div>
 
           {/* Detractors */}
-          <div className="rounded-2xl border border-rose-500/15 bg-[#0a0a0a] p-5 space-y-3">
+          <div className="rounded-2xl border border-rose-500/20 bg-card p-5 space-y-3">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-rose-500" />
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Критики (1-6)</p>
             </div>
-            <p className="text-3xl font-black tabular-nums font-mono text-rose-400">{loading ? "—" : `${detractorPct}%`}</p>
+            <p className="text-3xl font-black tabular-nums font-mono text-rose-600 dark:text-rose-400">{loading ? "—" : `${detractorPct}%`}</p>
             <p className="text-[11px] text-muted-foreground">{detractors} из {total} ответов</p>
             <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
               <div className="h-full rounded-full bg-rose-500 transition-all" style={{ width: `${detractorPct}%` }} />
