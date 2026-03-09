@@ -24,9 +24,9 @@ interface NpsFeedback {
 }
 
 function scoreCategory(score: number) {
-  if (score >= 9) return { label: "Промоутер", color: "#10b981", bg: "bg-emerald-500/15", border: "border-emerald-500/25", text: "text-emerald-400" };
-  if (score >= 7) return { label: "Нейтральный", color: "#f59e0b", bg: "bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-400" };
-  return { label: "Критик", color: "#e11d48", bg: "bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-400" };
+  if (score >= 9) return { label: "Промоутер", bg: "bg-emerald-500/15 dark:bg-emerald-500/15", border: "border-emerald-500/25", text: "text-emerald-600 dark:text-emerald-400" };
+  if (score >= 7) return { label: "Нейтральный", bg: "bg-amber-500/15 dark:bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-600 dark:text-amber-400" };
+  return { label: "Критик", bg: "bg-rose-500/15 dark:bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-600 dark:text-rose-400" };
 }
 
 function timeAgo(dateStr: string) {
