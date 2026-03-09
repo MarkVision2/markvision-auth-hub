@@ -8,7 +8,7 @@ import {
   Activity, Coins, FileBarChart, ChevronRight, Copy, Eye, EyeOff,
   Upload, Globe, Phone, Lock, Smartphone, Monitor, LogOut, Clock, Zap,
   Send, Workflow, ScanSearch, ExternalLink, HeartPulse, Bell, Volume2, VolumeX,
-  Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu,
+  Database, Bot, RefreshCw, Terminal, Wifi, Cloud, Cpu, MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -953,6 +953,113 @@ function IntegrationCard({ icon, name, description, connected, fields, buttonLab
   );
 }
 
+const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
+function WhatsAppGreenApiCard() {
+  const [instanceId, setInstanceId] = useState("");
+  const [apiToken, setApiToken] = useState("");
+  const [showInstance, setShowInstance] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("clients_config")
+        .select("wa_instance_id, wa_api_token")
+        .eq("project_id", PROJECT_ID)
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setInstanceId((data as any).wa_instance_id || "");
+        setApiToken((data as any).wa_api_token || "");
+      }
+      setLoaded(true);
+    }
+    load();
+  }, []);
+
+  const handleSave = async () => {
+    if (!instanceId.trim() || !apiToken.trim()) {
+      toast({ title: "Заполните оба поля", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { error } = await (supabase as any)
+      .from("clients_config")
+      .update({ wa_instance_id: instanceId.trim(), wa_api_token: apiToken.trim() })
+      .eq("project_id", PROJECT_ID);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "✅ Ключи WhatsApp сохранены" });
+    }
+  };
+
+  const connected = loaded && !!instanceId && !!apiToken;
+
+  return (
+    <div className="rounded-xl border border-border/30 bg-card p-5 space-y-4">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-[hsl(142,70%,45%)]/10 border border-[hsl(142,70%,45%)]/20 flex items-center justify-center shrink-0">
+            <MessageCircle size={18} className="text-[hsl(142,70%,45%)]" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">WhatsApp (Green-API)</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Отправка и приём сообщений</p>
+          </div>
+        </div>
+        <Badge variant="outline" className={cn("text-[10px] shrink-0", connected ? "border-primary/30 text-primary" : "border-border/40 text-muted-foreground")}>
+          {connected ? "🟢 Подключено" : "⚪️ Не подключено"}
+        </Badge>
+      </div>
+
+      <Separator className="bg-border/15" />
+
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-[11px] text-muted-foreground">Instance ID</Label>
+          <div className="relative">
+            <Input
+              type={showInstance ? "text" : "password"}
+              value={instanceId}
+              onChange={e => setInstanceId(e.target.value)}
+              placeholder="1234567890"
+              className="bg-accent/20 border-border/20 text-sm font-mono pr-10"
+            />
+            <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowInstance(!showInstance)}>
+              {showInstance ? <EyeOff size={13} /> : <Eye size={13} />}
+            </Button>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] text-muted-foreground">API Token</Label>
+          <div className="relative">
+            <Input
+              type={showToken ? "text" : "password"}
+              value={apiToken}
+              onChange={e => setApiToken(e.target.value)}
+              placeholder="your-api-token-here"
+              className="bg-accent/20 border-border/20 text-sm font-mono pr-10"
+            />
+            <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground" onClick={() => setShowToken(!showToken)}>
+              {showToken ? <EyeOff size={13} /> : <Eye size={13} />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Button size="sm" className="h-8 text-xs gap-1.5" onClick={handleSave} disabled={saving}>
+        {saving ? <RefreshCw size={12} className="animate-spin" /> : <Lock size={12} />}
+        Сохранить ключи
+      </Button>
+    </div>
+  );
+}
+
 function IntegrationsTab() {
   const [wfStatuses, setWfStatuses] = useState<Record<string, { status: "active" | "inactive" | "error" | "loading"; lastRun: string | null; errors: number }>>({});
   const [checking, setChecking] = useState(false);
@@ -1147,6 +1254,7 @@ function IntegrationsTab() {
           <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">API Подключения</h2>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <WhatsAppGreenApiCard />
           <IntegrationCard
             icon={<span className="text-lg">📘</span>}
             name="Meta Ads"
