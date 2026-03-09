@@ -225,7 +225,7 @@ export default function QualityControlPage() {
           <div className="space-y-2">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border/20 bg-[#0a0a0a] p-5 flex items-center gap-4">
+                <div key={i} className="rounded-xl border border-border bg-card p-5 flex items-center gap-4">
                   <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-32" />
