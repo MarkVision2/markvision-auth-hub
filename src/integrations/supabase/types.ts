@@ -444,6 +444,41 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_inbound: boolean | null
+          lead_id: string | null
+          message_text: string
+          sender_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_inbound?: boolean | null
+          lead_id?: string | null
+          message_text: string
+          sender_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_inbound?: boolean | null
+          lead_id?: string | null
+          message_text?: string
+          sender_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients_config: {
         Row: {
           ad_account_id: string | null
@@ -465,6 +500,8 @@ export type Database = {
           region_key: string | null
           spend: number | null
           telegram_group_id: string | null
+          wa_api_token: string | null
+          wa_instance_id: string | null
           website_url: string | null
           whatsapp_number: string | null
         }
@@ -488,6 +525,8 @@ export type Database = {
           region_key?: string | null
           spend?: number | null
           telegram_group_id?: string | null
+          wa_api_token?: string | null
+          wa_instance_id?: string | null
           website_url?: string | null
           whatsapp_number?: string | null
         }
@@ -511,6 +550,8 @@ export type Database = {
           region_key?: string | null
           spend?: number | null
           telegram_group_id?: string | null
+          wa_api_token?: string | null
+          wa_instance_id?: string | null
           website_url?: string | null
           whatsapp_number?: string | null
         }
