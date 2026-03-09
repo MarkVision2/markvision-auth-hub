@@ -78,6 +78,7 @@ const App = () => (
           <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
           <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
           <Route path="/retention" element={<ProtectedRoute><RetentionLtvPage /></ProtectedRoute>} />
+          <Route path="/admin/ai-manager" element={<ProtectedRoute><AiManagerPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

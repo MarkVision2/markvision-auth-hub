@@ -175,6 +175,11 @@ export default function KanbanBoard() {
     if (!lead || (lead.status || "Новая заявка") === newStage) return;
     handleMoveStage(draggableId, newStage);
     toast({ title: "Перемещено", description: `${lead.name} → ${newStage}` });
+
+    // Trigger AI agent for processing
+    import("@/lib/ai-agent").then(({ triggerAiAgent }) => {
+      triggerAiAgent(draggableId, newStage);
+    }).catch(() => {});
   };
 
   const handleCardClick = (lead: Lead) => {

@@ -66,6 +66,13 @@ const navGroups: NavGroup[] = [
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],
   },
+  {
+    label: "СИСТЕМА",
+    superadminOnly: true,
+    items: [
+      { title: "AI Управляющий", path: "/admin/ai-manager", icon: Bot, superadminOnly: true },
+    ],
+  },
 ];
 
 interface SidebarContentInnerProps {
