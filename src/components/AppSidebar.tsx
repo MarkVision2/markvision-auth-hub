@@ -59,6 +59,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity },
       { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
+      { title: "Контроль качества", path: "/quality", icon: HeartHandshake },
       { title: "Финансы", path: "/finance", icon: Coins },
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
     ],
