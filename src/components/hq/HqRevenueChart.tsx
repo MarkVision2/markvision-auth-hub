@@ -10,28 +10,18 @@ interface Props {
   clients: ClientMetric[];
 }
 
-// Generate mock weekly time-series data based on real totals
+// Removed random daily distribution logic until real timeseries data is available
 function generateWeeklyData(clients: ClientMetric[]) {
-  const totalRevenue = clients.reduce((s, c) => s + (c.revenue ?? 0), 0);
-  const totalSpend = clients.reduce((s, c) => s + (c.spend ?? 0), 0);
-
-  const days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-  const distribution = [0.18, 0.16, 0.15, 0.14, 0.17, 0.11, 0.09];
-
-  return days.map((day, i) => ({
-    day,
-    revenue: Math.round(totalRevenue * distribution[i] * (0.85 + Math.random() * 0.3)),
-    spend: Math.round(totalSpend * distribution[i] * (0.9 + Math.random() * 0.2)),
-  }));
+  return [];
 }
 
 export default function HqRevenueChart({ clients = [] }: Props) {
   const data = generateWeeklyData(clients);
 
-  if (clients.length === 0) {
+  if (clients.length === 0 || data.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 flex items-center justify-center h-64">
-        <p className="text-sm text-muted-foreground">Нет данных для графика</p>
+        <p className="text-sm text-muted-foreground">Нет данных для графика по дням</p>
       </div>
     );
   }

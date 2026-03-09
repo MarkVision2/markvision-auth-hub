@@ -77,46 +77,7 @@ export function generateMockTask(leadId: string, leadName: string, callSummary: 
 }
 
 /* ── Initial mock tasks for "Today's Focus" ── */
-export const INITIAL_TASKS: AITask[] = [
-  {
-    id: "task-1",
-    lead_id: "92d30af7-b574-4451-997f-dbb000dc9973",
-    lead_name: "Иван Иванов",
-    due_date: new Date(new Date().setHours(10, 0)).toISOString(),
-    due_time: "10:00",
-    type: "call",
-    status: "overdue",
-    ai_hint: "Клиент оставил заявку вчера. Горячий лид — звоните первым! Интересуется отбеливанием.",
-    last_call_summary: "Не дозвонились, оставили голосовое.",
-  },
-  {
-    id: "task-2",
-    lead_id: "1b4fd583-e2bc-4815-bd8e-099834c88628",
-    lead_name: "Айгерим",
-    due_date: new Date(new Date().setHours(14, 30)).toISOString(),
-    due_time: "14:30",
-    type: "follow_up",
-    status: "pending",
-    ai_hint: "Предложите скидку 10%. Последний разговор — возражение «дорого».",
-    last_call_summary: "Обсуждали стоимость имплантации. Клиент сказал «дорого», попросил скидку.",
-  },
-  {
-    id: "task-3",
-    lead_id: "92d30af7-b574-4451-997f-dbb000dc9973",
-    lead_name: "Иван Иванов",
-    due_date: new Date(new Date().setHours(16, 0)).toISOString(),
-    due_time: "16:00",
-    type: "meeting",
-    status: "pending",
-    ai_hint: "Подтвердите визит. Подготовьте план лечения и отправьте напоминание в WhatsApp.",
-  },
-];
+export const INITIAL_TASKS: AITask[] = [];
 
 /* ── Aggregated objection stats ── */
-export const MOCK_OBJECTION_STATS = [
-  { label: "Дорого", count: 34, pct: 38 },
-  { label: "Надо подумать", count: 22, pct: 24 },
-  { label: "Нет времени", count: 15, pct: 17 },
-  { label: "Сравниваю с конкурентами", count: 11, pct: 12 },
-  { label: "Не уверен в результате", count: 8, pct: 9 },
-];
+export const MOCK_OBJECTION_STATS: any[] = [];

@@ -10,7 +10,7 @@ import Automations from "@/components/crm/Automations";
 import AddLeadSheet from "@/components/crm/AddLeadSheet";
 import TodayTasksPanel from "@/components/crm/TodayTasksPanel";
 import { supabase } from "@/integrations/supabase/client";
-import { INITIAL_TASKS, MOCK_OBJECTION_STATS, type AITask } from "@/components/crm/types";
+import { type AITask } from "@/components/crm/types";
 import {
   Kanban, Database, Cpu, MessageCircle, Plus,
   Users, TrendingUp, DollarSign, AlertCircle,
@@ -38,7 +38,7 @@ export default function CrmSystem() {
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [prevLeadsCount, setPrevLeadsCount] = useState(0);
-  const [tasks, setTasks] = useState<AITask[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<AITask[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -97,8 +97,6 @@ export default function CrmSystem() {
     good: { bg: "bg-[hsl(var(--status-good)/0.06)]", icon: "bg-[hsl(var(--status-good)/0.15)] text-[hsl(var(--status-good))]", text: "text-[hsl(var(--status-good))]", glow: "shadow-[hsl(var(--status-good)/0.05)]" },
   };
 
-  // Mock manager call stats
-  const callStats = { outgoing: 23, minutes: 187 };
 
   return (
     <DashboardLayout breadcrumb="CRM Система">
@@ -163,53 +161,7 @@ export default function CrmSystem() {
           })}
         </div>
 
-        {/* ─── Manager Stats + Objections Row ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Call Stats */}
-          <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-4">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <PhoneOutgoing className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Исходящих звонков</p>
-              <p className="text-xl font-bold font-mono tabular-nums text-foreground">{callStats.outgoing}</p>
-            </div>
-            <div className="h-10 border-l border-border" />
-            <div className="flex items-center gap-2">
-              <Timer className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-xs text-muted-foreground">Минут</p>
-                <p className="text-lg font-bold font-mono tabular-nums text-foreground">{callStats.minutes}</p>
-              </div>
-            </div>
-          </div>
 
-          {/* Objection Analysis */}
-          <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold text-foreground uppercase tracking-wider">Анализ возражений (AI Insights)</span>
-              <Badge variant="outline" className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/20">
-                {MOCK_OBJECTION_STATS.reduce((s, o) => s + o.count, 0)} всего
-              </Badge>
-            </div>
-            <div className="space-y-2">
-              {MOCK_OBJECTION_STATS.map((obj) => (
-                <div key={obj.label} className="flex items-center gap-3">
-                  <span className="text-xs text-foreground w-44 truncate">{obj.label}</span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60 transition-all"
-                      style={{ width: `${obj.pct}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-mono tabular-nums text-muted-foreground w-8 text-right">{obj.count}</span>
-                  <Badge variant="outline" className="text-[9px] w-10 justify-center">{obj.pct}%</Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
         {/* ─── Alert: No Response ─── */}
         {kpis.noResponse > 0 && (

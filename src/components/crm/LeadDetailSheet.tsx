@@ -20,7 +20,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
-import { generateMockCallResult, generateMockTask, type CallRecord, type AITask } from "./types";
+import type { CallRecord, AITask } from "./types";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -324,21 +324,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   const handleEndCall = (duration: number) => {
     setIsCallActive(false);
-    setIsAnalyzing(true);
     setRightTab("calls");
-
-    // Simulate AI analysis after 3 seconds
-    setTimeout(() => {
-      const result = generateMockCallResult(lead.id, lead.name, duration);
-      setCallHistory(prev => [result, ...prev]);
-      setIsAnalyzing(false);
-
-      // Generate a follow-up task
-      const task = generateMockTask(lead.id, lead.name, result.ai_summary);
-      onTaskGenerated?.(task);
-
-      toast({ title: "🤖 Анализ завершён", description: `Оценка: ${result.ai_score}/10` });
-    }, 3000);
+    toast({ title: "Звонок завершён", description: "Запись добавлена в очередь на AI анализ" });
   };
 
   const handleSendMessage = async () => {
@@ -602,11 +589,10 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                                     </Avatar>
                                   )}
                                   {isInbound && isConsecutive && <div className="w-6 shrink-0" />}
-                                  <div className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${
-                                    isInbound
+                                  <div className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${isInbound
                                       ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
                                       : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
-                                  }`}>
+                                    }`}>
                                     <p className="whitespace-pre-wrap break-words">{msg.message_text}</p>
                                     <div className={`flex items-center gap-1 mt-0.5 ${isInbound ? "text-muted-foreground/40" : "text-primary-foreground/50"}`}>
                                       <span className="text-[10px]">{formatTime(msg.created_at)}</span>

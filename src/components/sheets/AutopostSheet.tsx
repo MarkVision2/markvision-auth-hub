@@ -22,10 +22,7 @@ const SOCIAL_CHANNELS = [
   { id: "blog", label: "Блог / Сайт", emoji: "🌐" },
 ];
 
-const MOCK_CAPTIONS = [
-  "🔥 Готовы к переменам? Мы подготовили для вас нечто особенное!\n\nЭто не просто контент — это стратегия, которая работает на результат.\n\n💡 Сохраняйте, делитесь и применяйте!\n\n#маркетинг #реклама #бизнес #продвижение",
-  "✨ Новый уровень вашего бренда начинается здесь.\n\nМы создали визуал, который цепляет взгляд и конвертирует в продажи.\n\n📊 Результаты говорят сами за себя.\n\n#дизайн #контент #smm #digital",
-];
+const MOCK_CAPTIONS: string[] = [];
 
 interface Props {
   open: boolean;
@@ -49,7 +46,7 @@ export default function AutopostSheet({ open, onOpenChange, mediaUrls, mediaType
   async function handleAutoCaption() {
     setGeneratingCaption(true);
     await new Promise(r => setTimeout(r, 1500));
-    setCaption(MOCK_CAPTIONS[Math.floor(Math.random() * MOCK_CAPTIONS.length)]);
+    setCaption("Текст сгенерирован ИИ...");
     setGeneratingCaption(false);
     toast({ title: "✨ Описание сгенерировано" });
   }

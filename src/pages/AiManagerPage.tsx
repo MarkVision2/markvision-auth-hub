@@ -10,16 +10,7 @@ import {
 } from "lucide-react";
 
 /* ── Mock activity log ── */
-const MOCK_LOG = [
-  { id: "1", time: "09:42", icon: Send, text: "Отправлен фоллоу-ап клиенту ТОО Ромашка", type: "action" as const },
-  { id: "2", time: "09:38", icon: Wrench, text: "Зафиксирована и исправлена ошибка таймаута API", type: "fix" as const },
-  { id: "3", time: "09:35", icon: RefreshCw, text: "Обновлен статус сделки: Айгуль К. → Оплачен", type: "action" as const },
-  { id: "4", time: "09:21", icon: ShieldCheck, text: "Авто-аудит звонка менеджера Руслан (оценка: 87/100)", type: "audit" as const },
-  { id: "5", time: "09:12", icon: Send, text: "NPS-опрос отправлен 3 пациентам после визита", type: "action" as const },
-  { id: "6", time: "08:55", icon: Wrench, text: "Перезапущен webhook scrape-competitor-ads после 503", type: "fix" as const },
-  { id: "7", time: "08:40", icon: RefreshCw, text: "Синхронизированы лиды из Meta Lead Ads (12 новых)", type: "action" as const },
-  { id: "8", time: "08:22", icon: ShieldCheck, text: "Обнаружена аномалия CPL +45% — отправлен алерт", type: "audit" as const },
-];
+const MOCK_LOG: any[] = [];
 
 const typeColors: Record<string, string> = {
   action: "text-primary",
@@ -180,8 +171,8 @@ export default function AiManagerPage() {
                       entry.type === "fix"
                         ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
                         : entry.type === "audit"
-                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                        : "bg-primary/10 text-primary border-primary/20"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          : "bg-primary/10 text-primary border-primary/20"
                     )}>
                       {entry.type === "fix" ? "Auto-heal" : entry.type === "audit" ? "Аудит" : "Действие"}
                     </Badge>

@@ -89,45 +89,7 @@ async function spyRequest(payload: Record<string, unknown>): Promise<any> {
   return res.json().catch(() => ({}));
 }
 
-// ─── Mock data ───
-const MOCK_ANALYSES: Omit<AnalysisResult, "id" | "competitor_id" | "created_at">[] = [
-  {
-    video_url: "https://www.instagram.com/reel/example1",
-    transcription: "Результат после 1 процедуры! Без фильтров и ретуши — только реальный эффект.",
-    ai_analysis: "Сильный визуальный контраст до/после создаёт эмоциональный триггер. Хук работает через обещание мгновенного результата.",
-    generated_script: "🎬 ХУК: «Одна процедура. Один час. Результат — на годы.»\n📖 Врач показывает зону работы → быстрая нарезка процедуры → сплит-экран ДО/ПОСЛЕ\n💥 «Без фильтров. Без ретуши. Только результат.»\n📢 CTA: «Хочешь так же? Ссылка в шапке 👆»",
-    performance_score: 92,
-    post_caption: "Результат после 1 процедуры! До/после без фильтров 🤩",
-    post_type: "reels",
-    strengths: ["Мощный визуальный хук до/после", "Трендовый звук повышает охват", "Субтитры увеличивают досматриваемость на 40%"],
-    weaknesses: ["Нет брендинга клиники", "Отсутствует CTA в конце"],
-    hook: "Одна процедура. Один час. Результат — на годы.",
-  },
-  {
-    video_url: "https://www.instagram.com/reel/example2",
-    transcription: "Честный отзыв: почему я выбрала именно эту клинику после 5 попыток...",
-    ai_analysis: "Формат «говорящая голова + отзыв» работает за счёт социального доказательства.",
-    generated_script: "🎬 ХУК: «Я потратила 200К на косметологов. Вот что я поняла...»\n📖 Интервью в клинике → B-roll процедуры → 3 ключевых тезиса\n💥 «Лучшее вложение в себя за последний год»\n📢 CTA: «Напиши 'ХОЧУ' в директ»",
-    performance_score: 85,
-    post_caption: "Честный отзыв пациента — почему выбрала AIVA? 🎤",
-    post_type: "reels",
-    strengths: ["Социальное доказательство", "Искренний тон", "Сторителлинг удерживает внимание"],
-    weaknesses: ["Слишком длинное вступление", "Нет текстовых плашек"],
-    hook: "Я потратила 200К на косметологов. Вот что я поняла...",
-  },
-  {
-    video_url: "https://www.instagram.com/reel/example3",
-    transcription: "Топ-3 процедуры сезона. Биоревитализация? Нет. Вот что реально работает.",
-    ai_analysis: "Листиклы (топ-N) — один из самых виральных форматов. Провокационный хук через отрицание ожиданий.",
-    generated_script: "🎬 ХУК: «Забудь про биоревитализацию. Вот что реально работает в 2025.»\n📖 Быстрая смена 3 процедур с номерами → врач комментирует\n📢 CTA: «Какая заинтересовала? Пиши номер в комментарии 👇»",
-    performance_score: 88,
-    post_caption: "Топ-3 процедуры этого сезона 😱",
-    post_type: "reels",
-    strengths: ["Листикл-формат — высокая виральность", "Провокационный хук", "Динамичный монтаж"],
-    weaknesses: ["Мало деталей по каждой процедуре", "Нет экспертного комментария"],
-    hook: "Забудь про биоревитализацию. Вот что реально работает.",
-  },
-];
+
 
 // ─── Score color helper ───
 function scoreColor(score: number) {
@@ -269,7 +231,7 @@ export default function CompetitorSpy() {
     try {
       await spyRequest({ action: "adapt_content", format: adaptFormat, analysis_id: analysis.id });
       await new Promise((r) => setTimeout(r, 2000));
-      setAdaptedScript(analysis.generated_script || MOCK_ANALYSES[0].generated_script!);
+      setAdaptedScript(analysis.generated_script || "Сценарий не сгенерирован");
       toast({ title: "✅ Сценарий адаптирован" });
     } catch (err: any) {
       console.error("Adapt error:", err);
@@ -279,9 +241,7 @@ export default function CompetitorSpy() {
     }
   }, [adaptFormat, toast]);
 
-  const displayAnalyses = analyses.length > 0
-    ? analyses
-    : MOCK_ANALYSES.map((m, i) => ({ ...m, id: `mock-${i}`, competitor_id: null, created_at: new Date(Date.now() - i * 86400000).toISOString() } as AnalysisResult));
+  const displayAnalyses = analyses;
 
   return (
     <DashboardLayout breadcrumb="Мониторинг конкурентов">
