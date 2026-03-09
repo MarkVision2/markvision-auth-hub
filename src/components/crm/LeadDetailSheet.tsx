@@ -9,21 +9,25 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   Brain, Send, MessageCircle, Bot, User, Phone, Calendar,
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Copy, ChevronRight, Sparkles, Globe, Hash, Loader2, Check, CheckCheck,
-  Timer,
+  Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
+import { generateMockCallResult, generateMockTask, type CallRecord, type AITask } from "./types";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLeadUpdated?: () => void;
+  onTaskGenerated?: (task: AITask) => void;
 }
 
 interface ChatMessage {
@@ -88,7 +92,95 @@ function formatDateSeparator(dateStr: string) {
   return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 }
 
-export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated }: LeadDetailSheetProps) {
+function fmtDuration(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/* ── Active Call Overlay ── */
+function ActiveCallOverlay({ leadName, onEndCall }: { leadName: string; onEndCall: (duration: number) => void }) {
+  const [seconds, setSeconds] = useState(0);
+  const [muted, setMuted] = useState(false);
+
+  useEffect(() => {
+    const i = setInterval(() => setSeconds(s => s + 1), 1000);
+    return () => clearInterval(i);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+      <div className="h-20 w-20 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center animate-pulse">
+        <PhoneCall className="h-8 w-8 text-primary" />
+      </div>
+      <div className="text-center">
+        <p className="text-lg font-semibold text-foreground">{leadName}</p>
+        <p className="text-sm text-muted-foreground">Активный звонок</p>
+      </div>
+      <p className="text-4xl font-mono font-bold tabular-nums text-foreground">{fmtDuration(seconds)}</p>
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          size="icon"
+          className={cn("h-12 w-12 rounded-full", muted && "bg-destructive/10 border-destructive/20")}
+          onClick={() => setMuted(!muted)}
+        >
+          {muted ? <MicOff className="h-5 w-5 text-destructive" /> : <Mic className="h-5 w-5 text-muted-foreground" />}
+        </Button>
+        <Button
+          size="icon"
+          className="h-14 w-14 rounded-full bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          onClick={() => onEndCall(seconds)}
+        >
+          <PhoneOff className="h-6 w-6" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── AI Analysis Result Card ── */
+function AiCallResultCard({ record }: { record: CallRecord }) {
+  return (
+    <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <span className="text-xs font-semibold text-primary uppercase tracking-wider">Анализ ИИ-РОП</span>
+        <Badge variant="outline" className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/20">
+          ⭐ {record.ai_score}/10
+        </Badge>
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">📝 Резюме</p>
+          <p className="text-xs text-foreground/80 leading-relaxed">{record.ai_summary}</p>
+        </div>
+
+        {record.objections.length > 0 && (
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">⚠️ Возражения</p>
+            <div className="flex flex-wrap gap-1">
+              {record.objections.map((obj, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] bg-[hsl(var(--status-warning)/0.08)] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.2)]">
+                  {obj}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-1 text-[10px] text-muted-foreground">
+          <span className="font-mono tabular-nums">⏱ {fmtDuration(record.duration_seconds)}</span>
+          <span>·</span>
+          <span>Следующее: {record.next_action}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated, onTaskGenerated }: LeadDetailSheetProps) {
   const [stage, setStage] = useState("");
   const [aiMode, setAiMode] = useState(true);
   const [message, setMessage] = useState("");
@@ -97,8 +189,13 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  const [rightTab, setRightTab] = useState<"chat" | "notes">("chat");
+  const [rightTab, setRightTab] = useState<"chat" | "notes" | "calls">("chat");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Call state
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [callHistory, setCallHistory] = useState<CallRecord[]>([]);
 
   const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
@@ -133,40 +230,30 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       setStage(lead.status || "Новая заявка");
       fetchChatMessages(lead.id);
       fetchNotes(lead.id);
+      setCallHistory([]);
+      setIsCallActive(false);
+      setIsAnalyzing(false);
     }
   }, [lead, open, fetchChatMessages, fetchNotes]);
 
-  // Realtime for chat_messages and crm_notes
   useEffect(() => {
     if (!lead || !open) return;
     const ch = supabase
       .channel(`lead_chat_${lead.id}`)
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "chat_messages",
-        filter: `lead_id=eq.${lead.id}`,
-      }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
         setChatMessages(prev => {
           const newMsg = payload.new as ChatMessage;
-          // Avoid duplicates (optimistic insert)
           if (prev.some(m => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
       })
-      .on("postgres_changes", {
-        event: "INSERT",
-        schema: "public",
-        table: "crm_notes",
-        filter: `lead_id=eq.${lead.id}`,
-      }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
         setNotes(prev => [payload.new as CrmNote, ...prev]);
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [lead, open]);
 
-  // Auto-scroll on new messages
   useEffect(() => {
     if (open && rightTab === "chat") {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
@@ -194,14 +281,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          table: "leads",
-          type: "UPDATE",
-          record: {
-            id: lead.id,
-            status: capiKey,
-            project_id: (lead as any).project_id || null,
-            deal_amount: Number(lead.amount) || 0,
-          },
+          table: "leads", type: "UPDATE",
+          record: { id: lead.id, status: capiKey, project_id: (lead as any).project_id || null, deal_amount: Number(lead.amount) || 0 },
           old_record: { status: oldStatus },
         }),
       });
@@ -219,8 +300,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as any)
-      .from("leads").update({ status: newStage }).eq("id", lead.id);
+    const { error } = await (supabase as any).from("leads").update({ status: newStage }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -237,32 +317,46 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     }
   };
 
+  const handleStartCall = () => {
+    setIsCallActive(true);
+    toast({ title: "📞 Звонок начат", description: lead.name });
+  };
+
+  const handleEndCall = (duration: number) => {
+    setIsCallActive(false);
+    setIsAnalyzing(true);
+    setRightTab("calls");
+
+    // Simulate AI analysis after 3 seconds
+    setTimeout(() => {
+      const result = generateMockCallResult(lead.id, lead.name, duration);
+      setCallHistory(prev => [result, ...prev]);
+      setIsAnalyzing(false);
+
+      // Generate a follow-up task
+      const task = generateMockTask(lead.id, lead.name, result.ai_summary);
+      onTaskGenerated?.(task);
+
+      toast({ title: "🤖 Анализ завершён", description: `Оценка: ${result.ai_score}/10` });
+    }, 3000);
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || sending) return;
     const body = message.trim();
     setMessage("");
     setSending(true);
-
     try {
-      // 1. Insert into chat_messages
       const { error } = await (supabase as any).from("chat_messages").insert({
-        lead_id: lead.id,
-        message_text: body,
-        is_inbound: false,
+        lead_id: lead.id, message_text: body, is_inbound: false,
       });
       if (error) throw error;
-
-      // 2. Fire n8n webhook to send via Green-API
       const webhookUrl = import.meta.env.VITE_N8N_WA_SEND_WEBHOOK;
       if (webhookUrl) {
         fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lead_id: lead.id,
-            phone: lead.phone || "",
-            message: body,
-          }),
+          body: JSON.stringify({ lead_id: lead.id, phone: lead.phone || "", message: body }),
         }).catch(err => console.error("WA send webhook error:", err));
       }
     } catch (err: any) {
@@ -277,14 +371,11 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     const body = noteText.trim();
     setNoteText("");
     const { error } = await (supabase as any).from("crm_notes").insert({
-      lead_id: lead.id,
-      author_name: "Менеджер",
-      body,
+      lead_id: lead.id, author_name: "Менеджер", body,
     });
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
   };
 
-  // Group messages by date for separators
   const groupedMessages = chatMessages.reduce<{ date: string; messages: ChatMessage[] }[]>((acc, msg) => {
     const dateKey = new Date(msg.created_at).toDateString();
     const last = acc[acc.length - 1];
@@ -299,6 +390,9 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="!max-w-5xl !w-[85vw] p-0 bg-background border-border flex flex-col">
+        {/* Active Call Overlay */}
+        {isCallActive && <ActiveCallOverlay leadName={lead.name} onEndCall={handleEndCall} />}
+
         <SheetHeader className="px-6 py-3 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -336,38 +430,46 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           {/* LEFT — Досье */}
           <div className="w-[35%] border-r border-border overflow-y-auto">
             <div className="px-5 py-3 border-b border-border space-y-2">
-              <div className="grid grid-cols-3 gap-2">
-                <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1">
-                  <Phone className="h-3 w-3" /> Звонок
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-border h-9 gap-1.5 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-medium"
+                  onClick={handleStartCall}
+                  disabled={isCallActive}
+                >
+                  <PhoneCall className="h-3.5 w-3.5" /> Позвонить
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1 text-[hsl(var(--status-good))]">
-                  <MessageCircle className="h-3 w-3" /> WA
+                <Button variant="outline" size="sm" className="text-xs border-border h-9 gap-1.5 text-[hsl(var(--status-good))]">
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1">
                   <Calendar className="h-3 w-3" /> Запись
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
+                  onClick={async () => {
+                    try {
+                      const { error } = await (supabase as any).from("retention_tasks").insert({
+                        lead_id: lead.id,
+                        project_id: (lead as any).project_id || null,
+                        trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
+                        status: "pending",
+                      });
+                      if (error) throw error;
+                      toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
+                    } catch (err: any) {
+                      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  <Timer className="h-3 w-3" /> LTV
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-xs border-border h-8 gap-1.5 text-muted-foreground hover:text-primary"
-                onClick={async () => {
-                  try {
-                    const { error } = await (supabase as any).from("retention_tasks").insert({
-                      lead_id: lead.id,
-                      project_id: (lead as any).project_id || null,
-                      trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
-                      status: "pending",
-                    });
-                    if (error) throw error;
-                    toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
-                  } catch (err: any) {
-                    toast({ title: "Ошибка", description: err.message, variant: "destructive" });
-                  }
-                }}
-              >
-                <Timer className="h-3 w-3" /> Добавить в авто-дожим (LTV)
-              </Button>
             </div>
 
             <div className="px-5 py-3 border-b border-border">
@@ -400,37 +502,50 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               </div>
             </div>
 
+            {/* AI Analysis / Last Call Result */}
             <div className="px-5 py-3">
-              <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Анализ</span>
-                </div>
-                <p className="text-xs text-foreground/70 leading-relaxed">
-                  {lead.ai_summary || "AI-анализ ещё не выполнен. Он появится автоматически после первого диалога с клиентом."}
-                </p>
-                {score > 0 && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${score >= 80 ? "bg-[hsl(var(--status-critical))]" : score >= 50 ? "bg-[hsl(var(--status-warning))]" : "bg-primary"}`}
-                        style={{ width: `${score}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-mono text-muted-foreground">{score}%</span>
+              {callHistory.length > 0 ? (
+                <AiCallResultCard record={callHistory[0]} />
+              ) : (
+                <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 space-y-2.5">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Анализ</span>
                   </div>
-                )}
-              </div>
+                  <p className="text-xs text-foreground/70 leading-relaxed">
+                    {lead.ai_summary || "AI-анализ ещё не выполнен. Нажмите «Позвонить» для запуска анализа."}
+                  </p>
+                  {score > 0 && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${score >= 80 ? "bg-[hsl(var(--status-critical))]" : score >= 50 ? "bg-[hsl(var(--status-warning))]" : "bg-primary"}`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-muted-foreground">{score}%</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT — Chat / Notes */}
+          {/* RIGHT — Chat / Notes / Calls */}
           <div className="w-[65%] flex flex-col">
             <div className="flex items-center justify-between px-5 py-2 border-b border-border">
               <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as any)}>
                 <TabsList className="h-8 bg-secondary/50">
                   <TabsTrigger value="chat" className="text-xs h-6 gap-1 data-[state=active]:bg-background">
                     <MessageCircle className="h-3 w-3" /> Чат
+                  </TabsTrigger>
+                  <TabsTrigger value="calls" className="text-xs h-6 gap-1 data-[state=active]:bg-background">
+                    <Phone className="h-3 w-3" /> История
+                    {callHistory.length > 0 && (
+                      <Badge variant="outline" className="ml-0.5 text-[8px] h-4 px-1 bg-primary/10 text-primary border-primary/20">
+                        {callHistory.length}
+                      </Badge>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger value="notes" className="text-xs h-6 gap-1 data-[state=active]:bg-background">
                     <FileText className="h-3 w-3" /> Заметки
@@ -450,7 +565,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
             {/* CHAT TAB */}
             {rightTab === "chat" && (
               <>
-                {/* Messages area — iMessage style */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-1 bg-background">
                   {messagesLoading ? (
                     <div className="flex items-center justify-center py-12">
@@ -468,7 +582,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                     <>
                       {groupedMessages.map((group) => (
                         <div key={group.date}>
-                          {/* Date separator */}
                           <div className="flex items-center gap-3 py-3">
                             <div className="flex-1 h-px bg-border/40" />
                             <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
@@ -476,35 +589,24 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                             </span>
                             <div className="flex-1 h-px bg-border/40" />
                           </div>
-
-                          {/* Messages */}
                           {group.messages.map((msg, idx) => {
                             const isInbound = msg.is_inbound;
                             const prevMsg = idx > 0 ? group.messages[idx - 1] : null;
                             const isConsecutive = prevMsg && prevMsg.is_inbound === msg.is_inbound;
-
                             return (
-                              <div
-                                key={msg.id}
-                                className={`flex ${isInbound ? "justify-start" : "justify-end"} ${isConsecutive ? "mt-0.5" : "mt-3"}`}
-                              >
+                              <div key={msg.id} className={`flex ${isInbound ? "justify-start" : "justify-end"} ${isConsecutive ? "mt-0.5" : "mt-3"}`}>
                                 <div className={`flex items-end gap-1.5 max-w-[75%] ${isInbound ? "flex-row" : "flex-row-reverse"}`}>
-                                  {/* Avatar — only show on first of consecutive group */}
                                   {isInbound && !isConsecutive && (
                                     <Avatar className="h-6 w-6 shrink-0 mb-0.5">
                                       <AvatarFallback className="bg-secondary text-muted-foreground text-[9px] font-bold">{initials}</AvatarFallback>
                                     </Avatar>
                                   )}
                                   {isInbound && isConsecutive && <div className="w-6 shrink-0" />}
-
-                                  {/* Bubble */}
-                                  <div
-                                    className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${
-                                      isInbound
-                                        ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
-                                        : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
-                                    }`}
-                                  >
+                                  <div className={`px-3.5 py-2 text-[13.5px] leading-relaxed ${
+                                    isInbound
+                                      ? `bg-secondary text-foreground ${isConsecutive ? "rounded-2xl rounded-tl-md" : "rounded-2xl rounded-bl-md"}`
+                                      : `bg-primary text-primary-foreground ${isConsecutive ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-br-md"}`
+                                  }`}>
                                     <p className="whitespace-pre-wrap break-words">{msg.message_text}</p>
                                     <div className={`flex items-center gap-1 mt-0.5 ${isInbound ? "text-muted-foreground/40" : "text-primary-foreground/50"}`}>
                                       <span className="text-[10px]">{formatTime(msg.created_at)}</span>
@@ -522,7 +624,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Input area */}
                 <div className="px-4 py-3 border-t border-border bg-background/80 backdrop-blur-sm">
                   {aiMode ? (
                     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-secondary/60 border border-border/30">
@@ -553,16 +654,46 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                         disabled={!message.trim() || sending}
                         onClick={handleSendMessage}
                       >
-                        {sending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
+                        {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       </Button>
                     </div>
                   )}
                 </div>
               </>
+            )}
+
+            {/* CALLS TAB — History */}
+            {rightTab === "calls" && (
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+                {isAnalyzing && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-6 flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">🤖 ИИ-РОП анализирует звонок...</p>
+                    <div className="w-full space-y-2">
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                )}
+
+                {callHistory.map((record) => (
+                  <AiCallResultCard key={record.id} record={record} />
+                ))}
+
+                {!isAnalyzing && callHistory.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Phone className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground/60">Нет звонков</p>
+                    <p className="text-xs text-muted-foreground mt-1">Нажмите «Позвонить» чтобы начать</p>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* NOTES TAB */}
