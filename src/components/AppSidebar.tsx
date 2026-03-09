@@ -3,6 +3,7 @@ import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock, HeartHandshake, Repeat,
+  Bot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,6 +64,13 @@ const navGroups: NavGroup[] = [
       { title: "Генератор LTV", path: "/retention", icon: Repeat },
       { title: "Финансы", path: "/finance", icon: Coins },
       { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
+    ],
+  },
+  {
+    label: "СИСТЕМА",
+    superadminOnly: true,
+    items: [
+      { title: "AI Управляющий", path: "/admin/ai-manager", icon: Bot, superadminOnly: true },
     ],
   },
 ];

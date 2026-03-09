@@ -29,6 +29,7 @@ const AgencyBillingPage = lazy(() => import("./pages/AgencyBillingPage"));
 const AutopostingPage = lazy(() => import("./pages/AutopostingPage"));
 const QualityControlPage = lazy(() => import("./pages/QualityControlPage"));
 const RetentionLtvPage = lazy(() => import("./pages/RetentionLtvPage"));
+const AiManagerPage = lazy(() => import("./pages/AiManagerPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ const App = () => (
           <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
           <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
           <Route path="/retention" element={<ProtectedRoute><RetentionLtvPage /></ProtectedRoute>} />
+          <Route path="/admin/ai-manager" element={<ProtectedRoute><AiManagerPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
