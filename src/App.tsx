@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/hooks/useAuthReady";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoleProvider } from "@/hooks/useRole";
 import { NotificationProvider } from "@/hooks/useNotifications";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy-loaded pages for code splitting
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -87,6 +88,7 @@ const App = () => (
         </WorkspaceProvider>
         </RoleProvider>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </QueryClientProvider>
 );
