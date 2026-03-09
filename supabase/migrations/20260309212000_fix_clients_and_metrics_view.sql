@@ -1,5 +1,5 @@
 
--- Add missing fields to clients_config
+-- Add/Ensure fields in clients_config
 ALTER TABLE public.clients_config
   ADD COLUMN IF NOT EXISTS visits integer DEFAULT 0,
   ADD COLUMN IF NOT EXISTS sales integer DEFAULT 0,
@@ -36,7 +36,7 @@ TO authenticated
 USING (public.is_project_member(project_id))
 WITH CHECK (public.is_project_member(project_id));
 
--- Redefine agency_metrics_view to ensure all clients are visible (LEFT JOIN)
+-- Redefine agency_metrics_view to be additive (Manual + Tracked)
 CREATE OR REPLACE VIEW public.agency_metrics_view AS
 WITH aggregated_metrics AS (
   SELECT 
@@ -53,29 +53,33 @@ SELECT
   c.id as client_id,
   c.client_name,
   c.is_active,
-  COALESCE(m.total_spend, c.spend, 0) as spend,
-  COALESCE(m.total_leads, c.meta_leads, 0) as meta_leads,
-  COALESCE(m.total_visits, c.visits, 0) as visits,
-  COALESCE(m.total_sales, c.sales, 0) as sales,
-  COALESCE(m.total_revenue, c.revenue, 0) as revenue,
+  (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0)) as spend,
+  (COALESCE(m.total_leads, 0) + COALESCE(c.meta_leads, 0)) as meta_leads,
+  (COALESCE(m.total_visits, 0) + COALESCE(c.visits, 0)) as visits,
+  (COALESCE(m.total_sales, 0) + COALESCE(c.sales, 0)) as sales,
+  (COALESCE(m.total_revenue, 0) + COALESCE(c.revenue, 0)) as revenue,
   CASE 
-    WHEN COALESCE(m.total_leads, c.meta_leads, 0) > 0 
-    THEN (COALESCE(m.total_spend, c.spend, 0)::numeric / NULLIF(COALESCE(m.total_leads, c.meta_leads, 0), 0)::numeric)
+    WHEN (COALESCE(m.total_leads, 0) + COALESCE(c.meta_leads, 0)) > 0 
+    THEN ((COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric / (COALESCE(m.total_leads, 0) + COALESCE(c.meta_leads, 0))::numeric)
     ELSE 0 
   END as cpl,
   CASE 
-    WHEN COALESCE(m.total_visits, c.visits, 0) > 0 
-    THEN (COALESCE(m.total_spend, c.spend, 0)::numeric / NULLIF(COALESCE(m.total_visits, c.visits, 0), 0)::numeric)
+    WHEN (COALESCE(m.total_visits, 0) + COALESCE(c.visits, 0)) > 0 
+    THEN ((COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric / (COALESCE(m.total_visits, 0) + COALESCE(c.visits, 0))::numeric)
     ELSE 0 
   END as cpv,
   CASE 
-    WHEN COALESCE(m.total_sales, c.sales, 0) > 0 
-    THEN (COALESCE(m.total_spend, c.spend, 0)::numeric / NULLIF(COALESCE(m.total_sales, c.sales, 0), 0)::numeric)
+    WHEN (COALESCE(m.total_sales, 0) + COALESCE(c.sales, 0)) > 0 
+    THEN ((COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric / (COALESCE(m.total_sales, 0) + COALESCE(c.sales, 0))::numeric)
     ELSE 0 
   END as cac,
   CASE 
-    WHEN COALESCE(m.total_spend, c.spend, 0) > 0 
-    THEN ((COALESCE(m.total_revenue, c.revenue, 0)::numeric - COALESCE(m.total_spend, c.spend, 0)::numeric) / NULLIF(COALESCE(m.total_spend, c.spend, 0), 0)::numeric * 100)
+    -- If revenue is 0, ROMI is 0 as requested
+    WHEN (COALESCE(m.total_revenue, 0) + COALESCE(c.revenue, 0)) = 0 THEN 0
+    -- If spend is > 0, calculate ROMI
+    WHEN (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0)) > 0 
+    THEN (( (COALESCE(m.total_revenue, 0) + COALESCE(c.revenue, 0))::numeric - (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric) / (COALESCE(m.total_spend, 0) + COALESCE(c.spend, 0))::numeric * 100)
+    -- Fallback to manual ROMI if spend is 0 but revenue is non-zero (or just fallback)
     ELSE COALESCE(c.romi, 0)
   END as romi
 FROM public.clients_config c
