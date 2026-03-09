@@ -1,10 +1,11 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, StrictMode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/hooks/useAuthReady";
+import { AuthProvider } from "@/hooks/useAuth";
 import { WorkspaceProvider } from "@/hooks/useWorkspace";
 import { RoleProvider } from "@/hooks/useRole";
 import { NotificationProvider } from "@/hooks/useNotifications";
@@ -50,45 +51,49 @@ const PageLoader = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <RoleProvider>
-        <WorkspaceProvider>
-        <NotificationProvider>
-        <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<AuthPage />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/target" element={<ProtectedRoute><DashboardTarget /></ProtectedRoute>} />
-          <Route path="/dashboard/sales" element={<ProtectedRoute><DashboardSales /></ProtectedRoute>} />
-          <Route path="/dashboard/pm" element={<ProtectedRoute><DashboardPM /></ProtectedRoute>} />
-          <Route path="/accounts" element={<ProtectedRoute><AgencyAccounts /></ProtectedRoute>} />
-          <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
-          <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
-          <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
-          <Route path="/spy" element={<ProtectedRoute><CompetitorSpy /></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
-          <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
-          <Route path="/ai-reports" element={<ProtectedRoute><AiReportsPage /></ProtectedRoute>} />
-          <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage /></ProtectedRoute>} />
-          <Route path="/agency-billing" element={<ProtectedRoute><AgencyBillingPage /></ProtectedRoute>} />
-          <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
-          <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
-          <Route path="/retention" element={<ProtectedRoute><RetentionLtvPage /></ProtectedRoute>} />
-          <Route path="/admin/ai-manager" element={<ProtectedRoute><AiManagerPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        </Suspense>
-        </NotificationProvider>
-        </WorkspaceProvider>
-        </RoleProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AuthProvider>
+            <RoleProvider>
+              <WorkspaceProvider>
+                <NotificationProvider>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<AuthPage />} />
+                      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                      <Route path="/dashboard/target" element={<ProtectedRoute><DashboardTarget /></ProtectedRoute>} />
+                      <Route path="/dashboard/sales" element={<ProtectedRoute><DashboardSales /></ProtectedRoute>} />
+                      <Route path="/dashboard/pm" element={<ProtectedRoute><DashboardPM /></ProtectedRoute>} />
+                      <Route path="/accounts" element={<ProtectedRoute><AgencyAccounts /></ProtectedRoute>} />
+                      <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
+                      <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
+                      <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
+                      <Route path="/spy" element={<ProtectedRoute><CompetitorSpy /></ProtectedRoute>} />
+                      <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+                      <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
+                      <Route path="/ai-reports" element={<ProtectedRoute><AiReportsPage /></ProtectedRoute>} />
+                      <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage /></ProtectedRoute>} />
+                      <Route path="/agency-billing" element={<ProtectedRoute><AgencyBillingPage /></ProtectedRoute>} />
+                      <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
+                      <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
+                      <Route path="/retention" element={<ProtectedRoute><RetentionLtvPage /></ProtectedRoute>} />
+                      <Route path="/admin/ai-manager" element={<ProtectedRoute><AiManagerPage /></ProtectedRoute>} />
+                      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </NotificationProvider>
+              </WorkspaceProvider>
+            </RoleProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </StrictMode>
 );
 
 export default App;

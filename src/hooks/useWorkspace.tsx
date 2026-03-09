@@ -21,7 +21,7 @@ interface WorkspaceContextValue {
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
-const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+const PROJECT_ID = import.meta.env.VITE_PROJECT_ID;
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeId, setActiveId] = useState("hq");

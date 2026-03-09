@@ -2,6 +2,22 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNotifications } from "@/hooks/useNotifications";
 
+/* Payload row types — mirrors Supabase table schemas */
+interface ContentTaskRow {
+  status: string;
+  content_type: string;
+  progress_text: string | null;
+}
+interface LeadRow {
+  name: string;
+  source: string | null;
+  phone: string | null;
+}
+interface CompetitorAdRow {
+  is_monitored: boolean;
+  advertiser_name: string | null;
+  page_name: string | null;
+}
 /**
  * Subscribes to Supabase Realtime events and pushes
  * notifications into the global Notification Center.
@@ -21,8 +37,8 @@ export function useRealtimeNotifications() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "content_tasks" },
         (payload) => {
-          const row = payload.new as any;
-          const old = payload.old as any;
+          const row = payload.new as ContentTaskRow;
+          const old = payload.old as ContentTaskRow;
 
           // Only fire when status actually changed
           if (old.status === row.status) return;
@@ -53,7 +69,7 @@ export function useRealtimeNotifications() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "leads" },
         (payload) => {
-          const lead = payload.new as any;
+          const lead = payload.new as LeadRow;
           pushNotification(
             "info",
             "Новый лид 🎯",
@@ -71,7 +87,7 @@ export function useRealtimeNotifications() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "competitor_ads" },
         (payload) => {
-          const ad = payload.new as any;
+          const ad = payload.new as CompetitorAdRow;
           if (ad.is_monitored) {
             pushNotification(
               "warning",
