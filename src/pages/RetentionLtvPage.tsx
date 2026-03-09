@@ -489,7 +489,31 @@ export default function RetentionLtvPage() {
 
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Дата отправки</Label>
-              <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    {formDate ? format(formDate, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formDate}
+                    onSelect={setFormDate}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    locale={ru}
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
