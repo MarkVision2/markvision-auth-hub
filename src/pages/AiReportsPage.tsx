@@ -34,13 +34,15 @@ export default function AiReportsPage() {
   const [channels, setChannels] = useState<any[]>([]);
   const [creatives, setCreatives] = useState<any[]>([]);
 
-  // Date range: current week
-  const now = new Date();
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
-  const prevWeekStart = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-  const prevWeekEnd = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-  const dateRange = `${format(weekStart, "d MMM", { locale: ru })} – ${format(weekEnd, "d MMM yyyy", { locale: ru })}`;
+  const { weekStart, weekEnd, prevWeekStart, prevWeekEnd, dateRange } = useMemo(() => {
+    const now = new Date();
+    const ws = startOfWeek(now, { weekStartsOn: 1 });
+    const we = endOfWeek(now, { weekStartsOn: 1 });
+    const pws = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+    const pwe = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
+    const dr = `${format(ws, "d MMM", { locale: ru })} – ${format(we, "d MMM yyyy", { locale: ru })}`;
+    return { weekStart: ws, weekEnd: we, prevWeekStart: pws, prevWeekEnd: pwe, dateRange: dr };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -59,31 +61,52 @@ export default function AiReportsPage() {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
-      const curStart = format(weekStart, "yyyy-MM-dd");
-      const curEnd = format(weekEnd, "yyyy-MM-dd");
-      const pStart = format(prevWeekStart, "yyyy-MM-dd");
-      const pEnd = format(prevWeekEnd, "yyyy-MM-dd");
+      try {
+        setLoading(true);
+        const curStart = format(weekStart, "yyyy-MM-dd");
+        const curEnd = format(weekEnd, "yyyy-MM-dd");
+        const pStart = format(prevWeekStart, "yyyy-MM-dd");
+        const pEnd = format(prevWeekEnd, "yyyy-MM-dd");
 
-      let curQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", curStart).lte("date", curEnd);
-      let prevQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", pStart).lte("date", pEnd);
-      let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").eq("project_id", PROJECT_ID).gte("created_at", curStart);
-      let channelsQ = supabase.from("analytics_channels").select("*").eq("project_id", PROJECT_ID);
-      let creativesQ = supabase.from("analytics_creatives").select("*, analytics_campaigns!inner(channel_id, name, analytics_channels!inner(project_id))").order("leads", { ascending: false }).limit(10);
+        console.log("Loading AI Reports data for project:", PROJECT_ID);
+        console.log("Date range:", curStart, "to", curEnd);
 
-      if (selectedClient !== "all") {
-        curQ = curQ.eq("client_config_id", selectedClient);
-        prevQ = prevQ.eq("client_config_id", selectedClient);
-        leadsQ = leadsQ.eq("client_config_id", selectedClient);
+        let curQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", curStart).lte("date", curEnd);
+        let prevQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", pStart).lte("date", pEnd);
+        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").eq("project_id", PROJECT_ID).gte("created_at", curStart);
+        let channelsQ = supabase.from("analytics_channels").select("*").eq("project_id", PROJECT_ID);
+        // Correct join filtering for project_id
+        let creativesQ = supabase
+          .from("analytics_creatives")
+          .select("*, analytics_campaigns!inner(channel_id, name, analytics_channels!inner(project_id))")
+          .eq("analytics_campaigns.analytics_channels.project_id", PROJECT_ID)
+          .order("leads", { ascending: false })
+          .limit(10);
+
+        if (selectedClient !== "all") {
+          curQ = curQ.eq("client_config_id", selectedClient);
+          prevQ = prevQ.eq("client_config_id", selectedClient);
+          leadsQ = leadsQ.eq("client_config_id", selectedClient);
+        }
+
+        const [curRes, prevRes, leadsRes, chRes, crRes] = await Promise.all([curQ, prevQ, leadsQ, channelsQ, creativesQ]);
+
+        if (curRes.error) console.error("curRes error:", curRes.error);
+        if (prevRes.error) console.error("prevRes error:", prevRes.error);
+        if (leadsRes.error) console.error("leadsRes error:", leadsRes.error);
+        if (chRes.error) console.error("chRes error:", chRes.error);
+        if (crRes.error) console.error("crRes error:", crRes.error);
+
+        setCurMetrics((curRes.data as DailyRow[]) || []);
+        setPrevMetrics((prevRes.data as DailyRow[]) || []);
+        setLeads(leadsRes.data || []);
+        setChannels(chRes.data || []);
+        setCreatives(crRes.data || []);
+      } catch (err) {
+        console.error("AI Reports load fatal error:", err);
+      } finally {
+        setLoading(false);
       }
-
-      const [curRes, prevRes, leadsRes, chRes, crRes] = await Promise.all([curQ, prevQ, leadsQ, channelsQ, creativesQ]);
-      setCurMetrics((curRes.data as DailyRow[]) || []);
-      setPrevMetrics((prevRes.data as DailyRow[]) || []);
-      setLeads(leadsRes.data || []);
-      setChannels(chRes.data || []);
-      setCreatives(crRes.data || []);
-      setLoading(false);
     };
     load();
   }, [selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
