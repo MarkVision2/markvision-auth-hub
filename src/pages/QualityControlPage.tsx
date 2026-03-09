@@ -249,8 +249,8 @@ export default function QualityControlPage() {
                 return (
                   <div
                     key={item.id}
-                    className={`rounded-xl border bg-[#0a0a0a] p-5 flex items-start gap-4 transition-colors ${
-                      needsAction ? "border-rose-500/25" : "border-border/20"
+                    className={`rounded-xl border bg-card p-5 flex items-start gap-4 transition-colors ${
+                      needsAction ? "border-rose-500/25" : "border-border"
                     }`}
                   >
                     {/* Score badge */}
