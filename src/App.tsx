@@ -27,6 +27,7 @@ const AiReportsPage = lazy(() => import("./pages/AiReportsPage"));
 const ScoreboardPage = lazy(() => import("./pages/ScoreboardPage"));
 const AgencyBillingPage = lazy(() => import("./pages/AgencyBillingPage"));
 const AutopostingPage = lazy(() => import("./pages/AutopostingPage"));
+const QualityControlPage = lazy(() => import("./pages/QualityControlPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -73,6 +74,7 @@ const App = () => (
           <Route path="/scoreboard" element={<ProtectedRoute><ScoreboardPage /></ProtectedRoute>} />
           <Route path="/agency-billing" element={<ProtectedRoute><AgencyBillingPage /></ProtectedRoute>} />
           <Route path="/autoposting" element={<ProtectedRoute><AutopostingPage /></ProtectedRoute>} />
+          <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
