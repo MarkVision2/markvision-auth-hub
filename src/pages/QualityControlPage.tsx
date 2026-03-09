@@ -135,18 +135,17 @@ export default function QualityControlPage() {
         {/* ── KPI Widgets ── */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* NPS Score — hero card */}
-          <div className="rounded-2xl border border-border/30 bg-[#0a0a0a] p-6 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card p-6 flex flex-col items-center justify-center relative overflow-hidden">
             {/* Glow effect */}
             <div
-              className="absolute inset-0 opacity-20 blur-3xl"
+              className="absolute inset-0 opacity-10 dark:opacity-20 blur-3xl"
               style={{
                 background: `radial-gradient(circle at 50% 60%, ${npsScore >= 50 ? "#10b981" : npsScore >= 0 ? "#f59e0b" : "#e11d48"}, transparent 70%)`,
               }}
             />
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2 relative z-10">Индекс NPS</p>
             <p
-              className="text-6xl font-black tabular-nums font-mono relative z-10"
-              style={{ color: npsScore >= 50 ? "#10b981" : npsScore >= 0 ? "#f59e0b" : "#e11d48" }}
+              className={`text-6xl font-black tabular-nums font-mono relative z-10 ${npsScore >= 50 ? "text-emerald-600 dark:text-emerald-400" : npsScore >= 0 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
             >
               {loading ? "—" : npsScore}
             </p>
