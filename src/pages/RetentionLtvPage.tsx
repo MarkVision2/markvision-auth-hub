@@ -271,7 +271,7 @@ export default function RetentionLtvPage() {
       const { error } = await (supabase as any).from("retention_tasks").insert({
         lead_id: formLeadId,
         template_id: formTemplateId,
-        trigger_date: formDate,
+        trigger_date: formDate ? format(formDate, "yyyy-MM-dd") : "",
         promo_code: formPromo || null,
         project_id: PROJECT_ID,
         status: "pending",
