@@ -29,6 +29,7 @@ const AgencyBillingPage = lazy(() => import("./pages/AgencyBillingPage"));
 const AutopostingPage = lazy(() => import("./pages/AutopostingPage"));
 const QualityControlPage = lazy(() => import("./pages/QualityControlPage"));
 const RetentionLtvPage = lazy(() => import("./pages/RetentionLtvPage"));
+const AiManagerPage = lazy(() => import("./pages/AiManagerPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
