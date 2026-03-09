@@ -1312,6 +1312,60 @@ export type Database = {
           },
         ]
       }
+      nps_feedback: {
+        Row: {
+          clinic_name: string | null
+          created_at: string | null
+          feedback_text: string | null
+          id: string
+          is_resolved: boolean | null
+          lead_id: string | null
+          project_id: string | null
+          score: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_name?: string | null
+          created_at?: string | null
+          feedback_text?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          lead_id?: string | null
+          project_id?: string | null
+          score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_name?: string | null
+          created_at?: string | null
+          feedback_text?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          lead_id?: string | null
+          project_id?: string | null
+          score?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nps_feedback_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nps_feedback_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
