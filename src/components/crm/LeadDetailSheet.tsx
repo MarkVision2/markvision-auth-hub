@@ -335,7 +335,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT — Досье */}
           <div className="w-[35%] border-r border-border overflow-y-auto">
-            <div className="px-5 py-3 border-b border-border">
+            <div className="px-5 py-3 border-b border-border space-y-2">
               <div className="grid grid-cols-3 gap-2">
                 <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1">
                   <Phone className="h-3 w-3" /> Звонок
@@ -347,6 +347,27 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   <Calendar className="h-3 w-3" /> Запись
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-border h-8 gap-1.5 text-muted-foreground hover:text-primary"
+                onClick={async () => {
+                  try {
+                    const { error } = await (supabase as any).from("retention_tasks").insert({
+                      lead_id: lead.id,
+                      project_id: (lead as any).project_id || null,
+                      trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
+                      status: "pending",
+                    });
+                    if (error) throw error;
+                    toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
+                  } catch (err: any) {
+                    toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+                  }
+                }}
+              >
+                <Timer className="h-3 w-3" /> Добавить в авто-дожим (LTV)
+              </Button>
             </div>
 
             <div className="px-5 py-3 border-b border-border">
