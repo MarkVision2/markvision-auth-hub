@@ -252,7 +252,7 @@ export default function CrmSystem() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="kanban"><KanbanBoard onTaskGenerated={handleTaskGenerated} /></TabsContent>
+              <TabsContent value="kanban"><KanbanBoard /></TabsContent>
               <TabsContent value="chats"><ChatsView /></TabsContent>
               <TabsContent value="clients"><ClientDatabase /></TabsContent>
               <TabsContent value="automations"><Automations /></TabsContent>
