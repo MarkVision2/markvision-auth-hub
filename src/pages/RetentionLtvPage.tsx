@@ -262,7 +262,7 @@ export default function RetentionLtvPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCreate = async () => {
-    if (!formLeadId || !formTemplateId || !formDate) {
+     if (!formLeadId || !formTemplateId || !formDate) {
       toast({ title: "Заполните все поля", variant: "destructive" });
       return;
     }
