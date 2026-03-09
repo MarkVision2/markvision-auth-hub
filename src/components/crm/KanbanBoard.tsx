@@ -5,8 +5,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Loader2, Zap, Bell, MessageCircle, CreditCard, Calendar,
   MapPin, Check, Ban, Phone, DollarSign, Globe,
-  ChevronDown, TrendingUp,
+  ChevronDown, TrendingUp, Trash2,
 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import LeadDetailSheet from "./LeadDetailSheet";
@@ -79,6 +80,7 @@ function getInitials(name: string) {
 }
 
 export default function KanbanBoard() {
+  const { isSuperadmin } = useRole();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -179,7 +181,18 @@ export default function KanbanBoard() {
     // Trigger AI agent for processing
     import("@/lib/ai-agent").then(({ triggerAiAgent }) => {
       triggerAiAgent(draggableId, newStage);
-    }).catch(() => {});
+    }).catch(() => { });
+  };
+
+  const handleDeleteLead = async (leadId: string, leadName: string) => {
+    if (!confirm(`Удалить следку ${leadName}?`)) return;
+    const { error } = await (supabase as any).from("leads").delete().eq("id", leadId);
+    if (error) {
+      toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Сделка удалена", description: leadName });
+    fetchLeads();
   };
 
   const handleCardClick = (lead: Lead) => {
@@ -313,11 +326,10 @@ export default function KanbanBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-[80px] max-h-[calc(100vh-16rem)] overflow-y-auto space-y-2 p-1 rounded-xl transition-colors duration-200 ${
-                          snapshot.isDraggingOver
+                        className={`flex-1 min-h-[80px] max-h-[calc(100vh-16rem)] overflow-y-auto space-y-2 p-1 rounded-xl transition-colors duration-200 ${snapshot.isDraggingOver
                             ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
                             : ""
-                        }`}
+                          }`}
                       >
                         {stageLeads.map((lead, index) => {
                           const score = lead.ai_score ?? 0;
@@ -332,11 +344,10 @@ export default function KanbanBoard() {
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  className={`group bg-card border rounded-xl p-3 cursor-grab active:cursor-grabbing ${
-                                    dragSnapshot.isDragging
+                                  className={`group bg-card border rounded-xl p-3 cursor-grab active:cursor-grabbing ${dragSnapshot.isDragging
                                       ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
                                       : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
-                                  }`}
+                                    }`}
                                 >
                                   {/* Top row */}
                                   <div className="flex items-start gap-2.5">
@@ -355,7 +366,19 @@ export default function KanbanBoard() {
                                         )}
                                       </div>
                                     </div>
-                                    <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(lead.created_at)}</span>
+                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                      <span className="text-[10px] text-muted-foreground">{timeAgo(lead.created_at)}</span>
+                                      {isSuperadmin && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                                          onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id, lead.name); }}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      )}
+                                    </div>
                                   </div>
 
                                   {/* Tags row */}
