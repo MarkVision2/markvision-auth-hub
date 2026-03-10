@@ -11,7 +11,7 @@ export interface Workspace {
   clientName?: string;
 }
 
-const HQ: Workspace = { id: "hq", name: "MarkVision HQ", emoji: "🏢", type: "agency" };
+const HQ: Workspace = { id: "hq", name: "CPR_KZ", emoji: "🏢", type: "agency" };
 
 interface WorkspaceContextValue {
   workspaces: Workspace[];
