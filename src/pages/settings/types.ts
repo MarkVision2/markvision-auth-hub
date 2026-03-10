@@ -102,8 +102,29 @@ export function loadTeam(): TeamMember[] {
     try {
         const raw = localStorage.getItem("mv_team_members");
         if (raw) {
-            const parsed = JSON.parse(raw);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            let parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                // Migrate outdated roles from local storage to new spec
+                parsed = parsed.map((m: any) => {
+                    let r = m.role;
+                    let migrated = false;
+                    if (r === "admin") { r = "superadmin"; migrated = true; }
+                    else if (r === "project" || r === "targetolog") { r = "client_admin"; migrated = true; }
+                    else if (r === "analyst") { r = "client_manager"; migrated = true; }
+
+                    if (!ROLE_LABELS[r as RoleKey]) {
+                        r = "client_manager";
+                        migrated = true;
+                    }
+
+                    if (migrated) {
+                        m.role = r;
+                        m.permissions = ROLE_PRESETS[r as RoleKey] || [];
+                    }
+                    return m;
+                });
+                return parsed;
+            }
         }
     } catch { }
     return INITIAL_TEAM;
