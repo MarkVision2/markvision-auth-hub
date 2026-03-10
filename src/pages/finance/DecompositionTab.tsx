@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import {
     Save, Calculator, DollarSign, ArrowRight, Wallet, PiggyBank,
-    Target, Users, UserPlus, TrendingUp,
+    Target, Users, UserPlus, TrendingUp, Coins,
     ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { fmt, fmtCurrency, KpiCard } from "./shared";
@@ -16,7 +16,7 @@ interface SummaryRow {
     label: string;
     value?: string;
     isAccent?: boolean;
-    isNetProfit?: boolean;
+    isRevenue?: boolean;
     isRomi?: boolean;
 }
 
@@ -92,8 +92,7 @@ export default function DecompositionTab() {
         { label: "Стоимость продажи/клиента (CAC)", value: `${fmt(Math.round(calc.totalCosts / Math.max(1, calc.sales)))} ₸`, isAccent: true },
 
         { type: "header", label: "БЛОК 3: ФИНАНСОВЫЙ ИТОГ" },
-        { label: "Целевая Выручка", value: `${fmt(calc.revenue)} ₸` },
-        { label: "Чистая прибыль (после маркетинга)", value: `${fmt(calc.netProfit)} ₸`, isNetProfit: true },
+        { label: "Прогнозная Выручка", value: `${fmt(calc.revenue)} ₸`, isRevenue: true },
         { label: "Реальный ROMI", value: `${calc.romi}%`, isRomi: true },
     ];
 
@@ -191,7 +190,7 @@ export default function DecompositionTab() {
                                 <span className={cn(
                                     "text-sm font-bold font-mono tabular-nums",
                                     row.isAccent ? "text-primary" : "text-foreground",
-                                    row.isNetProfit ? "text-[#10b981]" : "",
+                                    row.isRevenue ? "text-[#10b981]" : "",
                                     row.isRomi ? "text-[#10b981] font-extrabold" : ""
                                 )}>
                                     {row.value}
@@ -206,7 +205,7 @@ export default function DecompositionTab() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
                 <KpiCard icon={Target} label="CAC (с учетом ЗП)" value={fmtCurrency(Math.round(calc.totalCosts / Math.max(1, calc.sales)))} sub="Стоимость продажи/клиента" />
-                <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(calc.netProfit)} valueClass="text-[#10b981]" sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-[#10b981]" sub="Прогноз по чеку и продажам" />
                 <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass="text-[#10b981]" sub="Реальный показатель" />
             </div>
 
