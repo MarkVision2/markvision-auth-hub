@@ -26,6 +26,7 @@ interface ClientMetric {
   visits: number | null;
   sales: number | null;
   cac: number | null;
+  is_agency?: boolean;
 }
 
 function formatMoney(n: number): string {
@@ -194,7 +195,6 @@ export default function Dashboard() {
     })();
 
   const aggregateClientData = (clientList: ClientMetric[], id: string, name: string) => {
-    if (clientList.length === 0) return null;
     const spend = clientList.reduce((s, c) => s + (c.spend ?? 0), 0);
     const leads = clientList.reduce((s, c) => s + (c.meta_leads ?? 0), 0);
     const rev = clientList.reduce((s, c) => s + (c.revenue ?? 0), 0);
@@ -218,7 +218,7 @@ export default function Dashboard() {
   };
 
   const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
-  const hqClients = clients.filter(c => c.project_id === "hq");
+  const hqClients = clients.filter(c => c.project_id === "hq" && c.is_agency === false);
   const matchedHqClient = aggregateClientData(hqClients, "hq", active.name);
 
   const breadcrumb = isAgency ? "Штаб-квартира" : `${active.emoji} ${active.name}`;

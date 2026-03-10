@@ -12,6 +12,7 @@ interface ClientMetric {
   spend: number | null;
   meta_leads: number | null;
   is_active: boolean | null;
+  is_agency?: boolean;
 }
 
 interface Props {
@@ -71,11 +72,10 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
             return (
               <div
                 key={a.id}
-                className={`rounded-xl border p-3.5 transition-colors ${
-                  isCritical
+                className={`rounded-xl border p-3.5 transition-colors ${isCritical
                     ? "border-destructive/15 bg-destructive/[0.03] hover:border-destructive/30"
                     : "border-amber-500/15 bg-amber-500/[0.03] hover:border-amber-500/30"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   {/* Left: client + severity */}
@@ -84,11 +84,10 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
                       <p className="text-xs font-semibold text-foreground">{a.project}</p>
                       <Badge
                         variant="outline"
-                        className={`text-[9px] px-1.5 h-4 border-none ${
-                          isCritical
+                        className={`text-[9px] px-1.5 h-4 border-none ${isCritical
                             ? "bg-destructive/15 text-destructive"
                             : "bg-amber-500/15 text-amber-500"
-                        }`}
+                          }`}
                       >
                         {isCritical ? "Critical" : "Warning"}
                       </Badge>

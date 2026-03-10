@@ -4,6 +4,7 @@ interface ClientMetric {
   client_name: string | null;
   revenue: number | null;
   spend: number | null;
+  is_agency?: boolean;
 }
 
 interface Props {
