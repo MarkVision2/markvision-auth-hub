@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   Cpu, Activity, Bot, Zap, MessageSquare, HeartHandshake,
-  Wrench, CheckCircle2, ShieldCheck, Headphones
+  Wrench, CheckCircle2, ShieldCheck, Headphones,
+  BarChart, TrendingUp, TrendingDown, FileText, AlertCircle,
+  Megaphone, PieChart, Users
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -74,6 +77,59 @@ function AiToggle({ icon: Icon, label, description, defaultOn = true }: {
           {enabled ? "Активен" : "Выключен"}
         </Badge>
         <Switch checked={enabled} onCheckedChange={setEnabled} />
+      </div>
+    </div>
+  );
+}
+
+/* ── Report Card ── */
+function ReportCard({ title, icon: Icon, dateLabel, metrics, analysis, alertInfo }: {
+  title: string; icon: React.ElementType; dateLabel: string;
+  metrics: { label: string; value: string; trend?: "up" | "down" | "neutral" }[];
+  analysis: React.ReactNode;
+  alertInfo?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 flex flex-col h-full relative overflow-hidden">
+      <div className="flex items-center justify-between mb-4 border-b border-border pb-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">{title}</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{dateLabel}</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="bg-secondary/50 text-[10px] text-muted-foreground">AI Доклад</Badge>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {metrics.map((m, i) => (
+          <div key={i} className="bg-secondary/30 rounded-lg p-3 border border-border/50">
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1 line-clamp-1" title={m.label}>{m.label}</p>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-foreground text-sm xl:text-base tabular-nums">{m.value}</span>
+              {m.trend === "up" && <TrendingUp className="h-3 w-3 text-emerald-500" />}
+              {m.trend === "down" && <TrendingDown className="h-3 w-3 text-rose-500" />}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-auto">
+        <h4 className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider mb-3">
+          <Bot className="h-3.5 w-3.5 text-primary" /> Аналитика и действия
+        </h4>
+        <div className="text-sm text-muted-foreground leading-relaxed space-y-2 bg-primary/[0.03] p-4 rounded-xl border border-primary/10">
+          {analysis}
+        </div>
+        {alertInfo && (
+          <div className="mt-3 flex items-start gap-2 bg-amber-500/10 text-amber-600 p-3 rounded-lg border border-amber-500/20">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <p className="text-xs font-medium leading-snug">{alertInfo}</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -194,7 +250,7 @@ export default function AiManagerPage() {
 
   return (
     <DashboardLayout breadcrumb="AI Управляющий">
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* ── Section 1: System Health ── */}
         <div>
           <div className="flex items-center gap-2 mb-4">
@@ -224,70 +280,215 @@ export default function AiManagerPage() {
           </div>
         </div>
 
-        {/* ── Section 2: AI Toggles ── */}
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Bot className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Управление ИИ-Ассистентом</h2>
+        {/* ── Section 2: AI Toggles & Activity Log ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Bot className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Управление ИИ</h2>
+            </div>
+            <div className="space-y-3">
+              <AiToggle
+                icon={Megaphone}
+                label="ИИ-Таргетолог"
+                description="Оптимизация рекламных кампаний, тестирование креативов, управление бюджетом"
+              />
+              <AiToggle
+                icon={MessageSquare}
+                label="Авто-коммуникация с лидами"
+                description="WhatsApp фоллоу-апы, Email-цепочки — автоматические ответы и дожим"
+              />
+              <AiToggle
+                icon={HeartHandshake}
+                label="Авто-контроль качества (NPS)"
+                description="Отправка NPS-опросов после закрытия сделки, сбор обратной связи"
+              />
+              <AiToggle
+                icon={Wrench}
+                label="Самодиагностика и фиксация ошибок"
+                description="Auto-healing: перезапуск упавших webhook-ов, логирование аномалий"
+                defaultOn={true}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <AiToggle
-              icon={MessageSquare}
-              label="Авто-коммуникация с лидами"
-              description="WhatsApp фоллоу-апы, Email-цепочки — автоматические ответы и дожим"
-            />
-            <AiToggle
-              icon={HeartHandshake}
-              label="Авто-контроль качества (NPS)"
-              description="Отправка NPS-опросов после закрытия сделки, сбор обратной связи"
-            />
-            <AiToggle
-              icon={Wrench}
-              label="Самодиагностика и фиксация ошибок"
-              description="Auto-healing: перезапуск упавших webhook-ов, логирование аномалий"
-              defaultOn={true}
-            />
+
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Журнал ИИ (События)</h2>
+              <Badge variant="outline" className="ml-auto text-[10px] text-muted-foreground">Сегодня</Badge>
+            </div>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden h-full max-h-[460px] flex flex-col">
+              <div className="overflow-y-auto divide-y divide-border flex-1 p-1">
+                {loading && (
+                  <div className="p-8 text-center text-sm text-muted-foreground">Загрузка журнала...</div>
+                )}
+                {!loading && systemLogs.map((entry) => {
+                  const Icon = entry.type === 'audit' ? Headphones : entry.type === 'action' ? CheckCircle2 : Wrench;
+                  return (
+                    <div key={entry.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors rounded-xl">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 border",
+                        entry.type === "fix"
+                          ? "bg-amber-500/10 border-amber-500/20"
+                          : entry.type === "audit"
+                            ? "bg-blue-500/10 border-blue-500/20"
+                            : "bg-primary/10 border-primary/20"
+                      )}>
+                        <Icon className={cn("h-3.5 w-3.5", typeColors[entry.type] || "text-muted-foreground")} />
+                      </div>
+                      <p className="text-xs text-foreground flex-1 leading-normal">{entry.text}</p>
+                      <span className="text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">{entry.time}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── Section 3: Activity Log ── */}
+        {/* ── Section 3: Detailed AI Reports ── */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Журнал действий ИИ</h2>
-            <Badge variant="outline" className="ml-auto text-[10px] text-muted-foreground">Сегодня</Badge>
+            <FileText className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Аналитические отчёты ИИ</h2>
           </div>
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
-              {loading && (
-                <div className="p-8 text-center text-sm text-muted-foreground">Загрузка журнала...</div>
-              )}
-              {!loading && systemLogs.map((entry) => {
-                const Icon = entry.type === 'audit' ? Headphones : entry.type === 'action' ? CheckCircle2 : Wrench;
-                return (
-                  <div key={entry.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                    <div className={cn(
-                      "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 bg-secondary border border-border"
-                    )}>
-                      <Icon className={cn("h-3.5 w-3.5", typeColors[entry.type] || "text-muted-foreground")} />
-                    </div>
-                    <p className="text-sm text-foreground flex-1">{entry.text}</p>
-                    <span className="text-xs text-muted-foreground font-mono tabular-nums shrink-0">{entry.time}</span>
-                    <Badge variant="outline" className={cn(
-                      "text-[9px] px-1.5",
-                      entry.type === "fix"
-                        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                        : entry.type === "audit"
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          : "bg-primary/10 text-primary border-primary/20"
-                    )}>
-                      {entry.type === "fix" ? "Auto-heal" : entry.type === "audit" ? "Аудит" : "Интеграция"}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+
+          <Tabs defaultValue="yesterday" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 max-w-sm mb-6 bg-secondary/50">
+              <TabsTrigger value="yesterday">Вчера</TabsTrigger>
+              <TabsTrigger value="week">За Неделю</TabsTrigger>
+              <TabsTrigger value="month">За Месяц</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="yesterday" className="mt-0 outline-none">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+                <ReportCard
+                  title="ИИ-Таргетолог" icon={PieChart} dateLabel="За вчера"
+                  metrics={[
+                    { label: "Расход", value: "34,500 ₸", trend: "up" },
+                    { label: "Лидов", value: "18", trend: "up" },
+                    { label: "Стоимость (CPL)", value: "1,916 ₸", trend: "down" },
+                  ]}
+                  analysis={<>
+                    <p>• Отключил креативы группы "B" (CPL &gt; 3,000₸).</p>
+                    <p>• Перераспределил +7,000₸ бюджета на связку "Скидка -20%", она дала 70% лидов.</p>
+                    <p>• Прогнозирую снижение CPL на 15% сегодня.</p>
+                  </>}
+                />
+                <ReportCard
+                  title="Сквозная Аналитика" icon={BarChart} dateLabel="За вчера"
+                  metrics={[
+                    { label: "Визиты (Диаг.)", value: "7", trend: "up" },
+                    { label: "Продажи", value: "2", trend: "neutral" },
+                    { label: "Выручка", value: "450k ₸", trend: "up" },
+                  ]}
+                  analysis={<>
+                    <p>• Конверсия <strong>Лид → Диагностика</strong> составила 38% (Выше нормы).</p>
+                    <p>• Подписано 2 договора из 7 пришедших, ROMI составил <strong>1204%</strong>.</p>
+                  </>}
+                />
+                <ReportCard
+                  title="AI РОП (Контроль)" icon={Users} dateLabel="За вчера"
+                  metrics={[
+                    { label: "Аудитов", value: "12", trend: "up" },
+                    { label: "Оценка", value: "88/100", trend: "neutral" },
+                    { label: "Upsell", value: "15%", trend: "down" },
+                  ]}
+                  analysis={<>
+                    <p>• Менеджеры быстро берут лидов в работу (среднее время: 4 мин).</p>
+                    <p>• Выявлена точка роста: забыли отправить полезные материалы после звонка в 3-х случаях.</p>
+                  </>}
+                  alertInfo="Айгерим получила оценку 65/100: не предложила альтернативный пакет."
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="week" className="mt-0 outline-none">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+                <ReportCard
+                  title="ИИ-Таргетолог" icon={PieChart} dateLabel="За 7 дней"
+                  metrics={[
+                    { label: "Расход", value: "241k ₸", trend: "neutral" },
+                    { label: "Лидов", value: "114", trend: "up" },
+                    { label: "Стоимость (CPL)", value: "2,114 ₸", trend: "down" },
+                  ]}
+                  analysis={<>
+                    <p>• Протестировано 5 новых аудиторий. Lookalike (1%) дал лучший результат.</p>
+                    <p>• Снижение стоимости клика [CPC] на 22% по сравнению с прошлой неделей.</p>
+                  </>}
+                />
+                <ReportCard
+                  title="Сквозная Аналитика" icon={BarChart} dateLabel="За 7 дней"
+                  metrics={[
+                    { label: "Диагностики", value: "42", trend: "up" },
+                    { label: "Продажи", value: "11", trend: "up" },
+                    { label: "ROMI", value: "956%", trend: "up" },
+                  ]}
+                  analysis={<>
+                    <p>• Выручка за 7 дней составила <strong>2,545,000 ₸</strong>.</p>
+                    <p>• Замечен спад конверсии в пятницу. Рекомендуется отправлять follow-up в выходные.</p>
+                  </>}
+                />
+                <ReportCard
+                  title="AI РОП (Контроль)" icon={Users} dateLabel="За 7 дней"
+                  metrics={[
+                    { label: "Аудитов", value: "84", trend: "up" },
+                    { label: "Оценка", value: "85/100", trend: "neutral" },
+                    { label: "Холодные", value: "48%", trend: "neutral" },
+                  ]}
+                  analysis={<>
+                    <p>• Отдел продаж выполняет недельный план на 110%.</p>
+                    <p>• Менеджер Санжар показал лучший рост качества звонков (+12 пунктов).</p>
+                  </>}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="month" className="mt-0 outline-none">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+                <ReportCard
+                  title="ИИ-Таргетолог" icon={PieChart} dateLabel="За 30 дней"
+                  metrics={[
+                    { label: "Расход", value: "1.1M ₸", trend: "up" },
+                    { label: "Лидов", value: "492", trend: "up" },
+                    { label: "Стоимость (CPL)", value: "2,235 ₸", trend: "neutral" },
+                  ]}
+                  analysis={<>
+                    <p>• Провел A/B тесты на 14 лендингах.</p>
+                    <p>• Масштабировал 3 связки x2 бюджета без потери окупаемости.</p>
+                    <p>• Instagram Reels принесли 60% всего трафика (самый эффективный формат).</p>
+                  </>}
+                />
+                <ReportCard
+                  title="Сквозная Аналитика" icon={BarChart} dateLabel="За 30 дней"
+                  metrics={[
+                    { label: "Визиты", value: "172", trend: "up" },
+                    { label: "Продажи", value: "40", trend: "up" },
+                    { label: "Выручка", value: "11.2M ₸", trend: "up" },
+                  ]}
+                  analysis={<>
+                    <p>• Выполнение месячного плана <strong>112%</strong>.</p>
+                    <p>• Цикл сделки уменьшился на 2 дня (за счет авто-отправок NPS и кейсов).</p>
+                  </>}
+                  alertInfo="Выявлена потеря 15% квалифицированных лидов на этапе 'Жду оплату'. Требуется дожим-бот."
+                />
+                <ReportCard
+                  title="AI РОП (Контроль)" icon={Users} dateLabel="За 30 дней"
+                  metrics={[
+                    { label: "Аудитов", value: "320", trend: "up" },
+                    { label: "Оценка", value: "89/100", trend: "up" },
+                    { label: "NPS Средн.", value: "9.2", trend: "up" },
+                  ]}
+                  analysis={<>
+                    <p>• Нареканий на грубость не выявлено.</p>
+                    <p>• Сформировано 12 обучающих кейсов на основе лучших записей звонков (база знаний).</p>
+                    <p>• Автоматизировано 100% сбора обратной связи (NPS).</p>
+                  </>}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </DashboardLayout>
