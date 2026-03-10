@@ -70,15 +70,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     e.preventDefault();
     if (!form.client_name.trim()) return;
 
-    // If in HQ, must select a project
-    if (isInHq && !form.project_id) {
-      toast({ title: "Выберите проект", variant: "destructive" });
-      return;
-    }
-
     setSaving(true);
 
-    const projectId = isInHq ? form.project_id : active.id;
+    const projectId = isInHq ? null : active.id;
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
@@ -180,28 +174,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                   </p>
                 </div>
 
-                {/* If in HQ — need to pick a project. Otherwise auto-assigned. */}
-                {isInHq ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Привязать к проекту *</Label>
-                    <select
-                      value={form.project_id}
-                      onChange={(e) => updateField("project_id", e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      required
-                    >
-                      <option value="">Выберите проект</option>
-                      {workspaces.filter(w => w.id !== 'hq').map(w => (
-                        <option key={w.id} value={w.id}>{w.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
-                    <p className="text-xs text-primary font-medium">Проект: {active.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Кабинет будет создан в этом проекте</p>
-                  </div>
-                )}
+
+
 
                 {/* Fixed visibility checkboxes */}
                 <div className="space-y-2.5 pt-3 border-t border-border mt-2">
