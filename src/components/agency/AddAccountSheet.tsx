@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -27,6 +28,7 @@ const emptyForm = {
   pixel_event: "",
   website_url: "",
   project_id: "",
+  is_agency: false,
 };
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -79,6 +81,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     const row: Record<string, unknown> = {
       client_name: form.client_name,
       project_id: projectId,
+      is_agency: form.is_agency,
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
@@ -143,6 +146,28 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
+
+                {/* Cabinet type */}
+                <div className="space-y-2 pt-2">
+                  <Label className="text-xs text-muted-foreground">Тип кабинета</Label>
+                  <RadioGroup
+                    value={form.is_agency ? "agency" : "personal"}
+                    onValueChange={(v) => updateField("is_agency", v === "agency")}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="personal" id="r-personal" />
+                      <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="agency" id="r-agency" />
+                      <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский</Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-[10px] text-muted-foreground">
+                    {form.is_agency ? "Только общие показатели в разделе кабинетов" : "Полные данные в CRM и аналитике"}
+                  </p>
+                </div>
 
                 {/* If in HQ — need to pick a project. Otherwise auto-assigned. */}
                 {isInHq ? (
