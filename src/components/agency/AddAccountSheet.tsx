@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,8 @@ const emptyForm = {
   romi: "",
   is_agency: false,
   project_id: "",
+  share_with_hq: false,
+  share_with_global: false,
 };
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -90,7 +93,30 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
 
-    const { error } = await supabase.from("clients_config").insert(row as any);
+    const { data: cab, error } = await supabase.from("clients_config").insert(row as any).select().single();
+
+    if (error) {
+      setSaving(false);
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Handle visibility inserts
+    const visibilityInserts: any[] = [];
+    if (form.share_with_hq) {
+      visibilityInserts.push({ client_config_id: cab.id, is_hq_sharing: true });
+    }
+    if (form.share_with_global) {
+      const globalProject = workspaces.find(w => w.name.includes("MarkVision AI"));
+      if (globalProject) {
+        visibilityInserts.push({ client_config_id: cab.id, project_id: globalProject.id });
+      }
+    }
+
+    if (visibilityInserts.length > 0) {
+      const { error: visError } = await (supabase.from("client_config_visibility" as any) as any).insert(visibilityInserts);
+      if (visError) console.error("Visibility sharing error:", (visError as any).message);
+    }
 
     setSaving(false);
 
@@ -159,6 +185,36 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                         </select>
                       </div>
                     )}
+
+                    <div className="space-y-3 pt-4 border-t border-border mt-4">
+                      <Label className="text-xs font-bold text-primary uppercase tracking-wider">Где еще отображать кабинет?</Label>
+
+                      <div className="flex items-center space-x-2 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
+                        <Checkbox
+                          id="share-global"
+                          checked={form.share_with_global}
+                          onCheckedChange={(checked) => updateField("share_with_global", !!checked)}
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <Label htmlFor="share-global" className="text-sm font-semibold cursor-pointer">В главном Марк Вижин AI</Label>
+                          <p className="text-[10px] text-muted-foreground">Кабинет будет виден во всех отчетах главного проекта</p>
+                        </div>
+                      </div>
+
+                      {active.id !== 'hq' && (
+                        <div className="flex items-center space-x-2 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
+                          <Checkbox
+                            id="share-hq"
+                            checked={form.share_with_hq}
+                            onCheckedChange={(checked) => updateField("share_with_hq", !!checked)}
+                          />
+                          <div className="grid gap-1.5 leading-none">
+                            <Label htmlFor="share-hq" className="text-sm font-semibold cursor-pointer">В CPR_KZ (Агентство)</Label>
+                            <p className="text-[10px] text-muted-foreground">Кабинет будет доступен для контроля в агентском списке</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
 

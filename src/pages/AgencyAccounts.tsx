@@ -119,11 +119,36 @@ export default function AgencyAccounts() {
 
     try {
       // 1. Get Cabinets
+      // Fetch shared cabinets first
+      let sharedCabQuery = supabase.from("client_config_visibility" as any).select("client_config_id");
+      if (active.id === "hq") {
+        sharedCabQuery = sharedCabQuery.eq("is_hq_sharing", true);
+      } else {
+        sharedCabQuery = sharedCabQuery.eq("project_id", active.id);
+      }
+      const { data: sharedCabs } = await sharedCabQuery;
+      const sharedIds = (sharedCabs || []).map((s: any) => s.client_config_id);
+
       let cabQuery = supabase.from("clients_config").select("*, projects(name)");
       if (active.id === "hq") {
-        cabQuery = cabQuery.or(`project_id.not.is.null,and(project_id.is.null,is_agency.eq.true)`);
+        // HQ (CPR_KZ) sees cabinets explicitly in HQ, shared with HQ, or legacy agency ones
+        const orClause = [
+          `project_id.eq.${active.id}`,
+          `is_agency.eq.true`,
+          `id.in.(${sharedIds.length > 0 ? sharedIds.join(",") : "00000000-0000-0000-0000-000000000000"})`
+        ].join(",");
+        cabQuery = cabQuery.or(orClause);
+      } else if (active.name.includes("MarkVision AI")) {
+        // Global view: sees EVERYTHING (or everything shared with global)
+        // For now, let's say Global sees everything
+        cabQuery = cabQuery.select("*, projects(name)");
       } else {
-        cabQuery = cabQuery.eq("project_id", active.id);
+        // Standard project view: sees its own + shared with it
+        const orClause = [
+          `project_id.eq.${active.id}`,
+          `id.in.(${sharedIds.length > 0 ? sharedIds.join(",") : "00000000-0000-0000-0000-000000000000"})`
+        ].join(",");
+        cabQuery = cabQuery.or(orClause);
       }
       const { data: configs, error: cabError } = await cabQuery;
       if (cabError) throw cabError;
