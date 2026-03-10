@@ -9,9 +9,7 @@ interface AgencyMetrics {
 }
 
 function formatMoney(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M ₸`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K ₸`;
-  return `${n.toFixed(0)} ₸`;
+  return `${Math.round(n).toLocaleString('ru-RU')} ₸`;
 }
 
 interface KpiCardProps {
@@ -32,7 +30,7 @@ function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-fo
         </div>
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
       </div>
-      <p className={`text-2xl font-mono font-semibold tabular-nums tracking-tight ${accentClass}`}>{value}</p>
+      <p className={`text-xl font-semibold tabular-nums tracking-tight ${accentClass}`}>{value}</p>
       {target && targetPct !== undefined && (
         <div className="mt-3 space-y-1.5">
           <div className="flex items-center justify-between">

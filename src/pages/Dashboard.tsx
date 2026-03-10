@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
-import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, Briefcase, LayoutDashboard } from "lucide-react";
+import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, LayoutDashboard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
@@ -26,33 +26,32 @@ interface ClientMetric {
   visits: number | null;
   sales: number | null;
   cac: number | null;
+  impressions?: number;
+  clicks?: number;
   is_agency?: boolean;
 }
 
 function formatMoney(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M ₸`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K ₸`;
-  return `${n.toFixed(0)} ₸`;
+  return `${Math.round(n).toLocaleString('ru-RU')} ₸`;
 }
 
 /* ── Client-specific KPI cards ── */
 function ClientKpiCards({ client }: { client: ClientMetric }) {
   const cards = [
     { icon: <DollarSign className="h-4 w-4 text-primary" />, label: "Расходы на рекламу", value: formatMoney(client.spend ?? 0), accentClass: "text-foreground" },
-    { icon: <Users className="h-4 w-4 text-primary" />, label: "Лиды", value: String(client.meta_leads ?? 0), accentClass: "text-primary" },
+    { icon: <Users className="h-4 w-4 text-primary" />, label: "Лиды", value: (client.meta_leads ?? 0).toLocaleString('ru-RU'), accentClass: "text-primary" },
     { icon: <BarChart3 className="h-4 w-4 text-primary" />, label: "Выручка", value: formatMoney(client.revenue ?? 0), accentClass: "text-primary" },
-    { icon: <TrendingUp className="h-4 w-4 text-primary" />, label: "ROMI", value: `${(client.romi ?? 0).toFixed(0)}%`, accentClass: (client.romi ?? 0) >= 0 ? "text-primary" : "text-destructive" },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {cards.map(c => (
         <div key={c.label} className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
           <div className="flex items-center gap-2 mb-3">
             <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center">{c.icon}</div>
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{c.label}</span>
           </div>
-          <p className={`text-2xl font-mono font-semibold tabular-nums tracking-tight ${c.accentClass}`}>{c.value}</p>
+          <p className={`text-xl font-semibold tabular-nums tracking-tight ${c.accentClass}`}>{c.value}</p>
         </div>
       ))}
     </div>
@@ -62,47 +61,62 @@ function ClientKpiCards({ client }: { client: ClientMetric }) {
 /* ── Client detail panels ── */
 function ClientDetailPanels({ client }: { client: ClientMetric }) {
   const metrics = [
-    { label: "CPL", value: client.cpl ? `${client.cpl.toFixed(0)} ₸` : "—", icon: Target },
-    { label: "CPV (визит)", value: client.cpv ? `${client.cpv.toFixed(0)} ₸` : "—", icon: Activity },
-    { label: "CAC", value: client.cac ? `${client.cac.toFixed(0)} ₸` : "—", icon: DollarSign },
-    { label: "Визиты", value: String(client.visits ?? 0), icon: CalendarDays },
-    { label: "Продажи", value: String(client.sales ?? 0), icon: BarChart3 },
+    { label: "CPL", value: client.cpl ? formatMoney(client.cpl) : "—", icon: Target },
+    { label: "Стоимость визита", value: client.cpv ? formatMoney(client.cpv) : "—", icon: Activity },
+    { label: "Стоимость клиента", value: client.cac ? formatMoney(client.cac) : "—", icon: DollarSign },
+    { label: "ROMI", value: `${(client.romi ?? 0).toFixed(0)}%`, icon: TrendingUp },
+    { label: "Визиты", value: (client.visits ?? 0).toLocaleString('ru-RU'), icon: CalendarDays },
+    { label: "Продажи", value: (client.sales ?? 0).toLocaleString('ru-RU'), icon: BarChart3 },
   ];
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <m.icon size={13} className="text-muted-foreground" />
+              {m.icon && <m.icon size={13} className="text-muted-foreground" />}
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{m.label}</span>
             </div>
-            <p className="text-lg font-mono font-semibold text-foreground tabular-nums">{m.value}</p>
+            <p className="text-base font-semibold text-foreground tabular-nums">{m.value}</p>
           </div>
         ))}
       </div>
 
       {/* Funnel preview */}
       <div className="rounded-2xl border border-border bg-card p-6">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <div className="h-1.5 w-1.5 rounded-full bg-primary" />
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Воронка клиента</h3>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between relative">
           {[
-            { label: "Показы", value: "—" },
-            { label: "Клики", value: "—" },
-            { label: "Лиды", value: String(client.meta_leads ?? 0) },
-            { label: "Визиты", value: String(client.visits ?? 0) },
-            { label: "Продажи", value: String(client.sales ?? 0) },
+            { label: "Показы", value: (client.impressions ?? 0).toLocaleString('ru-RU') },
+            { label: "Клики", value: (client.clicks ?? 0).toLocaleString('ru-RU') },
+            { label: "Лиды", value: (client.meta_leads ?? 0).toLocaleString('ru-RU') },
+            { label: "Визиты", value: (client.visits ?? 0).toLocaleString('ru-RU') },
+            { label: "Продажи", value: (client.sales ?? 0).toLocaleString('ru-RU') },
           ].map((step, i, arr) => (
-            <div key={step.label} className="flex items-center gap-3">
-              <div className="text-center">
-                <p className="text-lg font-bold text-foreground tabular-nums">{step.value}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{step.label}</p>
+            <div key={step.label} className="flex items-center flex-1 justify-between group">
+              <div className="text-center flex-1">
+                <p className="text-xl font-bold text-foreground tabular-nums">{step.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">{step.label}</p>
               </div>
-              {i < arr.length - 1 && <span className="text-muted-foreground/30 text-lg">→</span>}
+              {i < arr.length - 1 && (
+                <div className="flex flex-col items-center justify-center px-2">
+                  <span className="text-muted-foreground/30 text-lg">→</span>
+                  <div className="h-4">
+                    {(() => {
+                      const nextVal = Number(arr[i + 1].value.replace(/\s/g, '')) || 0;
+                      const currVal = Number(step.value.replace(/\s/g, '')) || 0;
+                      if (currVal > 0 && nextVal > 0) {
+                        return <span className="text-[9px] font-bold text-primary/60">{((nextVal / currVal) * 100).toFixed(1)}%</span>;
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -115,17 +129,17 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
         <div>
           <p className="text-sm font-medium text-foreground mb-1">AI-Рекомендация</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Данные фильтруются для проекта «{client.client_name}». CRM и Радар конкурентов теперь показывают информацию только по этому клиенту.
+            {client.romi && client.romi < 100
+              ? `Внимание! ROMI проекта составляет всего ${client.romi.toFixed(0)}%. Рекомендуем пересмотреть рекламные креативы и проверить воронку на этапе перехода Клики -> Лиды.`
+              : client.cpl && client.cpl > 5000
+                ? `Стоимость лида (${formatMoney(client.cpl)}) превышает целевые показатели. Рекомендуем протестировать новые аудитории.`
+                : `Проект «${client.client_name}» работает в штатном режиме. Конверсия из визита в продажу составляет ${client.visits && client.sales ? ((client.sales / client.visits) * 100).toFixed(1) : 0}%.`}
           </p>
         </div>
       </div>
     </div>
   );
 }
-
-/* ══════════════════════════════════════════════
-   MAIN DASHBOARD
-   ══════════════════════════════════════════════ */
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -139,12 +153,10 @@ export default function Dashboard() {
       setLoading(true);
       try {
         if (active.id === "hq") {
-          // HQ view: fetch ALL clients for overview
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         } else {
-          // Client view: fetch by project_id OR shared visibility
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
           const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
@@ -157,7 +169,33 @@ export default function Dashboard() {
 
           const { data, error } = await query;
           if (error) throw error;
-          setClients((data as ClientMetric[]) || []);
+
+          const targetIds = sharedIds.length > 0 ? [active.id, ...sharedIds] : [active.id];
+
+          // Fetch base impressions and clicks from clients_config as well
+          const { data: baseData } = await (supabase as any)
+            .from("clients_config")
+            .select("id, impressions, clicks")
+            .in("id", targetIds);
+
+          const baseImps = (baseData || []).reduce((s: number, d: any) => s + (d.impressions || 0), 0);
+          const baseClks = (baseData || []).reduce((s: number, d: any) => s + (d.clicks || 0), 0);
+
+          const { data: dailyData } = await (supabase as any)
+            .from("daily_metrics")
+            .select("impressions, clicks, client_config_id")
+            .in("client_config_id", targetIds);
+
+          const totalImpressions = (dailyData || []).reduce((s: number, d: any) => s + (d.impressions || 0), 0);
+          const totalClicks = (dailyData || []).reduce((s: number, d: any) => s + (d.clicks || 0), 0);
+
+          const finalData = (data as ClientMetric[] || []).map(c => ({
+            ...c,
+            impressions: totalImpressions + baseImps,
+            clicks: totalClicks + baseClks
+          }));
+
+          setClients(finalData);
         }
       } catch (e: any) {
         toast({ title: "Ошибка", description: e.message, variant: "destructive" });
@@ -168,22 +206,15 @@ export default function Dashboard() {
     fetch();
   }, [active.id]);
 
-  // Agency metrics — show only the agency's own finances, NOT client ad spend
   const [agencyFinance, setAgencyFinance] = useState<{ mrr: number; costs: number } | null>(null);
 
   useEffect(() => {
     if (!isAgency) return;
     async function fetchAgencyFinance() {
-      const { data } = await (supabase as any)
-        .from("finance_client_services")
-        .select("price");
+      const { data } = await (supabase as any).from("finance_client_services").select("price");
       const mrr = (data || []).reduce((s: number, r: any) => s + (r.price ?? 0), 0);
-
-      const { data: billing } = await (supabase as any)
-        .from("finance_client_billing")
-        .select("expenses");
+      const { data: billing } = await (supabase as any).from("finance_client_billing").select("expenses");
       const costs = (billing || []).reduce((s: number, r: any) => s + (r.expenses ?? 0), 0);
-
       setAgencyFinance({ mrr, costs });
     }
     fetchAgencyFinance();
@@ -206,6 +237,9 @@ export default function Dashboard() {
     const rev = clientList.reduce((s, c) => s + (c.revenue ?? 0), 0);
     const v = clientList.reduce((s, c) => s + (c.visits ?? 0), 0);
     const sales = clientList.reduce((s, c) => s + (c.sales ?? 0), 0);
+    const imps = clientList.reduce((s, c) => s + (c.impressions ?? 0), 0);
+    const clks = clientList.reduce((s, c) => s + (c.clicks ?? 0), 0);
+
     return {
       client_id: id,
       project_id: id,
@@ -216,6 +250,8 @@ export default function Dashboard() {
       revenue: rev,
       visits: v,
       sales,
+      impressions: imps,
+      clicks: clks,
       romi: spend > 0 ? ((rev - spend) / spend) * 100 : 0,
       cpl: leads > 0 ? spend / leads : 0,
       cpv: v > 0 ? spend / v : 0,
@@ -232,8 +268,8 @@ export default function Dashboard() {
   const renderClientView = (targetClient: ClientMetric | null, projName: string) => (
     <>
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="rounded-2xl border border-border bg-card p-5 h-28 animate-pulse" />
           ))}
         </div>
@@ -271,7 +307,6 @@ export default function Dashboard() {
   return (
     <DashboardLayout breadcrumb={breadcrumb}>
       <div className="space-y-6">
-        {/* Context indicator for client mode */}
         {!isAgency && (
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-accent border border-border flex items-center justify-center text-xs font-bold">
@@ -305,10 +340,8 @@ export default function Dashboard() {
             </TabsContent>
           </Tabs>
         ) : isAgency && !isSuperadmin ? (
-          /* Fallback if a non-superadmin is somehow granted Agency workspace */
           renderClientView(matchedHqClient, active.name)
         ) : (
-          /* Standard Client View */
           renderClientView(matchedClient, active.name)
         )}
       </div>

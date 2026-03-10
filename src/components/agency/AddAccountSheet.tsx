@@ -28,6 +28,8 @@ const emptyForm = {
   pixel_event: "",
   website_url: "",
   project_id: "",
+  impressions: "",
+  clicks: "",
   is_agency: false,
 };
 
@@ -96,6 +98,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.fb_pixel_id) row.fb_pixel_id = form.fb_pixel_id;
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
+    if (form.impressions) row.impressions = Number(form.impressions);
+    if (form.clicks) row.clicks = Number(form.clicks);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: cab, error } = await (supabase as any).from("clients_config").insert(row).select().single();
@@ -155,6 +159,10 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Показы (База)" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
+                  <Field label="Клики (База)" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
+                </div>
 
                 {/* Cabinet type */}
                 <div className="space-y-2 pt-2">
