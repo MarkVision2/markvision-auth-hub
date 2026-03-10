@@ -100,14 +100,29 @@ export default function KanbanBoard() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as unknown)
-        .from("leads")
-        .select("*")
-        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-        .order("created_at", { ascending: false });
+      let query = (supabase as any).from("leads").select("*");
+
+      if (active.id === "hq") {
+        // HQ sees everything
+      } else {
+        // Client project: own + shared
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+        if (sharedCabIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},client_config_id.in.(${sharedCabIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
+        }
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       setLeads((data as Lead[]) ?? []);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -199,7 +214,7 @@ export default function KanbanBoard() {
 
   const handleDeleteLead = async (leadId: string, leadName: string) => {
     if (!confirm(`Удалить следку ${leadName}?`)) return;
-    const { error } = await (supabase as unknown).from("leads").delete().eq("id", leadId);
+    const { error } = await (supabase as any).from("leads").delete().eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;

@@ -42,33 +42,38 @@ export default function Automations() {
   const [form, setForm] = useState({ trigger_type: "stage_change", trigger_value: "", action_type: "send_whatsapp", action_detail: "", icon: "zap" });
 
   const fetchAutomations = useCallback(async () => {
-    if (active.id === "hq") {
-      setAutomations([]);
+    setLoading(true);
+    try {
+      let query = (supabase as any).from("crm_automations").select("*");
+
+      if (active.id === "hq") {
+        // HQ sees everything
+      } else {
+        query = query.eq("project_id", active.id);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) throw error;
+      setAutomations((data as Automation[]) ?? []);
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
       setLoading(false);
     }
-    setLoading(true);
-    const { data, error } = await (supabase as unknown)
-      .from("crm_automations")
-      .select("*")
-      .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-      .order("created_at", { ascending: false });
-    if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-    setAutomations((data as Automation[]) ?? []);
-    setLoading(false);
-  }, []);
+  }, [active.id]);
 
   useEffect(() => { fetchAutomations(); }, [fetchAutomations]);
 
   const toggle = async (id: string, current: boolean) => {
     setAutomations(prev => prev.map(a => a.id === id ? { ...a, is_enabled: !current } : a));
-    const { error } = await (supabase as unknown).from("crm_automations").update({ is_enabled: !current }).eq("id", id);
+    const { error } = await (supabase as any).from("crm_automations").update({ is_enabled: !current }).eq("id", id);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); fetchAutomations(); }
   };
 
   const handleCreate = async () => {
     if (!form.trigger_value.trim()) { toast({ title: "Укажите значение триггера" }); return; }
-    const { error } = await (supabase as unknown).from("crm_automations").insert({
-      project_id: active.id,
+    const { error } = await (supabase as any).from("crm_automations").insert({
+      project_id: active.id === "hq" ? null : active.id,
       trigger_type: form.trigger_type,
       trigger_value: form.trigger_value.trim(),
       action_type: form.action_type,
@@ -85,7 +90,7 @@ export default function Automations() {
 
   const handleDelete = async (id: string) => {
     setAutomations(prev => prev.filter(a => a.id !== id));
-    const { error } = await (supabase as unknown).from("crm_automations").delete().eq("id", id);
+    const { error } = await (supabase as any).from("crm_automations").delete().eq("id", id);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); fetchAutomations(); }
     else toast({ title: "Удалено" });
   };

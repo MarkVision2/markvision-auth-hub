@@ -33,14 +33,29 @@ export function useAnalyticsData() {
     async function fetchAll() {
       setLoading(true);
       try {
-        // Fetch analytics tables
-        const chQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).order("created_at");
+        // Define dates for aggregate fetch
+        const now = new Date();
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+        const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
 
-        const [chRes, campRes, crRes, opRes] = await Promise.all([
-          chQ,
-          supabase.from("analytics_campaigns").select("*, analytics_channels!inner(*)").eq("analytics_channels.project_id", active.id).order("created_at"),
-          supabase.from("analytics_creatives").select("*, analytics_campaigns!inner(id, analytics_channels!inner(*))").eq("analytics_campaigns.analytics_channels.project_id", active.id).order("created_at"),
-          supabase.from("analytics_organic_posts").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).order("created_at"),
+        let chQ = (supabase as any).from("analytics_channels").select("*").order("created_at");
+        let campQ = (supabase as any).from("analytics_campaigns").select("*, analytics_channels!inner(*)").order("created_at");
+        let crQ = (supabase as any).from("analytics_creatives").select("*, analytics_campaigns!inner(id, analytics_channels!inner(*))").order("created_at");
+        let opQ = (supabase as any).from("analytics_organic_posts").select("*").order("created_at");
+        let leadsQ = (supabase as any).from("leads").select("id", { count: "exact", head: true });
+        let dailyQ = (supabase as any).from("daily_metrics").select("spend, clicks, impressions, leads, visits, sales, revenue").gte("date", monthStart).lte("date", monthEnd);
+
+        if (active.id !== "hq") {
+          chQ = chQ.eq("project_id", active.id);
+          campQ = campQ.eq("analytics_channels.project_id", active.id);
+          crQ = crQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
+          opQ = opQ.eq("project_id", active.id);
+          leadsQ = leadsQ.eq("project_id", active.id);
+          dailyQ = dailyQ.eq("project_id", active.id);
+        }
+
+        const [chRes, campRes, crRes, opRes, leadsRes, dailyRes] = await Promise.all([
+          chQ, campQ, crQ, opQ, leadsQ, dailyQ
         ]);
 
         if (chRes.error) throw chRes.error;
@@ -52,17 +67,6 @@ export function useAnalyticsData() {
         const rawCampaigns = campRes.data as RawCampaign[];
         const rawCreatives = crRes.data as RawCreative[];
         const rawOrganic = opRes.data as RawOrganicPost[];
-
-        // Also fetch leads count and daily_metrics aggregates
-        const now = new Date();
-        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-        const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
-
-        const [leadsRes, dailyRes] = await Promise.all([
-          supabase.from("leads").select("id", { count: "exact", head: true }).or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`),
-          supabase.from("daily_metrics").select("spend, clicks, impressions, leads, visits, sales, revenue")
-            .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", monthStart).lte("date", monthEnd),
-        ]);
 
         setTotalLeadsFromCrm(leadsRes.count || 0);
 

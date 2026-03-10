@@ -45,17 +45,28 @@ export default function AiReportsPage() {
   }, []);
 
   useEffect(() => {
-    if (active.id === "hq") {
-      setClients([]);
-      // return; // This line was removed
-    }
     const load = async () => {
-      const { data } = await supabase
+      let query = (supabase as any)
         .from("clients_config")
         .select("id, client_name")
-        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-        .eq("is_active", true)
-        .order("client_name");
+        .eq("is_active", true);
+
+      if (active.id !== "hq") {
+        // Client project: own + shared
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+        if (sharedCabIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
+        }
+      }
+
+      const { data } = await query.order("client_name");
       if (data && data.length > 0) {
         setClients(data);
       }
@@ -64,15 +75,6 @@ export default function AiReportsPage() {
   }, [active.id]);
 
   useEffect(() => {
-    if (active.id === "hq") {
-      setCurMetrics([]);
-      setPrevMetrics([]);
-      setLeads([]);
-      setChannels([]);
-      setCreatives([]);
-      setLoading(false);
-      return;
-    }
     const load = async () => {
       try {
         setLoading(true);
@@ -81,18 +83,24 @@ export default function AiReportsPage() {
         const pStart = format(prevWeekStart, "yyyy-MM-dd");
         const pEnd = format(prevWeekEnd, "yyyy-MM-dd");
 
-        let curQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", curStart).lte("date", curEnd);
-        let prevQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", pStart).lte("date", pEnd);
-        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("created_at", curStart);
-        const channelsQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
-
-        // Correct join filtering for project_id
-        const creativesQ = supabase
+        let curQ = (supabase as any).from("daily_metrics").select("*").gte("date", curStart).lte("date", curEnd);
+        let prevQ = (supabase as any).from("daily_metrics").select("*").gte("date", pStart).lte("date", pEnd);
+        let leadsQ = (supabase as any).from("leads").select("id, status, amount, ai_score, source, created_at").gte("created_at", curStart);
+        let channelsQ = (supabase as any).from("analytics_channels").select("*");
+        let creativesQ = (supabase as any)
           .from("analytics_creatives")
           .select("*, analytics_campaigns!inner(channel_id, name, analytics_channels!inner(project_id))")
-          .eq("analytics_campaigns.analytics_channels.project_id", active.id)
           .order("leads", { ascending: false })
           .limit(10);
+
+        if (active.id !== "hq") {
+          // Client project: own
+          curQ = curQ.eq("project_id", active.id);
+          prevQ = prevQ.eq("project_id", active.id);
+          leadsQ = leadsQ.eq("project_id", active.id);
+          channelsQ = channelsQ.eq("project_id", active.id);
+          creativesQ = creativesQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
+        }
 
         if (selectedClient !== "all") {
           curQ = curQ.eq("client_config_id", selectedClient);
@@ -134,9 +142,9 @@ export default function AiReportsPage() {
 
   const leadQuality = useMemo(() => {
     const total = leads.length || 1;
-    const hot = leads.filter((l: unknown) => (l.ai_score ?? 0) >= 70).length;
-    const warm = leads.filter((l: unknown) => (l.ai_score ?? 0) >= 30 && (l.ai_score ?? 0) < 70).length;
-    const cold = leads.filter((l: unknown) => (l.ai_score ?? 0) < 30).length;
+    const hot = leads.filter((l: any) => (l.ai_score ?? 0) >= 70).length;
+    const warm = leads.filter((l: any) => (l.ai_score ?? 0) >= 30 && (l.ai_score ?? 0) < 70).length;
+    const cold = leads.filter((l: any) => (l.ai_score ?? 0) < 30).length;
     return [
       { label: "🔥 Горячие", pct: Math.round((hot / total) * 100), count: hot, color: "bg-primary", textColor: "text-primary" },
       { label: "🟡 Тёплые", pct: Math.round((warm / total) * 100), count: warm, color: "bg-amber-500", textColor: "text-amber-400" },
@@ -146,8 +154,8 @@ export default function AiReportsPage() {
 
   const channelPie = useMemo(() => {
     const colors = ["hsl(var(--primary))", "#60a5fa", "#f472b6", "#a78bfa", "#34d399"];
-    const totalRev = channels.reduce((s: number, c: unknown) => s + (Number(c.revenue) || 0), 0) || 1;
-    return channels.map((c: unknown, i: number) => ({
+    const totalRev = channels.reduce((s: number, c: any) => s + (Number(c.revenue) || 0), 0) || 1;
+    return channels.map((c: any, i: number) => ({
       name: c.name, value: Math.round(((Number(c.revenue) || 0) / totalRev) * 100),
       color: colors[i % colors.length], cpl: (c.leads || 0) > 0 ? Math.round((Number(c.spend) || 0) / c.leads) : 0, leads: c.leads || 0,
     }));

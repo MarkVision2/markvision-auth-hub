@@ -138,29 +138,35 @@ export default function Dashboard() {
     async function fetch() {
       setLoading(true);
       try {
-        if (isAgency) {
-          // Agency view: fetch ALL clients for overview
-          const { data, error } = await supabase.from("agency_metrics_view").select("*");
+        if (active.id === "hq") {
+          // HQ view: fetch ALL clients for overview
+          const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         } else {
-          // Client view: fetch by project_id
-          const { data, error } = await supabase
-            .from("agency_metrics_view")
-            .select("*")
-            .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+          // Client view: fetch by project_id OR shared visibility
+          const { data: shared } = await (supabase as any).from("cabinet_visibility").select("cabinet_id").eq("project_id", active.id);
+          const sharedIds = (shared || []).map((s: any) => s.cabinet_id);
+
+          let query = (supabase as any).from("agency_metrics_view").select("*");
+          if (sharedIds.length > 0) {
+            query = query.or(`project_id.eq.${active.id},cabinet_id.in.(${sharedIds.join(",")})`);
+          } else {
+            query = query.eq("project_id", active.id);
+          }
+
+          const { data, error } = await query;
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         }
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "Ошибка загрузки данных";
-        toast({ title: "Ошибка", description: msg, variant: "destructive" });
+      } catch (e: any) {
+        toast({ title: "Ошибка", description: e.message, variant: "destructive" });
       } finally {
         setLoading(false);
       }
     }
     fetch();
-  }, [active.id, isAgency]);
+  }, [active.id]);
 
   // Agency metrics — show only the agency's own finances, NOT client ad spend
   const [agencyFinance, setAgencyFinance] = useState<{ mrr: number; costs: number } | null>(null);
@@ -168,25 +174,25 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isAgency) return;
     async function fetchAgencyFinance() {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("finance_client_services")
         .select("price");
-      const mrr = (data || []).reduce((s, r) => s + (r.price ?? 0), 0);
+      const mrr = (data || []).reduce((s: number, r: any) => s + (r.price ?? 0), 0);
 
-      const { data: billing } = await supabase
+      const { data: billing } = await (supabase as any)
         .from("finance_client_billing")
         .select("expenses");
-      const costs = (billing || []).reduce((s, r) => s + (r.expenses ?? 0), 0);
+      const costs = (billing || []).reduce((s: number, r: any) => s + (r.expenses ?? 0), 0);
 
       setAgencyFinance({ mrr, costs });
     }
     fetchAgencyFinance();
   }, [isAgency]);
 
-  const agencyMetrics = loading
+  const agencyMetrics: any = loading
     ? null
     : (() => {
-      const activeAccounts = clients.filter((c) => c.is_active).length;
+      const activeAccounts = clients.filter((c: any) => c.is_active).length;
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
       const profit = mrr - costs;
@@ -214,14 +220,14 @@ export default function Dashboard() {
       cpl: leads > 0 ? spend / leads : 0,
       cpv: v > 0 ? spend / v : 0,
       cac: sales > 0 ? spend / sales : 0,
-    } as ClientMetric;
+    } as any;
   };
 
   const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
   const hqClients = clients.filter(c => (c.project_id === "hq" || c.project_id === null) && c.is_agency === false);
   const matchedHqClient = aggregateClientData(hqClients, "hq", active.name);
 
-  const breadcrumb = isAgency ? "Штаб-квартира" : `${active.emoji} ${active.name}`;
+  const breadcrumb = isAgency ? "Штаб-квартира" : active.name;
 
   const renderClientView = (targetClient: ClientMetric | null, projName: string) => (
     <>
@@ -268,8 +274,8 @@ export default function Dashboard() {
         {/* Context indicator for client mode */}
         {!isAgency && (
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-accent border border-border flex items-center justify-center text-lg">
-              {active.emoji}
+            <div className="h-10 w-10 rounded-xl bg-accent border border-border flex items-center justify-center text-xs font-bold">
+              {active.name.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground tracking-tight">{active.name}</h1>

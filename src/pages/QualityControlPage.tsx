@@ -104,16 +104,19 @@ export default function QualityControlPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
 
   const fetchFeedback = useCallback(async () => {
-    if (active.id === "hq") {
-    }
+    setLoading(true);
     try {
-      const { data, error } = await (supabase as unknown)
+      let query = (supabase as any)
         .from("nps_feedback")
-        .select("*, leads(name)")
-        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-        .order("created_at", { ascending: false });
+        .select("*, leads(name)");
+
+      if (active.id !== "hq") {
+        query = query.eq("project_id", active.id);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
-      setFeedback((data || []).map((row: unknown) => ({
+      setFeedback((data || []).map((row: any) => ({
         id: row.id,
         lead_id: row.lead_id,
         score: row.score ?? 0,
@@ -122,7 +125,7 @@ export default function QualityControlPage() {
         created_at: row.created_at,
         lead_name: row.leads?.name || "Пациент",
       })));
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -133,10 +136,14 @@ export default function QualityControlPage() {
 
   // Realtime
   useEffect(() => {
-
     const ch = supabase
       .channel("nps_feedback_realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${active.id}` }, (payload: unknown) => {
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "nps_feedback",
+        ...(active.id !== "hq" ? { filter: `project_id=eq.${active.id}` } : {})
+      }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => [{
           id: row.id, lead_id: row.lead_id, score: row.score ?? 0,
@@ -145,7 +152,7 @@ export default function QualityControlPage() {
         }, ...prev]);
         toast({ title: "📩 Новый отзыв!", description: `Оценка: ${row.score}/10` });
       })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nps_feedback" }, (payload: unknown) => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nps_feedback" }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => prev.map(f => f.id === row.id ? { ...f, is_resolved: row.is_resolved } : f));
       })
@@ -154,7 +161,7 @@ export default function QualityControlPage() {
   }, [active.id]);
 
   const handleResolve = async (id: string) => {
-    const { error } = await (supabase as unknown).from("nps_feedback").update({ is_resolved: true }).eq("id", id);
+    const { error } = await (supabase as any).from("nps_feedback").update({ is_resolved: true }).eq("id", id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     } else {

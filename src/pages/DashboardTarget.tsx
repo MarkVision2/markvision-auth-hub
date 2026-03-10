@@ -87,7 +87,7 @@ function getMonthRange(year: number, month: number) {
 type StatusFilter = "all" | "with-data" | "no-data";
 
 /* ── KPI Card component ── */
-function KpiCard({ icon: Icon, label, value, sub, color }: { icon: unknown; label: string; value: string; sub?: string; color: string }) {
+function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string; sub?: string; color: string }) {
   return (
     <Card className="bg-card border-border hover:border-primary/20 transition-colors">
       <CardContent className="p-4">
@@ -130,7 +130,7 @@ export default function DashboardTarget() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      let clientsQuery = (supabase as unknown)
+      let clientsQuery = (supabase as any)
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active")
         .eq("is_active", true)
@@ -138,33 +138,47 @@ export default function DashboardTarget() {
         .order("client_name");
 
       if (active.id === "hq") {
-        clientsQuery = clientsQuery.is("project_id", null);
+        // MarkVision AI (HQ) sees everything
       } else {
-        clientsQuery = clientsQuery.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+        // Client projects: own + shared
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+
+        if (sharedIds.length > 0) {
+          const orClause = `project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`;
+          clientsQuery = (clientsQuery as any).or(orClause);
+        } else {
+          clientsQuery = clientsQuery.eq("project_id", active.id);
+        }
       }
 
-      const { data: clientsData, error: cErr } = await clientsQuery;
+      const { data: clientsData, error: cErr } = await (clientsQuery as any);
+      if (cErr) throw cErr;
 
       const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
-      let metricsQuery = (supabase as unknown)
+      let metricsQuery = (supabase as any)
         .from("daily_metrics")
         .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
         .gte("date", start)
         .lt("date", end)
         .order("date", { ascending: true });
 
-      if (active.id === "hq") {
-        metricsQuery = metricsQuery.is("project_id", null);
+      const clientIds = (clientsData || []).map((c: any) => c.id);
+      if (clientIds.length > 0) {
+        metricsQuery = metricsQuery.in("client_config_id", clientIds);
       } else {
-        metricsQuery = metricsQuery.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+        metricsQuery = metricsQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
       }
 
       const { data: metricsData, error: mErr } = await metricsQuery;
       if (mErr) throw mErr;
 
       const metricsMap = new Map<string, DailyMetric[]>();
-      (metricsData || []).forEach((m: unknown) => {
+      (metricsData || []).forEach((m: any) => {
         if (!m.client_config_id) return;
         if (!metricsMap.has(m.client_config_id)) metricsMap.set(m.client_config_id, []);
         metricsMap.get(m.client_config_id)!.push({
@@ -179,7 +193,7 @@ export default function DashboardTarget() {
         });
       });
 
-      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: unknown) => {
+      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
         const metrics = metricsMap.get(c.id) || [];
         const totalSpend = metrics.reduce((s, m) => s + m.spend, 0);
         const totalLeads = metrics.reduce((s, m) => s + m.leads, 0);
@@ -210,7 +224,7 @@ export default function DashboardTarget() {
 
       setClients(mapped);
       setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

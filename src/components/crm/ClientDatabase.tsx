@@ -38,17 +38,28 @@ export default function ClientDatabase() {
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
-    if (active.id === "hq") {
-      setClients([]);
-      setLoading(false);
-    }
     setLoading(true);
     try {
-      const { data, error } = await (supabase as unknown)
-        .from("leads")
-        .select("name, phone, source, amount, ai_score, status, updated_at, created_at")
-        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-        .order("created_at", { ascending: false });
+      let query = (supabase as any).from("leads").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
+
+      if (active.id === "hq") {
+        // HQ sees everything
+      } else {
+        // Client project: own + shared
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+        if (sharedCabIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},client_config_id.in.(${sharedCabIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
+        }
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -80,7 +91,7 @@ export default function ClientDatabase() {
         }
       }
       setClients(Array.from(map.values()));
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("ClientDatabase fetch error:", err);
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {

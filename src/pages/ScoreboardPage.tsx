@@ -180,20 +180,29 @@ export default function ScoreboardPage() {
   const dateFrom = `${monthYear}-01`;
   const dateTo = `${monthYear}-31`;
 
-  // Fetch accounts, auto-select first
   useEffect(() => {
     async function fetchAccounts() {
       try {
-        if (active.id === "hq") {
-          setAccounts([]);
-          setSelectedAccountId("__none__");
-        }
-        const { data, error } = await supabase
-          .from("clients_config")
+        let query = (supabase as any).from("clients_config")
           .select("id, client_name")
-          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-          .eq("is_active", true)
-          .order("client_name");
+          .eq("is_active", true);
+
+        if (active.id !== "hq") {
+          // Client project: own + shared
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", active.id);
+          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+          if (sharedCabIds.length > 0) {
+            query = query.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+          } else {
+            query = query.eq("project_id", active.id);
+          }
+        }
+
+        const { data, error } = await query.order("client_name");
         if (error) throw error;
         const accs = (data || []) as ClientAccount[];
         setAccounts(accs);
@@ -212,30 +221,35 @@ export default function ScoreboardPage() {
     if (selectedAccountId === "__none__") { setRows([]); setLoading(false); return; }
     setLoading(true);
     try {
-      const query = supabase.from("daily_metrics").select("*")
+      const query = (supabase as any)
+        .from("daily_metrics").select("*")
         .gte("date", dateFrom).lte("date", dateTo)
         .eq("client_config_id", selectedAccountId)
         .order("date", { ascending: true });
 
       const { data, error } = await query;
       if (error) throw error;
-      setRows((data || []).map((r: unknown) => ({
+      setRows((data || []).map((r: any) => ({
         id: r.id, date: r.date,
         spend: Number(r.spend) || 0, impressions: Number(r.impressions) || 0,
         clicks: Number(r.clicks) || 0, leads: Number(r.leads) || 0,
         followers: 0, visits: Number(r.visits) || 0,
         sales: Number(r.sales) || 0, revenue: Number(r.revenue) || 0,
       })));
-    } catch { setRows([]); }
+    } catch (err: any) { setRows([]); }
     finally { setLoading(false); }
   }, [dateFrom, dateTo, selectedAccountId]);
 
   // Fetch monthly plan
   const fetchPlan = useCallback(async () => {
     try {
-      const { data } = await (supabase as unknown).from("monthly_plans").select("*")
-        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-        .eq("month_year", monthYear).limit(1);
+      let query = (supabase as any).from("monthly_plans").select("*");
+
+      if (active.id !== "hq") {
+        query = query.eq("project_id", active.id);
+      }
+
+      const { data } = await query.eq("month_year", monthYear).limit(1);
       if (data && data.length > 0) {
         const p = data[0];
         setPlanValues({
@@ -249,7 +263,7 @@ export default function ScoreboardPage() {
       } else {
         setPlanValues({ ...EMPTY_PLAN });
       }
-    } catch { setPlanValues({ ...EMPTY_PLAN }); }
+    } catch (err: any) { setPlanValues({ ...EMPTY_PLAN }); }
   }, [monthYear, active.id]);
 
   useEffect(() => { fetchDaily(); fetchPlan(); }, [fetchDaily, fetchPlan]);

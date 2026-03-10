@@ -62,11 +62,11 @@ export function useAiRopAudits() {
     async function fetch() {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from("ai_rop_audits")
-          .select("*")
-          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
-          .order("created_at", { ascending: false });
+        let query = (supabase as any).from("ai_rop_audits").select("*");
+        if (active.id !== "hq") {
+          query = query.eq("project_id", active.id);
+        }
+        const { data, error } = await query.order("created_at", { ascending: false });
         if (error) throw error;
         setAudits((data as RawAudit[]).map(mapAudit));
       } catch (e: unknown) {

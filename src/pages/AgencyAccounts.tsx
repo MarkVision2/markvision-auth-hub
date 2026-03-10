@@ -316,17 +316,17 @@ export default function AgencyAccounts() {
       <div className="flex flex-col gap-4 mb-4 md:mb-6">
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList className="bg-secondary border border-border w-full overflow-x-auto flex-nowrap">
-            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
+            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
               Все ({metrics.length})
             </TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
-              ⚠️ ({attentionCount})
+            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
+              ⚠️ <span className="hidden sm:inline">Внимание</span> ({attentionCount})
             </TabsTrigger>
-            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
-              ✅ ({effectiveCount})
+            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
+              ✅ <span className="hidden sm:inline">Эффективные</span> ({effectiveCount})
             </TabsTrigger>
-            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1">
-              ⏸ ({inactiveCount})
+            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
+              ⏸ <span className="hidden sm:inline">Отключенные</span> ({inactiveCount})
             </TabsTrigger>
           </TabsList>
         </Tabs>
