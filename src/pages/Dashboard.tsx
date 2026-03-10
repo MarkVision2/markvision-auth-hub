@@ -152,50 +152,60 @@ export default function Dashboard() {
     async function fetch() {
       setLoading(true);
       try {
+        let clientsData: ClientMetric[] = [];
+        let targetIds: string[] = [];
+
         if (active.id === "hq") {
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
           if (error) throw error;
-          setClients((data as ClientMetric[]) || []);
+          clientsData = data || [];
+          // For HQ view, we can't easily fetch ALL daily metrics without a specific set of IDs or a date range
+          // But we can at least fetch for the clients we found
+          targetIds = clientsData.map(c => c.client_id).filter(Boolean) as string[];
         } else {
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
           const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
           let query = (supabase as any).from("agency_metrics_view").select("*");
           if (sharedIds.length > 0) {
-            query = query.or(`client_id.eq.${active.id},client_id.in.(${sharedIds.join(",")})`);
+            query = query.or(`project_id.eq.${active.id},client_id.in.(${sharedIds.join(",")})`);
           } else {
-            query = query.eq("client_id", active.id);
+            query = query.eq("project_id", active.id);
           }
 
           const { data, error } = await query;
           if (error) throw error;
+          clientsData = data || [];
+          targetIds = sharedIds.length > 0 ? [active.id, ...sharedIds] : [active.id];
+        }
 
-          const targetIds = sharedIds.length > 0 ? [active.id, ...sharedIds] : [active.id];
-
-          // Fetch base impressions and clicks from clients_config as well
+        if (targetIds.length > 0) {
+          // Fetch base impressions and clicks from clients_config PER client
           const { data: baseData } = await (supabase as any)
             .from("clients_config")
             .select("id, impressions, clicks")
             .in("id", targetIds);
 
-          const baseImps = (baseData || []).reduce((s: number, d: any) => s + (d.impressions || 0), 0);
-          const baseClks = (baseData || []).reduce((s: number, d: any) => s + (d.clicks || 0), 0);
-
+          // Fetch daily impressions and clicks from daily_metrics PER client
           const { data: dailyData } = await (supabase as any)
             .from("daily_metrics")
             .select("impressions, clicks, client_config_id")
             .in("client_config_id", targetIds);
 
-          const totalImpressions = (dailyData || []).reduce((s: number, d: any) => s + (d.impressions || 0), 0);
-          const totalClicks = (dailyData || []).reduce((s: number, d: any) => s + (d.clicks || 0), 0);
+          const finalData = clientsData.map(c => {
+            const clientDaily = (dailyData || []).filter((d: any) => d.client_config_id === c.client_id);
+            const clientBase = (baseData || []).find((b: any) => b.id === c.client_id);
 
-          const finalData = (data as ClientMetric[] || []).map(c => ({
-            ...c,
-            impressions: totalImpressions + baseImps,
-            clicks: totalClicks + baseClks
-          }));
+            return {
+              ...c,
+              impressions: clientDaily.reduce((s: number, d: any) => s + (d.impressions || 0), 0) + (clientBase?.impressions || 0),
+              clicks: clientDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0) + (clientBase?.clicks || 0)
+            };
+          });
 
           setClients(finalData);
+        } else {
+          setClients(clientsData);
         }
       } catch (e: any) {
         toast({ title: "Ошибка", description: e.message, variant: "destructive" });
