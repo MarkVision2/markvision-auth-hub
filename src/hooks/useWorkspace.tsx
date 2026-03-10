@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface Workspace {
   id: string;
@@ -23,6 +24,7 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [activeId, setActiveId] = useState(() => localStorage.getItem("activeProjectId") || "hq");
   const [projects, setProjects] = useState<Workspace[]>([]);
 
@@ -65,6 +67,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) throw error;
+
+      // Add project creator to project_members
+      if (user) {
+        const { error: memberError } = await supabase
+          .from("project_members")
+          .insert({
+            project_id: data.id,
+            user_id: user.id
+          });
+
+        if (memberError) {
+          console.error("Failed to add project member:", memberError);
+        }
+      }
 
       await fetchProjects();
       if (data) {
