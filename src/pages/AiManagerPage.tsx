@@ -165,6 +165,7 @@ export default function AiManagerPage() {
     week: null,
     month: null,
   });
+  const [lastSync, setLastSync] = useState<string>("—");
 
   useEffect(() => {
     async function fetchData() {
@@ -178,6 +179,17 @@ export default function AiManagerPage() {
           .eq("is_active", true);
 
         setActiveClients(clientsCount || 0);
+
+        // Fetch last sync time
+        const { data: lastMetric } = await supabase
+          .from("daily_metrics")
+          .select("created_at")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (lastMetric && lastMetric[0]?.created_at) {
+          setLastSync(format(new Date(lastMetric[0].created_at), "HH:mm", { locale: ru }));
+        }
 
         // Date bounds for today's logs
         const todayStart = new Date();
@@ -342,23 +354,23 @@ export default function AiManagerPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatusCard
-              icon={Activity}
-              label="Состояние платформы"
-              value="Healthy"
-              sub="Все сервисы работают штатно"
+              icon={Bot}
+              label="Статус ИИ"
+              value="Активен"
+              sub="Защита системы включена"
               glow
             />
             <StatusCard
-              icon={ShieldCheck}
-              label="Активные Кабинеты"
-              value={loading ? "..." : activeClients}
-              sub="Проекты под управлением ИИ"
+              icon={Activity}
+              label="Активность ИИ"
+              value={loading ? "..." : todayActions}
+              sub="Запросов за сегодня"
             />
             <StatusCard
-              icon={Zap}
-              label="Действий за сегодня"
-              value={loading ? "..." : todayActions}
-              sub="Все задачи и проверки за сегодня"
+              icon={ShieldCheck}
+              label="Синхронизация"
+              value="OK"
+              sub={`Обновлено в ${lastSync}`}
             />
           </div>
         </div>

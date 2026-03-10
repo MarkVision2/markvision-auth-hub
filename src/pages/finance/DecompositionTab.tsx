@@ -175,7 +175,7 @@ export default function DecompositionTab() {
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
                 <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
                 <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} sub="С учётом расходов и ЗП" />
-                <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={PiggyBank} label="Выручка после маркетинга" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
             </div>
 
             {/* Save to Plan */}
