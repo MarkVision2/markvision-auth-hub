@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2 } from "lucide-react";
 
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 
 const emptyForm = {
   client_name: "",
@@ -55,17 +56,21 @@ interface AddAccountSheetProps {
 }
 
 export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAccountSheetProps) {
+  const { active } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const updateField = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.client_name.trim()) return;
+    if (!form.client_name.trim() || active.id === "hq") return;
 
     setSaving(true);
 
-    const row: Record<string, unknown> = { client_name: form.client_name, project_id: PROJECT_ID };
+    const row: Record<string, unknown> = {
+      client_name: form.client_name,
+      project_id: active.id
+    };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
     if (form.region_key) row.region_key = form.region_key;

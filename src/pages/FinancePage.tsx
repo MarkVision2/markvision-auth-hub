@@ -25,9 +25,11 @@ export default function FinancePage() {
             <TabsTrigger value="decomposition" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
               <Calculator className="h-4 w-4" /> Декомпозиция
             </TabsTrigger>
-            <TabsTrigger value="agency" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
-              <DollarSign className="h-4 w-4" /> Агентская аналитика
-            </TabsTrigger>
+            {isSuperadmin && (
+              <TabsTrigger value="agency" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
+                <DollarSign className="h-4 w-4" /> Агентская аналитика
+              </TabsTrigger>
+            )}
             {isSuperadmin && (
               <TabsTrigger value="dynamics" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
                 <TrendingUp className="h-4 w-4" /> Динамика по месяцам
@@ -36,7 +38,7 @@ export default function FinancePage() {
           </TabsList>
 
           <TabsContent value="decomposition"><DecompositionTab /></TabsContent>
-          <TabsContent value="agency"><AgencyTab /></TabsContent>
+          {isSuperadmin && <TabsContent value="agency"><AgencyTab /></TabsContent>}
           {isSuperadmin && <TabsContent value="dynamics"><DynamicsTab /></TabsContent>}
         </Tabs>
       </div>

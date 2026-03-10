@@ -5,6 +5,7 @@ import { ru } from "date-fns/locale";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -196,6 +197,7 @@ function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: b
 
 /* ── Main Page ── */
 export default function RetentionLtvPage() {
+  const { active } = useWorkspace();
   const [tasks, setTasks] = useState<RetentionTask[]>([]);
   const [templates, setTemplates] = useState<RetentionTemplate[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -210,22 +212,29 @@ export default function RetentionLtvPage() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (active.id === "hq") {
+      setTasks([]);
+      setTemplates([]);
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
     try {
       const [tasksRes, templatesRes, leadsRes] = await Promise.all([
         (supabase as any)
           .from("retention_tasks")
           .select("*, leads(name), retention_templates(name)")
-          .eq("project_id", PROJECT_ID)
+          .eq("project_id", active.id)
           .order("trigger_date", { ascending: true }),
         (supabase as any)
           .from("retention_templates")
           .select("*")
-          .eq("project_id", PROJECT_ID)
+          .eq("project_id", active.id)
           .order("revenue_generated", { ascending: false }),
         (supabase as any)
           .from("leads")
           .select("id, name")
-          .eq("project_id", PROJECT_ID)
+          .eq("project_id", active.id)
           .order("name"),
       ]);
 
@@ -257,13 +266,17 @@ export default function RetentionLtvPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [active.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCreate = async () => {
     if (!formLeadId || !formTemplateId || !formDate) {
       toast({ title: "Заполните все поля", variant: "destructive" });
+      return;
+    }
+    if (active.id === "hq") {
+      toast({ title: "Ошибка", description: "Выберите проект для планирования касания", variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -273,7 +286,7 @@ export default function RetentionLtvPage() {
         template_id: formTemplateId,
         trigger_date: formDate ? format(formDate, "yyyy-MM-dd") : "",
         promo_code: formPromo || null,
-        project_id: PROJECT_ID,
+        project_id: active.id,
         status: "pending",
       });
       if (error) throw error;

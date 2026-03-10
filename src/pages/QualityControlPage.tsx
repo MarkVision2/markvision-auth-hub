@@ -16,7 +16,7 @@ import {
   Clock, Send, FileText,
 } from "lucide-react";
 
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── Types ── */
 interface NpsFeedback {
@@ -93,6 +93,7 @@ function KpiCard({ label, value, sub, color }: {
 
 /* ── Main Page ── */
 export default function QualityControlPage() {
+  const { active } = useWorkspace();
   const [feedback, setFeedback] = useState<NpsFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [templateOpen, setTemplateOpen] = useState(false);
@@ -103,11 +104,16 @@ export default function QualityControlPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
 
   const fetchFeedback = useCallback(async () => {
+    if (active.id === "hq") {
+      setFeedback([]);
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await (supabase as any)
         .from("nps_feedback")
         .select("*, leads(name)")
-        .eq("project_id", PROJECT_ID)
+        .eq("project_id", active.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setFeedback((data || []).map((row: any) => ({
@@ -124,15 +130,16 @@ export default function QualityControlPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [active.id]);
 
   useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
 
   // Realtime
   useEffect(() => {
+    if (active.id === "hq") return;
     const ch = supabase
       .channel("nps_feedback_realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${PROJECT_ID}` }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${active.id}` }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => [{
           id: row.id, lead_id: row.lead_id, score: row.score ?? 0,
@@ -147,7 +154,7 @@ export default function QualityControlPage() {
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [active.id]);
 
   const handleResolve = async (id: string) => {
     const { error } = await (supabase as any).from("nps_feedback").update({ is_resolved: true }).eq("id", id);

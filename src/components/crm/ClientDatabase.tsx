@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download, MessageCircle, Instagram, Loader2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface ClientRow {
@@ -31,16 +32,25 @@ function sourceIcon(source: string) {
 }
 
 export default function ClientDatabase() {
+  const { active } = useWorkspace();
   const [search, setSearch] = useState("");
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
+    if (active.id === "hq") {
+      setClients([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from("leads").select("name, phone, source, amount, ai_score, status, updated_at, created_at").order("created_at", { ascending: false });
-      
+        .from("leads")
+        .select("name, phone, source, amount, ai_score, status, updated_at, created_at")
+        .eq("project_id", active.id)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
 
       // Aggregate by phone (or name if no phone)
@@ -87,7 +97,7 @@ export default function ClientDatabase() {
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchClients())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [fetchClients]);
+  }, [fetchClients, active.id]);
 
   const filtered = clients.filter(
     (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)

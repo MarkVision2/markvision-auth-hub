@@ -21,6 +21,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { format as dateFmt } from "date-fns";
 
+import { useWorkspace } from "@/hooks/useWorkspace";
+
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
 interface ContentTask {
@@ -35,6 +37,7 @@ interface ContentTask {
 const MAX_HISTORY = 6;
 
 export default function ContentFactory() {
+  const { active } = useWorkspace();
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
   const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
@@ -75,15 +78,22 @@ export default function ContentFactory() {
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
+    if (active.id === "hq") {
+      setHistory([]);
+      return;
+    }
     const { data } = await (supabase as any)
       .from("content_tasks")
       .select("id, status, progress_text, result_urls, content_type, created_at")
+      .eq("project_id", active.id)
       .order("created_at", { ascending: false })
       .limit(MAX_HISTORY);
     if (data) setHistory(data as ContentTask[]);
-  }, []);
+  }, [active.id]);
 
-  useEffect(() => { fetchHistory(); }, [fetchHistory]);
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   // Realtime subscription
   useEffect(() => {
@@ -180,6 +190,7 @@ export default function ContentFactory() {
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
         custom_logo_url: customLogoUrl,
+        project_id: active.id,
       };
 
       const { data, error } = await (supabase as any)
@@ -239,6 +250,7 @@ export default function ContentFactory() {
         source_type: "edit_feedback",
         main_text: editFeedback,
         visual_style: `Переделать на основе задачи ${task.id}: ${editFeedback}`,
+        project_id: active.id,
       };
       const { data, error } = await (supabase as any)
         .from("content_tasks")
@@ -387,9 +399,8 @@ export default function ContentFactory() {
                   <motion.div
                     animate={stage.done ? { scale: [1, 1.15, 1] } : {}}
                     transition={{ duration: 0.5 }}
-                    className={`h-10 w-10 rounded-full flex items-center justify-center text-base transition-colors ${
-                      stage.done ? "bg-primary/20 shadow-sm" : "bg-secondary/40"
-                    }`}
+                    className={`h-10 w-10 rounded-full flex items-center justify-center text-base transition-colors ${stage.done ? "bg-primary/20 shadow-sm" : "bg-secondary/40"
+                      }`}
                   >
                     {stage.icon}
                   </motion.div>
@@ -442,281 +453,86 @@ export default function ContentFactory() {
   // ======== FORM VIEW — two-column layout with PhoneMockup ========
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
-      <div className="mx-auto max-w-5xl py-4">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-        </div>
-        <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
-
-
-        <div className="max-w-3xl">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-8">
-            {/* Type toggle */}
-            <Tabs value={mainType} onValueChange={(v) => setMainType(v as "video" | "photo")}>
-              <TabsList className="w-full grid grid-cols-2 h-12 bg-secondary/60">
-                <TabsTrigger value="video" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Video className="mr-2 h-4 w-4" /> Видео (9:16)
-                </TabsTrigger>
-                <TabsTrigger value="photo" className="h-10 text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Image className="mr-2 h-4 w-4" /> Фото / Карусель
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* VIDEO MODE */}
-            {mainType === "video" && (
-              <div className="space-y-6">
-                {/* Video format: Reels vs Slideshow */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-foreground">Формат видео</Label>
-                  <RadioGroup value={videoFormat} onValueChange={(v) => setVideoFormat(v as "reels" | "slideshow")} className="grid grid-cols-2 gap-3">
-                    {[
-                      { value: "reels", label: "🎬 Reels", sub: "AI-спикер + видеоряд" },
-                      { value: "slideshow", label: "📸 Слайд-шоу", sub: "Фото + музыка + текст" },
-                    ].map((opt) => (
-                      <Label key={opt.value} htmlFor={`vf-${opt.value}`} className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${videoFormat === opt.value ? "border-primary/60 bg-primary/[0.06]" : "border-border bg-secondary/20 hover:bg-secondary/40"}`}>
-                        <RadioGroupItem value={opt.value} id={`vf-${opt.value}`} className="sr-only" />
-                        <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                        <span className="text-xs text-muted-foreground">{opt.sub}</span>
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                <Tabs value={videoMode} onValueChange={(v) => setVideoMode(v as "link" | "description")}>
-                  <TabsList className="h-9 bg-secondary/40">
-                    <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background"><Link className="mr-1.5 h-3.5 w-3.5" />По ссылке</TabsTrigger>
-                    <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background"><FileText className="mr-1.5 h-3.5 w-3.5" />По описанию</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {videoMode === "link" ? (
-                  <div className="space-y-3">
-                    <Label className="text-sm text-muted-foreground">Ссылка на видео</Label>
-                    <div className="flex gap-2">
-                      <Input type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="YouTube, TikTok или Reels" className="h-11 bg-secondary/30 border-border flex-1" />
-                      <Button onClick={handleMagicAI} disabled={magicLoading} variant="outline" size="icon" className="h-11 w-11 border-border shrink-0" title="Магия AI">
-                        {magicLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-amber-500" />}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground/70">AI проанализирует видео и создаст уникальный аналог в формате 9:16</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                        <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
-                          {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
-                        </Button>
-                      </div>
-                      <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт в полное описание…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm text-muted-foreground">{videoFormat === "slideshow" ? "Текст для слайдов" : "Текст для AI-Спикера"}</Label>
-                        <Button variant="ghost" size="sm" disabled={expandingField === "speakerText"} onClick={() => handleMagicExpand("speakerText", speakerText, setSpeakerText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
-                          {expandingField === "speakerText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
-                        </Button>
-                      </div>
-                      <Textarea value={speakerText} onChange={(e) => setSpeakerText(e.target.value)} placeholder={videoFormat === "slideshow" ? "Напишите кратко тему слайдов…" : "Напишите кратко суть, AI развернёт…"} className="min-h-[100px] bg-secondary/30 border-border resize-none" />
-                    </div>
-                  </div>
-                )}
-
-                <div className="rounded-lg bg-secondary/20 border border-border p-3">
-                  <p className="text-xs text-muted-foreground">📐 Видео всегда генерируется в формате <span className="font-semibold text-foreground">9:16</span> — {videoFormat === "reels" ? "Reels / Stories / Shorts" : "Слайд-шоу с музыкой"}</p>
-                </div>
-              </div>
-            )}
-
-            {/* PHOTO MODE */}
-            {mainType === "photo" && (
-              <div className="space-y-8">
-                <Tabs value={photoMode} onValueChange={(v) => setPhotoMode(v as "link" | "description")}>
-                  <TabsList className="h-9 bg-secondary/40">
-                    <TabsTrigger value="link" className="text-xs data-[state=active]:bg-background"><Link className="mr-1.5 h-3.5 w-3.5" />По ссылке</TabsTrigger>
-                    <TabsTrigger value="description" className="text-xs data-[state=active]:bg-background"><FileText className="mr-1.5 h-3.5 w-3.5" />По описанию</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
-                {photoMode === "link" ? (
-                  <div className="space-y-3">
-                    <Label className="text-sm text-muted-foreground">Ссылка на референс</Label>
-                    <div className="flex gap-2">
-                      <Input type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="Ссылка на пример дизайна, пост или рекламу" className="h-11 bg-secondary/30 border-border flex-1" />
-                      <Button onClick={handleMagicAI} disabled={magicLoading} variant="outline" size="icon" className="h-11 w-11 border-border shrink-0" title="Магия AI">
-                        {magicLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-amber-500" />}
-                      </Button>
-                    </div>
-                    <div className="flex gap-2 items-center">
-                      <input ref={refFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReferenceFile} />
-                      <Button variant="ghost" size="sm" onClick={() => refFileInputRef.current?.click()} className="text-xs text-muted-foreground hover:text-foreground gap-1.5">
-                        <Upload className="h-3 w-3" /> Или загрузить изображение
-                      </Button>
-                      {referencePreview && <span className="text-xs text-muted-foreground">✓ Загружено</span>}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm text-muted-foreground">Описание визуала</Label>
-                      <Button variant="ghost" size="sm" disabled={expandingField === "visualStyle"} onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
-                        {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
-                      </Button>
-                    </div>
-                    <Textarea value={visualStyle} onChange={(e) => setVisualStyle(e.target.value)} placeholder="Напишите кратко, AI развернёт…" className="min-h-[100px] bg-secondary/30 border-border resize-none" />
-                  </div>
-                )}
-
-                {/* Format */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-foreground">Формат</Label>
-                  <RadioGroup value={photoFormat} onValueChange={setPhotoFormat} className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: "banner", label: "ADS Баннер", sub: "1 картинка" },
-                      { value: "carousel7", label: "Карусель", sub: "7 слайдов" },
-                      { value: "carousel10", label: "Карусель", sub: "10 слайдов" },
-                    ].map((opt) => (
-                      <Label key={opt.value} htmlFor={opt.value} className={`flex flex-col items-center gap-1 rounded-lg border p-4 cursor-pointer transition-colors ${photoFormat === opt.value ? "border-primary/60 bg-primary/[0.06]" : "border-border bg-secondary/20 hover:bg-secondary/40"}`}>
-                        <RadioGroupItem value={opt.value} id={opt.value} className="sr-only" />
-                        <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                        <span className="text-xs text-muted-foreground">{opt.sub}</span>
-                      </Label>
-                    ))}
-                  </RadioGroup>
-                </div>
-
-                {/* Aspect ratio */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-foreground">Соотношение сторон</Label>
-                  <Tabs value={aspectRatio} onValueChange={setAspectRatio}>
-                    <TabsList className="h-9 bg-secondary/40">
-                      <TabsTrigger value="1:1" className="text-xs data-[state=active]:bg-background">1:1 Квадрат</TabsTrigger>
-                      <TabsTrigger value="4:5" className="text-xs data-[state=active]:bg-background">4:5 Лента</TabsTrigger>
-                      <TabsTrigger value="9:16" className="text-xs data-[state=active]:bg-background">9:16 Stories</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-
-                {/* Slide text */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-foreground">Текст для слайдов</Label>
-                    <Button variant="ghost" size="sm" disabled={expandingField === "mainText"} onClick={() => handleMagicExpand("mainText", mainText, setMainText)} className="h-6 text-[10px] gap-1 text-amber-500 hover:text-amber-400">
-                      {expandingField === "mainText" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Магия
-                    </Button>
-                  </div>
-                  <Textarea value={mainText} onChange={(e) => setMainText(e.target.value)} placeholder="Напишите кратко тему, AI развернёт в слайды…" className="min-h-[120px] bg-secondary/30 border-border resize-none" />
-                </div>
-
-                {/* Design */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-foreground">Дизайн и стиль</Label>
-                  <Tabs value={designTab} onValueChange={(v) => setDesignTab(v as "ready" | "my")}>
-                    <TabsList className="h-9 bg-secondary/40 mb-3">
-                      <TabsTrigger value="ready" className="text-xs data-[state=active]:bg-background">Готовые стили</TabsTrigger>
-                      <TabsTrigger value="my" className="text-xs data-[state=active]:bg-background">Мои шаблоны</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  {designTab === "ready" ? (
-                    <div>
-                      <Select value={designStyle} onValueChange={setDesignStyle}>
-                        <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="modern">Современный</SelectItem>
-                          <SelectItem value="tech">Технологичный</SelectItem>
-                          <SelectItem value="stylish">Стильный</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <Select value={designTemplate} onValueChange={setDesignTemplate}>
-                        <SelectTrigger className="h-11 bg-secondary/30 border-border"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="tmpl1">Шаблон «Минимализм»</SelectItem>
-                          <SelectItem value="tmpl2">Шаблон «Премиум»</SelectItem>
-                          <SelectItem value="tmpl3">Шаблон «Яркий»</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <input ref={fileInputRef} type="file" accept="image/*,.woff,.woff2,.ttf,.otf" className="hidden" onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)} />
-                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="border-border text-muted-foreground hover:text-foreground">
-                        <Upload className="mr-2 h-3.5 w-3.5" />
-                        {logoFile ? logoFile.name : "Загрузить Логотип / Шрифт"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Submit */}
-            <div className="pt-2">
-              <Button onClick={handleGenerate} disabled={submitting} className="w-full h-12 text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-                {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" />{uploading ? "Загрузка файлов..." : "Отправка..."}</>) : "🚀 Запустить генерацию"}
-              </Button>
-            </div>
+      {active.id === "hq" ? (
+        <div className="mx-auto max-w-5xl py-20 text-center">
+          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="h-8 w-8 text-primary" />
           </div>
-
-          {/* History */}
-          {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
-            <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-                  Последние {mainType === "video" ? "видео" : "фото"}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
-                  <div key={h.id} className="relative group">
-                    <button
-                      onClick={() => loadHistoryItem(h)}
-                      className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 overflow-hidden transition-colors"
-                    >
-                      {/* Thumbnail */}
-                      <div className="aspect-square bg-secondary/30 overflow-hidden">
-                        {h.content_type === "video" ? (
-                          <video src={h.result_urls![0]} className="w-full h-full object-cover" muted />
-                        ) : (
-                          <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover" />
-                        )}
-                      </div>
-                      <div className="p-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-medium text-foreground">
-                            {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
-                            {h.result_urls!.length > 1 && ` (${h.result_urls!.length})`}
-                          </span>
-                        </div>
-                        {h.created_at && (
-                          <p className="text-[9px] text-muted-foreground mt-0.5">
-                            {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        try {
-                          await (supabase as any).from("content_tasks").delete().eq("id", h.id);
-                          fetchHistory();
-                          toast({ title: "Удалено" });
-                        } catch { toast({ title: "Ошибка", variant: "destructive" }); }
-                      }}
-                      className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-background/90 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-muted-foreground"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <h2 className="text-xl font-bold text-foreground">Проект не выбран</h2>
+          <p className="text-muted-foreground mt-2 max-w-xs mx-auto">
+            Выберите или создайте проект в боковой панели, чтобы пользоваться Контент-Заводом
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="mx-auto max-w-5xl py-4">
+          <div className="flex items-center justify-between mb-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
+
+          <div className="max-w-3xl">
+            {/* History */}
+            {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
+              <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                    Последние {mainType === "video" ? "видео" : "фото"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
+                    <div key={h.id} className="relative group">
+                      <button
+                        onClick={() => {
+                          setTask(h);
+                          setTaskId(h.id);
+                        }}
+                        className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 overflow-hidden transition-colors"
+                      >
+                        {/* Thumbnail */}
+                        <div className="aspect-square bg-secondary/30 overflow-hidden">
+                          {h.content_type === "video" ? (
+                            <video src={h.result_urls![0]} className="w-full h-full object-cover" muted />
+                          ) : (
+                            <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="p-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground">
+                              {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                              {h.result_urls!.length > 1 && ` (${h.result_urls!.length})`}
+                            </span>
+                          </div>
+                          {h.created_at && (
+                            <p className="text-[9px] text-muted-foreground mt-0.5">
+                              {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await (supabase as any).from("content_tasks").delete().eq("id", h.id);
+                            fetchHistory();
+                            toast({ title: "Удалено" });
+                          } catch { toast({ title: "Ошибка", variant: "destructive" }); }
+                        }}
+                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-background/90 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-muted-foreground"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

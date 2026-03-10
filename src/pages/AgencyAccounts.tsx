@@ -113,19 +113,21 @@ export default function AgencyAccounts() {
   });
 
   const fetchMetrics = useCallback(async () => {
-    setLoading(true);
-    let query = (supabase as any).from("agency_metrics_view").select("*");
-    // Client mode: filter to only their client
-    if (!isSuperadmin && active.clientName) {
-      query = query.eq("client_name", active.clientName);
+    if (active.id === "hq") {
+      setMetrics([]);
+      setLoading(false);
+      return;
     }
+    setLoading(true);
+    let query = supabase.from("agency_metrics_view").select("*").eq("project_id", active.id);
+
     const { data, error } = await query;
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     }
     setMetrics((data as MetricsRow[]) ?? []);
     setLoading(false);
-  }, [isSuperadmin, active.clientName]);
+  }, [active.id]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 
@@ -294,7 +296,7 @@ export default function AgencyAccounts() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                    Нет кабинетов
+                    {active.id === "hq" ? "Выберите или создайте проект в боковой панели" : "Нет рекламных кабинетов в этом проекте"}
                   </TableCell>
                 </TableRow>
               ) : (

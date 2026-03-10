@@ -15,6 +15,7 @@ import {
   CircleDot, Bell, Paperclip, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface Lead {
@@ -90,6 +91,7 @@ function getInitials(name: string) {
 }
 
 export default function ChatsView() {
+  const { active } = useWorkspace();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -107,10 +109,18 @@ export default function ChatsView() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchLeads = useCallback(async () => {
+    if (active.id === "hq") {
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from("leads").select("*").order("created_at", { ascending: false });
+        .from("leads")
+        .select("*")
+        .eq("project_id", active.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       const leadsData = (data as Lead[]) ?? [];
       setLeads(leadsData);
@@ -120,7 +130,7 @@ export default function ChatsView() {
         const leadIds = leadsData.map(l => l.id);
         const { data: allMsgs } = await (supabase as any)
           .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
-        
+
         if (allMsgs) {
           const lastMap: Record<string, CrmMessage> = {};
           const unreadMap: Record<string, number> = {};
@@ -161,7 +171,7 @@ export default function ChatsView() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchLeads, selectedLead]);
+  }, [fetchLeads, selectedLead, active.id]);
 
   // Fetch messages for selected lead
   const fetchMessages = useCallback(async (leadId: string) => {
@@ -289,11 +299,10 @@ export default function ChatsView() {
       <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-secondary/20 overflow-x-auto">
         <button
           onClick={() => setFilterStage("all")}
-          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
-            filterStage === "all"
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${filterStage === "all"
               ? "bg-foreground text-background shadow-sm"
               : "text-muted-foreground hover:bg-secondary/60"
-          }`}
+            }`}
         >
           Все
           <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${filterStage === "all" ? "bg-background/20" : "bg-secondary"}`}>
@@ -308,11 +317,10 @@ export default function ChatsView() {
             <button
               key={s.key}
               onClick={() => setFilterStage(s.key)}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${
-                isActive
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${isActive
                   ? `${colors.bg} ${colors.text} shadow-sm`
                   : "text-muted-foreground hover:bg-secondary/60"
-              }`}
+                }`}
             >
               <s.icon className="h-3 w-3" />
               {s.label}
@@ -360,9 +368,8 @@ export default function ChatsView() {
                   <div
                     key={lead.id}
                     onClick={() => { setSelectedLead(lead); setRightPanel("chat"); }}
-                    className={`flex items-start gap-2.5 px-3 py-2.5 cursor-pointer border-b border-border/50 transition-all ${
-                      isActive ? "bg-accent" : "hover:bg-accent/40"
-                    }`}
+                    className={`flex items-start gap-2.5 px-3 py-2.5 cursor-pointer border-b border-border/50 transition-all ${isActive ? "bg-accent" : "hover:bg-accent/40"
+                      }`}
                   >
                     <div className="relative shrink-0 mt-0.5">
                       <Avatar className="h-9 w-9">
@@ -464,13 +471,12 @@ export default function ChatsView() {
                   <div key={s.key} className="flex items-center">
                     <button
                       onClick={() => handleStageChange(selectedLead.id, s.key)}
-                      className={`flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md whitespace-nowrap transition-all ${
-                        isCurrent
+                      className={`flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md whitespace-nowrap transition-all ${isCurrent
                           ? `${colors.bg} ${colors.text} ring-1 ring-current/20`
                           : isPast
-                          ? "text-muted-foreground/60 line-through"
-                          : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/50"
-                      }`}
+                            ? "text-muted-foreground/60 line-through"
+                            : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/50"
+                        }`}
                       title={`Перевести в "${s.key}"`}
                     >
                       {isCurrent && <CircleDot className="h-2.5 w-2.5" />}
@@ -515,11 +521,10 @@ export default function ChatsView() {
                                   </Avatar>
                                 )}
                                 <div
-                                  className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                                    isClient
+                                  className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${isClient
                                       ? "bg-secondary text-foreground rounded-bl-md"
                                       : "bg-primary/10 text-foreground rounded-br-md"
-                                  }`}
+                                    }`}
                                 >
                                   <p>{msg.body}</p>
                                   <div className={`flex items-center gap-1 mt-1 justify-end ${isClient ? "text-muted-foreground/40" : "text-primary/40"}`}>

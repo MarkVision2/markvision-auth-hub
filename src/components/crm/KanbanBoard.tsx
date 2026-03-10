@@ -8,6 +8,7 @@ import {
   ChevronDown, TrendingUp, Trash2,
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import LeadDetailSheet from "./LeadDetailSheet";
@@ -28,6 +29,8 @@ export interface Lead {
   ai_summary: string | null;
   created_at: string | null;
   scheduled_at?: string | null;
+  doctor_name?: string | null;
+  office_name?: string | null;
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_content?: string | null;
@@ -87,6 +90,7 @@ function getInitials(name: string) {
 
 export default function KanbanBoard() {
   const { isSuperadmin } = useRole();
+  const { active } = useWorkspace();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -94,10 +98,18 @@ export default function KanbanBoard() {
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
 
   const fetchLeads = useCallback(async () => {
+    if (active.id === "hq") {
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)
-        .from("leads").select("*").order("created_at", { ascending: false });
+        .from("leads")
+        .select("*")
+        .eq("project_id", active.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       setLeads((data as Lead[]) ?? []);
     } catch (err: any) {

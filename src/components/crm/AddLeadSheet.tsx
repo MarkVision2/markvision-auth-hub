@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
-import { Phone } from "lucide-react";
+import { Phone, AlertCircle } from "lucide-react";
 
-const PROJECT_ID = "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 
 interface Props {
   open: boolean;
@@ -20,8 +21,20 @@ const STAGES = [
 ];
 
 export default function AddLeadSheet({ open, onOpenChange }: Props) {
-  const [form, setForm] = useState({ name: "", phone: "", source: "WhatsApp", amount: "", status: "Новая заявка" });
+  const { active } = useWorkspace();
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    source: "WhatsApp",
+    amount: "",
+    status: "Новая заявка",
+    doctor_name: "",
+    office_name: ""
+  });
   const [saving, setSaving] = useState(false);
+
+  const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
+  const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
 
   const handleCreate = async () => {
     if (!form.name.trim()) { toast({ title: "Укажите имя клиента" }); return; }
@@ -32,12 +45,22 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
       source: form.source || null,
       amount: form.amount ? Number(form.amount) : 0,
       status: form.status,
-      project_id: PROJECT_ID,
+      doctor_name: form.doctor_name || null,
+      office_name: form.office_name || null,
+      project_id: active.id,
     });
     setSaving(false);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
     toast({ title: "Лид создан", description: form.name });
-    setForm({ name: "", phone: "", source: "WhatsApp", amount: "", status: "Новая заявка" });
+    setForm({
+      name: "",
+      phone: "",
+      source: "WhatsApp",
+      amount: "",
+      status: "Новая заявка",
+      doctor_name: "",
+      office_name: ""
+    });
     onOpenChange(false);
   };
   const handlePhoneChange = (v: string) => {
@@ -105,7 +128,7 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
                 <SelectItem value="Сайт">Сайт</SelectItem>
                 <SelectItem value="Звонок">Звонок</SelectItem>
                 <SelectItem value="2 ГИС">2 ГИС</SelectItem>
-                <SelectItem value="Рекомендация">Рекомендация</SelectItem>
+                <SelectItem value="Сарафан">Сарафан</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -113,6 +136,28 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
             <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Сумма сделки (₸)</label>
             <Input className="mt-1 bg-secondary/50 border-border text-sm" placeholder="0" type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
           </div>
+          {form.status === "Записан" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Врач</label>
+                <Select value={form.doctor_name} onValueChange={v => setForm(f => ({ ...f, doctor_name: v }))}>
+                  <SelectTrigger className="mt-1 bg-secondary/50 border-border text-xs h-9"><SelectValue placeholder="Врач" /></SelectTrigger>
+                  <SelectContent>
+                    {DOCTORS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Кабинет</label>
+                <Select value={form.office_name} onValueChange={v => setForm(f => ({ ...f, office_name: v }))}>
+                  <SelectTrigger className="mt-1 bg-secondary/50 border-border text-xs h-9"><SelectValue placeholder="Кабинет" /></SelectTrigger>
+                  <SelectContent>
+                    {OFFICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Этап</label>
             <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
@@ -122,9 +167,14 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full" onClick={handleCreate} disabled={saving}>
-            {saving ? "Сохранение..." : "Создать лид"}
+          <Button className="w-full" onClick={handleCreate} disabled={saving || active.id === "hq"}>
+            {active.id === "hq" ? "Выберите проект" : (saving ? "Сохранение..." : "Создать лид")}
           </Button>
+          {active.id === "hq" && (
+            <p className="text-[10px] text-destructive flex items-center gap-1 justify-center">
+              <AlertCircle className="h-3 w-3" /> Для создания лида выберите конкретный проект
+            </p>
+          )}
         </div>
       </SheetContent>
     </Sheet>

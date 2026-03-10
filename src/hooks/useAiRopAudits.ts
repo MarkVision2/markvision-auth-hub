@@ -49,17 +49,27 @@ function mapAudit(raw: RawAudit): AuditRecord {
   };
 }
 
+import { useWorkspace } from "@/hooks/useWorkspace";
+
 export function useAiRopAudits() {
+  const { active } = useWorkspace();
   const { toast } = useToast();
   const [audits, setAudits] = useState<AuditRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (active.id === "hq") {
+      setAudits([]);
+      setLoading(false);
+      return;
+    }
     async function fetch() {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from("ai_rop_audits")
           .select("*")
+          .eq("project_id", active.id)
           .order("created_at", { ascending: false });
         if (error) throw error;
         setAudits((data as RawAudit[]).map(mapAudit));
@@ -71,7 +81,7 @@ export function useAiRopAudits() {
       }
     }
     fetch();
-  }, []);
+  }, [active.id]);
 
   return { audits, loading };
 }

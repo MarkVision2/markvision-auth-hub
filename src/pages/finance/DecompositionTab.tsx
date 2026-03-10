@@ -68,14 +68,12 @@ export default function DecompositionTab() {
     ];
 
     const summaryRows = [
-        { label: "Выручка (Общая)", value: `${fmt(calc.revenue)} ₸`, isAccent: true },
         { label: "Общие расходы (Бюджет + Зарплата)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: false },
-        { label: "Средний чек", value: `${fmt(avgCheck)} ₸`, isAccent: false },
-        { label: "Кол-во продаж", value: String(calc.sales) },
-        { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
-        { label: "Кол-во диагностик", value: String(calc.diagnostics) },
+        { label: "Зарплата маркетолога (Fix)", value: `${fmt(salary)} ₸`, isAccent: false },
+        { label: "Стоимость лида (CPL)", value: `${fmt(cpl)} ₸`, isAccent: false },
         { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
-        { label: "CR лид → диагностика", value: `${crLeadToDiag}%`, isAccent: false },
+        { label: "Налоги (10%)", value: `${fmt(calc.revenue * 0.1)} ₸` },
+        { label: "Результат после налогов", value: `${fmt(calc.netProfit - calc.revenue * 0.1)} ₸`, isAccent: true },
     ];
 
     return (

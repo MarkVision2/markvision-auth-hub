@@ -9,6 +9,7 @@ import ClientDatabase from "@/components/crm/ClientDatabase";
 import Automations from "@/components/crm/Automations";
 import AddLeadSheet from "@/components/crm/AddLeadSheet";
 import TodayTasksPanel from "@/components/crm/TodayTasksPanel";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { type AITask } from "@/components/crm/types";
 import {
@@ -20,7 +21,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 
 interface Lead {
   id: string;
@@ -37,6 +38,7 @@ function fmt(n: number) {
 }
 
 export default function CrmSystem() {
+  const { active } = useWorkspace();
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [prevLeadsCount, setPrevLeadsCount] = useState(0);
@@ -44,11 +46,15 @@ export default function CrmSystem() {
 
   useEffect(() => {
     const load = async () => {
+      if (active.id === "hq") {
+        setLeads([]);
+        return;
+      }
       try {
         const { data, error } = await (supabase as any)
           .from("leads")
           .select("id, status, amount, ai_score, created_at")
-          .eq("project_id", PROJECT_ID)
+          .eq("project_id", active.id)
           .order("created_at", { ascending: false });
         if (error) throw error;
         if (data) {
@@ -65,7 +71,7 @@ export default function CrmSystem() {
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [active.id]);
 
   const handleTaskGenerated = useCallback((task: AITask) => {
     setTasks(prev => [task, ...prev]);

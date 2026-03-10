@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 import DashboardLayout from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import {
@@ -49,7 +50,8 @@ type SubTab = typeof SUB_TABS[number]["key"];
 
 /* ── Page ── */
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SubTab>("team");
+  const { role, isClientManager } = useRole();
+  const [activeTab, setActiveTab] = useState<SubTab>(isClientManager ? "general" : "team");
   const [team, setTeam] = useState<TeamMember[]>(loadTeam);
   const [search, setSearch] = useState("");
 
@@ -63,8 +65,8 @@ export default function SettingsPage() {
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
-  const [formRole, setFormRole] = useState<RoleKey>("project");
-  const [formPerms, setFormPerms] = useState<string[]>(ROLE_PRESETS.project);
+  const [formRole, setFormRole] = useState<RoleKey>("client_admin");
+  const [formPerms, setFormPerms] = useState<string[]>(ROLE_PRESETS.client_admin);
   const [showPassword, setShowPassword] = useState(false);
 
   /* Delete dialog */
@@ -73,7 +75,7 @@ export default function SettingsPage() {
   const openAdd = () => {
     setEditingMember(null);
     setFormName(""); setFormEmail(""); setFormPassword("");
-    setFormRole("project"); setFormPerms([...ROLE_PRESETS.project]);
+    setFormRole("client_admin"); setFormPerms([...ROLE_PRESETS.client_admin]);
     setShowPassword(false); setSheetOpen(true);
   };
 
@@ -134,7 +136,7 @@ export default function SettingsPage() {
         {/* Left sub-menu */}
         <div className="w-56 shrink-0 pr-1 py-1">
           <div className="space-y-0.5">
-            {SUB_TABS.map(tab => {
+            {SUB_TABS.filter(tab => !isClientManager || tab.key === "general").map(tab => {
               const active = activeTab === tab.key;
               return (
                 <button
@@ -289,6 +291,7 @@ export default function SettingsPage() {
                               checked={enabled}
                               onCheckedChange={() => togglePerm(mod.key)}
                               className="data-[state=checked]:bg-primary"
+                              disabled={formRole === "client_manager" && mod.key !== "crm"}
                             />
                           </div>
                         );

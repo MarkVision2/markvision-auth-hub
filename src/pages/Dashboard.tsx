@@ -7,11 +7,14 @@ import HqRevenueChart from "@/components/hq/HqRevenueChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, Briefcase } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
+import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, Briefcase, LayoutDashboard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface ClientMetric {
   client_id: string | null;
+  project_id: string | null;
   client_name: string | null;
   is_active: boolean | null;
   spend: number | null;
@@ -126,6 +129,7 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
 export default function Dashboard() {
   const { toast } = useToast();
   const { active, isAgency } = useWorkspace();
+  const { isSuperadmin } = useRole();
   const [clients, setClients] = useState<ClientMetric[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -139,17 +143,11 @@ export default function Dashboard() {
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         } else {
-          // Client view: fetch ONLY the matched client by name
-          const clientName = active.clientName;
-          if (!clientName) {
-            setClients([]);
-            return;
-          }
+          // Client view: fetch by project_id
           const { data, error } = await supabase
             .from("agency_metrics_view")
             .select("*")
-            .eq("client_name", clientName)
-            .limit(1);
+            .eq("project_id", active.id);
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         }
@@ -187,17 +185,82 @@ export default function Dashboard() {
   const agencyMetrics = loading
     ? null
     : (() => {
-        const activeAccounts = clients.filter((c) => c.is_active).length;
-        const mrr = agencyFinance?.mrr ?? 0;
-        const costs = agencyFinance?.costs ?? 0;
-        const profit = mrr - costs;
-        const margin = mrr > 0 ? (profit / mrr) * 100 : 0;
-        return { totalRevenue: mrr, totalSpend: costs, romi: margin, activeProjects: activeAccounts };
-      })();
+      const activeAccounts = clients.filter((c) => c.is_active).length;
+      const mrr = agencyFinance?.mrr ?? 0;
+      const costs = agencyFinance?.costs ?? 0;
+      const profit = mrr - costs;
+      const margin = mrr > 0 ? (profit / mrr) * 100 : 0;
+      return { totalRevenue: mrr, totalSpend: costs, romi: margin, activeProjects: activeAccounts };
+    })();
 
-  const matchedClient = !isAgency && clients.length > 0 ? clients[0] : null;
+  const aggregateClientData = (clientList: ClientMetric[], id: string, name: string) => {
+    if (clientList.length === 0) return null;
+    const spend = clientList.reduce((s, c) => s + (c.spend ?? 0), 0);
+    const leads = clientList.reduce((s, c) => s + (c.meta_leads ?? 0), 0);
+    const rev = clientList.reduce((s, c) => s + (c.revenue ?? 0), 0);
+    const v = clientList.reduce((s, c) => s + (c.visits ?? 0), 0);
+    const sales = clientList.reduce((s, c) => s + (c.sales ?? 0), 0);
+    return {
+      client_id: id,
+      project_id: id,
+      client_name: name,
+      is_active: true,
+      spend,
+      meta_leads: leads,
+      revenue: rev,
+      visits: v,
+      sales,
+      romi: spend > 0 ? ((rev - spend) / spend) * 100 : 0,
+      cpl: leads > 0 ? spend / leads : 0,
+      cpv: v > 0 ? spend / v : 0,
+      cac: sales > 0 ? spend / sales : 0,
+    } as ClientMetric;
+  };
+
+  const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
+  const hqClients = clients.filter(c => c.project_id === "hq");
+  const matchedHqClient = aggregateClientData(hqClients, "hq", active.name);
 
   const breadcrumb = isAgency ? "Штаб-квартира" : `${active.emoji} ${active.name}`;
+
+  const renderClientView = (targetClient: ClientMetric | null, projName: string) => (
+    <>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border bg-card p-5 h-28 animate-pulse" />
+          ))}
+        </div>
+      ) : targetClient ? (
+        <>
+          <ClientKpiCards client={targetClient} />
+          <ClientDetailPanels client={targetClient} />
+        </>
+      ) : (
+        <div className="rounded-2xl border border-border bg-card p-12 text-center">
+          <p className="text-lg font-semibold text-foreground mb-2">Проект не найден</p>
+          <p className="text-sm text-muted-foreground">
+            Клиент «{projName}» (или вы сами) не найден в рекламных кабинетах. Добавьте его для отображения воронки.
+          </p>
+        </div>
+      )}
+    </>
+  );
+
+  const renderAgencyView = () => (
+    <>
+      <HqKpiCards metrics={agencyMetrics} />
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        <div className="lg:col-span-3">
+          <HqAnomalyRadar clients={clients} />
+        </div>
+        <div className="lg:col-span-2">
+          <HqAiDirector />
+        </div>
+      </div>
+      <HqRevenueChart clients={clients} />
+    </>
+  );
 
   return (
     <DashboardLayout breadcrumb={breadcrumb}>
@@ -218,43 +281,29 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isAgency ? (
-          /* ── AGENCY VIEW ── */
-          <>
-            <HqKpiCards metrics={agencyMetrics} />
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-              <div className="lg:col-span-3">
-                <HqAnomalyRadar clients={clients} />
-              </div>
-              <div className="lg:col-span-2">
-                <HqAiDirector />
-              </div>
-            </div>
-            <HqRevenueChart clients={clients} />
-          </>
+        {isAgency && isSuperadmin ? (
+          <Tabs defaultValue="global" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-6 shadow-sm border border-border/50">
+              <TabsTrigger value="global" className="flex items-center gap-2">
+                <LayoutDashboard size={14} /> Глобальная сводка
+              </TabsTrigger>
+              <TabsTrigger value="local" className="flex items-center gap-2">
+                <BarChart3 size={14} /> Мои показатели
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="global" className="space-y-6 mt-0">
+              {renderAgencyView()}
+            </TabsContent>
+            <TabsContent value="local" className="space-y-6 mt-0">
+              {renderClientView(matchedHqClient, active.name)}
+            </TabsContent>
+          </Tabs>
+        ) : isAgency && !isSuperadmin ? (
+          /* Fallback if a non-superadmin is somehow granted Agency workspace */
+          renderClientView(matchedHqClient, active.name)
         ) : (
-          /* ── CLIENT VIEW ── */
-          <>
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-border bg-card p-5 h-28 animate-pulse" />
-                ))}
-              </div>
-            ) : matchedClient ? (
-              <>
-                <ClientKpiCards client={matchedClient} />
-                <ClientDetailPanels client={matchedClient} />
-              </>
-            ) : (
-              <div className="rounded-2xl border border-border bg-card p-12 text-center">
-                <p className="text-lg font-semibold text-foreground mb-2">Проект не найден</p>
-                <p className="text-sm text-muted-foreground">
-                  Клиент «{active.name}» не найден в agency_metrics_view. Добавьте его в «Агентские кабинеты».
-                </p>
-              </div>
-            )}
-          </>
+          /* Standard Client View */
+          renderClientView(matchedClient, active.name)
         )}
       </div>
     </DashboardLayout>

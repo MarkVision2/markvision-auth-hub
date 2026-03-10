@@ -162,7 +162,7 @@ export default function AgencyBillingPage() {
           />
           <KpiCard
             icon={TrendingUp}
-            label="Чистая прибыль"
+            label="Выручка (после маркетинга)"
             value={fmt(netProfit)}
             valueClass={netProfit >= 0 ? "text-primary" : "text-destructive"}
             sub={`MRR − расходы на ИИ инфраструктуру`}

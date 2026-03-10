@@ -184,9 +184,15 @@ export default function ScoreboardPage() {
   useEffect(() => {
     async function fetchAccounts() {
       try {
+        if (active.id === "hq") {
+          setAccounts([]);
+          setSelectedAccountId("__none__");
+          return;
+        }
         const { data, error } = await supabase
           .from("clients_config")
           .select("id, client_name")
+          .eq("project_id", active.id)
           .eq("is_active", true)
           .order("client_name");
         if (error) throw error;
@@ -200,7 +206,7 @@ export default function ScoreboardPage() {
       }
     }
     fetchAccounts();
-  }, []);
+  }, [active.id]);
 
   // Fetch daily facts — filtered by account
   const fetchDaily = useCallback(async () => {
@@ -229,6 +235,7 @@ export default function ScoreboardPage() {
   const fetchPlan = useCallback(async () => {
     try {
       const { data } = await (supabase as any).from("monthly_plans").select("*")
+        .eq("project_id", active.id)
         .eq("month_year", monthYear).limit(1);
       if (data && data.length > 0) {
         const p = data[0];
@@ -244,7 +251,7 @@ export default function ScoreboardPage() {
         setPlanValues({ ...EMPTY_PLAN });
       }
     } catch { setPlanValues({ ...EMPTY_PLAN }); }
-  }, [monthYear]);
+  }, [monthYear, active.id]);
 
   useEffect(() => { fetchDaily(); fetchPlan(); }, [fetchDaily, fetchPlan]);
 

@@ -45,11 +45,15 @@ export default function AiReportsPage() {
   }, []);
 
   useEffect(() => {
+    if (active.id === "hq") {
+      setClients([]);
+      return;
+    }
     const load = async () => {
       const { data } = await supabase
         .from("clients_config")
         .select("id, client_name")
-        .eq("project_id", PROJECT_ID)
+        .eq("project_id", active.id)
         .eq("is_active", true)
         .order("client_name");
       if (data && data.length > 0) {
@@ -57,9 +61,18 @@ export default function AiReportsPage() {
       }
     };
     load();
-  }, []);
+  }, [active.id]);
 
   useEffect(() => {
+    if (active.id === "hq") {
+      setCurMetrics([]);
+      setPrevMetrics([]);
+      setLeads([]);
+      setChannels([]);
+      setCreatives([]);
+      setLoading(false);
+      return;
+    }
     const load = async () => {
       try {
         setLoading(true);
@@ -68,18 +81,16 @@ export default function AiReportsPage() {
         const pStart = format(prevWeekStart, "yyyy-MM-dd");
         const pEnd = format(prevWeekEnd, "yyyy-MM-dd");
 
-        console.log("Loading AI Reports data for project:", PROJECT_ID);
-        console.log("Date range:", curStart, "to", curEnd);
+        let curQ = supabase.from("daily_metrics").select("*").eq("project_id", active.id).gte("date", curStart).lte("date", curEnd);
+        let prevQ = supabase.from("daily_metrics").select("*").eq("project_id", active.id).gte("date", pStart).lte("date", pEnd);
+        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").eq("project_id", active.id).gte("created_at", curStart);
+        let channelsQ = supabase.from("analytics_channels").select("*").eq("project_id", active.id);
 
-        let curQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", curStart).lte("date", curEnd);
-        let prevQ = supabase.from("daily_metrics").select("*").eq("project_id", PROJECT_ID).gte("date", pStart).lte("date", pEnd);
-        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").eq("project_id", PROJECT_ID).gte("created_at", curStart);
-        let channelsQ = supabase.from("analytics_channels").select("*").eq("project_id", PROJECT_ID);
         // Correct join filtering for project_id
         let creativesQ = supabase
           .from("analytics_creatives")
           .select("*, analytics_campaigns!inner(channel_id, name, analytics_channels!inner(project_id))")
-          .eq("analytics_campaigns.analytics_channels.project_id", PROJECT_ID)
+          .eq("analytics_campaigns.analytics_channels.project_id", active.id)
           .order("leads", { ascending: false })
           .limit(10);
 
@@ -90,12 +101,6 @@ export default function AiReportsPage() {
         }
 
         const [curRes, prevRes, leadsRes, chRes, crRes] = await Promise.all([curQ, prevQ, leadsQ, channelsQ, creativesQ]);
-
-        if (curRes.error) console.error("curRes error:", curRes.error);
-        if (prevRes.error) console.error("prevRes error:", prevRes.error);
-        if (leadsRes.error) console.error("leadsRes error:", leadsRes.error);
-        if (chRes.error) console.error("chRes error:", chRes.error);
-        if (crRes.error) console.error("crRes error:", crRes.error);
 
         setCurMetrics((curRes.data as DailyRow[]) || []);
         setPrevMetrics((prevRes.data as DailyRow[]) || []);
@@ -109,7 +114,7 @@ export default function AiReportsPage() {
       }
     };
     load();
-  }, [selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
+  }, [active.id, selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
 
   const cur = useMemo(() => {
     const sum = (key: keyof DailyRow) => curMetrics.reduce((s, r) => s + (Number(r[key]) || 0), 0);
@@ -205,7 +210,7 @@ export default function AiReportsPage() {
 
       pdf.save(`report_${clientName}_${format(now, "yyyy-MM-dd")}.pdf`);
     } catch (e) {
-      console.error("PDF generation failed", e);
+      // PDF generation failed silently
     } finally {
       setDownloading(false);
     }

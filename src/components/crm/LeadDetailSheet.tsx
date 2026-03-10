@@ -206,14 +206,64 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [callHistory, setCallHistory] = useState<CallRecord[]>([]);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState<string>("10:00");
+  const [doctorName, setDoctorName] = useState<string>("");
+  const [officeName, setOfficeName] = useState<string>("");
+  const [busySlots, setBusySlots] = useState<{ date: string; time: string; doctor: string }[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
+  const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
+  const TIME_SLOTS = Array.from({ length: 20 }, (_, i) => {
+    const hour = Math.floor(i / 2) + 9;
+    const min = i % 2 === 0 ? "00" : "30";
+    return `${hour.toString().padStart(2, "0")}:${min}`;
+  });
 
   useEffect(() => {
     if (lead?.scheduled_at) {
-      setScheduledDate(new Date(lead.scheduled_at));
+      const d = new Date(lead.scheduled_at);
+      setScheduledDate(d);
+      setScheduledTime(d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }));
     } else {
       setScheduledDate(undefined);
+      setScheduledTime("10:00");
     }
+    setDoctorName(lead?.doctor_name || "");
+    setOfficeName(lead?.office_name || "");
   }, [lead]);
+
+  const fetchBusySlots = useCallback(async (date: Date) => {
+    setLoadingSlots(true);
+    try {
+      const dateStr = date.toISOString().split("T")[0];
+      const { data, error } = await (supabase as any)
+        .from("leads")
+        .select("scheduled_at, doctor_name")
+        .not("scheduled_at", "is", null)
+        .filter("scheduled_at", "gte", `${dateStr}T00:00:00Z`)
+        .filter("scheduled_at", "lte", `${dateStr}T23:59:59Z`);
+
+      if (error) throw error;
+      const slots = data.map((l: any) => {
+        const d = new Date(l.scheduled_at);
+        return {
+          date: dateStr,
+          time: d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
+          doctor: l.doctor_name,
+        };
+      });
+      setBusySlots(slots);
+    } catch (err) {
+      console.error("fetchBusySlots error:", err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (scheduledDate) fetchBusySlots(scheduledDate);
+  }, [scheduledDate, fetchBusySlots]);
 
   const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
@@ -351,19 +401,38 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     toast({ title: "📞 Звонок начат", description: lead.name });
   };
 
-  const handleScheduleDate = async (date: Date | undefined) => {
-    setScheduledDate(date);
-    if (!date) return;
+  const handleScheduleConfirm = async () => {
+    if (!scheduledDate || !scheduledTime || !doctorName || !officeName) {
+      toast({ title: "Внимание", description: "Выберите дату, время, врача и кабинет" });
+      return;
+    }
+
+    const [hours, mins] = scheduledTime.split(":").map(Number);
+    const fullDate = new Date(scheduledDate);
+    fullDate.setHours(hours, mins, 0, 0);
+
+    // Conflict check
+    const isBusy = busySlots.some(s => s.time === scheduledTime && s.doctor === doctorName);
+    if (isBusy) {
+      toast({ title: "Ошибка", description: `Врач ${doctorName} уже занят на ${scheduledTime}`, variant: "destructive" });
+      return;
+    }
 
     const { error } = await (supabase as any)
       .from("leads")
-      .update({ scheduled_at: date.toISOString() })
+      .update({
+        scheduled_at: fullDate.toISOString(),
+        doctor_name: doctorName,
+        office_name: officeName,
+        status: "Записан" // Auto-move to "Scheduled" stage
+      })
       .eq("id", lead.id);
 
     if (error) {
       toast({ title: "Ошибка сохранения", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Запись подтверждена", description: date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) });
+      setStage("Записан");
+      toast({ title: "Запись подтверждена", description: `${fullDate.toLocaleDateString("ru-RU")} в ${scheduledTime}` });
       onLeadUpdated?.();
     }
   };
@@ -503,16 +572,74 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className={cn("text-xs border-border h-8 gap-1", scheduledDate && "text-primary border-primary/20 bg-primary/5")}>
                       <Calendar className="h-3 w-3" />
-                      {scheduledDate ? scheduledDate.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "Запись"}
+                      {scheduledDate ? `${scheduledDate.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })} ${scheduledTime}` : "Запись"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 border-border" align="start">
-                    <CalendarUI
-                      mode="single"
-                      selected={scheduledDate}
-                      onSelect={handleScheduleDate}
-                      initialFocus
-                    />
+                  <PopoverContent className="w-[320px] p-4 border-border space-y-4" align="start">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Дата и время</label>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <CalendarUI
+                              mode="single"
+                              selected={scheduledDate}
+                              onSelect={setScheduledDate}
+                              initialFocus
+                              className="rounded-md border border-border"
+                            />
+                          </div>
+                          <div className="w-24 border border-border rounded-md overflow-y-auto h-[280px] py-1 bg-secondary/20">
+                            {TIME_SLOTS.map(t => {
+                              const isBusy = busySlots.some(s => s.time === t && s.doctor === doctorName);
+                              return (
+                                <button
+                                  key={t}
+                                  disabled={isBusy}
+                                  onClick={() => setScheduledTime(t)}
+                                  className={cn(
+                                    "w-full text-left px-3 py-1.5 text-xs transition-colors",
+                                    scheduledTime === t ? "bg-primary text-primary-foreground font-bold" : "hover:bg-primary/10",
+                                    isBusy && "opacity-30 cursor-not-allowed line-through"
+                                  )}
+                                >
+                                  {t}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-muted-foreground uppercase font-medium">Врач</label>
+                          <Select value={doctorName} onValueChange={setDoctorName}>
+                            <SelectTrigger className="h-8 text-xs bg-secondary/30 border-border">
+                              <SelectValue placeholder="Выбрать" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DOCTORS.map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] text-muted-foreground uppercase font-medium">Кабинет</label>
+                          <Select value={officeName} onValueChange={setOfficeName}>
+                            <SelectTrigger className="h-8 text-xs bg-secondary/30 border-border">
+                              <SelectValue placeholder="Выбрать" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {OFFICES.map(o => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Button onClick={handleScheduleConfirm} className="w-full h-9 text-sm font-semibold" disabled={loadingSlots}>
+                        {loadingSlots ? <Loader2 className="h-4 w-4 animate-spin" /> : "Подтвердить запись"}
+                      </Button>
+                    </div>
                   </PopoverContent>
                 </Popover>
                 <Button
@@ -556,7 +683,9 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   { icon: DollarSign, label: "Сумма", value: amount > 0 ? `${new Intl.NumberFormat("ru-RU").format(amount)} ₸` : "Не указана" },
                   { icon: Globe, label: "Источник", value: lead.source || "—" },
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
-                  { icon: Calendar, label: "Запись", value: lead.scheduled_at ? new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "Не назначена" },
+                  { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
+                  { icon: User, label: "Врач", value: lead.doctor_name || "—" },
+                  { icon: MapPin, label: "Кабинет", value: lead.office_name || "—" },
                   { icon: Clock, label: "Создан", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "—" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between py-1.5 group">

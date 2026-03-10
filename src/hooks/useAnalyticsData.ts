@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import type { Channel, Campaign, Creative, OrganicPost } from "@/components/analytics/analyticsData";
 
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
+
 
 interface RawCreative {
   id: string; name: string; format: string; landing: string | null; thumbnail: string | null;
@@ -33,18 +33,23 @@ export function useAnalyticsData() {
     async function fetchAll() {
       setLoading(true);
       try {
-        // Fetch analytics tables
-        let chQ = supabase.from("analytics_channels").select("*").order("created_at");
-        if (!isAgency && active.id !== "hq") {
-          // client workspace — filter by project or skip
+        if (active.id === "hq") {
+          setChannels([]);
+          setOrganicPosts([]);
+          setTotalLeadsFromCrm(0);
+          setDailyAgg({ spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+          setLoading(false);
+          return;
         }
-        chQ = chQ.eq("project_id", PROJECT_ID);
+
+        // Fetch analytics tables
+        let chQ = supabase.from("analytics_channels").select("*").eq("project_id", active.id).order("created_at");
 
         const [chRes, campRes, crRes, opRes] = await Promise.all([
           chQ,
-          supabase.from("analytics_campaigns").select("*").order("created_at"),
-          supabase.from("analytics_creatives").select("*").order("created_at"),
-          supabase.from("analytics_organic_posts").select("*").eq("project_id", PROJECT_ID).order("created_at"),
+          supabase.from("analytics_campaigns").select("*, analytics_channels!inner(*)").eq("analytics_channels.project_id", active.id).order("created_at"),
+          supabase.from("analytics_creatives").select("*, analytics_campaigns!inner(id, analytics_channels!inner(*))").eq("analytics_campaigns.analytics_channels.project_id", active.id).order("created_at"),
+          supabase.from("analytics_organic_posts").select("*").eq("project_id", active.id).order("created_at"),
         ]);
 
         if (chRes.error) throw chRes.error;
@@ -63,22 +68,22 @@ export function useAnalyticsData() {
         const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
 
         const [leadsRes, dailyRes] = await Promise.all([
-          supabase.from("leads").select("id", { count: "exact", head: true }).eq("project_id", PROJECT_ID),
+          supabase.from("leads").select("id", { count: "exact", head: true }).eq("project_id", active.id),
           supabase.from("daily_metrics").select("spend, clicks, impressions, leads, visits, sales, revenue")
-            .eq("project_id", PROJECT_ID).gte("date", monthStart).lte("date", monthEnd),
+            .eq("project_id", active.id).gte("date", monthStart).lte("date", monthEnd),
         ]);
 
         setTotalLeadsFromCrm(leadsRes.count || 0);
 
         if (dailyRes.data && dailyRes.data.length > 0) {
           const agg = dailyRes.data.reduce((acc, r) => ({
-            spend: acc.spend + (Number(r.spend) || 0),
-            clicks: acc.clicks + (Number(r.clicks) || 0),
-            impressions: acc.impressions + (Number(r.impressions) || 0),
-            leads: acc.leads + (Number(r.leads) || 0),
-            visits: acc.visits + (Number(r.visits) || 0),
-            sales: acc.sales + (Number(r.sales) || 0),
-            revenue: acc.revenue + (Number(r.revenue) || 0),
+            spend: (acc.spend || 0) + (Number(r.spend) || 0),
+            clicks: (acc.clicks || 0) + (Number(r.clicks) || 0),
+            impressions: (acc.impressions || 0) + (Number(r.impressions) || 0),
+            leads: (acc.leads || 0) + (Number(r.leads) || 0),
+            visits: (acc.visits || 0) + (Number(r.visits) || 0),
+            sales: (acc.sales || 0) + (Number(r.sales) || 0),
+            revenue: (acc.revenue || 0) + (Number(r.revenue) || 0),
           }), { spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
           setDailyAgg(agg);
         }

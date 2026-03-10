@@ -214,7 +214,7 @@ export default function DynamicsTab() {
                     sub={planCompletion !== null ? `${planCompletion}% от плана` : undefined} />
                 <KpiCard icon={Target} label="Расходы" value={fmtCurrency(totals.expenses)} valueClass="text-destructive" />
                 <KpiCard icon={Users} label="ФОТ" value={fmtCurrency(totals.salaries)} valueClass="text-destructive" />
-                <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(totals.profit)}
+                <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(totals.profit)}
                     valueClass={totals.profit >= 0 ? "text-primary" : "text-destructive"}
                     sub={yoyGrowth !== null ? `${yoyGrowth >= 0 ? "+" : ""}${yoyGrowth.toFixed(0)}% к ${year - 1}` : undefined} />
                 {forecast ? (
@@ -297,7 +297,7 @@ export default function DynamicsTab() {
                     </div>
                 </Section>
 
-                <Section title="Чистая прибыль">
+                <Section title="Выручка (после маркетинга)">
                     <div className="p-6">
                         <div className="h-[280px]">
                             <ResponsiveContainer width="100%" height="100%">

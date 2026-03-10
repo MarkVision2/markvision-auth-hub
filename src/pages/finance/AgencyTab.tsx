@@ -226,7 +226,7 @@ export default function AgencyTab() {
                 <KpiCard icon={Wallet} label="MRR" value={fmtCurrency(totalMrr)} />
                 <KpiCard icon={Users} label="ФОТ команды" value={fmtCurrency(totalSalaries)} valueClass="text-destructive" />
                 <KpiCard icon={Receipt} label="Налоги (10%)" value={fmtCurrency(totalTax)} valueClass="text-status-warning" />
-                <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(totalProfit)} valueClass={totalProfit >= 0 ? "text-primary" : "text-destructive"} />
+                <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(totalProfit)} valueClass={totalProfit >= 0 ? "text-primary" : "text-destructive"} />
                 <KpiCard icon={Percent} label="Маржинальность" value={`${avgMargin}%`} />
             </div>
 
