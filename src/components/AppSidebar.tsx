@@ -150,7 +150,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             <div className="flex-1 min-w-0 text-left">
               <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {active.id === "hq" ? "Центр Развития Предпринимателей" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
+                {active.id === "hq" ? "Главный проект · Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
               </p>
             </div>
             {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" />}

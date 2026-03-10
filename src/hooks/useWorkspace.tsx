@@ -10,7 +10,7 @@ export interface Workspace {
   clientName?: string;
 }
 
-const HQ: Workspace = { id: "hq", name: "CPR_KZ", type: "agency" };
+const HQ: Workspace = { id: "hq", name: "MarkVision AI", type: "agency" };
 
 interface WorkspaceContextValue {
   workspaces: Workspace[];
