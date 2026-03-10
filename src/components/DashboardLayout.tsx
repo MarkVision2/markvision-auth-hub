@@ -13,7 +13,6 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
-  const { theme, toggle } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useRealtimeNotifications();
 
@@ -64,14 +63,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
 
           <NotificationBell />
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggle}
-            className="h-10 w-10 text-muted-foreground hover:text-foreground shrink-0"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
