@@ -24,6 +24,7 @@ export default function DecompositionTab() {
     const [crDiagToSale, setCrDiagToSale] = useState(20);
     const [crLeadToDiag, setCrLeadToDiag] = useState(10);
     const [cpl, setCpl] = useState(2000);
+    const [salary, setSalary] = useState(150000);
 
     const calc = useMemo(() => {
         let sales = 0, diagnostics = 0, leads = 0, adBudget = 0, revenue = 0;
@@ -44,9 +45,13 @@ export default function DecompositionTab() {
 
         const costPerDiag = diagnostics > 0 ? adBudget / diagnostics : 0;
         const costPerSale = sales > 0 ? adBudget / sales : 0;
-        const romi = adBudget > 0 ? Math.round(((revenue - adBudget) / adBudget) * 100) : 0;
-        return { sales, diagnostics, leads, adBudget, revenue, costPerDiag, costPerSale, romi };
-    }, [mode, targetRevenue, targetBudget, avgCheck, crDiagToSale, crLeadToDiag, cpl]);
+
+        const totalCosts = adBudget + salary;
+        const netProfit = revenue - totalCosts;
+        const romi = totalCosts > 0 ? Math.round((netProfit / totalCosts) * 100) : 0;
+
+        return { sales, diagnostics, leads, adBudget, revenue, costPerDiag, costPerSale, romi, totalCosts, netProfit };
+    }, [mode, targetRevenue, targetBudget, avgCheck, crDiagToSale, crLeadToDiag, cpl, salary]);
 
     const funnelSteps = mode === "revenue" ? [
         { label: "Целевая выручка", value: `${fmt(targetRevenue)} ₸`, icon: DollarSign, accent: true, sub: null },
@@ -63,15 +68,17 @@ export default function DecompositionTab() {
     ];
 
     const summaryRows = [
-        { label: "Выручка", value: `${fmt(calc.revenue)} ₸` },
-        { label: "Средний чек", value: `${fmt(avgCheck)} ₸` },
+        { label: "Выручка (Общая)", value: `${fmt(calc.revenue)} ₸`, isAccent: true },
+        { label: "Общие расходы (Бюджет + Зарплата)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: false },
+        { label: "Чистая прибыль", value: `${fmt(calc.netProfit)} ₸`, isAccent: true },
+        { label: "Средний чек", value: `${fmt(avgCheck)} ₸`, isAccent: false },
         { label: "Кол-во продаж", value: String(calc.sales) },
         { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
         { label: "Кол-во диагностик", value: String(calc.diagnostics) },
         { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
-        { label: "CR лид → диагностика", value: `${crLeadToDiag}%` },
-        { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸` },
-        { label: "ROMI", value: `${calc.romi}%` },
+        { label: "CR лид → диагностика", value: `${crLeadToDiag}%`, isAccent: false },
+        { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸`, isAccent: false },
+        { label: "ROMI (Учитывает ЗП)", value: `${calc.romi}%`, isAccent: true },
     ];
 
     return (
@@ -93,11 +100,12 @@ export default function DecompositionTab() {
             </div>
 
             {/* Input Fields */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 {[
                     mode === "revenue"
                         ? { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 }
                         : { label: "🎯 Бюджет на рекламу", value: targetBudget, onChange: setTargetBudget, suffix: "₸", step: 100000 },
+                    { label: "💼 Зарплата (Fix)", value: salary, onChange: setSalary, suffix: "₸", step: 10000 },
                     { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
                     { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
                     { label: "📊 CR диагностика → продажа", value: crDiagToSale, onChange: setCrDiagToSale, suffix: "%", step: 1 },
@@ -157,12 +165,14 @@ export default function DecompositionTab() {
                 </div>
                 <div className="divide-y divide-border">
                     {summaryRows.map((row, i) => (
-                        <div key={i} className={`px-5 py-3 flex items-center justify-between ${row.label === "ROMI" ? "bg-primary/[0.04]" : ""
+                        <div key={i} className={`px-5 py-3 flex items-center justify-between ${row.label.includes("ROMI") ? "bg-primary/[0.04]" : ""
                             }`}>
                             <span className="text-sm text-foreground">{row.label}</span>
-                            <span className={`text-sm font-bold font-mono tabular-nums ${row.label === "ROMI"
+                            <span className={`text-sm font-bold font-mono tabular-nums ${row.label.includes("ROMI")
                                 ? calc.romi >= 0 ? "text-primary" : "text-destructive"
-                                : row.label === "Выручка" ? "text-primary" : "text-foreground"
+                                : row.isAccent && row.label.includes("прибыль")
+                                    ? calc.netProfit >= 0 ? "text-primary" : "text-destructive"
+                                    : row.isAccent ? "text-primary" : "text-foreground"
                                 }`}>{row.value}</span>
                         </div>
                     ))}
@@ -173,8 +183,8 @@ export default function DecompositionTab() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
                 <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
-                <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} />
-                <KpiCard icon={PiggyBank} label="Прибыль с рекламы" value={fmtCurrency(calc.revenue - calc.adBudget)} valueClass={calc.revenue - calc.adBudget >= 0 ? "text-primary" : "text-destructive"} sub="выручка − бюджет" />
+                <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} sub="С учётом расходов и ЗП" />
+                <KpiCard icon={PiggyBank} label="Чистая Прибыль" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
             </div>
 
             {/* Save to Plan */}
