@@ -44,8 +44,8 @@ const navGroups: NavGroup[] = [
     label: "ГЛАВНОЕ",
     roles: ["superadmin", "client_admin"],
     items: [
-      { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true },
-      { title: "Рекламные кабинеты", path: "/accounts", icon: Briefcase },
+      { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true, requiredPerm: "hq" },
+      { title: "Рекламные кабинеты", path: "/accounts", icon: Briefcase, requiredPerm: "accounts" },
     ],
   },
   {
@@ -54,7 +54,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Управление рекламой", path: "/dashboard/target", icon: Target, requiredPerm: "ads" },
       { title: "Контент-Завод", path: "/content", icon: Wand2, requiredPerm: "content" },
-      { title: "Автопостинг", path: "/autoposting", icon: CalendarClock },
+      { title: "Автопостинг", path: "/autoposting", icon: CalendarClock, requiredPerm: "autoposting" },
       { title: "Мониторинг конкурентов", path: "/spy", icon: Radar, requiredPerm: "spy" },
     ],
   },
@@ -63,9 +63,9 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin", "client_admin", "client_manager"],
     items: [
       { title: "CRM Система", path: "/crm", icon: Users, requiredPerm: "crm" },
-      { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck },
-      { title: "Контроль качества", path: "/quality", icon: HeartHandshake },
-      { title: "Генератор LTV", path: "/retention", icon: Repeat },
+      { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck, requiredPerm: "ai_rop" },
+      { title: "Контроль качества", path: "/quality", icon: HeartHandshake, requiredPerm: "quality" },
+      { title: "Генератор LTV", path: "/retention", icon: Repeat, requiredPerm: "retention" },
     ],
   },
   {
@@ -73,16 +73,16 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin", "client_admin"],
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity, requiredPerm: "analytics" },
-      { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties },
-      { title: "Финансы", path: "/finance", icon: Coins },
-      { title: "AI Отчётность", path: "/ai-reports", icon: FileText },
+      { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties, requiredPerm: "scoreboard" },
+      { title: "Финансы", path: "/finance", icon: Coins, requiredPerm: "finance" },
+      { title: "AI Отчётность", path: "/ai-reports", icon: FileText, requiredPerm: "ai_reports" },
     ],
   },
   {
     label: "СИСТЕМА",
     roles: ["superadmin"],
     items: [
-      { title: "AI Управляющий", path: "/admin/ai-manager", icon: Bot },
+      { title: "AI Управляющий", path: "/admin/ai-manager", icon: Bot, superadminOnly: true, requiredPerm: "ai_manager" },
     ],
   },
 ];
@@ -317,31 +317,6 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
           <div className="min-w-0">
             <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
             <p className="text-[11px] text-muted-foreground capitalize">{role.replace("_", " ")}</p>
-          </div>
-        </div>
-
-        {/* ── Role Selector (Dev Only) ── */}
-        <div className="px-3 pt-2">
-          <div className="bg-accent/30 rounded-lg p-2 border border-border/50">
-            <p className="text-[9px] uppercase tracking-widest text-muted-foreground/60 font-bold mb-1.5 px-1">Test Role:</p>
-            <div className="flex flex-col gap-1">
-              {[
-                { id: "superadmin", label: "Super Admin" },
-                { id: "client_admin", label: "Clinic Owner" },
-                { id: "client_manager", label: "Receptionist" }
-              ].map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => setRole(r.id as any)}
-                  className={cn(
-                    "text-[10px] text-left px-2 py-1 rounded transition-colors",
-                    role === r.id ? "bg-primary text-primary-foreground font-semibold" : "text-muted-foreground hover:bg-accent/50"
-                  )}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

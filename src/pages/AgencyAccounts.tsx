@@ -113,13 +113,11 @@ export default function AgencyAccounts() {
   });
 
   const fetchMetrics = useCallback(async () => {
-    if (active.id === "hq") {
-      setMetrics([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-    let query = supabase.from("agency_metrics_view").select("*").eq("project_id", active.id);
+    let query = supabase.from("agency_metrics_view").select("*");
+    if (active.id !== "hq") {
+      query = query.eq("project_id", active.id);
+    }
 
     const { data, error } = await query;
     if (error) {

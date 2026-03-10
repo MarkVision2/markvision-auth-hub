@@ -32,13 +32,43 @@ export interface PermGroup {
 
 export const PERM_GROUPS: PermGroup[] = [
     {
-        label: "Модули", emoji: "🚀",
+        label: "Главное", emoji: "📊",
         modules: [
-            { key: "content", label: "Контент-Завод", icon: Wand2 },
+            { key: "hq", label: "Штаб-квартира", icon: LayoutDashboard },
+            { key: "accounts", label: "Рекламные кабинеты", icon: Briefcase },
+        ],
+    },
+    {
+        label: "Маркетинг", emoji: "🚀",
+        modules: [
             { key: "ads", label: "Управление рекламой", icon: Target },
-            { key: "spy", label: "Радар конкурентов", icon: Radar },
+            { key: "content", label: "Контент-Завод", icon: Wand2 },
+            { key: "autoposting", label: "Автопостинг", icon: Activity },
+            { key: "spy", label: "Мониторинг конкурентов", icon: Radar },
+        ],
+    },
+    {
+        label: "Продажи и Сервис", emoji: "💬",
+        modules: [
             { key: "crm", label: "CRM Система", icon: Users },
+            { key: "ai_rop", label: "AI-РОП", icon: ShieldCheck },
+            { key: "quality", label: "Контроль качества", icon: Activity },
+            { key: "retention", label: "Генератор LTV", icon: Activity },
+        ],
+    },
+    {
+        label: "Аналитика", emoji: "📈",
+        modules: [
             { key: "analytics", label: "Сквозная аналитика", icon: Activity },
+            { key: "scoreboard", label: "Таблица показателей", icon: FileBarChart },
+            { key: "finance", label: "Финансы", icon: Coins },
+            { key: "ai_reports", label: "AI Отчётность", icon: FileBarChart },
+        ],
+    },
+    {
+        label: "Система", emoji: "⚙️",
+        modules: [
+            { key: "ai_manager", label: "AI Управляющий", icon: Activity },
         ],
     }
 ];
@@ -47,7 +77,7 @@ export const ALL_KEYS = PERM_GROUPS.flatMap(g => g.modules.map(m => m.key));
 
 export const ROLE_PRESETS: Record<RoleKey, string[]> = {
     superadmin: [...ALL_KEYS],
-    client_admin: ["content", "ads", "spy", "crm", "analytics"],
+    client_admin: ["hq", "accounts", "ads", "content", "autoposting", "spy", "crm", "analytics", "scoreboard", "finance", "ai_reports"],
     client_manager: ["crm"],
 };
 
