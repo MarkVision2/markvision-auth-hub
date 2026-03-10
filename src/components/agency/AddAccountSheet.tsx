@@ -61,7 +61,11 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
   // Find real project IDs by name
   const markVisionProject = workspaces.find(w => w.id === "hq");
-  const cprProject = workspaces.find(w => w.name === "CPR_KZ");
+  const cprProject = workspaces.find(w =>
+    w.name.toUpperCase() === "CPR_KZ" ||
+    w.name.toLowerCase() === "црп" ||
+    w.name.toLowerCase() === "crp"
+  );
 
   const isInHq = active.id === "hq";
   const isInCPR = cprProject && active.id === cprProject.id;
@@ -204,7 +208,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                         onCheckedChange={(c) => setShowInCPR(!!c)}
                       />
                       <div>
-                        <Label htmlFor="vis-cpr" className="text-sm font-medium cursor-pointer">CPR_KZ</Label>
+                        <Label htmlFor="vis-cpr" className="text-sm font-medium cursor-pointer">{cprProject.name}</Label>
                       </div>
                     </div>
                   )}

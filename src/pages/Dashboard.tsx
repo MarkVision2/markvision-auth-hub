@@ -145,14 +145,14 @@ export default function Dashboard() {
           setClients((data as ClientMetric[]) || []);
         } else {
           // Client view: fetch by project_id OR shared visibility
-          const { data: shared } = await (supabase as any).from("cabinet_visibility").select("cabinet_id").eq("project_id", active.id);
-          const sharedIds = (shared || []).map((s: any) => s.cabinet_id);
+          const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
+          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
           let query = (supabase as any).from("agency_metrics_view").select("*");
           if (sharedIds.length > 0) {
-            query = query.or(`project_id.eq.${active.id},cabinet_id.in.(${sharedIds.join(",")})`);
+            query = query.or(`client_id.eq.${active.id},client_id.in.(${sharedIds.join(",")})`);
           } else {
-            query = query.eq("project_id", active.id);
+            query = query.eq("client_id", active.id);
           }
 
           const { data, error } = await query;

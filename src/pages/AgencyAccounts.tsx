@@ -167,9 +167,9 @@ export default function AgencyAccounts() {
         // Merge with base values from clients_config if applicable
         const totalSpend = sums.spend + (Number(c.spend) || 0);
         const totalLeads = sums.leads + (Number(c.meta_leads) || 0);
-        const totalVisits = sums.visits;
-        const totalSales = sums.sales;
-        const totalRevenue = sums.revenue;
+        const totalVisits = sums.visits + (Number(c.visits) || 0);
+        const totalSales = sums.sales + (Number(c.sales) || 0);
+        const totalRevenue = sums.revenue + (Number(c.revenue) || 0);
 
         // Calculate derived KPIs for this period
         const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;

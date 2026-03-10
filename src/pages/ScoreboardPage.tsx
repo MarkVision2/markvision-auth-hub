@@ -171,6 +171,7 @@ export default function ScoreboardPage() {
   // Ad Account filter
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
+  const [baseMetrics, setBaseMetrics] = useState({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
@@ -204,10 +205,20 @@ export default function ScoreboardPage() {
 
         const { data, error } = await query.order("client_name");
         if (error) throw error;
-        const accs = (data || []) as ClientAccount[];
+        const accs = (data || []) as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
         setAccounts(accs);
-        if (accs.length > 0 && selectedAccountId === "__none__") {
-          setSelectedAccountId(accs[0].id);
+        if (accs.length > 0) {
+          const first = accs[0];
+          if (selectedAccountId === "__none__") {
+            setSelectedAccountId(first.id);
+            setBaseMetrics({
+              spend: Number(first.spend) || 0,
+              leads: Number(first.meta_leads) || 0,
+              visits: Number(first.visits) || 0,
+              sales: Number(first.sales) || 0,
+              revenue: Number(first.revenue) || 0,
+            });
+          }
         }
       } catch {
         setAccounts([]);
@@ -305,12 +316,22 @@ export default function ScoreboardPage() {
   // Aggregated fact
   const fact = useMemo(() => rows.reduce(
     (acc, d) => ({
-      spend: acc.spend + d.spend, leads: acc.leads + d.leads,
-      followers: acc.followers + d.followers, visits: acc.visits + d.visits,
-      sales: acc.sales + d.sales, revenue: acc.revenue + d.revenue,
+      spend: acc.spend + d.spend,
+      leads: acc.leads + d.leads,
+      followers: acc.followers + d.followers,
+      visits: acc.visits + d.visits,
+      sales: acc.sales + d.sales,
+      revenue: acc.revenue + d.revenue,
     }),
-    { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
-  ), [rows]);
+    {
+      spend: baseMetrics.spend,
+      leads: baseMetrics.leads,
+      followers: 0,
+      visits: baseMetrics.visits,
+      sales: baseMetrics.sales,
+      revenue: baseMetrics.revenue
+    }
+  ), [rows, baseMetrics]);
 
   const getVal = (src: Record<string, number>, key: MetricKey): number => {
     if (key === "cpl") return cplCalc(src.spend, src.leads);
@@ -395,7 +416,22 @@ export default function ScoreboardPage() {
             </div>
 
             {/* Ad Account Selector */}
-            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+            <Select
+              value={selectedAccountId}
+              onValueChange={(id) => {
+                setSelectedAccountId(id);
+                const acc = accounts.find(a => a.id === id) as any;
+                if (acc) {
+                  setBaseMetrics({
+                    spend: Number(acc.spend) || 0,
+                    leads: Number(acc.meta_leads) || 0,
+                    visits: Number(acc.visits) || 0,
+                    sales: Number(acc.sales) || 0,
+                    revenue: Number(acc.revenue) || 0,
+                  });
+                }
+              }}
+            >
               <SelectTrigger className="h-10 min-h-[44px] w-full sm:w-[220px] text-xs bg-card border-border rounded-xl">
                 <div className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -577,6 +613,6 @@ export default function ScoreboardPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   );
 }

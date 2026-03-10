@@ -132,8 +132,7 @@ export default function DashboardTarget() {
     try {
       let clientsQuery = (supabase as any)
         .from("clients_config")
-        .select("id, client_name, ad_account_id, daily_budget, is_active")
-        .eq("is_active", true)
+        .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue").eq("is_active", true)
         .eq("is_agency", false)
         .order("client_name");
 
@@ -195,11 +194,11 @@ export default function DashboardTarget() {
 
       const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
         const metrics = metricsMap.get(c.id) || [];
-        const totalSpend = metrics.reduce((s, m) => s + m.spend, 0);
-        const totalLeads = metrics.reduce((s, m) => s + m.leads, 0);
-        const totalVisits = metrics.reduce((s, m) => s + m.visits, 0);
-        const totalSales = metrics.reduce((s, m) => s + m.sales, 0);
-        const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0);
+        const totalSpend = metrics.reduce((s, m) => s + m.spend, 0) + (Number(c.spend) || 0);
+        const totalLeads = metrics.reduce((s, m) => s + m.leads, 0) + (Number(c.meta_leads) || 0);
+        const totalVisits = metrics.reduce((s, m) => s + m.visits, 0) + (Number(c.visits) || 0);
+        const totalSales = metrics.reduce((s, m) => s + m.sales, 0) + (Number(c.sales) || 0);
+        const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0) + (Number(c.revenue) || 0);
         const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0);
         const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0);
 
