@@ -17,30 +17,49 @@ export default function DecompositionTab() {
     const [planYear, setPlanYear] = useState(now.getFullYear());
     const [savingPlan, setSavingPlan] = useState(false);
 
+    const [mode, setMode] = useState<"revenue" | "budget">("revenue");
     const [targetRevenue, setTargetRevenue] = useState(5_000_000);
+    const [targetBudget, setTargetBudget] = useState(1_000_000);
     const [avgCheck, setAvgCheck] = useState(1_000_000);
     const [crDiagToSale, setCrDiagToSale] = useState(20);
     const [crLeadToDiag, setCrLeadToDiag] = useState(10);
     const [cpl, setCpl] = useState(2000);
 
     const calc = useMemo(() => {
-        const sales = avgCheck > 0 ? Math.ceil(targetRevenue / avgCheck) : 0;
-        const diagnostics = crDiagToSale > 0 ? Math.ceil(sales / (crDiagToSale / 100)) : 0;
-        const leads = crLeadToDiag > 0 ? Math.ceil(diagnostics / (crLeadToDiag / 100)) : 0;
-        const adBudget = leads * cpl;
-        const revenue = sales * avgCheck;
+        let sales = 0, diagnostics = 0, leads = 0, adBudget = 0, revenue = 0;
+
+        if (mode === "revenue") {
+            sales = avgCheck > 0 ? Math.ceil(targetRevenue / avgCheck) : 0;
+            diagnostics = crDiagToSale > 0 ? Math.ceil(sales / (crDiagToSale / 100)) : 0;
+            leads = crLeadToDiag > 0 ? Math.ceil(diagnostics / (crLeadToDiag / 100)) : 0;
+            adBudget = leads * cpl;
+            revenue = sales * avgCheck;
+        } else {
+            leads = cpl > 0 ? Math.floor(targetBudget / cpl) : 0;
+            diagnostics = Math.floor(leads * (crLeadToDiag / 100));
+            sales = Math.floor(diagnostics * (crDiagToSale / 100));
+            adBudget = targetBudget;
+            revenue = sales * avgCheck;
+        }
+
         const costPerDiag = diagnostics > 0 ? adBudget / diagnostics : 0;
         const costPerSale = sales > 0 ? adBudget / sales : 0;
         const romi = adBudget > 0 ? Math.round(((revenue - adBudget) / adBudget) * 100) : 0;
         return { sales, diagnostics, leads, adBudget, revenue, costPerDiag, costPerSale, romi };
-    }, [targetRevenue, avgCheck, crDiagToSale, crLeadToDiag, cpl]);
+    }, [mode, targetRevenue, targetBudget, avgCheck, crDiagToSale, crLeadToDiag, cpl]);
 
-    const funnelSteps = [
+    const funnelSteps = mode === "revenue" ? [
         { label: "Целевая выручка", value: `${fmt(targetRevenue)} ₸`, icon: DollarSign, accent: true, sub: null },
         { label: "Нужно продаж", value: String(calc.sales), icon: Target, accent: false, sub: `чек ${fmt(avgCheck)} ₸` },
         { label: "Нужно диагностик", value: String(calc.diagnostics), icon: Users, accent: false, sub: `CR ${crDiagToSale}% → продажа` },
         { label: "Нужно лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CR ${crLeadToDiag}% → диагностика` },
         { label: "Бюджет на рекламу", value: `${fmt(calc.adBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
+    ] : [
+        { label: "Бюджет на рекламу", value: `${fmt(targetBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
+        { label: "Прогноз лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CR ${crLeadToDiag}% → диагностика` },
+        { label: "Прогноз диагностик", value: String(calc.diagnostics), icon: Users, accent: false, sub: `CR ${crDiagToSale}% → продажа` },
+        { label: "Прогноз продаж", value: String(calc.sales), icon: Target, accent: false, sub: `чек ${fmt(avgCheck)} ₸` },
+        { label: "Прогноз выручки", value: `${fmt(calc.revenue)} ₸`, icon: DollarSign, accent: true, sub: null },
     ];
 
     const summaryRows = [
@@ -57,10 +76,28 @@ export default function DecompositionTab() {
 
     return (
         <div className="space-y-6 max-w-5xl">
+            {/* Mode Switcher */}
+            <div className="flex bg-secondary/30 p-1 rounded-xl w-fit">
+                <button
+                    onClick={() => setMode("revenue")}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${mode === "revenue" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                    От целевой выручки
+                </button>
+                <button
+                    onClick={() => setMode("budget")}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${mode === "budget" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                    От бюджета
+                </button>
+            </div>
+
             {/* Input Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {[
-                    { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 },
+                    mode === "revenue"
+                        ? { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 }
+                        : { label: "🎯 Бюджет на рекламу", value: targetBudget, onChange: setTargetBudget, suffix: "₸", step: 100000 },
                     { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
                     { label: "📊 CR диагностика → продажа", value: crDiagToSale, onChange: setCrDiagToSale, suffix: "%", step: 1 },
                     { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
@@ -86,14 +123,14 @@ export default function DecompositionTab() {
             <div className="rounded-xl border border-border bg-card p-5">
                 <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-5 flex items-center gap-2">
                     <Calculator className="h-4 w-4 text-primary" />
-                    Обратная воронка — от выручки к бюджету
+                    {mode === "revenue" ? "Обратная воронка — от выручки к бюджету" : "Прямая воронка — от бюджета к выручке"}
                 </h3>
                 <div className="grid grid-cols-5 gap-0 items-stretch">
                     {funnelSteps.map((step, i) => (
                         <div key={step.label} className="flex items-stretch">
                             <div className={`rounded-xl p-4 flex-1 flex flex-col items-center justify-between text-center min-h-[160px] ${step.accent
-                                    ? "border-2 border-primary/30 bg-primary/[0.06]"
-                                    : "border border-border bg-secondary/20"
+                                ? "border-2 border-primary/30 bg-primary/[0.06]"
+                                : "border border-border bg-secondary/20"
                                 }`}>
                                 <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${step.accent ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
                                     }`}>
@@ -124,8 +161,8 @@ export default function DecompositionTab() {
                             }`}>
                             <span className="text-sm text-foreground">{row.label}</span>
                             <span className={`text-sm font-bold font-mono tabular-nums ${row.label === "ROMI"
-                                    ? calc.romi >= 0 ? "text-primary" : "text-destructive"
-                                    : row.label === "Выручка" ? "text-primary" : "text-foreground"
+                                ? calc.romi >= 0 ? "text-primary" : "text-destructive"
+                                : row.label === "Выручка" ? "text-primary" : "text-foreground"
                                 }`}>{row.value}</span>
                         </div>
                     ))}
