@@ -15,7 +15,7 @@ import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -220,6 +220,9 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
         <DialogContent className="sm:max-w-[425px] bg-background border-border">
           <DialogHeader>
             <DialogTitle>Создать новый проект</DialogTitle>
+            <DialogDescription>
+              Введите название нового проекта. После создания вы будете автоматически переключены на этот проект.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">

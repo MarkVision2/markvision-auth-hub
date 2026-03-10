@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +10,15 @@ import {
     ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { fmt, fmtCurrency, KpiCard } from "./shared";
+
+interface SummaryRow {
+    type?: "header" | "row";
+    label: string;
+    value?: string;
+    isAccent?: boolean;
+    isNetProfit?: boolean;
+    isRomi?: boolean;
+}
 
 export default function DecompositionTab() {
     const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
@@ -67,13 +77,24 @@ export default function DecompositionTab() {
         { label: "Прогноз выручки", value: `${fmt(calc.revenue)} ₸`, icon: DollarSign, accent: true, sub: null },
     ];
 
-    const summaryRows = [
-        { label: "Общие расходы (Бюджет + Зарплата)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: false },
-        { label: "Зарплата маркетолога (Fix)", value: `${fmt(salary)} ₸`, isAccent: false },
-        { label: "Стоимость лида (CPL)", value: `${fmt(cpl)} ₸`, isAccent: false },
-        { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
-        { label: "Налоги (10%)", value: `${fmt(calc.revenue * 0.1)} ₸` },
-        { label: "Результат после налогов", value: `${fmt(calc.netProfit - calc.revenue * 0.1)} ₸`, isAccent: true },
+    const summaryRows: SummaryRow[] = [
+        { type: "header", label: "БЛОК 1: ЗАТРАТЫ" },
+        { label: "Расходы на рекламу (Бюджет)", value: `${fmt(calc.adBudget)} ₸` },
+        { label: "Расходы на маркетинг (Fix ЗП)", value: `${fmt(salary)} ₸` },
+        { label: "Общие инвестиции (Бюджет + ЗП)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: true },
+
+        { type: "header", label: "БЛОК 2: ВОРОНКА И СТОИМОСТЬ" },
+        { label: "Количество лидов", value: String(calc.leads) },
+        { label: "Стоимость лида (CPL)", value: `${fmt(cpl)} ₸` },
+        { label: "Количество визитов/диагностик", value: String(calc.diagnostics) },
+        { label: "Стоимость визита (CPV)", value: `${fmt(Math.round(calc.adBudget / Math.max(1, calc.diagnostics)))} ₸` },
+        { label: "Количество продаж", value: String(calc.sales) },
+        { label: "Стоимость продажи/клиента (CAC)", value: `${fmt(Math.round(calc.totalCosts / Math.max(1, calc.sales)))} ₸`, isAccent: true },
+
+        { type: "header", label: "БЛОК 3: ФИНАНСОВЫЙ ИТОГ" },
+        { label: "Целевая Выручка", value: `${fmt(calc.revenue)} ₸` },
+        { label: "Чистая прибыль (после маркетинга)", value: `${fmt(calc.netProfit)} ₸`, isNetProfit: true },
+        { label: "Реальный ROMI", value: `${calc.romi}%`, isRomi: true },
     ];
 
     return (
@@ -158,12 +179,25 @@ export default function DecompositionTab() {
                 <div className="px-5 py-3.5 border-b border-border">
                     <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Сводная таблица</h3>
                 </div>
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-border/50">
                     {summaryRows.map((row, i) => (
-                        <div key={i} className="px-5 py-3 flex items-center justify-between">
-                            <span className="text-sm text-foreground">{row.label}</span>
-                            <span className={`text-sm font-bold font-mono tabular-nums ${row.isAccent ? "text-primary" : "text-foreground"}`}>{row.value}</span>
-                        </div>
+                        row.type === "header" ? (
+                            <div key={i} className="px-5 py-2 bg-secondary/20 border-y border-border/50 first:border-t-0">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{row.label}</span>
+                            </div>
+                        ) : (
+                            <div key={i} className="px-5 py-3 flex items-center justify-between hover:bg-secondary/10 transition-colors">
+                                <span className="text-sm text-foreground">{row.label}</span>
+                                <span className={cn(
+                                    "text-sm font-bold font-mono tabular-nums",
+                                    row.isAccent ? "text-primary" : "text-foreground",
+                                    row.isNetProfit ? "text-[#10b981]" : "",
+                                    row.isRomi ? "text-[#10b981] font-extrabold" : ""
+                                )}>
+                                    {row.value}
+                                </span>
+                            </div>
+                        )
                     ))}
                 </div>
             </div>
@@ -171,9 +205,9 @@ export default function DecompositionTab() {
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
-                <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
-                <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} sub="С учётом расходов и ЗП" />
-                <KpiCard icon={PiggyBank} label="Выручка после маркетинга" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={Target} label="CAC (с учетом ЗП)" value={fmtCurrency(Math.round(calc.totalCosts / Math.max(1, calc.sales)))} sub="Стоимость продажи/клиента" />
+                <KpiCard icon={PiggyBank} label="Чистая прибыль" value={fmtCurrency(calc.netProfit)} valueClass="text-[#10b981]" sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass="text-[#10b981]" sub="Реальный показатель" />
             </div>
 
             {/* Save to Plan */}
