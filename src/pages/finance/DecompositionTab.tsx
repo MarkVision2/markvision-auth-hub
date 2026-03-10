@@ -70,15 +70,12 @@ export default function DecompositionTab() {
     const summaryRows = [
         { label: "Выручка (Общая)", value: `${fmt(calc.revenue)} ₸`, isAccent: true },
         { label: "Общие расходы (Бюджет + Зарплата)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: false },
-        { label: "Прибыль (после маркетинга)", value: `${fmt(calc.netProfit)} ₸`, isAccent: true },
         { label: "Средний чек", value: `${fmt(avgCheck)} ₸`, isAccent: false },
         { label: "Кол-во продаж", value: String(calc.sales) },
         { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
         { label: "Кол-во диагностик", value: String(calc.diagnostics) },
         { label: "Стоимость диагностики", value: `${fmt(Math.round(calc.costPerDiag))} ₸` },
         { label: "CR лид → диагностика", value: `${crLeadToDiag}%`, isAccent: false },
-        { label: "Стоимость клиента (CAC)", value: `${fmt(Math.round(calc.costPerSale))} ₸`, isAccent: false },
-        { label: "ROMI (Учитывает ЗП)", value: `${calc.romi}%`, isAccent: true },
     ];
 
     return (
@@ -165,15 +162,9 @@ export default function DecompositionTab() {
                 </div>
                 <div className="divide-y divide-border">
                     {summaryRows.map((row, i) => (
-                        <div key={i} className={`px-5 py-3 flex items-center justify-between ${row.label.includes("ROMI") ? "bg-primary/[0.04]" : ""
-                            }`}>
+                        <div key={i} className="px-5 py-3 flex items-center justify-between">
                             <span className="text-sm text-foreground">{row.label}</span>
-                            <span className={`text-sm font-bold font-mono tabular-nums ${row.label.includes("ROMI")
-                                ? calc.romi >= 0 ? "text-primary" : "text-destructive"
-                                : row.isAccent && row.label.includes("прибыль")
-                                    ? calc.netProfit >= 0 ? "text-primary" : "text-destructive"
-                                    : row.isAccent ? "text-primary" : "text-foreground"
-                                }`}>{row.value}</span>
+                            <span className={`text-sm font-bold font-mono tabular-nums ${row.isAccent ? "text-primary" : "text-foreground"}`}>{row.value}</span>
                         </div>
                     ))}
                 </div>
@@ -184,7 +175,7 @@ export default function DecompositionTab() {
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
                 <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
                 <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} sub="С учётом расходов и ЗП" />
-                <KpiCard icon={PiggyBank} label="Прибыль (после маркетинга)" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
             </div>
 
             {/* Save to Plan */}
