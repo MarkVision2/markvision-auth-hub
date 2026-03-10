@@ -1,26 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
   Cpu, Activity, Bot, Zap, MessageSquare, HeartHandshake,
-  Wrench, CheckCircle2, AlertTriangle, Send, RefreshCw,
-  ShieldCheck,
+  Wrench, CheckCircle2, ShieldCheck, Headphones
 } from "lucide-react";
-
-/* ── Mock activity log ── */
-const MOCK_LOG: any[] = [];
-
-const typeColors: Record<string, string> = {
-  action: "text-primary",
-  fix: "text-amber-500",
-  audit: "text-blue-400",
-};
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
 /* ── KPI Card ── */
 function StatusCard({ icon: Icon, label, value, sub, glow }: {
-  icon: React.ElementType; label: string; value: string; sub?: string; glow?: boolean;
+  icon: React.ElementType; label: string; value: string | number; sub?: string; glow?: boolean;
 }) {
   return (
     <div className={cn(
@@ -86,8 +79,119 @@ function AiToggle({ icon: Icon, label, description, defaultOn = true }: {
   );
 }
 
-/* ── Main Page ── */
+interface LogEntry {
+  id: string;
+  type: "action" | "audit" | "fix";
+  text: string;
+  time: string;
+  timestamp: number;
+}
+
+const typeColors: Record<string, string> = {
+  action: "text-primary",
+  fix: "text-amber-500",
+  audit: "text-blue-400",
+};
+
 export default function AiManagerPage() {
+  const [activeClients, setActiveClients] = useState<number>(0);
+  const [todayActions, setTodayActions] = useState<number>(0);
+  const [systemLogs, setSystemLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+
+        // 1. Fetch active clients
+        const { count: clientsCount } = await supabase
+          .from("clients_config")
+          .select("*", { count: 'exact', head: true })
+          .eq("is_active", true);
+
+        setActiveClients(clientsCount || 0);
+
+        // Date bounds for today's logs
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayIso = todayStart.toISOString();
+
+        // 2. Fetch AI Bridge Tasks (today count + recent logs)
+        const { data: bridgeData, count: bridgeCount } = await supabase
+          .from("ai_bridge_tasks")
+          .select("id, prompt, response, status, created_at", { count: 'exact' })
+          .gte("created_at", todayIso)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        // 3. Fetch AI ROP Audits (today count + recent logs)
+        const { data: auditData, count: auditCount } = await supabase
+          .from("ai_rop_audits")
+          .select("id, manager_name, ai_score, interaction_type, created_at", { count: 'exact' })
+          .gte("created_at", todayIso)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        setTodayActions((bridgeCount || 0) + (auditCount || 0));
+
+        // Format Logs
+        const logs: LogEntry[] = [];
+
+        if (bridgeData) {
+          bridgeData.forEach(item => {
+            const date = new Date(item.created_at);
+            const isError = item.status === "error";
+            logs.push({
+              id: `bridge-${item.id}`,
+              type: isError ? "fix" : "action",
+              text: isError
+                ? `Ошибка webhook, попытка авто-лечения: ${item.prompt.slice(0, 40)}...`
+                : `Обработан запрос интеграции (статус: ${item.status || "ok"})`,
+              time: format(date, "HH:mm"),
+              timestamp: date.getTime(),
+            });
+          });
+        }
+
+        if (auditData) {
+          auditData.forEach(item => {
+            const date = new Date(item.created_at);
+            logs.push({
+              id: `audit-${item.id}`,
+              type: "audit",
+              text: `AI РОП провел аудит. Оценка: ${item.ai_score || 0}/100. Тип: ${item.interaction_type}.`,
+              time: format(date, "HH:mm"),
+              timestamp: date.getTime(),
+            });
+          });
+        }
+
+        // Add an implicit "healthy" log to show system is running
+        if (logs.length === 0) {
+          logs.push({
+            id: "sys-healthy",
+            type: "action",
+            text: "Система успешно инициализирована. Ожидание событий.",
+            time: format(new Date(), "HH:mm"),
+            timestamp: new Date().getTime(),
+          });
+        }
+
+        // Sort descending by time
+        logs.sort((a, b) => b.timestamp - a.timestamp);
+
+        setSystemLogs(logs.slice(0, 30)); // Keep top 30
+      } catch (err) {
+        console.error("Error fetching AI manager data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
   return (
     <DashboardLayout breadcrumb="AI Управляющий">
       <div className="space-y-6">
@@ -106,16 +210,16 @@ export default function AiManagerPage() {
               glow
             />
             <StatusCard
-              icon={Bot}
-              label="Активные ИИ-Агенты"
-              value="4"
-              sub="WhatsApp · NPS · Healer · Monitor"
+              icon={ShieldCheck}
+              label="Активные Кабинеты"
+              value={loading ? "..." : activeClients}
+              sub="Проекты под управлением ИИ"
             />
             <StatusCard
               icon={Zap}
               label="Действий за сегодня"
-              value="142"
-              sub="+23% к вчерашнему дню"
+              value={loading ? "..." : todayActions}
+              sub="Все задачи и проверки за сегодня"
             />
           </div>
         </div>
@@ -155,8 +259,11 @@ export default function AiManagerPage() {
           </div>
           <div className="rounded-2xl border border-border bg-card overflow-hidden">
             <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
-              {MOCK_LOG.map((entry) => {
-                const Icon = entry.icon;
+              {loading && (
+                <div className="p-8 text-center text-sm text-muted-foreground">Загрузка журнала...</div>
+              )}
+              {!loading && systemLogs.map((entry) => {
+                const Icon = entry.type === 'audit' ? Headphones : entry.type === 'action' ? CheckCircle2 : Wrench;
                 return (
                   <div key={entry.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
                     <div className={cn(
@@ -174,7 +281,7 @@ export default function AiManagerPage() {
                           ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                           : "bg-primary/10 text-primary border-primary/20"
                     )}>
-                      {entry.type === "fix" ? "Auto-heal" : entry.type === "audit" ? "Аудит" : "Действие"}
+                      {entry.type === "fix" ? "Auto-heal" : entry.type === "audit" ? "Аудит" : "Интеграция"}
                     </Badge>
                   </div>
                 );
