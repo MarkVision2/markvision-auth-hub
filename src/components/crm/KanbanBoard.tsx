@@ -100,14 +100,14 @@ export default function KanbanBoard() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("leads")
         .select("*")
         .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setLeads((data as Lead[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -145,7 +145,7 @@ export default function KanbanBoard() {
           record: {
             id: lead.id,
             status: capiKey,
-            project_id: (lead as any).project_id || null,
+            project_id: (lead as unknown).project_id || null,
             deal_amount: lead.amount || 0,
           },
           old_record: { status: oldStatus },
@@ -171,7 +171,7 @@ export default function KanbanBoard() {
     const lead = leads.find(l => l.id === leadId);
     const oldStatus = lead?.status || "Новая заявка";
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown)
       .from("leads").update({ status: newStatus }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
@@ -199,7 +199,7 @@ export default function KanbanBoard() {
 
   const handleDeleteLead = async (leadId: string, leadName: string) => {
     if (!confirm(`Удалить следку ${leadName}?`)) return;
-    const { error } = await (supabase as any).from("leads").delete().eq("id", leadId);
+    const { error } = await (supabase as unknown).from("leads").delete().eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;

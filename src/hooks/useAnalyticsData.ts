@@ -34,7 +34,7 @@ export function useAnalyticsData() {
       setLoading(true);
       try {
         // Fetch analytics tables
-        let chQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).order("created_at");
+        const chQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).order("created_at");
 
         const [chRes, campRes, crRes, opRes] = await Promise.all([
           chQ,

@@ -115,7 +115,7 @@ export default function ChatsView() {
     }
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("leads")
         .select("*")
         .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -127,7 +127,7 @@ export default function ChatsView() {
       // Fetch last messages and unread counts for all leads
       if (leadsData.length > 0) {
         const leadIds = leadsData.map(l => l.id);
-        const { data: allMsgs } = await (supabase as any)
+        const { data: allMsgs } = await (supabase as unknown)
           .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
 
         if (allMsgs) {
@@ -143,7 +143,7 @@ export default function ChatsView() {
           setUnreadCounts(unreadMap);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -156,7 +156,7 @@ export default function ChatsView() {
     const channel = supabase
       .channel("chats_leads_rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_messages" }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_messages" }, (payload: unknown) => {
         const newMsg = payload.new as CrmMessage;
         // Update messages if viewing this lead
         if (selectedLead && newMsg.lead_id === selectedLead.id) {
@@ -176,14 +176,14 @@ export default function ChatsView() {
   const fetchMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("crm_messages").select("*").eq("lead_id", leadId).order("created_at", { ascending: true });
       if (error) throw error;
       setMessages((data as CrmMessage[]) ?? []);
       // Mark as read
-      await (supabase as any).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
+      await (supabase as unknown).from("crm_messages").update({ read: true }).eq("lead_id", leadId).eq("read", false);
       setUnreadCounts(prev => ({ ...prev, [leadId]: 0 }));
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки сообщений", description: err.message, variant: "destructive" });
     } finally {
       setMessagesLoading(false);
@@ -193,11 +193,11 @@ export default function ChatsView() {
   // Fetch notes for selected lead
   const fetchNotes = useCallback(async (leadId: string) => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
       if (error) throw error;
       setNotes((data as CrmNote[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки заметок", description: err.message, variant: "destructive" });
     }
   }, []);
@@ -243,7 +243,7 @@ export default function ChatsView() {
 
   const handleStageChange = async (leadId: string, newStage: string) => {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStage } : l));
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown)
       .from("leads").update({ status: newStage }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
@@ -257,7 +257,7 @@ export default function ChatsView() {
     if (!message.trim() || !selectedLead) return;
     const body = message.trim();
     setMessage("");
-    const { error } = await (supabase as any).from("crm_messages").insert({
+    const { error } = await (supabase as unknown).from("crm_messages").insert({
       lead_id: selectedLead.id,
       direction: "outbound",
       sender_type: "manager",
@@ -272,7 +272,7 @@ export default function ChatsView() {
     if (!note.trim() || !selectedLead) return;
     const body = note.trim();
     setNote("");
-    const { error } = await (supabase as any).from("crm_notes").insert({
+    const { error } = await (supabase as unknown).from("crm_notes").insert({
       lead_id: selectedLead.id,
       author_name: "Менеджер",
       body,

@@ -66,12 +66,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     setLoadingClients(true);
-    (supabase as any)
+    (supabase as unknown)
       .from("clients_config")
       .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token")
       .eq("is_active", true)
       .order("client_name")
-      .then(({ data, error }: any) => {
+      .then(({ data, error }: unknown) => {
         if (!error && data) setClients(data);
         setLoadingClients(false);
       });

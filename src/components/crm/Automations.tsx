@@ -47,7 +47,7 @@ export default function Automations() {
       setLoading(false);
     }
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as unknown)
       .from("crm_automations")
       .select("*")
       .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -61,13 +61,13 @@ export default function Automations() {
 
   const toggle = async (id: string, current: boolean) => {
     setAutomations(prev => prev.map(a => a.id === id ? { ...a, is_enabled: !current } : a));
-    const { error } = await (supabase as any).from("crm_automations").update({ is_enabled: !current }).eq("id", id);
+    const { error } = await (supabase as unknown).from("crm_automations").update({ is_enabled: !current }).eq("id", id);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); fetchAutomations(); }
   };
 
   const handleCreate = async () => {
     if (!form.trigger_value.trim()) { toast({ title: "Укажите значение триггера" }); return; }
-    const { error } = await (supabase as any).from("crm_automations").insert({
+    const { error } = await (supabase as unknown).from("crm_automations").insert({
       project_id: active.id,
       trigger_type: form.trigger_type,
       trigger_value: form.trigger_value.trim(),
@@ -85,7 +85,7 @@ export default function Automations() {
 
   const handleDelete = async (id: string) => {
     setAutomations(prev => prev.filter(a => a.id !== id));
-    const { error } = await (supabase as any).from("crm_automations").delete().eq("id", id);
+    const { error } = await (supabase as unknown).from("crm_automations").delete().eq("id", id);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); fetchAutomations(); }
     else toast({ title: "Удалено" });
   };

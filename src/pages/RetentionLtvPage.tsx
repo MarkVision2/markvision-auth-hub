@@ -221,17 +221,17 @@ export default function RetentionLtvPage() {
     }
     try {
       const [tasksRes, templatesRes, leadsRes] = await Promise.all([
-        (supabase as any)
+        (supabase as unknown)
           .from("retention_tasks")
           .select("*, leads(name), retention_templates(name)")
           .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("trigger_date", { ascending: true }),
-        (supabase as any)
+        (supabase as unknown)
           .from("retention_templates")
           .select("*")
           .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("revenue_generated", { ascending: false }),
-        (supabase as any)
+        (supabase as unknown)
           .from("leads")
           .select("id, name")
           .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -242,7 +242,7 @@ export default function RetentionLtvPage() {
       if (templatesRes.error) throw templatesRes.error;
       if (leadsRes.error) throw leadsRes.error;
 
-      setTasks((tasksRes.data || []).map((r: any) => ({
+      setTasks((tasksRes.data || []).map((r: unknown) => ({
         id: r.id,
         lead_id: r.lead_id,
         template_id: r.template_id,
@@ -252,7 +252,7 @@ export default function RetentionLtvPage() {
         lead_name: r.leads?.name || "—",
         template_name: r.retention_templates?.name || "—",
       })));
-      setTemplates((templatesRes.data || []).map((r: any) => ({
+      setTemplates((templatesRes.data || []).map((r: unknown) => ({
         id: r.id,
         name: r.name,
         message_prompt: r.message_prompt,
@@ -261,7 +261,7 @@ export default function RetentionLtvPage() {
         revenue_generated: r.revenue_generated ?? 0,
       })));
       setLeads(leadsRes.data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -281,7 +281,7 @@ export default function RetentionLtvPage() {
     }
     setSaving(true);
     try {
-      const { error } = await (supabase as any).from("retention_tasks").insert({
+      const { error } = await (supabase as unknown).from("retention_tasks").insert({
         lead_id: formLeadId,
         template_id: formTemplateId,
         trigger_date: formDate ? format(formDate, "yyyy-MM-dd") : "",
@@ -297,7 +297,7 @@ export default function RetentionLtvPage() {
       setFormDate(undefined);
       setFormPromo("");
       fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);

@@ -86,7 +86,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         return data.id;
       }
       return null;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to create project:", err);
       return null;
     }

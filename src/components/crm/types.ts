@@ -80,4 +80,4 @@ export function generateMockTask(leadId: string, leadName: string, callSummary: 
 export const INITIAL_TASKS: AITask[] = [];
 
 /* ── Aggregated objection stats ── */
-export const MOCK_OBJECTION_STATS: any[] = [];
+export const MOCK_OBJECTION_STATS: unknown[] = [];

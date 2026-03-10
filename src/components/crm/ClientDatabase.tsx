@@ -44,7 +44,7 @@ export default function ClientDatabase() {
     }
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("leads")
         .select("name, phone, source, amount, ai_score, status, updated_at, created_at")
         .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -80,7 +80,7 @@ export default function ClientDatabase() {
         }
       }
       setClients(Array.from(map.values()));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("ClientDatabase fetch error:", err);
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {

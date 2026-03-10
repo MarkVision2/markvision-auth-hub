@@ -60,7 +60,7 @@ export default function DynamicsTab() {
         setAgencyFot((team || []).reduce((sum, t) => sum + Number(t.salary), 0));
     }, []);
 
-    const parseMonthRows = useCallback((rows: any[], y: number): MonthData[] => {
+    const parseMonthRows = useCallback((rows: unknown[], y: number): MonthData[] => {
         const defaults = generateDefaultMonths(y);
         if (rows && rows.length > 0) {
             rows.forEach(row => {

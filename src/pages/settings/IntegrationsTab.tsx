@@ -99,8 +99,8 @@ function WhatsAppGreenApiCard() {
                 .limit(1)
                 .maybeSingle();
             if (data) {
-                setInstanceId((data as any).wa_instance_id || "");
-                setApiToken((data as any).wa_api_token || "");
+                setInstanceId((data as unknown).wa_instance_id || "");
+                setApiToken((data as unknown).wa_api_token || "");
             }
             setLoaded(true);
         }
@@ -113,7 +113,7 @@ function WhatsAppGreenApiCard() {
             return;
         }
         setSaving(true);
-        const { error } = await (supabase as any)
+        const { error } = await (supabase as unknown)
             .from("clients_config")
             .update({ wa_instance_id: instanceId.trim(), wa_api_token: apiToken.trim() })
             .eq("project_id", SETTINGS_PROJECT_ID);
@@ -238,7 +238,7 @@ export default function IntegrationsTab() {
                 const wfData = Array.isArray(data.data) ? data.data : data.data?.data || [];
                 const updated: typeof wfStatuses = {};
                 N8N_WORKFLOWS.forEach(wf => {
-                    const match = wfData.find((w: any) => w.id === wf.id);
+                    const match = wfData.find((w: unknown) => w.id === wf.id);
                     updated[wf.id] = {
                         status: match ? (match.active ? "active" : "inactive") : "active",
                         lastRun: match?.updatedAt || null,
@@ -249,7 +249,7 @@ export default function IntegrationsTab() {
                 const errRes = await supabase.functions.invoke("n8n-health-check", { body: { action: "last_errors" } });
                 if (!errRes.error && errRes.data?.success) {
                     const errData = Array.isArray(errRes.data.data) ? errRes.data.data : errRes.data.data?.data || [];
-                    errData.forEach((err: any) => {
+                    errData.forEach((err: unknown) => {
                         const wfId = err.workflowId;
                         if (updated[wfId]) {
                             updated[wfId].errors++;

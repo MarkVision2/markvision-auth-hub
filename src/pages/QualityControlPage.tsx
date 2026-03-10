@@ -107,13 +107,13 @@ export default function QualityControlPage() {
     if (active.id === "hq") {
     }
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("nps_feedback")
         .select("*, leads(name)")
         .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setFeedback((data || []).map((row: any) => ({
+      setFeedback((data || []).map((row: unknown) => ({
         id: row.id,
         lead_id: row.lead_id,
         score: row.score ?? 0,
@@ -122,7 +122,7 @@ export default function QualityControlPage() {
         created_at: row.created_at,
         lead_name: row.leads?.name || "Пациент",
       })));
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export default function QualityControlPage() {
 
     const ch = supabase
       .channel("nps_feedback_realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${active.id}` }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${active.id}` }, (payload: unknown) => {
         const row = payload.new;
         setFeedback(prev => [{
           id: row.id, lead_id: row.lead_id, score: row.score ?? 0,
@@ -145,7 +145,7 @@ export default function QualityControlPage() {
         }, ...prev]);
         toast({ title: "📩 Новый отзыв!", description: `Оценка: ${row.score}/10` });
       })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nps_feedback" }, (payload: any) => {
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "nps_feedback" }, (payload: unknown) => {
         const row = payload.new;
         setFeedback(prev => prev.map(f => f.id === row.id ? { ...f, is_resolved: row.is_resolved } : f));
       })
@@ -154,7 +154,7 @@ export default function QualityControlPage() {
   }, [active.id]);
 
   const handleResolve = async (id: string) => {
-    const { error } = await (supabase as any).from("nps_feedback").update({ is_resolved: true }).eq("id", id);
+    const { error } = await (supabase as unknown).from("nps_feedback").update({ is_resolved: true }).eq("id", id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     } else {

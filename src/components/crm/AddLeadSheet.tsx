@@ -39,7 +39,7 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
   const handleCreate = async () => {
     if (!form.name.trim()) { toast({ title: "Укажите имя клиента" }); return; }
     setSaving(true);
-    const { error } = await (supabase as any).from("leads").insert({
+    const { error } = await (supabase as unknown).from("leads").insert({
       name: form.name.trim(),
       phone: form.phone.trim() || null,
       source: form.source || null,

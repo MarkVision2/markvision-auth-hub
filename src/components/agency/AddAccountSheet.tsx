@@ -64,7 +64,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
   const { active, workspaces } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const updateField = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
+  const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +93,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
 
-    const { data: cab, error } = await supabase.from("clients_config").insert(row as any).select().single();
+    const { data: cab, error } = await supabase.from("clients_config").insert(row as unknown).select().single();
 
     if (error) {
       setSaving(false);
@@ -102,7 +102,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     }
 
     // Handle visibility inserts
-    const visibilityInserts: any[] = [];
+    const visibilityInserts: unknown[] = [];
     if (form.share_with_hq) {
       visibilityInserts.push({ client_config_id: cab.id, is_hq_sharing: true });
     }
@@ -114,8 +114,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     }
 
     if (visibilityInserts.length > 0) {
-      const { error: visError } = await (supabase.from("client_config_visibility" as any) as any).insert(visibilityInserts);
-      if (visError) console.error("Visibility sharing error:", (visError as any).message);
+      const { error: visError } = await (supabase.from("client_config_visibility" as unknown) as unknown).insert(visibilityInserts);
+      if (visError) console.error("Visibility sharing error:", (visError as unknown).message);
     }
 
     setSaving(false);

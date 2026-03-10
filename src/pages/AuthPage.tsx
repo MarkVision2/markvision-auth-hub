@@ -59,7 +59,7 @@ const AuthPage = () => {
         }
         toast({ title: "Проверьте почту", description: "Мы отправили письмо для подтверждения." });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Непредвиденная ошибка", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

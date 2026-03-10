@@ -219,7 +219,7 @@ export default function ScoreboardPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      setRows((data || []).map((r: any) => ({
+      setRows((data || []).map((r: unknown) => ({
         id: r.id, date: r.date,
         spend: Number(r.spend) || 0, impressions: Number(r.impressions) || 0,
         clicks: Number(r.clicks) || 0, leads: Number(r.leads) || 0,
@@ -233,7 +233,7 @@ export default function ScoreboardPage() {
   // Fetch monthly plan
   const fetchPlan = useCallback(async () => {
     try {
-      const { data } = await (supabase as any).from("monthly_plans").select("*")
+      const { data } = await (supabase as unknown).from("monthly_plans").select("*")
         .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .eq("month_year", monthYear).limit(1);
       if (data && data.length > 0) {

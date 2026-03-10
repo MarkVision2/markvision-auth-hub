@@ -79,7 +79,7 @@ export default function ContentFactory() {
   // Fetch history
   const fetchHistory = useCallback(async () => {
 
-    const { data } = await (supabase as any)
+    const { data } = await (supabase as unknown)
       .from("content_tasks")
       .select("id, status, progress_text, result_urls, content_type, created_at")
       .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -98,7 +98,7 @@ export default function ContentFactory() {
     const channel = supabase
       .channel(`content_task_${taskId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "content_tasks", filter: `id=eq.${taskId}` }, (payload) => {
-        const row = payload.new as any;
+        const row = payload.new as unknown;
         const updated: ContentTask = { id: row.id, status: row.status, progress_text: row.progress_text, result_urls: row.result_urls, content_type: row.content_type, created_at: row.created_at };
         setTask(updated);
         if (row.status === "completed" || row.status === "error") fetchHistory();
@@ -190,7 +190,7 @@ export default function ContentFactory() {
         project_id: active.id,
       };
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("content_tasks")
         .insert(payload)
         .select("id, status, progress_text, result_urls, content_type, created_at")
@@ -232,7 +232,7 @@ export default function ContentFactory() {
         console.error("n8n webhook error:", webhookErr);
         toast({ title: "Ошибка связи с сервером автоматизации", description: "Проверьте подключение к n8n", variant: "destructive" });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally { setSubmitting(false); }
   };
@@ -249,7 +249,7 @@ export default function ContentFactory() {
         visual_style: `Переделать на основе задачи ${task.id}: ${editFeedback}`,
         project_id: active.id,
       };
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("content_tasks")
         .insert(payload)
         .select("id, status, progress_text, result_urls, content_type, created_at")
@@ -259,7 +259,7 @@ export default function ContentFactory() {
       setTaskId(data.id);
       setEditFeedback("");
       toast({ title: "🔄 Регенерация запущена", description: "AI учтёт ваши комментарии" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally { setSubmitting(false); }
   };
@@ -502,7 +502,7 @@ export default function ContentFactory() {
                       onClick={async (e) => {
                         e.stopPropagation();
                         try {
-                          await (supabase as any).from("content_tasks").delete().eq("id", h.id);
+                          await (supabase as unknown).from("content_tasks").delete().eq("id", h.id);
                           fetchHistory();
                           toast({ title: "Удалено" });
                         } catch { toast({ title: "Ошибка", variant: "destructive" }); }

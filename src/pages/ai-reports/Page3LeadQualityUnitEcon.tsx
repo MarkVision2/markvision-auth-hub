@@ -5,7 +5,7 @@ import { fmtMoney, PageFooter, SectionTitle, MiniHeader } from "./shared";
 interface Page3Props {
     clientName: string;
     dateRange: string;
-    leadQuality: any[];
+    leadQuality: unknown[];
     cur: Record<string, number>;
     avgCheck: number;
     cac: number;

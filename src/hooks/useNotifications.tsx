@@ -34,7 +34,7 @@ function loadPrefs(): NotificationPreferences {
   try {
     const raw = localStorage.getItem("mv_notification_prefs");
     if (raw) return { ...DEFAULT_PREFS, ...JSON.parse(raw) };
-  } catch {}
+  } catch { /* ignored */ }
   return { ...DEFAULT_PREFS };
 }
 
@@ -45,7 +45,7 @@ function savePrefs(prefs: NotificationPreferences) {
 // Simple beep using Web Audio API — no external files needed
 function playAlertSound() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     // Two-tone alert: 880Hz then 660Hz
     [880, 660].forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -60,7 +60,7 @@ function playAlertSound() {
       osc.stop(ctx.currentTime + 0.15 + i * 0.18);
     });
     setTimeout(() => ctx.close(), 500);
-  } catch {}
+  } catch { /* ignored */ }
 }
 
 interface NotificationContextValue {
@@ -77,12 +77,12 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
-  pushNotification: () => {},
-  markAllRead: () => {},
-  clearAll: () => {},
-  dismissNotification: () => {},
+  pushNotification: () => { },
+  markAllRead: () => { },
+  clearAll: () => { },
+  dismissNotification: () => { },
   preferences: DEFAULT_PREFS,
-  updatePreferences: () => {},
+  updatePreferences: () => { },
 });
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
@@ -132,7 +132,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           tag: newNotif.id,
           silent: true, // we handle sound ourselves
         });
-      } catch {}
+      } catch { /* ignored */ }
     }
   }, []);
 

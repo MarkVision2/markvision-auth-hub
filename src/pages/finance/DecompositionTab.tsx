@@ -250,7 +250,7 @@ export default function DecompositionTab() {
                                     project_id: active.id === "hq" ? null : active.id
                                 };
 
-                                const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);
+                                const query = (supabase as unknown).from("monthly_plans").select("id").eq("month_year", monthYear);
                                 if (active.id === "hq") {
                                     query.is("project_id", null);
                                 } else {
@@ -260,11 +260,11 @@ export default function DecompositionTab() {
                                 const { data: existing } = await query.limit(1);
 
                                 if (existing && existing.length > 0) {
-                                    const { error } = await (supabase as any).from("monthly_plans")
+                                    const { error } = await (supabase as unknown).from("monthly_plans")
                                         .update(payload).eq("id", existing[0].id);
                                     if (error) throw error;
                                 } else {
-                                    const { error } = await (supabase as any).from("monthly_plans").insert(payload);
+                                    const { error } = await (supabase as unknown).from("monthly_plans").insert(payload);
                                     if (error) throw error;
                                 }
                                 toast({ title: "✅ План сохранён!", description: `${MONTHS_RU[planMonthIndex]} ${planYear} — данные перенесены в Таблицу показателей` });

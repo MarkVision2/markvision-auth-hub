@@ -45,14 +45,14 @@ export default function DashboardPM() {
     setLoading(true);
     try {
       const [clientsRes, leadsRes] = await Promise.all([
-        (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
-        (supabase as any).from("leads").select("id, status, client_config_id"),
+        (supabase as unknown).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
+        (supabase as unknown).from("leads").select("id, status, client_config_id"),
       ]);
       if (clientsRes.error) throw clientsRes.error;
       if (leadsRes.error) throw leadsRes.error;
-      setClients(((clientsRes.data as any[]) ?? []).map((c) => ({ id: c.id, name: c.client_name, is_active: c.is_active })));
+      setClients(((clientsRes.data as unknown[]) ?? []).map((c) => ({ id: c.id, name: c.client_name, is_active: c.is_active })));
       setLeads((leadsRes.data as Lead[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

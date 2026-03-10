@@ -47,13 +47,13 @@ export default function DashboardSales() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("leads")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
       setLeads((data as Lead[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

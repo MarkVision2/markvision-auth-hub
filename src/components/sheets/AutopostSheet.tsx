@@ -90,7 +90,7 @@ export default function AutopostSheet({ open, onOpenChange, mediaUrls, mediaType
       setScheduleDate(undefined);
       setScheduleTime("12:00");
       setCaption("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);

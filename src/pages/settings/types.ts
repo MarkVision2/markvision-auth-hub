@@ -105,7 +105,7 @@ export function loadTeam(): TeamMember[] {
             let parsed = JSON.parse(raw);
             if (Array.isArray(parsed) && parsed.length > 0) {
                 // Migrate outdated roles from local storage to new spec
-                parsed = parsed.map((m: any) => {
+                parsed = parsed.map((m: Record<string, unknown>) => {
                     let r = m.role;
                     let migrated = false;
                     if (r === "admin") { r = "superadmin"; migrated = true; }
@@ -126,7 +126,7 @@ export function loadTeam(): TeamMember[] {
                 return parsed;
             }
         }
-    } catch { }
+    } catch { /* ignored */ }
     return INITIAL_TEAM;
 }
 

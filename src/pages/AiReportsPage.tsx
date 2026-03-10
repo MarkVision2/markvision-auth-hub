@@ -84,10 +84,10 @@ export default function AiReportsPage() {
         let curQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", curStart).lte("date", curEnd);
         let prevQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", pStart).lte("date", pEnd);
         let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("created_at", curStart);
-        let channelsQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+        const channelsQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
 
         // Correct join filtering for project_id
-        let creativesQ = supabase
+        const creativesQ = supabase
           .from("analytics_creatives")
           .select("*, analytics_campaigns!inner(channel_id, name, analytics_channels!inner(project_id))")
           .eq("analytics_campaigns.analytics_channels.project_id", active.id)
@@ -134,9 +134,9 @@ export default function AiReportsPage() {
 
   const leadQuality = useMemo(() => {
     const total = leads.length || 1;
-    const hot = leads.filter((l: any) => (l.ai_score ?? 0) >= 70).length;
-    const warm = leads.filter((l: any) => (l.ai_score ?? 0) >= 30 && (l.ai_score ?? 0) < 70).length;
-    const cold = leads.filter((l: any) => (l.ai_score ?? 0) < 30).length;
+    const hot = leads.filter((l: unknown) => (l.ai_score ?? 0) >= 70).length;
+    const warm = leads.filter((l: unknown) => (l.ai_score ?? 0) >= 30 && (l.ai_score ?? 0) < 70).length;
+    const cold = leads.filter((l: unknown) => (l.ai_score ?? 0) < 30).length;
     return [
       { label: "🔥 Горячие", pct: Math.round((hot / total) * 100), count: hot, color: "bg-primary", textColor: "text-primary" },
       { label: "🟡 Тёплые", pct: Math.round((warm / total) * 100), count: warm, color: "bg-amber-500", textColor: "text-amber-400" },
@@ -146,8 +146,8 @@ export default function AiReportsPage() {
 
   const channelPie = useMemo(() => {
     const colors = ["hsl(var(--primary))", "#60a5fa", "#f472b6", "#a78bfa", "#34d399"];
-    const totalRev = channels.reduce((s: number, c: any) => s + (Number(c.revenue) || 0), 0) || 1;
-    return channels.map((c: any, i: number) => ({
+    const totalRev = channels.reduce((s: number, c: unknown) => s + (Number(c.revenue) || 0), 0) || 1;
+    return channels.map((c: unknown, i: number) => ({
       name: c.name, value: Math.round(((Number(c.revenue) || 0) / totalRev) * 100),
       color: colors[i % colors.length], cpl: (c.leads || 0) > 0 ? Math.round((Number(c.spend) || 0) / c.leads) : 0, leads: c.leads || 0,
     }));

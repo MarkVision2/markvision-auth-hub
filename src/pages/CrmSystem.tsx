@@ -47,7 +47,7 @@ export default function CrmSystem() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await (supabase as unknown)
           .from("leads")
           .select("id, status, amount, ai_score, created_at")
           .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
@@ -57,7 +57,7 @@ export default function CrmSystem() {
           setPrevLeadsCount(leads.length);
           setLeads(data);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("CRM leads fetch error:", err);
       }
     };

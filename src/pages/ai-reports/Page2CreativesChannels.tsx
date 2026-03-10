@@ -6,8 +6,8 @@ import { fmtMoney, PageFooter, SectionTitle, MiniHeader } from "./shared";
 interface Page2Props {
     clientName: string;
     dateRange: string;
-    topCreatives: any[];
-    channelPie: any[];
+    topCreatives: unknown[];
+    channelPie: unknown[];
 }
 
 export const Page2CreativesChannels = forwardRef<HTMLDivElement, Page2Props>(

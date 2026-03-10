@@ -87,7 +87,7 @@ function getMonthRange(year: number, month: number) {
 type StatusFilter = "all" | "with-data" | "no-data";
 
 /* ── KPI Card component ── */
-function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string; sub?: string; color: string }) {
+function KpiCard({ icon: Icon, label, value, sub, color }: { icon: unknown; label: string; value: string; sub?: string; color: string }) {
   return (
     <Card className="bg-card border-border hover:border-primary/20 transition-colors">
       <CardContent className="p-4">
@@ -130,7 +130,7 @@ export default function DashboardTarget() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      let clientsQuery = (supabase as any)
+      let clientsQuery = (supabase as unknown)
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active")
         .eq("is_active", true)
@@ -147,7 +147,7 @@ export default function DashboardTarget() {
 
       const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
-      let metricsQuery = (supabase as any)
+      let metricsQuery = (supabase as unknown)
         .from("daily_metrics")
         .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
         .gte("date", start)
@@ -164,7 +164,7 @@ export default function DashboardTarget() {
       if (mErr) throw mErr;
 
       const metricsMap = new Map<string, DailyMetric[]>();
-      (metricsData || []).forEach((m: any) => {
+      (metricsData || []).forEach((m: unknown) => {
         if (!m.client_config_id) return;
         if (!metricsMap.has(m.client_config_id)) metricsMap.set(m.client_config_id, []);
         metricsMap.get(m.client_config_id)!.push({
@@ -179,7 +179,7 @@ export default function DashboardTarget() {
         });
       });
 
-      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
+      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: unknown) => {
         const metrics = metricsMap.get(c.id) || [];
         const totalSpend = metrics.reduce((s, m) => s + m.spend, 0);
         const totalLeads = metrics.reduce((s, m) => s + m.leads, 0);
@@ -210,7 +210,7 @@ export default function DashboardTarget() {
 
       setClients(mapped);
       setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

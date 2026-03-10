@@ -120,14 +120,14 @@ export default function AgencyAccounts() {
     try {
       // 1. Get Cabinets
       // Fetch shared cabinets first
-      let sharedCabQuery = supabase.from("client_config_visibility" as any).select("client_config_id");
+      let sharedCabQuery = supabase.from("client_config_visibility" as unknown).select("client_config_id");
       if (active.id === "hq") {
         sharedCabQuery = sharedCabQuery.eq("is_hq_sharing", true);
       } else {
         sharedCabQuery = sharedCabQuery.eq("project_id", active.id);
       }
       const { data: sharedCabs } = await sharedCabQuery;
-      const sharedIds = (sharedCabs || []).map((s: any) => s.client_config_id);
+      const sharedIds = (sharedCabs || []).map((s: unknown) => s.client_config_id);
 
       let cabQuery = supabase.from("clients_config").select("*, projects(name)");
       if (active.id === "hq") {
@@ -201,12 +201,12 @@ export default function AgencyAccounts() {
           cpv,
           cac,
           romi,
-          project_name: (c as any).projects?.name
+          project_name: (c as unknown).projects?.name
         };
       });
 
       setMetrics(aggregated);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -262,8 +262,8 @@ export default function AgencyAccounts() {
 
     // sort
     list = [...list].sort((a, b) => {
-      const av = Number((a as any)[sortKey]) || 0;
-      const bv = Number((b as any)[sortKey]) || 0;
+      const av = Number((a as unknown)[sortKey]) || 0;
+      const bv = Number((b as unknown)[sortKey]) || 0;
       return sortDir === "desc" ? bv - av : av - bv;
     });
 

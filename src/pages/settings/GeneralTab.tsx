@@ -37,9 +37,9 @@ export default function GeneralTab() {
                 if (error) throw error;
                 setName(data?.full_name || "");
                 setCompany(data?.company_name || "");
-                setPhone((data as any)?.phone || "");
+                setPhone((data as unknown)?.phone || "");
                 setAvatarUrl(data?.avatar_url || null);
-            } catch (e: any) {
+            } catch (e: unknown) {
                 toast({ title: "Ошибка загрузки", description: e.message, variant: "destructive" });
             } finally {
                 setLoading(false);
@@ -58,7 +58,7 @@ export default function GeneralTab() {
                     full_name: name.trim(),
                     company_name: company.trim(),
                     phone: phone.trim(),
-                } as any)
+                } as unknown)
                 .eq("id", userId);
             if (error) throw error;
 
@@ -70,7 +70,7 @@ export default function GeneralTab() {
             }
 
             toast({ title: "Профиль сохранён" });
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast({ title: "Ошибка", description: e.message, variant: "destructive" });
         } finally {
             setSaving(false);
@@ -109,7 +109,7 @@ export default function GeneralTab() {
 
             setAvatarUrl(url);
             toast({ title: "Фото обновлено" });
-        } catch (e: any) {
+        } catch (e: unknown) {
             toast({ title: "Ошибка загрузки", description: e.message, variant: "destructive" });
         } finally {
             setUploading(false);

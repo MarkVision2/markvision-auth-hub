@@ -89,11 +89,11 @@ export default function AutopostingPage() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      setItems((data || []).map((d: any) => ({
+      setItems((data || []).map((d: unknown) => ({
         ...d,
         channels: Array.isArray(d.channels) ? d.channels : [],
       })));
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
@@ -163,7 +163,7 @@ export default function AutopostingPage() {
       setSelectedChannels([]);
       setScheduleDate(undefined);
       setScheduleTime("12:00");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setUploading(false);

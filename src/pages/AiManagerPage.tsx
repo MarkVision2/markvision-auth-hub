@@ -157,9 +157,9 @@ export default function AiManagerPage() {
 
   // Report Data State
   const [reportData, setReportData] = useState<{
-    yesterday: any;
-    week: any;
-    month: any;
+    yesterday: unknown;
+    week: unknown;
+    month: unknown;
   }>({
     yesterday: null,
     week: null,

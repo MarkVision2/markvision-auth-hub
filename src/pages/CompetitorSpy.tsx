@@ -124,8 +124,8 @@ export default function CompetitorSpy() {
     const load = async () => {
       try {
         const [compRes, analysisRes] = await Promise.all([
-          (supabase as any).from("competitors").select("*").eq("is_active", true).order("created_at", { ascending: false }),
-          (supabase as any).from("content_factory").select("*").order("created_at", { ascending: false }).limit(20),
+          (supabase as unknown).from("competitors").select("*").eq("is_active", true).order("created_at", { ascending: false }),
+          (supabase as unknown).from("content_factory").select("*").order("created_at", { ascending: false }).limit(20),
         ]);
         if (compRes.data) setCompetitors(compRes.data);
         if (analysisRes.data) setAnalyses(analysisRes.data);
@@ -155,7 +155,7 @@ export default function CompetitorSpy() {
     setAddingCompetitor(true);
     try {
       const username = profileQuery.trim().replace(/^@/, "").replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("competitors")
         .insert({ username, platform: "instagram", display_name: username, is_active: true })
         .select()
@@ -164,7 +164,7 @@ export default function CompetitorSpy() {
       setCompetitors((prev) => [data, ...prev]);
       setProfileQuery("");
       toast({ title: "✅ Конкурент добавлен", description: `@${username} — автоскан каждые 24ч` });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setAddingCompetitor(false);
@@ -176,7 +176,7 @@ export default function CompetitorSpy() {
     try {
       await spyRequest({ action: "scan_all", trigger: "manual" });
       toast({ title: "⏳ Сканирование запущено", description: "Результаты через 1-2 мин" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка запуска", description: err.message, variant: "destructive" });
     } finally {
       setProfileLoading(false);
@@ -185,11 +185,11 @@ export default function CompetitorSpy() {
 
   const handleDeleteCompetitor = useCallback(async (id: string) => {
     try {
-      const { error } = await (supabase as any).from("competitors").delete().eq("id", id);
+      const { error } = await (supabase as unknown).from("competitors").delete().eq("id", id);
       if (error) throw error;
       setCompetitors((prev) => prev.filter((c) => c.id !== id));
       toast({ title: "Удалён" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Delete competitor error:", err);
       toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
     }
@@ -206,7 +206,7 @@ export default function CompetitorSpy() {
       if (result.data?.id) {
         setSelectedAnalysis({ ...result.data, performance_score: result.data.performance_score || 0, strengths: result.data.strengths || [], weaknesses: result.data.weaknesses || [] });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setPostLoading(false);
@@ -216,11 +216,11 @@ export default function CompetitorSpy() {
   const handleDeleteAnalysis = useCallback(async (id: string) => {
     if (id.startsWith("mock-")) return;
     try {
-      const { error } = await (supabase as any).from("content_factory").delete().eq("id", id);
+      const { error } = await (supabase as unknown).from("content_factory").delete().eq("id", id);
       if (error) throw error;
       setAnalyses((prev) => prev.filter((a) => a.id !== id));
       toast({ title: "🗑 Удалено" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Delete analysis error:", err);
       toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
     }
@@ -233,7 +233,7 @@ export default function CompetitorSpy() {
       await new Promise((r) => setTimeout(r, 2000));
       setAdaptedScript(analysis.generated_script || "Сценарий не сгенерирован");
       toast({ title: "✅ Сценарий адаптирован" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Adapt error:", err);
       toast({ title: "Ошибка связи с сервером автоматизации", description: err.message, variant: "destructive" });
     } finally {

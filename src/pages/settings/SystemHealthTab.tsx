@@ -46,8 +46,8 @@ export default function SystemHealthTab() {
         { name: "Telegram Bot", sub: "Уведомления", icon: Send, status: "loading", metric: "Проверка..." },
     ]);
     const [logs, setLogs] = useState<{ time: string; level: string; msg: string }[]>([]);
-    const [workflows, setWorkflows] = useState<any[]>([]);
-    const [errors, setErrors] = useState<any[]>([]);
+    const [workflows, setWorkflows] = useState<Record<string, unknown>[]>([]);
+    const [errors, setErrors] = useState<Record<string, unknown>[]>([]);
     const [lastCheck, setLastCheck] = useState<string | null>(null);
     const [checking, setChecking] = useState(false);
     const [restartingId, setRestartingId] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export default function SystemHealthTab() {
 
         try {
             const start = performance.now();
-            const { error } = await (supabase as any).from("profiles").select("id").limit(1);
+            const { error } = await (supabase as unknown).from("profiles").select("id").limit(1);
             const latency = Math.round(performance.now() - start);
             if (error) throw error;
             setServices(prev => prev.map(s => s.name === "Supabase" ? { ...s, status: "operational", metric: `Latency: ${latency}ms` } : s));
@@ -95,7 +95,7 @@ export default function SystemHealthTab() {
         if (wfResult?.success && wfResult.data) {
             const wfData = Array.isArray(wfResult.data) ? wfResult.data : [];
             setWorkflows(wfData);
-            const activeCount = wfData.filter((w: any) => w.active).length;
+            const activeCount = wfData.filter((w: Record<string, unknown>) => w.active).length;
             newLogs.push({ time: now(), level: "SUCCESS", msg: `n8n REST API: ${wfData.length} workflows loaded, ${activeCount} active` });
         } else {
             newLogs.push({ time: now(), level: "WARN", msg: `n8n workflows: ${wfResult?.error || "failed to load"}` });
@@ -115,7 +115,7 @@ export default function SystemHealthTab() {
         if (integrationsResult?.success && Array.isArray(integrationsResult.data)) {
             const results = integrationsResult.data;
             setServices(prev => prev.map(s => {
-                const match = results.find((r: any) =>
+                const match = results.find((r: Record<string, unknown>) =>
                     (s.name === "Meta Graph API" && r.name === "Meta") ||
                     (s.name === "Apify" && r.name === "Firecrawl") ||
                     (s.name === "Anthropic / Gemini" && r.name === "AI Gateway") ||
@@ -148,8 +148,8 @@ export default function SystemHealthTab() {
             } else {
                 toast({ title: "Ошибка перезапуска", description: data?.error || "Unknown", variant: "destructive" });
             }
-        } catch (err: any) {
-            toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+        } catch (err: unknown) {
+            toast({ title: "Ошибка", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
         } finally {
             setRestartingId(null);
         }
@@ -273,7 +273,7 @@ export default function SystemHealthTab() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {workflows.map((wf: any, i: number) => (
+                            {workflows.map((wf: Record<string, unknown>, i: number) => (
                                 <TableRow key={wf.id || i} className="hover:bg-accent/10">
                                     <TableCell className="py-2.5">
                                         <div className="flex items-center gap-2.5">
@@ -327,7 +327,7 @@ export default function SystemHealthTab() {
                         <span className="text-[10px] text-muted-foreground/40 ml-auto">{errors.length}</span>
                     </div>
                     <div className="divide-y divide-rose-500/10 font-mono text-[12px]">
-                        {errors.slice(0, 10).map((err: any, i: number) => (
+                        {errors.slice(0, 10).map((err: Record<string, unknown>, i: number) => (
                             <div key={err.id || i} className="px-5 py-2.5 flex items-start gap-3 hover:bg-rose-500/5 transition-colors">
                                 <span className="text-muted-foreground/40 shrink-0 tabular-nums">
                                     {err.startedAt ? formatDate(err.startedAt) : "—"}

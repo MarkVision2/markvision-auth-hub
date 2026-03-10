@@ -171,7 +171,7 @@ serve(async (req) => {
 
     const aiData = await aiResponse.json();
 
-    let ads: any[] = [];
+    let ads: unknown[] = [];
     try {
       const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall) {
@@ -189,7 +189,7 @@ serve(async (req) => {
     );
 
     if (ads.length > 0) {
-      const rows = ads.map((ad: any) => ({
+      const rows = ads.map((ad: unknown) => ({
         advertiser_name: ad.advertiser_name || "Unknown",
         advertiser_avatar: (ad.advertiser_name || "??").slice(0, 2).toUpperCase(),
         ad_copy: ad.ad_copy || "",

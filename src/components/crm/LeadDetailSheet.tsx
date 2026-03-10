@@ -237,7 +237,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     setLoadingSlots(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("leads")
         .select("scheduled_at, doctor_name")
         .not("scheduled_at", "is", null)
@@ -245,7 +245,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         .filter("scheduled_at", "lte", `${dateStr}T23:59:59Z`);
 
       if (error) throw error;
-      const slots = data.map((l: any) => {
+      const slots = data.map((l: unknown) => {
         const d = new Date(l.scheduled_at);
         return {
           date: dateStr,
@@ -268,14 +268,14 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("chat_messages")
         .select("*")
         .eq("lead_id", leadId)
         .order("created_at", { ascending: true });
       if (error) throw error;
       setChatMessages((data as ChatMessage[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("fetchChatMessages error:", err);
     } finally {
       setMessagesLoading(false);
@@ -284,11 +284,11 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   const fetchNotes = useCallback(async (leadId: string) => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
       if (error) throw error;
       setNotes((data as CrmNote[]) ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("fetchNotes error:", err);
     }
   }, []);
@@ -308,14 +308,14 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     if (!lead || !open) return;
     const ch = supabase
       .channel(`lead_chat_${lead.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `lead_id=eq.${lead.id}` }, (payload: unknown) => {
         setChatMessages(prev => {
           const newMsg = payload.new as ChatMessage;
           if (prev.some(m => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: unknown) => {
         setNotes(prev => [payload.new as CrmNote, ...prev]);
       })
       .subscribe();
@@ -350,7 +350,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           table: "leads", type: "UPDATE",
-          record: { id: lead.id, status: capiKey, project_id: (lead as any).project_id || null, deal_amount: Number(lead.amount) || 0 },
+          record: { id: lead.id, status: capiKey, project_id: (lead as unknown).project_id || null, deal_amount: Number(lead.amount) || 0 },
           old_record: { status: oldStatus },
         }),
       });
@@ -368,7 +368,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as any).from("leads").update({ status: newStage }).eq("id", lead.id);
+    const { error } = await (supabase as unknown).from("leads").update({ status: newStage }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -379,7 +379,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   };
 
   const handleDeleteLead = async () => {
-    const { error } = await (supabase as any).from("leads").delete().eq("id", lead.id);
+    const { error } = await (supabase as unknown).from("leads").delete().eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;
@@ -418,7 +418,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       return;
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await (supabase as unknown)
       .from("leads")
       .update({
         scheduled_at: fullDate.toISOString(),
@@ -449,7 +449,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     setMessage("");
     setSending(true);
     try {
-      const { error } = await (supabase as any).from("chat_messages").insert({
+      const { error } = await (supabase as unknown).from("chat_messages").insert({
         lead_id: lead.id, message_text: body, is_inbound: false,
       });
       if (error) throw error;
@@ -461,7 +461,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           body: JSON.stringify({ lead_id: lead.id, phone: lead.phone || "", message: body }),
         }).catch(err => console.error("WA send webhook error:", err));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Ошибка отправки", description: err.message, variant: "destructive" });
     } finally {
       setSending(false);
@@ -472,7 +472,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     if (!noteText.trim()) return;
     const body = noteText.trim();
     setNoteText("");
-    const { error } = await (supabase as any).from("crm_notes").insert({
+    const { error } = await (supabase as unknown).from("crm_notes").insert({
       lead_id: lead.id, author_name: "Менеджер", body,
     });
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
@@ -648,15 +648,15 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
                   onClick={async () => {
                     try {
-                      const { error } = await (supabase as any).from("retention_tasks").insert({
+                      const { error } = await (supabase as unknown).from("retention_tasks").insert({
                         lead_id: lead.id,
-                        project_id: (lead as any).project_id || null,
+                        project_id: (lead as unknown).project_id || null,
                         trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
                         status: "pending",
                       });
                       if (error) throw error;
                       toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
-                    } catch (err: any) {
+                    } catch (err: unknown) {
                       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
                     }
                   }}
@@ -703,17 +703,17 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               <div className="space-y-1.5">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">UTM Метки</p>
                 {[
-                  { label: "Источник (utm_source)", value: (lead as any).utm_source },
-                  { label: "Тип трафика (utm_medium)", value: (lead as any).utm_medium },
-                  { label: "Контент (utm_content)", value: (lead as any).utm_content },
-                  { label: "Ключевое слово (utm_term)", value: (lead as any).utm_term },
+                  { label: "Источник (utm_source)", value: (lead as unknown).utm_source },
+                  { label: "Тип трафика (utm_medium)", value: (lead as unknown).utm_medium },
+                  { label: "Контент (utm_content)", value: (lead as unknown).utm_content },
+                  { label: "Ключевое слово (utm_term)", value: (lead as unknown).utm_term },
                 ].map((utm) => utm.value && (
                   <div key={utm.label} className="flex flex-col py-1">
                     <span className="text-[9px] text-muted-foreground">{utm.label}</span>
                     <span className="text-xs font-medium text-foreground/70 truncate">{utm.value}</span>
                   </div>
                 ))}
-                {!(lead as any).utm_source && !(lead as any).utm_medium && !(lead as any).utm_content && !(lead as any).utm_term && (
+                {!(lead as unknown).utm_source && !(lead as unknown).utm_medium && !(lead as unknown).utm_content && !(lead as unknown).utm_term && (
                   <p className="text-[10px] text-muted-foreground italic">UTM-метки отсутствуют</p>
                 )}
               </div>
@@ -751,7 +751,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           {/* RIGHT — Chat / Notes / Calls */}
           <div className="w-[65%] flex flex-col">
             <div className="flex items-center justify-between px-5 py-2 border-b border-border">
-              <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as any)}>
+              <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as unknown)}>
                 <TabsList className="h-8 bg-secondary/50">
                   <TabsTrigger value="chat" className="text-xs h-6 gap-1 data-[state=active]:bg-background">
                     <MessageCircle className="h-3 w-3" /> Чат
