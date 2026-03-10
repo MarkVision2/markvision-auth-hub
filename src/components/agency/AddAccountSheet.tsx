@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2 } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 const emptyForm = {
@@ -34,10 +32,7 @@ const emptyForm = {
   sales: "",
   revenue: "",
   romi: "",
-  is_agency: false,
   project_id: "",
-  share_with_hq: false,
-  share_with_global: false,
 };
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -69,15 +64,16 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name.trim()) return;
+    if (!form.project_id && active.id === "hq") {
+      toast({ title: "Выберите проект", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
-      project_id: active.id === "hq"
-        ? (form.project_id || null)
-        : active.id,
-      is_agency: form.is_agency || (active.id === "hq" && !form.project_id)
+      project_id: active.id === "hq" ? form.project_id : active.id,
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
@@ -93,30 +89,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
 
-    const { data: cab, error } = await supabase.from("clients_config").insert(row as unknown).select().single();
-
-    if (error) {
-      setSaving(false);
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
-      return;
-    }
-
-    // Handle visibility inserts
-    const visibilityInserts: unknown[] = [];
-    if (form.share_with_hq) {
-      visibilityInserts.push({ client_config_id: cab.id, is_hq_sharing: true });
-    }
-    if (form.share_with_global) {
-      const globalProject = workspaces.find(w => w.name.includes("MarkVision AI"));
-      if (globalProject) {
-        visibilityInserts.push({ client_config_id: cab.id, project_id: globalProject.id });
-      }
-    }
-
-    if (visibilityInserts.length > 0) {
-      const { error: visError } = await (supabase.from("client_config_visibility" as unknown) as unknown).insert(visibilityInserts);
-      if (visError) console.error("Visibility sharing error:", (visError as unknown).message);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("clients_config").insert(row).select().single();
 
     setSaving(false);
 
@@ -150,73 +124,21 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
 
-                {active.id === "hq" && (
-                  <>
-                    <div className="space-y-1.5 pt-2">
-                      <Label className="text-xs text-muted-foreground">Тип кабинета (только в штаб-квартире)</Label>
-                      <RadioGroup
-                        value={form.is_agency ? "agency" : "personal"}
-                        onValueChange={(v) => updateField("is_agency", v === "agency")}
-                        className="flex gap-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="personal" id="r-personal" />
-                          <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный кабинет</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="agency" id="r-agency" />
-                          <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский кабинет</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {!form.is_agency && (
-                      <div className="space-y-1.5 pt-2">
-                        <Label className="text-xs text-muted-foreground">Привязать к проекту</Label>
-                        <select
-                          value={form.project_id}
-                          onChange={(e) => updateField("project_id", e.target.value)}
-                          className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <option value="">Без проекта (Только в MarkVision)</option>
-                          {workspaces.filter(w => w.id !== 'hq').map(w => (
-                            <option key={w.id} value={w.id}>{w.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    <div className="space-y-3 pt-4 border-t border-border mt-4">
-                      <Label className="text-xs font-bold text-primary uppercase tracking-wider">Где еще отображать кабинет?</Label>
-
-                      <div className="flex items-center space-x-2 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
-                        <Checkbox
-                          id="share-global"
-                          checked={form.share_with_global}
-                          onCheckedChange={(checked) => updateField("share_with_global", !!checked)}
-                        />
-                        <div className="grid gap-1.5 leading-none">
-                          <Label htmlFor="share-global" className="text-sm font-semibold cursor-pointer">В главном Марк Вижин AI</Label>
-                          <p className="text-[10px] text-muted-foreground">Кабинет будет виден во всех отчетах главного проекта</p>
-                        </div>
-                      </div>
-
-                      {active.id !== 'hq' && (
-                        <div className="flex items-center space-x-2 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
-                          <Checkbox
-                            id="share-hq"
-                            checked={form.share_with_hq}
-                            onCheckedChange={(checked) => updateField("share_with_hq", !!checked)}
-                          />
-                          <div className="grid gap-1.5 leading-none">
-                            <Label htmlFor="share-hq" className="text-sm font-semibold cursor-pointer">В CPR_KZ (Агентство)</Label>
-                            <p className="text-[10px] text-muted-foreground">Кабинет будет доступен для контроля в агентском списке</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Проект *</Label>
+                  <select
+                    value={form.project_id}
+                    onChange={(e) => updateField("project_id", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Выберите проект</option>
+                    {workspaces.filter(w => w.id !== 'hq').map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-muted-foreground">Кабинет будет автоматически виден в MarkVision AI</p>
+                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
