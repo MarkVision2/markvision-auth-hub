@@ -35,7 +35,7 @@ function StatusCard({ icon: Icon, label, value, sub, glow }: {
         )}>
           <Icon className={cn("h-5 w-5", glow ? "text-primary" : "text-muted-foreground")} />
         </div>
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold shrink-0">{label}</span>
       </div>
       <p className="text-2xl font-mono font-bold tabular-nums tracking-tight text-foreground relative">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-1 relative">{sub}</p>}
@@ -97,8 +97,8 @@ function ReportCard({ title, icon: Icon, dateLabel, metrics, analysis, alertInfo
             <Icon className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-foreground">{title}</h3>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{dateLabel}</p>
+            <h3 className="font-bold text-foreground text-sm xl:text-base">{title}</h3>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">{dateLabel}</p>
           </div>
         </div>
         <Badge variant="outline" className="bg-secondary/50 text-[10px] text-muted-foreground">AI Доклад</Badge>
@@ -106,10 +106,10 @@ function ReportCard({ title, icon: Icon, dateLabel, metrics, analysis, alertInfo
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         {metrics.map((m, i) => (
-          <div key={i} className="bg-secondary/30 rounded-lg p-3 border border-border/50">
-            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-1 line-clamp-1" title={m.label}>{m.label}</p>
+          <div key={i} className="bg-secondary/30 rounded-xl p-3 border border-border/50">
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1.5 line-clamp-1" title={m.label}>{m.label}</p>
             <div className="flex items-center gap-1.5">
-              <span className="font-mono font-bold text-foreground text-sm xl:text-base tabular-nums">{m.value}</span>
+              <span className="font-mono font-bold text-foreground text-[15px] xl:text-lg tabular-nums">{m.value}</span>
               {m.trend === "up" && <TrendingUp className="h-3 w-3 text-emerald-500" />}
               {m.trend === "down" && <TrendingDown className="h-3 w-3 text-rose-500" />}
             </div>
@@ -118,8 +118,8 @@ function ReportCard({ title, icon: Icon, dateLabel, metrics, analysis, alertInfo
       </div>
 
       <div className="mt-auto">
-        <h4 className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider mb-3">
-          <Bot className="h-3.5 w-3.5 text-primary" /> Аналитика и действия
+        <h4 className="flex items-center gap-1.5 text-sm font-bold text-foreground uppercase tracking-wider mb-3">
+          <Bot className="h-4 w-4 text-primary" /> Аналитика и действия
         </h4>
         <div className="text-sm text-muted-foreground leading-relaxed space-y-2 bg-primary/[0.03] p-4 rounded-xl border border-primary/10">
           {analysis}

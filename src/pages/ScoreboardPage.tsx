@@ -62,7 +62,7 @@ function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: stri
         <div className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center">
           <Icon className="h-3.5 w-3.5 text-primary" />
         </div>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">{label}</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold leading-tight">{label}</span>
       </div>
       <p className="text-2xl md:text-3xl font-mono font-bold text-foreground tabular-nums tracking-tight mt-1">{value}</p>
       <p className="text-xs text-muted-foreground mt-1.5">{sub}</p>
@@ -419,7 +419,7 @@ export default function ScoreboardPage() {
                   {columns.map(col => (
                     <TableHead
                       key={col.key}
-                      className={`text-xs font-medium text-muted-foreground whitespace-nowrap px-4 py-3 ${col.align === "right" ? "text-right" : "text-left"
+                      className={`text-sm font-bold text-muted-foreground whitespace-nowrap px-4 py-3.5 ${col.align === "right" ? "text-right" : "text-left"
                         }`}
                     >
                       {col.label}
@@ -431,7 +431,7 @@ export default function ScoreboardPage() {
                 {/* ── PLAN ROW ── */}
                 <TableRow className="bg-primary/[0.03] border-b border-border hover:bg-primary/[0.06]">
                   {columns.map(col => (
-                    <TableCell key={col.key} className={`px-4 py-4 whitespace-nowrap font-mono text-sm tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
+                    <TableCell key={col.key} className={`px-4 py-4 whitespace-nowrap font-mono text-[15px] tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
                         <div className="flex items-center gap-1.5">
                           <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center">
@@ -521,7 +521,7 @@ export default function ScoreboardPage() {
                         } ${isFuture ? "opacity-60" : "hover:bg-accent/20"}`}
                     >
                       {columns.map(col => (
-                        <TableCell key={col.key} className={`px-4 py-3 whitespace-nowrap font-mono text-sm tabular-nums ${col.key === "date"
+                        <TableCell key={col.key} className={`px-4 py-3.5 whitespace-nowrap font-mono text-[15px] tabular-nums ${col.key === "date"
                           ? `text-left font-medium ${isToday ? "text-primary font-bold" : isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`
                           : "text-right text-foreground/80"
                           }`}>

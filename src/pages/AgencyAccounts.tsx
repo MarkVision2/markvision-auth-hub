@@ -205,7 +205,7 @@ export default function AgencyAccounts() {
 
   const SortableHead = ({ label, sortField }: { label: string; sortField: SortKey }) => (
     <TableHead
-      className="text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+      className="text-sm font-bold text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors py-4 px-4"
       onClick={() => toggleSort(sortField)}
     >
       <span className="flex items-center">
@@ -274,7 +274,7 @@ export default function AgencyAccounts() {
           <Table className="min-w-[700px]">
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
-                <TableHead className="text-xs font-medium text-muted-foreground w-[180px]">Кабинет</TableHead>
+                <TableHead className="text-sm font-bold text-muted-foreground w-[180px] px-4 py-4">Кабинет</TableHead>
                 <SortableHead label="Расходы" sortField="spend" />
                 <SortableHead label="Лиды" sortField="meta_leads" />
                 <SortableHead label="Визиты" sortField="visits" />
@@ -317,8 +317,8 @@ export default function AgencyAccounts() {
                   return (
                     <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
                       <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground">{c.client_name}</p>
-                        <span className={`inline-flex items-center gap-1.5 text-[11px] mt-1 ${s.text}`}>
+                        <p className="text-[15px] font-bold text-foreground tabular-nums">{c.client_name}</p>
+                        <span className={`inline-flex items-center gap-1.5 text-xs mt-1.5 ${s.text}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                           {s.label}
                         </span>
