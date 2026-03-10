@@ -27,6 +27,12 @@ export interface Lead {
   ai_score: number | null;
   ai_summary: string | null;
   created_at: string | null;
+  scheduled_at?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
+  project_id?: string | null;
 }
 
 const STAGES = [
@@ -327,8 +333,8 @@ export default function KanbanBoard() {
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`flex-1 min-h-[80px] max-h-[calc(100vh-16rem)] overflow-y-auto space-y-2 p-1 rounded-xl transition-colors duration-200 ${snapshot.isDraggingOver
-                            ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
-                            : ""
+                          ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
+                          : ""
                           }`}
                       >
                         {stageLeads.map((lead, index) => {
@@ -345,8 +351,8 @@ export default function KanbanBoard() {
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   className={`group bg-card border rounded-xl p-3 cursor-grab active:cursor-grabbing ${dragSnapshot.isDragging
-                                      ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
-                                      : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
+                                    ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
+                                    : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
                                     }`}
                                 >
                                   {/* Top row */}

@@ -102,10 +102,10 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
               <SelectTrigger className="mt-1 bg-secondary/50 border-border text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                <SelectItem value="Instagram">Instagram</SelectItem>
-                <SelectItem value="Telegram">Telegram</SelectItem>
                 <SelectItem value="Сайт">Сайт</SelectItem>
                 <SelectItem value="Звонок">Звонок</SelectItem>
+                <SelectItem value="2 ГИС">2 ГИС</SelectItem>
+                <SelectItem value="Рекомендация">Рекомендация</SelectItem>
               </SelectContent>
             </Select>
           </div>

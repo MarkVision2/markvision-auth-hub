@@ -15,6 +15,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
   Brain, Send, MessageCircle, Bot, User, Phone, Calendar,
@@ -203,6 +205,15 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [isCallActive, setIsCallActive] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [callHistory, setCallHistory] = useState<CallRecord[]>([]);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+
+  useEffect(() => {
+    if (lead?.scheduled_at) {
+      setScheduledDate(new Date(lead.scheduled_at));
+    } else {
+      setScheduledDate(undefined);
+    }
+  }, [lead]);
 
   const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
@@ -340,6 +351,23 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     toast({ title: "📞 Звонок начат", description: lead.name });
   };
 
+  const handleScheduleDate = async (date: Date | undefined) => {
+    setScheduledDate(date);
+    if (!date) return;
+
+    const { error } = await (supabase as any)
+      .from("leads")
+      .update({ scheduled_at: date.toISOString() })
+      .eq("id", lead.id);
+
+    if (error) {
+      toast({ title: "Ошибка сохранения", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Запись подтверждена", description: date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) });
+      onLeadUpdated?.();
+    }
+  };
+
   const handleEndCall = (duration: number) => {
     setIsCallActive(false);
     setRightTab("calls");
@@ -471,9 +499,22 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1">
-                  <Calendar className="h-3 w-3" /> Запись
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("text-xs border-border h-8 gap-1", scheduledDate && "text-primary border-primary/20 bg-primary/5")}>
+                      <Calendar className="h-3 w-3" />
+                      {scheduledDate ? scheduledDate.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) : "Запись"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border-border" align="start">
+                    <CalendarUI
+                      mode="single"
+                      selected={scheduledDate}
+                      onSelect={handleScheduleDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Button
                   variant="outline"
                   size="sm"
@@ -515,6 +556,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   { icon: DollarSign, label: "Сумма", value: amount > 0 ? `${new Intl.NumberFormat("ru-RU").format(amount)} ₸` : "Не указана" },
                   { icon: Globe, label: "Источник", value: lead.source || "—" },
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
+                  { icon: Calendar, label: "Запись", value: lead.scheduled_at ? new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "Не назначена" },
                   { icon: Clock, label: "Создан", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "—" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between py-1.5 group">
@@ -525,6 +567,26 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                     <span className="text-xs font-medium text-foreground/80 max-w-[55%] truncate text-right">{item.value}</span>
                   </div>
                 ))}
+              </div>
+
+              <Separator className="my-2 bg-border/40" />
+
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">UTM Метки</p>
+                {[
+                  { label: "Источник (utm_source)", value: (lead as any).utm_source },
+                  { label: "Тип трафика (utm_medium)", value: (lead as any).utm_medium },
+                  { label: "Контент (utm_content)", value: (lead as any).utm_content },
+                  { label: "Ключевое слово (utm_term)", value: (lead as any).utm_term },
+                ].map((utm) => utm.value && (
+                  <div key={utm.label} className="flex flex-col py-1">
+                    <span className="text-[9px] text-muted-foreground">{utm.label}</span>
+                    <span className="text-xs font-medium text-foreground/70 truncate">{utm.value}</span>
+                  </div>
+                ))}
+                {!(lead as any).utm_source && !(lead as any).utm_medium && !(lead as any).utm_content && !(lead as any).utm_term && (
+                  <p className="text-[10px] text-muted-foreground italic">UTM-метки отсутствуют</p>
+                )}
               </div>
             </div>
 
