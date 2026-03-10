@@ -118,9 +118,9 @@ export default function AgencyAccounts() {
 
     if (active.id === "hq") {
       // Show all other clients OR agency-marked clients from HQ itself.
-      query = query.or(`project_id.neq.hq,and(project_id.eq.hq,is_agency.eq.true)`);
+      query = query.or(`project_id.not.is.null,and(project_id.is.null,is_agency.eq.true)`);
     } else {
-      query = query.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+      query = query.eq("project_id", active.id);
     }
 
     const { data, error } = await query;
