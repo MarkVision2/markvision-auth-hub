@@ -191,7 +191,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                       />
                       <div>
                         <Label htmlFor="vis-markvision" className="text-sm font-medium cursor-pointer">MarkVision AI</Label>
-                        <p className="text-[10px] text-muted-foreground">Главный проект · виден во всех сводках</p>
                       </div>
                     </div>
                   )}
@@ -206,7 +205,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                       />
                       <div>
                         <Label htmlFor="vis-cpr" className="text-sm font-medium cursor-pointer">CPR_KZ</Label>
-                        <p className="text-[10px] text-muted-foreground">Агентский проект · только тотал</p>
                       </div>
                     </div>
                   )}
