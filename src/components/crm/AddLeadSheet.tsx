@@ -90,7 +90,7 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 className="mt-1 bg-secondary/50 border-border text-sm pl-9"
-                placeholder="+7 (777) 777-77-77"
+                placeholder="+7"
                 value={form.phone}
                 onChange={e => handlePhoneChange(e.target.value)}
               />
