@@ -119,13 +119,25 @@ export default function AgencyAccounts() {
 
     try {
       // 1. Get Cabinets
-      let cabQuery = supabase.from("clients_config").select("*, projects(name)");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let cabQuery = (supabase as any).from("clients_config").select("*, projects(name)");
       if (active.id === "hq") {
         // MarkVision AI (HQ) = main project → sees ALL cabinets
         // No filter needed
       } else {
-        // Client project → sees only its own cabinets
-        cabQuery = cabQuery.eq("project_id", active.id);
+        // Client project → own cabinets + shared via visibility table
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedIds = (shared || []).map((s: Record<string, string>) => s.client_config_id);
+
+        if (sharedIds.length > 0) {
+          cabQuery = cabQuery.or(`project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`);
+        } else {
+          cabQuery = cabQuery.eq("project_id", active.id);
+        }
       }
       const { data: configs, error: cabError } = await cabQuery;
       if (cabError) throw cabError;

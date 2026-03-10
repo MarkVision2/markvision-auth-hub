@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2 } from "lucide-react";
-
 
 const emptyForm = {
   client_name: "",
@@ -26,12 +26,6 @@ const emptyForm = {
   fb_pixel_id: "",
   pixel_event: "",
   website_url: "",
-  spend: "",
-  meta_leads: "",
-  visits: "",
-  sales: "",
-  revenue: "",
-  romi: "",
   project_id: "",
 };
 
@@ -59,21 +53,32 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
   const { active, workspaces } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  // Track which OTHER projects should also see this cabinet
+  const [visibleIn, setVisibleIn] = useState<Record<string, boolean>>({});
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
+
+  // Other projects = all projects except the current one (and except HQ which sees everything)
+  const otherProjects = workspaces.filter(w => w.id !== "hq" && w.id !== active.id);
+
+  const isInHq = active.id === "hq";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name.trim()) return;
-    if (!form.project_id && active.id === "hq") {
+
+    // If in HQ, must select a project
+    if (isInHq && !form.project_id) {
       toast({ title: "Выберите проект", variant: "destructive" });
       return;
     }
 
     setSaving(true);
 
+    const projectId = isInHq ? form.project_id : active.id;
+
     const row: Record<string, unknown> = {
       client_name: form.client_name,
-      project_id: active.id === "hq" ? form.project_id : active.id,
+      project_id: projectId,
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
@@ -90,17 +95,32 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.website_url) row.website_url = form.website_url;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from("clients_config").insert(row).select().single();
-
-    setSaving(false);
+    const { data: cab, error } = await (supabase as any).from("clients_config").insert(row).select().single();
 
     if (error) {
+      setSaving(false);
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
     }
 
+    // Create visibility records for checked projects
+    const visRecords = Object.entries(visibleIn)
+      .filter(([, checked]) => checked)
+      .map(([pid]) => ({ client_config_id: cab.id, project_id: pid }));
+
+    if (visRecords.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: visErr } = await (supabase as any).from("client_config_visibility").insert(visRecords);
+      if (visErr) {
+        console.error("Visibility error:", visErr.message);
+        toast({ title: "Кабинет создан, но видимость не настроена", description: visErr.message, variant: "destructive" });
+      }
+    }
+
+    setSaving(false);
     toast({ title: "Кабинет добавлен!", description: form.client_name });
     setForm(emptyForm);
+    setVisibleIn({});
     onOpenChange(false);
     onSaved();
   };
@@ -124,21 +144,46 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Проект *</Label>
-                  <select
-                    value={form.project_id}
-                    onChange={(e) => updateField("project_id", e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    required
-                  >
-                    <option value="">Выберите проект</option>
-                    {workspaces.filter(w => w.id !== 'hq').map(w => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
+                {/* If in HQ — need to pick a project. Otherwise auto-assigned. */}
+                {isInHq ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Привязать к проекту *</Label>
+                    <select
+                      value={form.project_id}
+                      onChange={(e) => updateField("project_id", e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      required
+                    >
+                      <option value="">Выберите проект</option>
+                      {workspaces.filter(w => w.id !== 'hq').map(w => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                    <p className="text-xs text-primary font-medium">Проект: {active.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Кабинет будет создан в этом проекте</p>
+                  </div>
+                )}
+
+                {/* Visibility checkboxes — show other projects */}
+                {otherProjects.length > 0 && (
+                  <div className="space-y-3 pt-3 border-t border-border mt-2">
+                    <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Также показать в</Label>
+                    {otherProjects.map(proj => (
+                      <div key={proj.id} className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
+                        <Checkbox
+                          id={`vis-${proj.id}`}
+                          checked={!!visibleIn[proj.id]}
+                          onCheckedChange={(checked) => setVisibleIn(prev => ({ ...prev, [proj.id]: !!checked }))}
+                        />
+                        <Label htmlFor={`vis-${proj.id}`} className="text-sm font-medium cursor-pointer">{proj.name}</Label>
+                      </div>
                     ))}
-                  </select>
-                  <p className="text-[10px] text-muted-foreground">Кабинет будет автоматически виден в MarkVision AI</p>
-                </div>
+                    <p className="text-[10px] text-muted-foreground">MarkVision AI видит все кабинеты автоматически</p>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
@@ -181,7 +226,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
           <div className="pt-4">
             <Button type="submit" className="w-full" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Создать аккаунт
+              Создать кабинет
             </Button>
           </div>
         </form>
