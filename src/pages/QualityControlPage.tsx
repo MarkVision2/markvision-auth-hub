@@ -105,9 +105,6 @@ export default function QualityControlPage() {
 
   const fetchFeedback = useCallback(async () => {
     if (active.id === "hq") {
-      setFeedback([]);
-      setLoading(false);
-      return;
     }
     try {
       const { data, error } = await (supabase as any)
@@ -136,7 +133,7 @@ export default function QualityControlPage() {
 
   // Realtime
   useEffect(() => {
-    if (active.id === "hq") return;
+
     const ch = supabase
       .channel("nps_feedback_realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "nps_feedback", filter: `project_id=eq.${active.id}` }, (payload: any) => {

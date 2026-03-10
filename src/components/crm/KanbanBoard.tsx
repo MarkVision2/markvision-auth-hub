@@ -98,11 +98,6 @@ export default function KanbanBoard() {
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
 
   const fetchLeads = useCallback(async () => {
-    if (active.id === "hq") {
-      setLeads([]);
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     try {
       const { data, error } = await (supabase as any)

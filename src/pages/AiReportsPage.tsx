@@ -47,7 +47,7 @@ export default function AiReportsPage() {
   useEffect(() => {
     if (active.id === "hq") {
       setClients([]);
-      return;
+      // return; // This line was removed
     }
     const load = async () => {
       const { data } = await supabase

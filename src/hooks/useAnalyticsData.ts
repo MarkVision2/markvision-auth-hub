@@ -33,15 +33,6 @@ export function useAnalyticsData() {
     async function fetchAll() {
       setLoading(true);
       try {
-        if (active.id === "hq") {
-          setChannels([]);
-          setOrganicPosts([]);
-          setTotalLeadsFromCrm(0);
-          setDailyAgg({ spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
-          setLoading(false);
-          return;
-        }
-
         // Fetch analytics tables
         let chQ = supabase.from("analytics_channels").select("*").eq("project_id", active.id).order("created_at");
 
@@ -77,14 +68,14 @@ export function useAnalyticsData() {
 
         if (dailyRes.data && dailyRes.data.length > 0) {
           const agg = dailyRes.data.reduce((acc, r) => ({
-            spend: (acc.spend || 0) + (Number(r.spend) || 0),
-            clicks: (acc.clicks || 0) + (Number(r.clicks) || 0),
-            impressions: (acc.impressions || 0) + (Number(r.impressions) || 0),
-            leads: (acc.leads || 0) + (Number(r.leads) || 0),
-            visits: (acc.visits || 0) + (Number(r.visits) || 0),
-            sales: (acc.sales || 0) + (Number(r.sales) || 0),
-            revenue: (acc.revenue || 0) + (Number(r.revenue) || 0),
-          }), { spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+            spend: acc.spend + (r.spend ? Number(r.spend) : 0),
+            clicks: acc.clicks + (r.clicks ? Number(r.clicks) : 0),
+            impressions: acc.impressions + (r.impressions ? Number(r.impressions) : 0),
+            leads: acc.leads + (r.leads ? Number(r.leads) : 0),
+            visits: acc.visits + (r.visits ? Number(r.visits) : 0),
+            sales: acc.sales + (r.sales ? Number(r.sales) : 0),
+            revenue: acc.revenue + (r.revenue ? Number(r.revenue) : 0),
+          }), { spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 } as { spend: number, clicks: number, impressions: number, leads: number, visits: number, sales: number, revenue: number });
           setDailyAgg(agg);
         }
 

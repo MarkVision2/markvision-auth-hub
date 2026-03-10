@@ -167,14 +167,9 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full" onClick={handleCreate} disabled={saving || active.id === "hq"}>
-            {active.id === "hq" ? "Выберите проект" : (saving ? "Сохранение..." : "Создать лид")}
+          <Button className="w-full" onClick={handleCreate} disabled={saving}>
+            {saving ? "Сохранение..." : "Создать лид"}
           </Button>
-          {active.id === "hq" && (
-            <p className="text-[10px] text-destructive flex items-center gap-1 justify-center">
-              <AlertCircle className="h-3 w-3" /> Для создания лида выберите конкретный проект
-            </p>
-          )}
         </div>
       </SheetContent>
     </Sheet>

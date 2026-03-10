@@ -115,7 +115,11 @@ export default function AgencyAccounts() {
   const fetchMetrics = useCallback(async () => {
     setLoading(true);
     let query = supabase.from("agency_metrics_view").select("*");
-    if (active.id !== "hq") {
+
+    if (active.id === "hq") {
+      // Show all other clients OR agency-marked clients from HQ itself.
+      query = query.or(`project_id.neq.hq,and(project_id.eq.hq,is_agency.eq.true)`);
+    } else {
       query = query.eq("project_id", active.id);
     }
 

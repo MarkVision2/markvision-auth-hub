@@ -78,10 +78,7 @@ export default function ContentFactory() {
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
-    if (active.id === "hq") {
-      setHistory([]);
-      return;
-    }
+
     const { data } = await (supabase as any)
       .from("content_tasks")
       .select("id, status, progress_text, result_urls, content_type, created_at")
@@ -453,86 +450,74 @@ export default function ContentFactory() {
   // ======== FORM VIEW — two-column layout with PhoneMockup ========
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
-      {active.id === "hq" ? (
-        <div className="mx-auto max-w-5xl py-20 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-primary" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground">Проект не выбран</h2>
-          <p className="text-muted-foreground mt-2 max-w-xs mx-auto">
-            Выберите или создайте проект в боковой панели, чтобы пользоваться Контент-Заводом
-          </p>
+      <div className="mx-auto max-w-5xl py-4">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
         </div>
-      ) : (
-        <div className="mx-auto max-w-5xl py-4">
-          <div className="flex items-center justify-between mb-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-          </div>
-          <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
+        <p className="text-sm text-muted-foreground mb-8">Генерация видео и фото контента с помощью AI</p>
 
-          <div className="max-w-3xl">
-            {/* History */}
-            {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
-              <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-                    Последние {mainType === "video" ? "видео" : "фото"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
-                    <div key={h.id} className="relative group">
-                      <button
-                        onClick={() => {
-                          setTask(h);
-                          setTaskId(h.id);
-                        }}
-                        className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 overflow-hidden transition-colors"
-                      >
-                        {/* Thumbnail */}
-                        <div className="aspect-square bg-secondary/30 overflow-hidden">
-                          {h.content_type === "video" ? (
-                            <video src={h.result_urls![0]} className="w-full h-full object-cover" muted />
-                          ) : (
-                            <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover" />
-                          )}
-                        </div>
-                        <div className="p-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground">
-                              {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
-                              {h.result_urls!.length > 1 && ` (${h.result_urls!.length})`}
-                            </span>
-                          </div>
-                          {h.created_at && (
-                            <p className="text-[9px] text-muted-foreground mt-0.5">
-                              {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          try {
-                            await (supabase as any).from("content_tasks").delete().eq("id", h.id);
-                            fetchHistory();
-                            toast({ title: "Удалено" });
-                          } catch { toast({ title: "Ошибка", variant: "destructive" }); }
-                        }}
-                        className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-background/90 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-muted-foreground"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+        <div className="max-w-3xl">
+          {/* History */}
+          {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
+            <div className="mt-6 rounded-xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                  Последние {mainType === "video" ? "видео" : "фото"}
+                </span>
               </div>
-            )}
-          </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
+                  <div key={h.id} className="relative group">
+                    <button
+                      onClick={() => {
+                        setTask(h);
+                        setTaskId(h.id);
+                      }}
+                      className="w-full text-left rounded-lg border border-border bg-secondary/20 hover:bg-secondary/40 overflow-hidden transition-colors"
+                    >
+                      {/* Thumbnail */}
+                      <div className="aspect-square bg-secondary/30 overflow-hidden">
+                        {h.content_type === "video" ? (
+                          <video src={h.result_urls![0]} className="w-full h-full object-cover" muted />
+                        ) : (
+                          <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-medium text-foreground">
+                            {h.content_type === "video" ? "🎬 Видео" : "📸 Фото"}
+                            {h.result_urls!.length > 1 && ` (${h.result_urls!.length})`}
+                          </span>
+                        </div>
+                        {h.created_at && (
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
+                            {dateFmt(new Date(h.created_at), "dd.MM HH:mm")}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await (supabase as any).from("content_tasks").delete().eq("id", h.id);
+                          fetchHistory();
+                          toast({ title: "Удалено" });
+                        } catch { toast({ title: "Ошибка", variant: "destructive" }); }
+                      }}
+                      className="absolute top-1.5 right-1.5 h-6 w-6 rounded-md bg-background/90 border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 hover:border-destructive/20 hover:text-destructive text-muted-foreground"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 }

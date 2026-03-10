@@ -187,7 +187,6 @@ export default function ScoreboardPage() {
         if (active.id === "hq") {
           setAccounts([]);
           setSelectedAccountId("__none__");
-          return;
         }
         const { data, error } = await supabase
           .from("clients_config")

@@ -45,7 +45,6 @@ export default function Automations() {
     if (active.id === "hq") {
       setAutomations([]);
       setLoading(false);
-      return;
     }
     setLoading(true);
     const { data, error } = await (supabase as any)

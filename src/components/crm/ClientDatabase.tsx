@@ -41,7 +41,6 @@ export default function ClientDatabase() {
     if (active.id === "hq") {
       setClients([]);
       setLoading(false);
-      return;
     }
     setLoading(true);
     try {

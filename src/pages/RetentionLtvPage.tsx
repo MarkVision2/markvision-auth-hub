@@ -81,7 +81,7 @@ function KpiCard({ icon: Icon, label, value, loading }: {
   icon: React.ElementType; label: string; value: string; loading: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
+    <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2 mb-3">
         <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center">
           <Icon className="h-4 w-4 text-primary" />

@@ -46,10 +46,6 @@ export default function CrmSystem() {
 
   useEffect(() => {
     const load = async () => {
-      if (active.id === "hq") {
-        setLeads([]);
-        return;
-      }
       try {
         const { data, error } = await (supabase as any)
           .from("leads")

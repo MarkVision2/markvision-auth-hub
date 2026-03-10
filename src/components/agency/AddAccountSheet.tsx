@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2 } from "lucide-react";
-
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 const emptyForm = {
@@ -33,6 +33,7 @@ const emptyForm = {
   sales: "",
   revenue: "",
   romi: "",
+  is_agency: false,
 };
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -59,7 +60,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
   const { active } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const updateField = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
+  const updateField = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +70,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
-      project_id: active.id
+      project_id: active.id,
+      is_agency: active.id === "hq" ? form.is_agency : false
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
@@ -128,6 +130,25 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                   <Field label="Расходы (₸)" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
                   <Field label="Лиды" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
                 </div>
+                {active.id === "hq" && (
+                  <div className="space-y-1.5 pt-2">
+                    <Label className="text-xs text-muted-foreground">Тип кабинета (только в штаб-квартире)</Label>
+                    <RadioGroup
+                      value={form.is_agency ? "agency" : "personal"}
+                      onValueChange={(v) => updateField("is_agency", v === "agency")}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="personal" id="r-personal" />
+                        <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный кабинет</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="agency" id="r-agency" />
+                        <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский кабинет</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
                   <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />

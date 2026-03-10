@@ -58,11 +58,7 @@ export function useAiRopAudits() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (active.id === "hq") {
-      setAudits([]);
-      setLoading(false);
-      return;
-    }
+
     async function fetch() {
       try {
         setLoading(true);

@@ -112,7 +112,6 @@ export default function ChatsView() {
     if (active.id === "hq") {
       setLeads([]);
       setLoading(false);
-      return;
     }
     setLoading(true);
     try {
@@ -300,8 +299,8 @@ export default function ChatsView() {
         <button
           onClick={() => setFilterStage("all")}
           className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${filterStage === "all"
-              ? "bg-foreground text-background shadow-sm"
-              : "text-muted-foreground hover:bg-secondary/60"
+            ? "bg-foreground text-background shadow-sm"
+            : "text-muted-foreground hover:bg-secondary/60"
             }`}
         >
           Все
@@ -318,8 +317,8 @@ export default function ChatsView() {
               key={s.key}
               onClick={() => setFilterStage(s.key)}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg whitespace-nowrap transition-all ${isActive
-                  ? `${colors.bg} ${colors.text} shadow-sm`
-                  : "text-muted-foreground hover:bg-secondary/60"
+                ? `${colors.bg} ${colors.text} shadow-sm`
+                : "text-muted-foreground hover:bg-secondary/60"
                 }`}
             >
               <s.icon className="h-3 w-3" />
@@ -472,10 +471,10 @@ export default function ChatsView() {
                     <button
                       onClick={() => handleStageChange(selectedLead.id, s.key)}
                       className={`flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-md whitespace-nowrap transition-all ${isCurrent
-                          ? `${colors.bg} ${colors.text} ring-1 ring-current/20`
-                          : isPast
-                            ? "text-muted-foreground/60 line-through"
-                            : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/50"
+                        ? `${colors.bg} ${colors.text} ring-1 ring-current/20`
+                        : isPast
+                          ? "text-muted-foreground/60 line-through"
+                          : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/50"
                         }`}
                       title={`Перевести в "${s.key}"`}
                     >
@@ -522,8 +521,8 @@ export default function ChatsView() {
                                 )}
                                 <div
                                   className={`rounded-2xl px-3 py-2 text-sm leading-relaxed ${isClient
-                                      ? "bg-secondary text-foreground rounded-bl-md"
-                                      : "bg-primary/10 text-foreground rounded-br-md"
+                                    ? "bg-secondary text-foreground rounded-bl-md"
+                                    : "bg-primary/10 text-foreground rounded-br-md"
                                     }`}
                                 >
                                   <p>{msg.body}</p>
