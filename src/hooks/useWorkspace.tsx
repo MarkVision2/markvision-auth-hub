@@ -5,13 +5,12 @@ import { useAuth } from "./useAuth";
 export interface Workspace {
   id: string;
   name: string;
-  emoji: string;
   type: "agency" | "client";
   /** Maps to clients_config.client_name for client workspaces */
   clientName?: string;
 }
 
-const HQ: Workspace = { id: "hq", name: "CPR_KZ", emoji: "🏢", type: "agency" };
+const HQ: Workspace = { id: "hq", name: "CPR_KZ", type: "agency" };
 
 interface WorkspaceContextValue {
   workspaces: Workspace[];
@@ -41,7 +40,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setProjects(data.map(p => ({
           id: p.id,
           name: p.name,
-          emoji: "🦷",
           type: "client" as const,
         })));
       }

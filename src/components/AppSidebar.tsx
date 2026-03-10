@@ -148,10 +148,10 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             )}
           >
             <div className={cn(
-              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-base",
-              isAgency ? "bg-primary/10 border border-primary/20" : "bg-accent border border-border"
+              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
+              isAgency ? "bg-primary/10 text-primary border border-primary/20" : "bg-accent text-foreground border border-border"
             )}>
-              {active.emoji}
+              {active.name ? active.name.charAt(0).toUpperCase() : "P"}
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
@@ -183,8 +183,8 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                   active.id === w.id ? "bg-primary/10" : "hover:bg-accent/50"
                 )}
               >
-                <div className="h-7 w-7 rounded-md bg-background border border-border flex items-center justify-center shrink-0 text-sm group-hover/item:border-primary/30 transition-colors">
-                  {w.emoji}
+                <div className="h-7 w-7 rounded-md bg-background border border-border flex items-center justify-center shrink-0 text-xs font-bold text-foreground group-hover/item:border-primary/30 group-hover/item:text-primary transition-colors">
+                  {w.name ? w.name.charAt(0).toUpperCase() : "P"}
                 </div>
                 <span className={cn(
                   "flex-1 text-left text-[13px] truncate transition-colors",
