@@ -16,7 +16,7 @@ export default function FinancePage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Финансы</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isSuperadmin ? "Юнит-экономика, агентская P&L и динамика" : "Юнит-экономика и планирование"}
+            Юнит-экономика, агентская аналитика и динамика
           </p>
         </div>
 
@@ -25,11 +25,9 @@ export default function FinancePage() {
             <TabsTrigger value="decomposition" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
               <Calculator className="h-4 w-4" /> Декомпозиция
             </TabsTrigger>
-            {isSuperadmin && (
-              <TabsTrigger value="agency" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
-                <DollarSign className="h-4 w-4" /> Агентская аналитика
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="agency" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
+              <DollarSign className="h-4 w-4" /> Агентская аналитика
+            </TabsTrigger>
             {isSuperadmin && (
               <TabsTrigger value="dynamics" className="text-sm gap-2 rounded-lg data-[state=active]:shadow-sm px-4">
                 <TrendingUp className="h-4 w-4" /> Динамика по месяцам
@@ -38,7 +36,7 @@ export default function FinancePage() {
           </TabsList>
 
           <TabsContent value="decomposition"><DecompositionTab /></TabsContent>
-          {isSuperadmin && <TabsContent value="agency"><AgencyTab /></TabsContent>}
+          <TabsContent value="agency"><AgencyTab /></TabsContent>
           {isSuperadmin && <TabsContent value="dynamics"><DynamicsTab /></TabsContent>}
         </Tabs>
       </div>
