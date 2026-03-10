@@ -209,8 +209,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
                   {/* MarkVision AI — hide if currently in HQ */}
                   {!isInHq && markVisionProject && (
-                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30 cursor-pointer"
-                      onClick={() => setShowInMarkVision(v => !v)}>
+                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
                       <Checkbox
                         id="vis-markvision"
                         checked={showInMarkVision}
@@ -225,8 +224,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
                   {/* CPR_KZ — hide if currently in CPR_KZ */}
                   {!isInCPR && cprProject && (
-                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30 cursor-pointer"
-                      onClick={() => setShowInCPR(v => !v)}>
+                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
                       <Checkbox
                         id="vis-cpr"
                         checked={showInCPR}
