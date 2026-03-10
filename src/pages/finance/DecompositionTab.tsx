@@ -70,7 +70,7 @@ export default function DecompositionTab() {
     const summaryRows = [
         { label: "Выручка (Общая)", value: `${fmt(calc.revenue)} ₸`, isAccent: true },
         { label: "Общие расходы (Бюджет + Зарплата)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: false },
-        { label: "Чистая прибыль", value: `${fmt(calc.netProfit)} ₸`, isAccent: true },
+        { label: "Прибыль (после маркетинга)", value: `${fmt(calc.netProfit)} ₸`, isAccent: true },
         { label: "Средний чек", value: `${fmt(avgCheck)} ₸`, isAccent: false },
         { label: "Кол-во продаж", value: String(calc.sales) },
         { label: "CR диагностика → продажа", value: `${crDiagToSale}%` },
@@ -184,7 +184,7 @@ export default function DecompositionTab() {
                 <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
                 <KpiCard icon={Target} label="Стоимость клиента" value={fmtCurrency(Math.round(calc.costPerSale))} sub="CAC маркетинг" />
                 <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass={calc.romi >= 100 ? "text-primary" : calc.romi >= 0 ? "text-foreground" : "text-destructive"} sub="С учётом расходов и ЗП" />
-                <KpiCard icon={PiggyBank} label="Чистая Прибыль" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
+                <KpiCard icon={PiggyBank} label="Прибыль (после маркетинга)" value={fmtCurrency(calc.netProfit)} valueClass={calc.netProfit >= 0 ? "text-primary" : "text-destructive"} sub="Выручка − (Бюджет + ЗП)" />
             </div>
 
             {/* Save to Plan */}
