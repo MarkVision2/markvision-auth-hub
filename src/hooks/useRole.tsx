@@ -11,9 +11,9 @@ interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<AppRole>("client");
+  const [role, setRole] = useState<AppRole>("superadmin");
   return (
-    <RoleContext.Provider value={{ role, setRole, isSuperadmin: role === "superadmin" }}>
+    <RoleContext.Provider value={{ role, setRole, isSuperadmin: true }}>
       {children}
     </RoleContext.Provider>
   );

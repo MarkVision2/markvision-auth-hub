@@ -82,7 +82,7 @@ interface SidebarContentInnerProps {
 function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
   const location = useLocation();
   const { workspaces, active, setActiveId, isAgency } = useWorkspace();
-  const { isSuperadmin, setRole } = useRole();
+  const { isSuperadmin } = useRole();
   const [wsOpen, setWsOpen] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null }>({ full_name: null, avatar_url: null });
 
@@ -234,12 +234,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
           </Avatar>
           <div className="min-w-0">
             <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
-            <button
-              onClick={() => setRole(isSuperadmin ? "client" : "superadmin")}
-              className="text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-            >
-              {isSuperadmin ? "Superadmin" : "Client"}
-            </button>
+            <p className="text-[11px] text-muted-foreground">Superadmin</p>
           </div>
         </div>
       </div>
