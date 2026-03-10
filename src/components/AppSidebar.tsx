@@ -147,12 +147,6 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
               isSuperadmin ? "hover:bg-accent/30 cursor-pointer" : "cursor-default opacity-80"
             )}
           >
-            <div className={cn(
-              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
-              isAgency ? "bg-primary/10 text-primary border border-primary/20" : "bg-accent text-foreground border border-border"
-            )}>
-              {active.name ? active.name.charAt(0).toUpperCase() : "P"}
-            </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
               <p className="text-[10px] text-muted-foreground truncate">
@@ -183,9 +177,6 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                   active.id === w.id ? "bg-primary/10" : "hover:bg-accent/50"
                 )}
               >
-                <div className="h-7 w-7 rounded-md bg-background border border-border flex items-center justify-center shrink-0 text-xs font-bold text-foreground group-hover/item:border-primary/30 group-hover/item:text-primary transition-colors">
-                  {w.name ? w.name.charAt(0).toUpperCase() : "P"}
-                </div>
                 <span className={cn(
                   "flex-1 text-left text-[13px] truncate transition-colors",
                   active.id === w.id ? "font-semibold text-primary" : "text-foreground group-hover:text-foreground"
