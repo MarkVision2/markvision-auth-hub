@@ -34,6 +34,7 @@ interface MetricsRow {
   cpv: number | null;
   cac: number | null;
   romi: number | null;
+  project_name?: string | null;
 }
 
 function fmt(n: number, suffix = ""): string {
@@ -118,7 +119,7 @@ export default function AgencyAccounts() {
 
     try {
       // 1. Get Cabinets
-      let cabQuery = supabase.from("clients_config").select("*");
+      let cabQuery = supabase.from("clients_config").select("*, projects(name)");
       if (active.id === "hq") {
         cabQuery = cabQuery.or(`project_id.not.is.null,and(project_id.is.null,is_agency.eq.true)`);
       } else {
@@ -174,7 +175,8 @@ export default function AgencyAccounts() {
           cpl,
           cpv,
           cac,
-          romi
+          romi,
+          project_name: (c as any).projects?.name
         };
       });
 
@@ -334,6 +336,9 @@ export default function AgencyAccounts() {
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
                 <TableHead className="text-sm font-bold text-muted-foreground w-[180px] px-4 py-4">Кабинет</TableHead>
+                {active.id === "hq" && (
+                  <TableHead className="text-sm font-bold text-muted-foreground px-4 py-4">Проект</TableHead>
+                )}
                 <SortableHead label="Расходы" sortField="spend" />
                 <SortableHead label="Лиды" sortField="meta_leads" />
                 <SortableHead label="Визиты" sortField="visits" />
@@ -358,8 +363,8 @@ export default function AgencyAccounts() {
                 </TableRow>
               ) : (
                 filtered.map((c) => {
-                  const active = c.is_active !== false;
-                  const s = active ? statusCfg.active : statusCfg.paused;
+                  const isActiveCabinet = c.is_active !== false;
+                  const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
                   const spend = Number(c.spend) || 0;
                   const leads = Number(c.meta_leads) || 0;
                   const cpl = Number(c.cpl) || 0;
@@ -382,6 +387,12 @@ export default function AgencyAccounts() {
                           {s.label}
                         </span>
                       </TableCell>
+
+                      {active.id === "hq" && (
+                        <TableCell className="py-4">
+                          <p className="text-sm text-foreground">{c.project_name || "HQ / MarkVision"}</p>
+                        </TableCell>
+                      )}
 
                       <TableCell className="py-4">
                         <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>

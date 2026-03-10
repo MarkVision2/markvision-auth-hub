@@ -34,6 +34,7 @@ const emptyForm = {
   revenue: "",
   romi: "",
   is_agency: false,
+  project_id: "",
 };
 
 function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
@@ -57,7 +58,7 @@ interface AddAccountSheetProps {
 }
 
 export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAccountSheetProps) {
-  const { active } = useWorkspace();
+  const { active, workspaces } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const updateField = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
@@ -70,8 +71,10 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
-      project_id: active.id === "hq" ? null : active.id,
-      is_agency: active.id === "hq" ? form.is_agency : false
+      project_id: active.id === "hq"
+        ? (form.project_id || null)
+        : active.id,
+      is_agency: form.is_agency || (active.id === "hq" && !form.project_id)
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);
     if (form.city) row.city = form.city;
@@ -122,23 +125,41 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
 
                 {active.id === "hq" && (
-                  <div className="space-y-1.5 pt-2">
-                    <Label className="text-xs text-muted-foreground">Тип кабинета (только в штаб-квартире)</Label>
-                    <RadioGroup
-                      value={form.is_agency ? "agency" : "personal"}
-                      onValueChange={(v) => updateField("is_agency", v === "agency")}
-                      className="flex gap-4"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="personal" id="r-personal" />
-                        <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный кабинет</Label>
+                  <>
+                    <div className="space-y-1.5 pt-2">
+                      <Label className="text-xs text-muted-foreground">Тип кабинета (только в штаб-квартире)</Label>
+                      <RadioGroup
+                        value={form.is_agency ? "agency" : "personal"}
+                        onValueChange={(v) => updateField("is_agency", v === "agency")}
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="personal" id="r-personal" />
+                          <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный кабинет</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="agency" id="r-agency" />
+                          <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский кабинет</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {!form.is_agency && (
+                      <div className="space-y-1.5 pt-2">
+                        <Label className="text-xs text-muted-foreground">Привязать к проекту</Label>
+                        <select
+                          value={form.project_id}
+                          onChange={(e) => updateField("project_id", e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <option value="">Без проекта (Только в MarkVision)</option>
+                          {workspaces.filter(w => w.id !== 'hq').map(w => (
+                            <option key={w.id} value={w.id}>{w.name}</option>
+                          ))}
+                        </select>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="agency" id="r-agency" />
-                        <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский кабинет</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                    )}
+                  </>
                 )}
 
                 <div className="space-y-1.5">
