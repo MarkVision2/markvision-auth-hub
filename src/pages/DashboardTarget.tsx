@@ -130,24 +130,37 @@ export default function DashboardTarget() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: clientsData, error: cErr } = await (supabase as any)
+      let clientsQuery = (supabase as any)
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active")
         .eq("is_active", true)
-        .eq("project_id", active.id)
         .eq("is_agency", false)
         .order("client_name");
-      if (cErr) throw cErr;
+
+      if (active.id === "hq") {
+        clientsQuery = clientsQuery.is("project_id", null);
+      } else {
+        clientsQuery = clientsQuery.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+      }
+
+      const { data: clientsData, error: cErr } = await clientsQuery;
 
       const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
-      const { data: metricsData, error: mErr } = await (supabase as any)
+      let metricsQuery = (supabase as any)
         .from("daily_metrics")
         .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
-        .eq("project_id", active.id)
         .gte("date", start)
         .lt("date", end)
         .order("date", { ascending: true });
+
+      if (active.id === "hq") {
+        metricsQuery = metricsQuery.is("project_id", null);
+      } else {
+        metricsQuery = metricsQuery.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
+      }
+
+      const { data: metricsData, error: mErr } = await metricsQuery;
       if (mErr) throw mErr;
 
       const metricsMap = new Map<string, DailyMetric[]>();

@@ -82,7 +82,7 @@ export default function ContentFactory() {
     const { data } = await (supabase as any)
       .from("content_tasks")
       .select("id, status, progress_text, result_urls, content_type, created_at")
-      .eq("project_id", active.id)
+      .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
       .order("created_at", { ascending: false })
       .limit(MAX_HISTORY);
     if (data) setHistory(data as ContentTask[]);

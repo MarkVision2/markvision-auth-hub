@@ -65,7 +65,7 @@ export function useAiRopAudits() {
         const { data, error } = await supabase
           .from("ai_rop_audits")
           .select("*")
-          .eq("project_id", active.id)
+          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("created_at", { ascending: false });
         if (error) throw error;
         setAudits((data as RawAudit[]).map(mapAudit));

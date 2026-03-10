@@ -224,17 +224,17 @@ export default function RetentionLtvPage() {
         (supabase as any)
           .from("retention_tasks")
           .select("*, leads(name), retention_templates(name)")
-          .eq("project_id", active.id)
+          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("trigger_date", { ascending: true }),
         (supabase as any)
           .from("retention_templates")
           .select("*")
-          .eq("project_id", active.id)
+          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("revenue_generated", { ascending: false }),
         (supabase as any)
           .from("leads")
           .select("id, name")
-          .eq("project_id", active.id)
+          .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
           .order("name"),
       ]);
 

@@ -50,7 +50,7 @@ export default function Automations() {
     const { data, error } = await (supabase as any)
       .from("crm_automations")
       .select("*")
-      .eq("project_id", active.id)
+      .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
       .order("created_at", { ascending: false });
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     setAutomations((data as Automation[]) ?? []);

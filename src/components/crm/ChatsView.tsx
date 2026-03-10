@@ -118,7 +118,7 @@ export default function ChatsView() {
       const { data, error } = await (supabase as any)
         .from("leads")
         .select("*")
-        .eq("project_id", active.id)
+        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       const leadsData = (data as Lead[]) ?? [];

@@ -70,7 +70,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
-      project_id: active.id,
+      project_id: active.id === "hq" ? null : active.id,
       is_agency: active.id === "hq" ? form.is_agency : false
     };
     if (form.daily_budget) row.daily_budget = Number(form.daily_budget);

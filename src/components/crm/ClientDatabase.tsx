@@ -47,7 +47,7 @@ export default function ClientDatabase() {
       const { data, error } = await (supabase as any)
         .from("leads")
         .select("name, phone, source, amount, ai_score, status, updated_at, created_at")
-        .eq("project_id", active.id)
+        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

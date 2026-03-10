@@ -148,7 +148,7 @@ export default function Dashboard() {
           const { data, error } = await supabase
             .from("agency_metrics_view")
             .select("*")
-            .eq("project_id", active.id);
+            .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
           if (error) throw error;
           setClients((data as ClientMetric[]) || []);
         }
@@ -218,7 +218,7 @@ export default function Dashboard() {
   };
 
   const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
-  const hqClients = clients.filter(c => c.project_id === "hq" && c.is_agency === false);
+  const hqClients = clients.filter(c => (c.project_id === "hq" || c.project_id === null) && c.is_agency === false);
   const matchedHqClient = aggregateClientData(hqClients, "hq", active.name);
 
   const breadcrumb = isAgency ? "Штаб-квартира" : `${active.emoji} ${active.name}`;

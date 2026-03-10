@@ -110,7 +110,7 @@ export default function QualityControlPage() {
       const { data, error } = await (supabase as any)
         .from("nps_feedback")
         .select("*, leads(name)")
-        .eq("project_id", active.id)
+        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       setFeedback((data || []).map((row: any) => ({

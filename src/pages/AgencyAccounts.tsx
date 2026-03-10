@@ -120,7 +120,7 @@ export default function AgencyAccounts() {
       // Show all other clients OR agency-marked clients from HQ itself.
       query = query.or(`project_id.neq.hq,and(project_id.eq.hq,is_agency.eq.true)`);
     } else {
-      query = query.eq("project_id", active.id);
+      query = query.or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
     }
 
     const { data, error } = await query;

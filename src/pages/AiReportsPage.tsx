@@ -53,7 +53,7 @@ export default function AiReportsPage() {
       const { data } = await supabase
         .from("clients_config")
         .select("id, client_name")
-        .eq("project_id", active.id)
+        .or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`)
         .eq("is_active", true)
         .order("client_name");
       if (data && data.length > 0) {
@@ -81,10 +81,10 @@ export default function AiReportsPage() {
         const pStart = format(prevWeekStart, "yyyy-MM-dd");
         const pEnd = format(prevWeekEnd, "yyyy-MM-dd");
 
-        let curQ = supabase.from("daily_metrics").select("*").eq("project_id", active.id).gte("date", curStart).lte("date", curEnd);
-        let prevQ = supabase.from("daily_metrics").select("*").eq("project_id", active.id).gte("date", pStart).lte("date", pEnd);
-        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").eq("project_id", active.id).gte("created_at", curStart);
-        let channelsQ = supabase.from("analytics_channels").select("*").eq("project_id", active.id);
+        let curQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", curStart).lte("date", curEnd);
+        let prevQ = supabase.from("daily_metrics").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("date", pStart).lte("date", pEnd);
+        let leadsQ = supabase.from("leads").select("id, status, amount, ai_score, source, created_at").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`).gte("created_at", curStart);
+        let channelsQ = supabase.from("analytics_channels").select("*").or(`project_id.${active.id === "hq" ? "is.null" : `eq.${active.id}`}`);
 
         // Correct join filtering for project_id
         let creativesQ = supabase
