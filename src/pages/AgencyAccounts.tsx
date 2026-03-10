@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { startOfMonth, endOfMonth } from "date-fns";
+import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,23 +113,78 @@ export default function AgencyAccounts() {
   });
 
   const fetchMetrics = useCallback(async () => {
+    if (!period.from) return;
     setLoading(true);
-    let query = supabase.from("agency_metrics_view").select("*");
 
-    if (active.id === "hq") {
-      // Show all other clients OR agency-marked clients from HQ itself.
-      query = query.or(`project_id.not.is.null,and(project_id.is.null,is_agency.eq.true)`);
-    } else {
-      query = query.eq("project_id", active.id);
-    }
+    try {
+      // 1. Get Cabinets
+      let cabQuery = supabase.from("clients_config").select("*");
+      if (active.id === "hq") {
+        cabQuery = cabQuery.or(`project_id.not.is.null,and(project_id.is.null,is_agency.eq.true)`);
+      } else {
+        cabQuery = cabQuery.eq("project_id", active.id);
+      }
+      const { data: configs, error: cabError } = await cabQuery;
+      if (cabError) throw cabError;
 
-    const { data, error } = await query;
-    if (error) {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      const cabIds = (configs || []).map(c => c.id);
+
+      // 2. Get Daily Metrics for the period
+      const { data: daily, error: dailyError } = await supabase
+        .from("daily_metrics")
+        .select("*")
+        .in("client_config_id", cabIds)
+        .gte("date", format(period.from, "yyyy-MM-dd"))
+        .lte("date", format(period.to || period.from, "yyyy-MM-dd"));
+      if (dailyError) throw dailyError;
+
+      // 3. Aggregate metrics in JS to show period-specific totals
+      const aggregated = (configs || []).map(c => {
+        const cDaily = (daily || []).filter(d => d.client_config_id === c.id);
+        const sums = cDaily.reduce((acc, cur) => ({
+          spend: acc.spend + (Number(cur.spend) || 0),
+          leads: acc.leads + (Number(cur.leads) || 0),
+          visits: acc.visits + (Number(cur.visits) || 0),
+          sales: acc.sales + (Number(cur.sales) || 0),
+          revenue: acc.revenue + (Number(cur.revenue) || 0),
+        }), { spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+
+        // Merge with base values from clients_config if applicable
+        const totalSpend = sums.spend + (Number(c.spend) || 0);
+        const totalLeads = sums.leads + (Number(c.meta_leads) || 0);
+        const totalVisits = sums.visits;
+        const totalSales = sums.sales;
+        const totalRevenue = sums.revenue;
+
+        // Calculate derived KPIs for this period
+        const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+        const cpv = totalVisits > 0 ? totalSpend / totalVisits : 0;
+        const cac = totalSales > 0 ? totalSpend / totalSales : 0;
+        const romi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
+
+        return {
+          client_id: c.id,
+          client_name: c.client_name,
+          is_active: c.is_active,
+          spend: totalSpend,
+          meta_leads: totalLeads,
+          visits: totalVisits,
+          sales: totalSales,
+          revenue: totalRevenue,
+          cpl,
+          cpv,
+          cac,
+          romi
+        };
+      });
+
+      setMetrics(aggregated);
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setMetrics((data as MetricsRow[]) ?? []);
-    setLoading(false);
-  }, [active.id]);
+  }, [active.id, period]);
 
   useEffect(() => { fetchMetrics(); }, [fetchMetrics]);
 

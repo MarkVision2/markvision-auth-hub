@@ -10,6 +10,7 @@ import {
     ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { fmt, fmtCurrency, KpiCard } from "./shared";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 interface SummaryRow {
     type?: "header" | "row";
@@ -21,6 +22,7 @@ interface SummaryRow {
 }
 
 export default function DecompositionTab() {
+    const { active } = useWorkspace();
     const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
     const now = new Date();
     const [planMonthIndex, setPlanMonthIndex] = useState(now.getMonth());
@@ -202,11 +204,13 @@ export default function DecompositionTab() {
             </div>
 
             {/* KPI Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <KpiCard icon={Wallet} label="Бюджет на рекламу" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
-                <KpiCard icon={Target} label="CAC (с учетом ЗП)" value={fmtCurrency(Math.round(calc.totalCosts / Math.max(1, calc.sales)))} sub="Стоимость продажи/клиента" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <KpiCard icon={Wallet} label="Расходы" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
+                <KpiCard icon={UserPlus} label="Лиды" value={String(calc.leads)} sub={`CR ${crLeadToDiag}% → визит`} />
+                <KpiCard icon={DollarSign} label="CPL" value={`${fmt(cpl)} ₸`} sub="Стоимость лида" />
+                <KpiCard icon={Users} label="Визиты" value={String(calc.diagnostics)} sub={`CR ${crDiagToSale}% → продажа`} />
+                <KpiCard icon={Target} label="Оплаты" value={String(calc.sales)} sub="Стоимость CAC с учетом ЗП" />
                 <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-[#10b981]" sub="Прогноз по чеку и продажам" />
-                <KpiCard icon={TrendingUp} label="ROMI" value={`${calc.romi}%`} valueClass="text-[#10b981]" sub="Реальный показатель" />
             </div>
 
             {/* Save to Plan */}
@@ -216,7 +220,7 @@ export default function DecompositionTab() {
                     <p className="text-sm font-semibold text-foreground">Сохранить план в Таблицу показателей</p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    План будет сохранён: {calc.leads} лидов · {calc.sales} продаж · {fmtCurrency(calc.adBudget)} бюджет · {fmtCurrency(calc.revenue)} выручка
+                    План будет сохранён: Расходы {fmtCurrency(calc.adBudget)} · Лиды {calc.leads} · CPL {fmt(cpl)} ₸ · Визиты {calc.diagnostics} · Оплаты {calc.sales} · Выручка {fmtCurrency(calc.revenue)}
                 </p>
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
@@ -243,9 +247,18 @@ export default function DecompositionTab() {
                                     plan_visits: calc.diagnostics,
                                     plan_sales: calc.sales,
                                     plan_revenue: Math.round(calc.revenue),
+                                    project_id: active.id === "hq" ? null : active.id
                                 };
-                                const { data: existing } = await (supabase as any).from("monthly_plans")
-                                    .select("id").eq("month_year", monthYear).limit(1);
+
+                                const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);
+                                if (active.id === "hq") {
+                                    query.is("project_id", null);
+                                } else {
+                                    query.eq("project_id", active.id);
+                                }
+
+                                const { data: existing } = await query.limit(1);
+
                                 if (existing && existing.length > 0) {
                                     const { error } = await (supabase as any).from("monthly_plans")
                                         .update(payload).eq("id", existing[0].id);

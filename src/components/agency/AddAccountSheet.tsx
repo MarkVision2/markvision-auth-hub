@@ -64,7 +64,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.client_name.trim() || active.id === "hq") return;
+    if (!form.client_name.trim()) return;
 
     setSaving(true);
 
@@ -86,12 +86,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.fb_pixel_id) row.fb_pixel_id = form.fb_pixel_id;
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
-    if (form.spend) row.spend = Number(form.spend);
-    if (form.meta_leads) row.meta_leads = Number(form.meta_leads);
-    if (form.visits) row.visits = Number(form.visits);
-    if (form.sales) row.sales = Number(form.sales);
-    if (form.revenue) row.revenue = Number(form.revenue);
-    if (form.romi) row.romi = Number(form.romi);
 
     const { error } = await supabase.from("clients_config").insert(row as any);
 
@@ -126,10 +120,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
                 <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
                 <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Расходы (₸)" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
-                  <Field label="Лиды" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
-                </div>
+
                 {active.id === "hq" && (
                   <div className="space-y-1.5 pt-2">
                     <Label className="text-xs text-muted-foreground">Тип кабинета (только в штаб-квартире)</Label>
@@ -149,14 +140,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                     </RadioGroup>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
-                  <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Сумма продаж (₸)" value={form.revenue} onChange={(v) => updateField("revenue", v)} placeholder="0" />
-                  <Field label="ROMI (%)" value={form.romi} onChange={(v) => updateField("romi", v)} placeholder="0" />
-                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
