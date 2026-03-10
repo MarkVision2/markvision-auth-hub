@@ -55,14 +55,16 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
   const { active, workspaces } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  // Track which OTHER projects should also see this cabinet
-  const [visibleIn, setVisibleIn] = useState<Record<string, boolean>>({});
+  const [showInMarkVision, setShowInMarkVision] = useState(false);
+  const [showInCPR, setShowInCPR] = useState(false);
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
 
-  // Other projects = all projects except the current one (and except HQ which sees everything)
-  const otherProjects = workspaces.filter(w => w.id !== "hq" && w.id !== active.id);
+  // Find real project IDs by name
+  const markVisionProject = workspaces.find(w => w.id === "hq");
+  const cprProject = workspaces.find(w => w.name === "CPR_KZ");
 
   const isInHq = active.id === "hq";
+  const isInCPR = cprProject && active.id === cprProject.id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,24 +108,33 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
       return;
     }
 
-    // Create visibility records for checked projects
-    const visRecords = Object.entries(visibleIn)
-      .filter(([, checked]) => checked)
-      .map(([pid]) => ({ client_config_id: cab.id, project_id: pid }));
+    // Create visibility records
+    const visRecords: { client_config_id: string; project_id?: string; is_hq_sharing?: boolean }[] = [];
+
+    // MarkVision AI = HQ (virtual, no real project_id needed — it loads all)
+    // For CPR_KZ, we store by its real project_id
+    if (showInCPR && cprProject && active.id !== cprProject.id) {
+      visRecords.push({ client_config_id: cab.id, project_id: cprProject.id });
+    }
+    // MarkVision AI sees everything as HQ, but if user explicitly wants a record:
+    // We mark it by storing is_hq_sharing = true (for future use)
+    if (showInMarkVision && !isInHq) {
+      visRecords.push({ client_config_id: cab.id, is_hq_sharing: true });
+    }
 
     if (visRecords.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: visErr } = await (supabase as any).from("client_config_visibility").insert(visRecords);
       if (visErr) {
         console.error("Visibility error:", visErr.message);
-        toast({ title: "Кабинет создан, но видимость не настроена", description: visErr.message, variant: "destructive" });
       }
     }
 
     setSaving(false);
     toast({ title: "Кабинет добавлен!", description: form.client_name });
     setForm(emptyForm);
-    setVisibleIn({});
+    setShowInMarkVision(false);
+    setShowInCPR(false);
     onOpenChange(false);
     onSaved();
   };
@@ -192,23 +203,42 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                   </div>
                 )}
 
-                {/* Visibility checkboxes — show other projects */}
-                {otherProjects.length > 0 && (
-                  <div className="space-y-3 pt-3 border-t border-border mt-2">
-                    <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Также показать в</Label>
-                    {otherProjects.map(proj => (
-                      <div key={proj.id} className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
-                        <Checkbox
-                          id={`vis-${proj.id}`}
-                          checked={!!visibleIn[proj.id]}
-                          onCheckedChange={(checked) => setVisibleIn(prev => ({ ...prev, [proj.id]: !!checked }))}
-                        />
-                        <Label htmlFor={`vis-${proj.id}`} className="text-sm font-medium cursor-pointer">{proj.name}</Label>
+                {/* Fixed visibility checkboxes */}
+                <div className="space-y-2.5 pt-3 border-t border-border mt-2">
+                  <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Также показать в</Label>
+
+                  {/* MarkVision AI — hide if currently in HQ */}
+                  {!isInHq && markVisionProject && (
+                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30 cursor-pointer"
+                      onClick={() => setShowInMarkVision(v => !v)}>
+                      <Checkbox
+                        id="vis-markvision"
+                        checked={showInMarkVision}
+                        onCheckedChange={(c) => setShowInMarkVision(!!c)}
+                      />
+                      <div>
+                        <Label htmlFor="vis-markvision" className="text-sm font-medium cursor-pointer">MarkVision AI</Label>
+                        <p className="text-[10px] text-muted-foreground">Главный проект · виден во всех сводках</p>
                       </div>
-                    ))}
-                    <p className="text-[10px] text-muted-foreground">MarkVision AI видит все кабинеты автоматически</p>
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {/* CPR_KZ — hide if currently in CPR_KZ */}
+                  {!isInCPR && cprProject && (
+                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30 cursor-pointer"
+                      onClick={() => setShowInCPR(v => !v)}>
+                      <Checkbox
+                        id="vis-cpr"
+                        checked={showInCPR}
+                        onCheckedChange={(c) => setShowInCPR(!!c)}
+                      />
+                      <div>
+                        <Label htmlFor="vis-cpr" className="text-sm font-medium cursor-pointer">CPR_KZ</Label>
+                        <p className="text-[10px] text-muted-foreground">Агентский проект · только тотал</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
