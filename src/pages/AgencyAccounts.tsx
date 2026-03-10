@@ -316,10 +316,12 @@ export default function AgencyAccounts() {
     <DashboardLayout breadcrumb={pageTitle}>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
         <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
-        <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
-          <Plus className="h-4 w-4" />
-          Добавить кабинет
-        </Button>
+        {isSuperadmin && (
+          <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
+            <Plus className="h-4 w-4" />
+            Добавить кабинет
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 mb-4 md:mb-6">
