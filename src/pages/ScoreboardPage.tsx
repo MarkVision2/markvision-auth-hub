@@ -265,9 +265,9 @@ export default function ScoreboardPage() {
         .gte("date", dateFrom).lte("date", dateTo)
         .eq("client_config_id", selectedAccountId);
 
-      if (active.id !== "hq") {
-        query = query.eq("project_id", active.id);
-      }
+      // Data Isolation Fix: We must NOT filter by project_id here. 
+      // The `selectedAccountId` correctly identifies the exact ad cabinet (client_config_id).
+      // If we add .eq("project_id", active.id) randomly, it breaks if the rows have null project_ids or another project's shared id.
 
       query = query.order("date", { ascending: true });
 

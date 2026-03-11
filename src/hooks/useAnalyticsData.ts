@@ -54,7 +54,28 @@ export function useAnalyticsData() {
           crQ = crQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
           opQ = opQ.eq("project_id", active.id);
           leadsQ = leadsQ.eq("project_id", active.id);
-          dailyQ = dailyQ.eq("project_id", active.id);
+
+          // Data Isolation Fix: Get client_config_ids specific to this project
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", active.id);
+          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+
+          const { data: configs } = await (supabase as any)
+            .from("clients_config")
+            .select("id")
+            .eq("project_id", active.id);
+
+          const projectIds = (configs || []).map((c: any) => c.id);
+          const allClientIds = [...new Set([...sharedIds, ...projectIds])];
+
+          if (allClientIds.length > 0) {
+            dailyQ = dailyQ.in("client_config_id", allClientIds);
+          } else {
+            // No clients, so no daily data should be matched. Force empty result.
+            dailyQ = dailyQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+          }
         }
 
         const [chRes, campRes, crRes, opRes, leadsRes, dailyRes] = await Promise.all([

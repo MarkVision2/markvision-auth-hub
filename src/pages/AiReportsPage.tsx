@@ -95,11 +95,19 @@ export default function AiReportsPage() {
 
         if (active.id !== "hq") {
           // Client project: own
-          curQ = curQ.eq("project_id", active.id);
-          prevQ = prevQ.eq("project_id", active.id);
           leadsQ = leadsQ.eq("project_id", active.id);
           channelsQ = channelsQ.eq("project_id", active.id);
           creativesQ = creativesQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
+
+          // Data Isolation Fix: Gather explicitly connected client_config_ids
+          const clientIds = clients.map(c => c.id);
+          if (clientIds.length > 0) {
+            curQ = curQ.in("client_config_id", clientIds);
+            prevQ = prevQ.in("client_config_id", clientIds);
+          } else {
+            curQ = curQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+            prevQ = prevQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+          }
         }
 
         if (selectedClient !== "all") {

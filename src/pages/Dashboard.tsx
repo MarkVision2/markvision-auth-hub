@@ -159,24 +159,30 @@ export default function Dashboard() {
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
           if (error) throw error;
           clientsData = data || [];
-          // For HQ view, we can't easily fetch ALL daily metrics without a specific set of IDs or a date range
-          // But we can at least fetch for the clients we found
           targetIds = clientsData.map(c => c.client_id).filter(Boolean) as string[];
         } else {
+          // Data Isolation Fix: Only get valid client_config_ids for this project
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
           const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
+          const { data: configs } = await (supabase as any).from("clients_config").select("id").eq("project_id", active.id);
+          const projectIds = (configs || []).map((c: any) => c.id);
+
+          const validIds = [...new Set([...sharedIds, ...projectIds])];
+
           let query = (supabase as any).from("agency_metrics_view").select("*");
-          if (sharedIds.length > 0) {
-            query = query.or(`project_id.eq.${active.id},client_id.in.(${sharedIds.join(",")})`);
+          if (validIds.length > 0) {
+            query = query.in("client_id", validIds);
+            targetIds = validIds;
           } else {
-            query = query.eq("project_id", active.id);
+            // Force empty if no ad cabinets exist
+            query = query.eq("client_id", "00000000-0000-0000-0000-000000000000");
+            targetIds = [];
           }
 
           const { data, error } = await query;
           if (error) throw error;
           clientsData = data || [];
-          targetIds = sharedIds.length > 0 ? [active.id, ...sharedIds] : [active.id];
         }
 
         if (targetIds.length > 0) {
