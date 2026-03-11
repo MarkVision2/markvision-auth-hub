@@ -460,24 +460,43 @@ export default function ContentFactory() {
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
       <div className="mx-auto max-w-6xl py-4 flex flex-col h-[calc(100vh-80px)]">
-        {/* Page-level tabs */}
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-          <div className="flex gap-1 bg-secondary/20 rounded-lg p-1 border border-border">
-            <button
-              onClick={() => setPageTab("create")}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${pageTab === "create" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              <Sparkles className="h-4 w-4" /> Создать
-            </button>
-            <button
-              onClick={() => setPageTab("my-content")}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${pageTab === "my-content" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              <Clock className="h-4 w-4" /> Мой Контент
-            </button>
+        {/* Single-row header: title + all toggles */}
+        <div className="flex items-center justify-between mb-3 gap-3">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
+          <div className="flex items-center gap-2">
+            {/* Video / Photo type switcher (only shown on create tab) */}
+            {pageTab === "create" && (
+              <div className="flex bg-secondary/20 rounded-lg p-1 border border-border">
+                {(["video", "photo"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setMainType(t)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${mainType === t ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {t === "video" ? <Video className="h-3.5 w-3.5" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                    {t === "video" ? "Видео" : "Фото"}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Page tabs */}
+            <div className="flex bg-secondary/20 rounded-lg p-1 border border-border">
+              <button
+                onClick={() => setPageTab("create")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${pageTab === "create" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> Создать
+              </button>
+              <button
+                onClick={() => setPageTab("my-content")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${pageTab === "my-content" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                <Clock className="h-3.5 w-3.5" /> Мой Контент
+              </button>
+            </div>
           </div>
         </div>
 
@@ -544,9 +563,9 @@ export default function ContentFactory() {
                         <span className="text-xs font-semibold text-foreground capitalize">{task.content_type}</span>
                       </div>
                       <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${task.status === "completed" ? "bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))]" :
-                          task.status === "error" ? "bg-destructive/10 border-destructive/30 text-destructive" :
-                            task.status === "processing" ? "bg-primary/10 border-primary/30 text-primary" :
-                              "bg-secondary/50 border-border text-muted-foreground"
+                        task.status === "error" ? "bg-destructive/10 border-destructive/30 text-destructive" :
+                          task.status === "processing" ? "bg-primary/10 border-primary/30 text-primary" :
+                            "bg-secondary/50 border-border text-muted-foreground"
                         }`}>
                         {task.status === "completed" ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
                         {task.status === "completed" ? "Готово" : task.status === "error" ? "Ошибка" : task.status === "processing" ? "Обработка" : "Ожидание"}
@@ -598,23 +617,7 @@ export default function ContentFactory() {
         {/* ─── CREATE TAB ─── */}
         {pageTab === "create" && (
           <>
-            <div className="flex items-center justify-between mb-1">
-              <span />
-              <div className="flex bg-secondary/20 rounded-lg p-1 border border-border">
-                {(["video", "photo"] as const).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setMainType(t)}
-                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${mainType === t ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                      }`}
-                  >
-                    {t === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-                    {t === "video" ? "Креатив (Видео)" : "Креатив (Фото)"}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">Генерация видео и фото контента с помощью AI</p>
+            <p className="text-xs text-muted-foreground mb-3">Генерация видео и фото контента с помощью AI</p>
 
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 min-h-0">
               {/* Left Column: Form */}
