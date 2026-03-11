@@ -1,4 +1,4 @@
-import { Image, Film, Play, Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
+import { Image as ImageIcon, Film, Play, Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function PhoneMockup({ contentMode, format, designPrompt, exactText, referencePreview, logoFile }: Props) {
-  const slides = exactText
+  const slides = (exactText || "")
     .split(/\n/)
     .filter(line => line.trim())
     .map(line => line.replace(/^слайд\s*\d+\s*[:：]\s*/i, "").trim())
@@ -56,7 +56,7 @@ export function PhoneMockup({ contentMode, format, designPrompt, exactText, refe
                     {contentMode === "video" ? (
                       <Film className="h-5 w-5 text-muted-foreground/30" />
                     ) : (
-                      <Image className="h-5 w-5 text-muted-foreground/30" />
+                      <ImageIcon className="h-5 w-5 text-muted-foreground/30" />
                     )}
                   </div>
                   <p className="text-[10px] text-muted-foreground/40 text-center leading-relaxed">
