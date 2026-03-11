@@ -22,7 +22,6 @@ import {
   Search,
   Loader2,
   Sparkles,
-  Eye,
   Play,
   Send,
   Users,
@@ -30,17 +29,14 @@ import {
   Zap,
   CheckCircle2,
   XCircle,
-  RefreshCw,
   Plus,
   Trash2,
   Copy,
   ExternalLink,
   Activity,
-  TrendingUp,
-  Heart,
   FileText,
-  Radar,
-  Bot,
+  Cpu,
+  ScanSearch,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -359,13 +355,13 @@ export default function CompetitorSpy() {
         <Tabs defaultValue="competitors" className="space-y-6">
           <TabsList className="h-11 bg-secondary/50 border border-border p-1 rounded-xl w-full max-w-xl">
             <TabsTrigger value="competitors" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-              <Radar className="h-3.5 w-3.5" /> Конкуренты
+              <ScanSearch className="h-3.5 w-3.5" /> Конкуренты
             </TabsTrigger>
             <TabsTrigger value="post" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
               <BarChart3 className="h-3.5 w-3.5" /> Разбор контента
             </TabsTrigger>
             <TabsTrigger value="analyses" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-              <Bot className="h-3.5 w-3.5" /> AI-Разборы
+              <Cpu className="h-3.5 w-3.5" /> AI-Разборы
             </TabsTrigger>
           </TabsList>
 
@@ -483,8 +479,8 @@ export default function CompetitorSpy() {
                         <button
                           onClick={() => handleToggleTracking(comp)}
                           className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border font-medium transition-all ${comp.is_active
-                              ? "bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))]"
-                              : "bg-secondary/30 border-border text-muted-foreground"
+                            ? "bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))]"
+                            : "bg-secondary/30 border-border text-muted-foreground"
                             }`}
                         >
                           <Activity className="h-3 w-3" />

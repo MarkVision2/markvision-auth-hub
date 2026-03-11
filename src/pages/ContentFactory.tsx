@@ -538,7 +538,7 @@ export default function ContentFactory() {
             </div>
 
             {/* Tasks grid */}
-            {historyTasks.length === 0 ? (
+            {history.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
                 <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
                   <Clock className="h-6 w-6 text-muted-foreground/30" />
@@ -548,7 +548,7 @@ export default function ContentFactory() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {historyTasks.map((task, idx) => (
+                {history.map((task, idx) => (
                   <motion.div
                     key={task.id}
                     initial={{ opacity: 0, y: 12 }}
