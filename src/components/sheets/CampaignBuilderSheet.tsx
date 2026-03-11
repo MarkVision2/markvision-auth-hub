@@ -37,7 +37,7 @@ interface ClientConfig {
 
 type Objective = "whatsapp" | "website" | "leadform";
 
-const N8N_WEBHOOK_URL = "https://n8n.zapoinov.com/webhook/ai-target-launch";
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_CAMPAIGN_LAUNCH_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
 
 export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [clients, setClients] = useState<ClientConfig[]>([]);
@@ -68,12 +68,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   useEffect(() => {
     if (!open) return;
     setLoadingClients(true);
-    (supabase as unknown)
+    (supabase as any)
       .from("clients_config")
       .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token, city, region_key")
       .eq("is_active", true)
       .order("client_name")
-      .then(({ data, error }: unknown) => {
+      .then(({ data, error }: any) => {
         if (!error && data) setClients(data);
         setLoadingClients(false);
       });
@@ -120,48 +120,47 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
       // 2. Build payload matching n8n AI-targetolog workflow
       const isVideo = creativeFile.type.startsWith("video/");
+
       const payload = {
-        // Client identification (used by Supabase lookup in n8n)
-        client_name: selectedClient.client_name,
-        client_id: selectedClient.id,
-        ad_account_id: selectedClient.ad_account_id || "",
-        page_id: selectedClient.page_id || "",
-        page_name: selectedClient.page_name || "",
-        fb_token: selectedClient.fb_token || "",
-
-        // Targeting metadata from config
-        city: selectedClient.city || "",
-        region_key: selectedClient.region_key || "",
-
-        // Media
-        media_url: mediaUrl,
-        media_type: isVideo ? "video" : "photo",
-        format: creativeTab === "feed" ? "1:1" : "9:16",
-
-        // Campaign config
-        objective: objective === "whatsapp" ? "OUTCOME_ENGAGEMENT" : objective === "website" ? "OUTCOME_TRAFFIC" : "OUTCOME_LEADS",
-        objective_label: objective === "whatsapp" ? "WhatsApp" : objective === "website" ? "Website" : "Lead Form",
-        whatsapp_number: objective === "whatsapp" ? (selectedClient.whatsapp_number || "") : "",
-        site_url: objective === "website" ? siteUrl : "",
-        pixel_id: objective === "website" ? pixel : "",
-        pixel_event: objective === "website" ? pixelEvent : "",
-        utm_tags: objective === "website" ? utmTags : "",
-        lead_form_id: objective === "leadform" ? leadForm : "",
-
-        // Budget
-        budget_type: budgetType === "daily" ? "DAILY" : "LIFETIME",
-        budget_amount: Number(budgetAmount.replace(/\s/g, "")) || 0,
-        start_date: startDate ? format(startDate, "yyyy-MM-dd") : "",
-        end_date: endDate ? format(endDate, "yyyy-MM-dd") : "",
-        schedule_time: launchTime,
-
-        // Source & Meta
-        source: "webhook",
+        // Подготовка данных в точном формате, который ожидает n8n (клиентский конфиг + план ИИ)
+        clientConfig: {
+          client_id: selectedClient.id,
+          client_name: selectedClient.client_name,
+          ad_account_id: selectedClient.ad_account_id || "",
+          page_id: selectedClient.page_id || "",
+          page_name: selectedClient.page_name || "",
+          fb_token: selectedClient.fb_token || "",
+          city: selectedClient.city || "",
+          region_key: selectedClient.region_key || "",
+          whatsapp_number: objective === "whatsapp" ? (selectedClient.whatsapp_number || "") : "",
+          website_url: objective === "website" ? siteUrl : "",
+          fb_pixel_id: objective === "website" ? pixel : "",
+          pixel_event: objective === "website" ? pixelEvent : "",
+          daily_budget: Math.round((Number(budgetAmount.replace(/\s/g, "")) || 5) * 100), // Перевод в центы
+        },
+        plan: {
+          goal: objective === "website" ? "WEBSITE" : "WHATSAPP",
+          mediaType: isVideo ? "VIDEO" : "PHOTO",
+          mediaID: mediaUrl, // Передача прямой ссылки, которую n8n обработает как isUrl
+          websiteUrl: siteUrl,
+          headline: `Кампания: ${selectedClient.client_name}`,
+          adText: "Запущено автоматически через MarkVision Hub",
+          targeting: {
+            age_min: 25,
+            age_max: 65
+          }
+        },
+        // Дублирование на верхнем уровне для обратной совместимости n8n скрипта
+        mediaType: isVideo ? "VIDEO" : "PHOTO",
+        mediaID: mediaUrl,
+        source: "markvision-webhook",
         sent_at: new Date().toISOString(),
       };
 
+      console.log("[CampaignBuilder] Sending payload to n8n:", JSON.stringify(payload, null, 2));
+
       // 3. POST to n8n webhook
-      const res = await fetch(N8N_WEBHOOK_URL, {
+      const res = await fetch(`${N8N_WEBHOOK_URL}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
