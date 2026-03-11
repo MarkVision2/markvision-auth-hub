@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Video, Image as ImageIcon, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw, Sparkles, Send, Clock, Trash2 } from "lucide-react";
+import { Video, Image as ImageIcon, Link, FileText, Upload, Download, Loader2, CheckCircle2, RotateCcw, Sparkles, Send, Clock, Trash2, Search, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +39,7 @@ const MAX_HISTORY = 6;
 
 export default function ContentFactory() {
   const { active } = useWorkspace();
+  const [pageTab, setPageTab] = useState<"create" | "my-content">("create");
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
   const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
@@ -455,322 +456,461 @@ export default function ContentFactory() {
       </DashboardLayout>
     );
   }
-
   // ======== FORM VIEW — two-column layout with PhoneMockup ========
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
       <div className="mx-auto max-w-6xl py-4 flex flex-col h-[calc(100vh-80px)]">
-        <div className="flex items-center justify-between mb-1">
+        {/* Page-level tabs */}
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-          <div className="flex bg-secondary/20 rounded-lg p-1 border border-border">
-            {(["video", "photo"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setMainType(t)}
-                className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${mainType === t ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                {t === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-                {t === "video" ? "Креатив (Видео)" : "Креатив (Фото)"}
-              </button>
-            ))}
+          <div className="flex gap-1 bg-secondary/20 rounded-lg p-1 border border-border">
+            <button
+              onClick={() => setPageTab("create")}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${pageTab === "create" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <Sparkles className="h-4 w-4" /> Создать
+            </button>
+            <button
+              onClick={() => setPageTab("my-content")}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${pageTab === "my-content" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <Clock className="h-4 w-4" /> Мой Контент
+            </button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground mb-6">Генерация видео и фото контента с помощью AI</p>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 min-h-0">
-          {/* Left Column: Form */}
-          <div className="overflow-y-auto pr-4 space-y-8 pb-10 custom-scrollbar">
-            {/* Source Type Selection */}
-            <div className="space-y-4">
-              <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Источник контента
-              </Label>
-              <Tabs
-                value={mainType === "video" ? videoMode : photoMode}
-                onValueChange={(v: any) => mainType === "video" ? setVideoMode(v) : setPhotoMode(v)}
-                className="w-full"
+        {/* ─── MY CONTENT TAB ─── */}
+        {pageTab === "my-content" && (
+          <div className="flex-1 overflow-y-auto space-y-5 custom-scrollbar pb-8">
+            <p className="text-sm text-muted-foreground">История сгенерированного контента и задач</p>
+
+            {/* Filter bar */}
+            <div className="flex gap-2 flex-wrap bg-secondary/20 border border-border rounded-xl p-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
+                <input
+                  placeholder="Поиск по типу контента..."
+                  className="w-full pl-8 h-9 bg-secondary/30 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary px-3"
+                  onChange={(e) => {
+                    const q = e.target.value.toLowerCase();
+                    // Filter is applied on history rendered below
+                    (window as any).__cfSearch = q;
+                  }}
+                />
+              </div>
+              <select
+                className="h-9 px-3 bg-secondary/30 border border-border rounded-lg text-sm text-foreground outline-none focus:border-primary min-w-[160px]"
+                onChange={(e) => { (window as any).__cfStatusFilter = e.target.value; }}
               >
-                <TabsList className="grid w-full grid-cols-2 bg-secondary/30 border border-border h-12">
-                  <TabsTrigger value="link" className="data-[state=active]:bg-background flex items-center gap-2 h-10">
-                    <Link className="h-4 w-4" /> По ссылке
-                  </TabsTrigger>
-                  <TabsTrigger value="description" className="data-[state=active]:bg-background flex items-center gap-2 h-10">
-                    <FileText className="h-4 w-4" /> Описание / Текст
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                <option value="">Все статусы</option>
+                <option value="completed">Выполнено</option>
+                <option value="processing">В обработке</option>
+                <option value="pending">Ожидание</option>
+                <option value="error">Ошибка</option>
+              </select>
+              <select
+                className="h-9 px-3 bg-secondary/30 border border-border rounded-lg text-sm text-foreground outline-none focus:border-primary min-w-[160px]"
+              >
+                <option value="created_desc">Сначала новые</option>
+                <option value="created_asc">Сначала старые</option>
+              </select>
             </div>
 
-            <AnimatePresence mode="wait">
-              {/* LINK Mode UI */}
-              {(mainType === "video" ? videoMode : photoMode) === "link" && (
-                <motion.div
-                  key="link-mode"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="space-y-6"
-                >
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Ссылка на продукт / конкурента / видео</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={sourceUrl}
-                        onChange={(e) => setSourceUrl(e.target.value)}
-                        placeholder="https://..."
-                        className="bg-secondary/20 border-border h-11"
-                      />
-                      <Button
-                        onClick={handleMagicAI}
-                        disabled={magicLoading || !sourceUrl}
-                        variant="outline"
-                        className="h-11 border-primary/30 text-primary hover:bg-primary/10 transition-all px-4"
-                      >
-                        {magicLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                        Заполнить ТЗ
-                      </Button>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60 italic">AI проанализирует страницу и заполнит стиль и текст</p>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* DESCRIPTION Mode UI */}
-              {(mainType === "video" ? videoMode : photoMode) === "description" && (
-                <motion.div
-                  key="desc-mode"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  className="space-y-6"
-                >
-                  <div className="space-y-3">
+            {/* Tasks grid */}
+            {historyTasks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
+                  <Clock className="h-6 w-6 text-muted-foreground/30" />
+                </div>
+                <p className="text-sm font-medium">История пуста</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Создайте первый контент во вкладке «Создать»</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {historyTasks.map((task, idx) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.06 }}
+                    className="rounded-xl border border-border bg-card p-4 space-y-3"
+                  >
+                    {/* Type + Status */}
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Визуальный стиль контента</Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)}
-                        disabled={expandingField === "visualStyle"}
-                        className="h-8 text-[11px] text-primary hover:bg-primary/10"
+                      <div className="flex items-center gap-2">
+                        {task.content_type === "video" ? <Video className="h-4 w-4 text-primary" /> : <ImageIcon className="h-4 w-4 text-primary" />}
+                        <span className="text-xs font-semibold text-foreground capitalize">{task.content_type}</span>
+                      </div>
+                      <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${task.status === "completed" ? "bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))]" :
+                          task.status === "error" ? "bg-destructive/10 border-destructive/30 text-destructive" :
+                            task.status === "processing" ? "bg-primary/10 border-primary/30 text-primary" :
+                              "bg-secondary/50 border-border text-muted-foreground"
+                        }`}>
+                        {task.status === "completed" ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                        {task.status === "completed" ? "Готово" : task.status === "error" ? "Ошибка" : task.status === "processing" ? "Обработка" : "Ожидание"}
+                      </span>
+                    </div>
+
+                    {/* Progress text */}
+                    {task.progress_text && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{task.progress_text}</p>
+                    )}
+
+                    {/* Result URLs */}
+                    {task.result_urls && task.result_urls.length > 0 && (
+                      <div className="space-y-1.5">
+                        {task.result_urls.map((url, i) => (
+                          <a key={i} href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[11px] text-primary hover:text-primary/80 truncate">
+                            <Download className="h-3 w-3 shrink-0" /> {url.split("/").pop() || `Файл ${i + 1}`}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Date */}
+                    {task.created_at && (
+                      <p className="text-[10px] text-muted-foreground/50">
+                        {dateFmt(new Date(task.created_at), "dd.MM.yyyy HH:mm")}
+                      </p>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => {
+                          setMainType(task.content_type === "video" ? "video" : "photo");
+                          setPageTab("create");
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-semibold h-8 rounded-lg border border-border bg-secondary/30 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
                       >
-                        {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
-                        AI Улучшить
-                      </Button>
+                        <RotateCcw className="h-3 w-3" /> Повторить
+                      </button>
                     </div>
-                    <Textarea
-                      value={visualStyle}
-                      onChange={(e) => setVisualStyle(e.target.value)}
-                      placeholder="Опишите в каком стиле сделать контент (цвета, освещение, динамика...)"
-                      className="min-h-[100px] bg-secondary/20 border-border resize-none custom-scrollbar"
-                    />
-                  </div>
-
-                  {mainType === "video" ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Текст диктора / Скрипт</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMagicExpand("speakerText", speakerText, setSpeakerText)}
-                          disabled={expandingField === "speakerText"}
-                          className="h-8 text-[11px] text-primary hover:bg-primary/10"
-                        >
-                          {expandingField === "speakerText" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
-                          AI Дописать
-                        </Button>
-                      </div>
-                      <Textarea
-                        value={speakerText}
-                        onChange={(e) => setSpeakerText(e.target.value)}
-                        placeholder="О чем должен говорить AI диктор в видео?"
-                        className="min-h-[120px] bg-secondary/20 border-border resize-none custom-scrollbar"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Текст для слайдов / Баннера</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMagicExpand("mainText", mainText, setMainText)}
-                          disabled={expandingField === "mainText"}
-                          className="h-8 text-[11px] text-primary hover:bg-primary/10"
-                        >
-                          {expandingField === "mainText" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
-                          AI Продумать
-                        </Button>
-                      </div>
-                      <Textarea
-                        value={mainText}
-                        onChange={(e) => setMainText(e.target.value)}
-                        placeholder="Каждая новая строка — новый слайд. Для баннера — 1 строка."
-                        className="min-h-[120px] bg-secondary/20 border-border resize-none custom-scrollbar"
-                      />
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Common Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-              <div className="space-y-6">
-                {mainType === "video" ? (
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Формат видео</Label>
-                    <RadioGroup value={videoFormat} onValueChange={(v: any) => setVideoFormat(v)} className="grid grid-cols-2 gap-3">
-                      <Label className={`flex flex-col items-center gap-1 rounded-xl border p-4 cursor-pointer transition-all ${videoFormat === "reels" ? "border-primary bg-primary/10" : "border-border bg-secondary/20"}`}>
-                        <RadioGroupItem value="reels" className="sr-only" />
-                        <span className="text-sm font-medium">Reels / Shorts</span>
-                        <span className="text-[10px] text-muted-foreground">Диктор + Текст</span>
-                      </Label>
-                      <Label className={`flex flex-col items-center gap-1 rounded-xl border p-4 cursor-pointer transition-all ${videoFormat === "slideshow" ? "border-primary bg-primary/10" : "border-border bg-secondary/20"}`}>
-                        <RadioGroupItem value="slideshow" className="sr-only" />
-                        <span className="text-sm font-medium">Слайдшоу</span>
-                        <span className="text-[10px] text-muted-foreground">Кадры с текстом</span>
-                      </Label>
-                    </RadioGroup>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Формат фото</Label>
-                    <Select value={photoFormat} onValueChange={setPhotoFormat}>
-                      <SelectTrigger className="h-11 bg-secondary/20 border-border rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="banner">ADS Баннер (1 шт)</SelectItem>
-                        <SelectItem value="carousel7">Карусель (7 слайдов)</SelectItem>
-                        <SelectItem value="carousel10">Карусель (10 слайдов)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Соотношение сторон</Label>
-                  <Tabs value={mainType === "video" ? videoAspect : aspectRatio} onValueChange={setAspectRatio} className="w-full">
-                    <TabsList className="grid grid-cols-3 bg-secondary/30 border border-border h-11 p-1">
-                      <TabsTrigger value="1:1" disabled={mainType === "video"} className="text-xs">1:1</TabsTrigger>
-                      <TabsTrigger value="4:5" disabled={mainType === "video"} className="text-xs">4:5</TabsTrigger>
-                      <TabsTrigger value="9:16" className="text-xs">9:16</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Логотип бренда</Label>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${logoFile ? "border-primary bg-primary/5 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-muted-foreground/30"}`}
-                  >
-                    {logoFile ? (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        <span className="text-xs truncate max-w-[150px]">{logoFile.name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        <span className="text-xs">Загрузить логотип</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Референс (опционально)</Label>
-                  <input ref={refFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReferenceFile} />
-                  <div
-                    onClick={() => refFileInputRef.current?.click()}
-                    className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${referencePreview ? "border-primary bg-primary/5 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-muted-foreground/30"}`}
-                  >
-                    {referencePreview ? (
-                      <>
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        <span className="text-xs">Референс загружен</span>
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        <span className="text-xs">Загрузить пример</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-6">
-              <Button
-                onClick={handleGenerate}
-                disabled={submitting || uploading}
-                className="w-full h-14 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_20px_hsl(var(--primary)/0.4)] transition-all rounded-2xl"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                    Запуск конвейера AI...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-3" />
-                    Запустить генерацию контента
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* History section */}
-            {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
-              <div className="pt-10 border-t border-border mt-10">
-                <div className="flex items-center gap-1.5 mb-4">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
-                  <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Недавно созданное</span>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
-                    <motion.button
-                      key={h.id}
-                      whileHover={{ scale: 1.02 }}
-                      onClick={() => loadHistoryItem(h)}
-                      className="group relative aspect-square rounded-xl border border-border bg-secondary/20 overflow-hidden"
-                    >
-                      {h.content_type === "video" ? (
-                        <video src={h.result_urls![0]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" muted />
-                      ) : (
-                        <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                        <p className="text-[8px] text-white/60">{h.created_at ? dateFmt(new Date(h.created_at), "dd.MM") : ""}</p>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
+                  </motion.div>
+                ))}
               </div>
             )}
           </div>
+        )}
 
-          {/* Right Column: Preview Sticked */}
-          <div className="hidden lg:block sticky top-0 h-fit">
-            <PhoneMockup
-              contentMode={mainType}
-              format={mainType === "video" ? videoFormat : photoFormat}
-              aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
-              designPrompt={visualStyle}
-              exactText={mainType === "video" ? speakerText : mainText}
-              referencePreview={referencePreview}
-              logoFile={logoFile}
-            />
-          </div>
-        </div>
+        {/* ─── CREATE TAB ─── */}
+        {pageTab === "create" && (
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <span />
+              <div className="flex bg-secondary/20 rounded-lg p-1 border border-border">
+                {(["video", "photo"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setMainType(t)}
+                    className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${mainType === t ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                  >
+                    {t === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+                    {t === "video" ? "Креатив (Видео)" : "Креатив (Фото)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-6">Генерация видео и фото контента с помощью AI</p>
+
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 min-h-0">
+              {/* Left Column: Form */}
+              <div className="overflow-y-auto pr-4 space-y-8 pb-10 custom-scrollbar">
+                {/* Source Type Selection */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Источник контента
+                  </Label>
+                  <Tabs
+                    value={mainType === "video" ? videoMode : photoMode}
+                    onValueChange={(v: any) => mainType === "video" ? setVideoMode(v) : setPhotoMode(v)}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-2 bg-secondary/30 border border-border h-12">
+                      <TabsTrigger value="link" className="data-[state=active]:bg-background flex items-center gap-2 h-10">
+                        <Link className="h-4 w-4" /> По ссылке
+                      </TabsTrigger>
+                      <TabsTrigger value="description" className="data-[state=active]:bg-background flex items-center gap-2 h-10">
+                        <FileText className="h-4 w-4" /> Описание / Текст
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {/* LINK Mode UI */}
+                  {(mainType === "video" ? videoMode : photoMode) === "link" && (
+                    <motion.div
+                      key="link-mode"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-3">
+                        <Label className="text-sm font-medium">Ссылка на продукт / конкурента / видео</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={sourceUrl}
+                            onChange={(e) => setSourceUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="bg-secondary/20 border-border h-11"
+                          />
+                          <Button
+                            onClick={handleMagicAI}
+                            disabled={magicLoading || !sourceUrl}
+                            variant="outline"
+                            className="h-11 border-primary/30 text-primary hover:bg-primary/10 transition-all px-4"
+                          >
+                            {magicLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                            Заполнить ТЗ
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/60 italic">AI проанализирует страницу и заполнит стиль и текст</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* DESCRIPTION Mode UI */}
+                  {(mainType === "video" ? videoMode : photoMode) === "description" && (
+                    <motion.div
+                      key="desc-mode"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="space-y-6"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Визуальный стиль контента</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)}
+                            disabled={expandingField === "visualStyle"}
+                            className="h-8 text-[11px] text-primary hover:bg-primary/10"
+                          >
+                            {expandingField === "visualStyle" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
+                            AI Улучшить
+                          </Button>
+                        </div>
+                        <Textarea
+                          value={visualStyle}
+                          onChange={(e) => setVisualStyle(e.target.value)}
+                          placeholder="Опишите в каком стиле сделать контент (цвета, освещение, динамика...)"
+                          className="min-h-[100px] bg-secondary/20 border-border resize-none custom-scrollbar"
+                        />
+                      </div>
+
+                      {mainType === "video" ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Текст диктора / Скрипт</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMagicExpand("speakerText", speakerText, setSpeakerText)}
+                              disabled={expandingField === "speakerText"}
+                              className="h-8 text-[11px] text-primary hover:bg-primary/10"
+                            >
+                              {expandingField === "speakerText" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
+                              AI Дописать
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={speakerText}
+                            onChange={(e) => setSpeakerText(e.target.value)}
+                            placeholder="О чем должен говорить AI диктор в видео?"
+                            className="min-h-[120px] bg-secondary/20 border-border resize-none custom-scrollbar"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-medium">Текст для слайдов / Баннера</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMagicExpand("mainText", mainText, setMainText)}
+                              disabled={expandingField === "mainText"}
+                              className="h-8 text-[11px] text-primary hover:bg-primary/10"
+                            >
+                              {expandingField === "mainText" ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Sparkles className="h-3 w-3 mr-1.5" />}
+                              AI Продумать
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={mainText}
+                            onChange={(e) => setMainText(e.target.value)}
+                            placeholder="Каждая новая строка — новый слайд. Для баннера — 1 строка."
+                            className="min-h-[120px] bg-secondary/20 border-border resize-none custom-scrollbar"
+                          />
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Common Settings */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                  <div className="space-y-6">
+                    {mainType === "video" ? (
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Формат видео</Label>
+                        <RadioGroup value={videoFormat} onValueChange={(v: any) => setVideoFormat(v)} className="grid grid-cols-2 gap-3">
+                          <Label className={`flex flex-col items-center gap-1 rounded-xl border p-4 cursor-pointer transition-all ${videoFormat === "reels" ? "border-primary bg-primary/10" : "border-border bg-secondary/20"}`}>
+                            <RadioGroupItem value="reels" className="sr-only" />
+                            <span className="text-sm font-medium">Reels / Shorts</span>
+                            <span className="text-[10px] text-muted-foreground">Диктор + Текст</span>
+                          </Label>
+                          <Label className={`flex flex-col items-center gap-1 rounded-xl border p-4 cursor-pointer transition-all ${videoFormat === "slideshow" ? "border-primary bg-primary/10" : "border-border bg-secondary/20"}`}>
+                            <RadioGroupItem value="slideshow" className="sr-only" />
+                            <span className="text-sm font-medium">Слайдшоу</span>
+                            <span className="text-[10px] text-muted-foreground">Кадры с текстом</span>
+                          </Label>
+                        </RadioGroup>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Формат фото</Label>
+                        <Select value={photoFormat} onValueChange={setPhotoFormat}>
+                          <SelectTrigger className="h-11 bg-secondary/20 border-border rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="banner">ADS Баннер (1 шт)</SelectItem>
+                            <SelectItem value="carousel7">Карусель (7 слайдов)</SelectItem>
+                            <SelectItem value="carousel10">Карусель (10 слайдов)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Соотношение сторон</Label>
+                      <Tabs value={mainType === "video" ? videoAspect : aspectRatio} onValueChange={setAspectRatio} className="w-full">
+                        <TabsList className="grid grid-cols-3 bg-secondary/30 border border-border h-11 p-1">
+                          <TabsTrigger value="1:1" disabled={mainType === "video"} className="text-xs">1:1</TabsTrigger>
+                          <TabsTrigger value="4:5" disabled={mainType === "video"} className="text-xs">4:5</TabsTrigger>
+                          <TabsTrigger value="9:16" className="text-xs">9:16</TabsTrigger>
+                        </TabsList>
+                      </Tabs>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Логотип бренда</Label>
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${logoFile ? "border-primary bg-primary/5 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-muted-foreground/30"}`}
+                      >
+                        {logoFile ? (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            <span className="text-xs truncate max-w-[150px]">{logoFile.name}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Загрузить логотип</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Референс (опционально)</Label>
+                      <input ref={refFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReferenceFile} />
+                      <div
+                        onClick={() => refFileInputRef.current?.click()}
+                        className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${referencePreview ? "border-primary bg-primary/5 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:border-muted-foreground/30"}`}
+                      >
+                        {referencePreview ? (
+                          <>
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Референс загружен</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            <span className="text-xs">Загрузить пример</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6">
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={submitting || uploading}
+                    className="w-full h-14 text-base font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_4px_20px_hsl(var(--primary)/0.4)] transition-all rounded-2xl"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                        Запуск конвейера AI...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-3" />
+                        Запустить генерацию контента
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* History section */}
+                {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).length > 0 && (
+                  <div className="pt-10 border-t border-border mt-10">
+                    <div className="flex items-center gap-1.5 mb-4">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Недавно созданное</span>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {history.filter(h => h.status === "completed" && h.result_urls && h.result_urls.length > 0 && h.content_type === mainType).map((h) => (
+                        <motion.button
+                          key={h.id}
+                          whileHover={{ scale: 1.02 }}
+                          onClick={() => loadHistoryItem(h)}
+                          className="group relative aspect-square rounded-xl border border-border bg-secondary/20 overflow-hidden"
+                        >
+                          {h.content_type === "video" ? (
+                            <video src={h.result_urls![0]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" muted />
+                          ) : (
+                            <img src={h.result_urls![0]} alt="Результат" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                            <p className="text-[8px] text-white/60">{h.created_at ? dateFmt(new Date(h.created_at), "dd.MM") : ""}</p>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Preview Sticked */}
+              <div className="hidden lg:block sticky top-0 h-fit">
+                <PhoneMockup
+                  contentMode={mainType}
+                  format={mainType === "video" ? videoFormat : photoFormat}
+                  aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
+                  designPrompt={visualStyle}
+                  exactText={mainType === "video" ? speakerText : mainText}
+                  referencePreview={referencePreview}
+                  logoFile={logoFile}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );
