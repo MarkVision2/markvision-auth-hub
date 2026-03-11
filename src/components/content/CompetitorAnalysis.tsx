@@ -35,6 +35,8 @@ import {
     FileText,
     Cpu,
     ScanSearch,
+    Download,
+    RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +44,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
 
 // ─── Constants ───
-const BOOST_WEBHOOK_URL = import.meta.env.VITE_BOOST_WEBHOOK_URL || "";
+const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
+const N8N_SCRAPE_LIGHT = import.meta.env.VITE_N8N_SCRAPE_LIGHT_URL || "";
 
 // ─── Types ───
 interface Competitor {
@@ -81,18 +84,18 @@ function scoreColor(score: number) {
     return "text-[hsl(var(--status-critical))]";
 }
 
-// ─── Trigger Boost.space webhook ───
-async function triggerBoostWebhook(payload: Record<string, unknown>) {
+// ─── Trigger n8n webhook ───
+async function triggerScrape(url: string, payload: Record<string, unknown>) {
     try {
-        if (!BOOST_WEBHOOK_URL) throw new Error("Boost Webhook URL is not configured");
-        await fetch(`${BOOST_WEBHOOK_URL}`, {
+        if (!url) throw new Error("n8n Webhook URL is not configured");
+        await fetch(`${url}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
     } catch (e) {
-        console.error("Boost webhook error:", e);
-        throw new Error("Ошибка связи с сервером автоматизации");
+        console.error("n8n webhook error:", e);
+        throw new Error("Ошибка связи с n8n");
     }
 }
 
@@ -191,16 +194,13 @@ export function CompetitorAnalysis() {
             setProfileQuery("");
             toast({ title: "✅ Конкурент добавлен", description: `@${username} — запускаю парсинг...` });
 
-            // Trigger Boost.space webhook
+            // Trigger n8n webhook (Light scrape by default for new)
             try {
-                await triggerBoostWebhook({
-                    action: "scrape_competitor",
-                    competitor_id: data.id,
+                await triggerScrape(N8N_SCRAPE_HEAVY, {
                     username,
-                    instagram_url: instagramUrl,
-                    source: "markvision-platform",
+                    competitor_id: data.id,
                 });
-                toast({ title: "🚀 Boost запустил сканирование!", description: "Данные появятся через 1-2 мин" });
+                toast({ title: "🚀 n8n запустил сканирование!", description: "Данные появятся через 1-2 мин" });
             } catch {
                 toast({ title: "⚠️ Конкурент сохранён, но автоскан не запустился", variant: "destructive" });
             }
@@ -211,19 +211,20 @@ export function CompetitorAnalysis() {
         }
     }, [profileQuery, toast]);
 
-    const handleScrapeNow = useCallback(async (comp: Competitor) => {
+    const handleScrapeNow = useCallback(async (comp: Competitor, mode: "heavy" | "light" = "heavy") => {
         setScrapingId(comp.id);
+        const url = mode === "heavy" ? N8N_SCRAPE_HEAVY : N8N_SCRAPE_LIGHT;
         try {
-            await triggerBoostWebhook({
-                action: "scrape_competitor",
-                competitor_id: comp.id,
+            await triggerScrape(url, {
                 username: comp.username,
-                instagram_url: `https://www.instagram.com/${comp.username}/`,
-                source: "markvision-platform",
+                competitor_id: comp.id,
             });
-            toast({ title: "✅ Парсинг запущен!", description: `@${comp.username} — данные придут через 1-2 мин` });
+            toast({
+                title: mode === "heavy" ? "🚀 Полный парсинг запущен!" : "⚡️ Быстрый парсинг запущен!",
+                description: `@${comp.username} — данные придут через 1-2 мин`
+            });
         } catch (err: any) {
-            toast({ title: "Ошибка автоматизации", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка n8n", description: err.message, variant: "destructive" });
         } finally {
             setScrapingId(null);
         }
@@ -273,14 +274,13 @@ export function CompetitorAnalysis() {
         setSelectedAnalysis(null);
         setAdaptedScript(null);
         try {
-            await triggerBoostWebhook({
-                action: "analyze_post",
+            await triggerScrape(N8N_SCRAPE_HEAVY, {
                 url: postUrl.trim(),
-                source: "markvision-platform",
+                action: "analyze_post"
             });
-            toast({ title: "⏳ Анализ запущен", description: "Instagram Profile Scraper обрабатывает пост..." });
+            toast({ title: "⏳ Анализ запущен", description: "n8n обрабатывает пост..." });
         } catch (err: any) {
-            toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка n8n", description: err.message, variant: "destructive" });
         } finally {
             setPostLoading(false);
         }
@@ -494,16 +494,27 @@ export function CompetitorAnalysis() {
                                                 <FileText className="h-3 w-3" /> Посты
                                             </button>
 
-                                            {/* Scrape button */}
-                                            <Button
-                                                size="sm"
-                                                onClick={() => handleScrapeNow(comp)}
-                                                disabled={isScrapingThis}
-                                                className="h-8 px-3 text-[11px] gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground"
-                                            >
-                                                {isScrapingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
-                                                Спарсить
-                                            </Button>
+                                            {/* Scrape button with dropdown */}
+                                            <div className="flex items-center">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleScrapeNow(comp, "heavy")}
+                                                    disabled={isScrapingThis}
+                                                    className="h-8 px-3 text-[11px] gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-r-none border-r border-primary-foreground/10"
+                                                >
+                                                    {isScrapingThis ? <Loader2 className="h-3 w-3 animate-spin" /> : <Search className="h-3 w-3" />}
+                                                    Full Scrape
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleScrapeNow(comp, "light")}
+                                                    disabled={isScrapingThis}
+                                                    className="h-8 px-2 text-[11px] bg-primary/80 hover:bg-primary text-primary-foreground rounded-l-none"
+                                                    title="Быстрый парсинг (без видео)"
+                                                >
+                                                    <Zap className="h-3 w-3" />
+                                                </Button>
+                                            </div>
 
                                             {/* Delete */}
                                             <Button
