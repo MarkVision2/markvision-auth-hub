@@ -179,17 +179,22 @@ export default function ScoreboardPage() {
   const next = () => { if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); } else setMonthIndex(i => i + 1); };
 
   const dateFrom = `${monthYear}-01`;
-  const dateTo = `${monthYear}-31`;
+  const dateTo = useMemo(() => {
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  }, [year, monthIndex]);
+
 
   useEffect(() => {
+    console.log("Scoreboard: active.id changed to:", active.id);
+
     async function fetchAccounts() {
       try {
         let query = (supabase as any).from("clients_config")
-          .select("id, client_name")
+          .select("id, client_name, project_id, spend, meta_leads, visits, sales, revenue")
           .eq("is_active", true);
 
         if (active.id !== "hq") {
-          // Client project: own + shared
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")
             .select("client_config_id")
@@ -205,38 +210,70 @@ export default function ScoreboardPage() {
 
         const { data, error } = await query.order("client_name");
         if (error) throw error;
-        const accs = (data || []) as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
+
+        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts for project ${active.id}`, data);
+
+        const filteredAccs = (data || []).filter((acc: any) => {
+          if (active.id === "hq") return true;
+          return acc.project_id === active.id;
+        });
+
+        const accs = filteredAccs as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
         setAccounts(accs);
+
         if (accs.length > 0) {
           const first = accs[0];
-          if (selectedAccountId === "__none__") {
-            setSelectedAccountId(first.id);
-            setBaseMetrics({
-              spend: Number(first.spend) || 0,
-              leads: Number(first.meta_leads) || 0,
-              visits: Number(first.visits) || 0,
-              sales: Number(first.sales) || 0,
-              revenue: Number(first.revenue) || 0,
-            });
-          }
+          console.log("Scoreboard: Auto-selecting first account:", first.client_name);
+          setSelectedAccountId(first.id);
+          setBaseMetrics({
+            spend: Number(first.spend) || 0,
+            leads: Number(first.meta_leads) || 0,
+            visits: Number(first.visits) || 0,
+            sales: Number(first.sales) || 0,
+            revenue: Number(first.revenue) || 0,
+          });
+        } else {
+          console.log("Scoreboard: No accounts found for this project.");
+          setSelectedAccountId("__none__");
+          setBaseMetrics({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
         }
-      } catch {
+      } catch (err) {
+        console.error("Scoreboard: fetchAccounts error:", err);
         setAccounts([]);
       }
     }
+
+    // Reset EVERYTHING immediately when project changes
+    setSelectedAccountId("__none__");
+    setBaseMetrics({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+    setAccounts([]);
+    setRows([]);
+
     fetchAccounts();
   }, [active.id]);
+
+
+
 
   // Fetch daily facts — filtered by account
   const fetchDaily = useCallback(async () => {
     if (selectedAccountId === "__none__") { setRows([]); setLoading(false); return; }
     setLoading(true);
     try {
-      const query = (supabase as any)
+      let query = (supabase as any)
         .from("daily_data").select("*")
         .gte("date", dateFrom).lte("date", dateTo)
-        .eq("client_config_id", selectedAccountId)
-        .order("date", { ascending: true });
+        .eq("client_config_id", selectedAccountId);
+
+      if (active.id !== "hq") {
+        query = query.eq("project_id", active.id);
+      }
+
+      query = query.order("date", { ascending: true });
+
+
+
+
 
       const { data, error } = await query;
       if (error) throw error;
@@ -391,7 +428,10 @@ export default function ScoreboardPage() {
           )}
         </div>
 
+
+
         {/* KPI Cards */}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {loading
             ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)

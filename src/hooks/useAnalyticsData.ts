@@ -35,8 +35,11 @@ export function useAnalyticsData() {
       try {
         // Define dates for aggregate fetch
         const now = new Date();
-        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
-        const monthEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-31`;
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const monthStart = firstDay.toISOString().split('T')[0];
+        const monthEnd = lastDay.toISOString().split('T')[0];
 
         let chQ = (supabase as any).from("analytics_channels").select("*").order("created_at");
         let campQ = (supabase as any).from("analytics_campaigns").select("*, analytics_channels!inner(*)").order("created_at");
