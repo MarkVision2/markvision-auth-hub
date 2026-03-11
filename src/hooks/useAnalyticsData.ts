@@ -43,7 +43,7 @@ export function useAnalyticsData() {
         let crQ = (supabase as any).from("analytics_creatives").select("*, analytics_campaigns!inner(id, analytics_channels!inner(*))").order("created_at");
         let opQ = (supabase as any).from("analytics_organic_posts").select("*").order("created_at");
         let leadsQ = (supabase as any).from("leads").select("id", { count: "exact", head: true });
-        let dailyQ = (supabase as any).from("daily_metrics").select("spend, clicks, impressions, leads, visits, sales, revenue").gte("date", monthStart).lte("date", monthEnd);
+        let dailyQ = (supabase as any).from("daily_data").select("spend, clicks, impressions, leads, visits, sales, revenue").gte("date", monthStart).lte("date", monthEnd);
 
         if (active.id !== "hq") {
           chQ = chQ.eq("project_id", active.id);
@@ -133,7 +133,7 @@ export function useAnalyticsData() {
     fetchAll();
   }, [active.id]);
 
-  // Use daily_metrics as primary source, fall back to analytics_channels
+  // Use daily_data as primary source, fall back to analytics_channels
   const hasDaily = dailyAgg.spend > 0 || dailyAgg.leads > 0;
   const totalSpend = hasDaily ? dailyAgg.spend : channels.reduce((s, c) => s + c.spend, 0);
   const totalRevenue = hasDaily ? dailyAgg.revenue : channels.reduce((s, c) => s + c.revenue, 0);

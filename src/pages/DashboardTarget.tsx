@@ -160,7 +160,7 @@ export default function DashboardTarget() {
       const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
       let metricsQuery = (supabase as any)
-        .from("daily_metrics")
+        .from("daily_data")
         .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
         .gte("date", start)
         .lt("date", end)
@@ -235,7 +235,7 @@ export default function DashboardTarget() {
   useEffect(() => {
     const ch = supabase
       .channel("target_metrics_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_metrics" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_data" }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchData]);

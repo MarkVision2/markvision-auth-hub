@@ -211,7 +211,7 @@ serve(async (req) => {
       );
 
       const tables = [
-        "daily_metrics", "leads", "analytics_channels", "analytics_campaigns",
+        "daily_data", "leads", "analytics_channels", "analytics_campaigns",
         "analytics_creatives", "analytics_organic_posts", "retention_tasks",
         "retention_templates", "ai_rop_audits", "nps_feedback", "competitor_ads"
       ];

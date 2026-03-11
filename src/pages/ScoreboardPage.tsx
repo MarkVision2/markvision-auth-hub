@@ -233,7 +233,7 @@ export default function ScoreboardPage() {
     setLoading(true);
     try {
       const query = (supabase as any)
-        .from("daily_metrics").select("*")
+        .from("daily_data").select("*")
         .gte("date", dateFrom).lte("date", dateTo)
         .eq("client_config_id", selectedAccountId)
         .order("date", { ascending: true });
@@ -282,7 +282,7 @@ export default function ScoreboardPage() {
   // Realtime
   useEffect(() => {
     const ch = supabase.channel("scoreboard_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_metrics" }, () => fetchDaily())
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_data" }, () => fetchDaily())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchDaily]);

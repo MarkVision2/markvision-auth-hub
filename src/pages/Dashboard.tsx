@@ -186,9 +186,9 @@ export default function Dashboard() {
             .select("id, impressions, clicks")
             .in("id", targetIds);
 
-          // Fetch daily impressions and clicks from daily_metrics PER client
+          // Fetch daily impressions and clicks from daily_data PER client
           const { data: dailyData } = await (supabase as any)
-            .from("daily_metrics")
+            .from("daily_data")
             .select("impressions, clicks, client_config_id")
             .in("client_config_id", targetIds);
 

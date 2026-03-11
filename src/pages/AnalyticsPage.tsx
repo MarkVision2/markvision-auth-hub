@@ -64,7 +64,7 @@ function FunnelVis({ funnelData }: { funnelData: { stage: string; value: number;
       <div className="rounded-2xl border border-border bg-card p-6 h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
         <Inbox className="h-10 w-10 opacity-40" />
         <p className="text-sm">Нет данных для воронки</p>
-        <p className="text-xs text-muted-foreground/60">Данные формируются из daily_metrics</p>
+        <p className="text-xs text-muted-foreground/60">Данные формируются из daily_data</p>
       </div>
     );
   }

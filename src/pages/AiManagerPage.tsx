@@ -182,7 +182,7 @@ export default function AiManagerPage() {
 
         // Fetch last sync time
         const { data: lastMetric } = await supabase
-          .from("daily_metrics")
+          .from("daily_data")
           .select("created_at")
           .order("created_at", { ascending: false })
           .limit(1);

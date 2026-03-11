@@ -146,7 +146,7 @@ export default function AgencyAccounts() {
 
       // 2. Get Daily Metrics for the period
       const { data: daily, error: dailyError } = await supabase
-        .from("daily_metrics")
+        .from("daily_data")
         .select("*")
         .in("client_config_id", cabIds)
         .gte("date", format(period.from, "yyyy-MM-dd"))
