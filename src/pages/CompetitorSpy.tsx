@@ -112,7 +112,7 @@ export default function CompetitorSpy() {
 
   // Filters
   const [compSearch, setCompSearch] = useState("");
-  const [compTrackFilter, setCompTrackFilter] = useState<"" | "active" | "inactive">("");
+  const [compTrackFilter, setCompTrackFilter] = useState<"all" | "active" | "inactive">("all");
   const [compSort, setCompSort] = useState("followers_desc");
 
   // Posts dialog
@@ -164,7 +164,7 @@ export default function CompetitorSpy() {
     .filter((c) => {
       const q = compSearch.toLowerCase();
       const matchSearch = !q || c.username.toLowerCase().includes(q) || (c.display_name || "").toLowerCase().includes(q);
-      const matchTrack = !compTrackFilter || (compTrackFilter === "active" ? c.is_active : !c.is_active);
+      const matchTrack = compTrackFilter === "all" || (compTrackFilter === "active" ? c.is_active : !c.is_active);
       return matchSearch && matchTrack;
     })
     .sort((a, b) => {
@@ -409,7 +409,7 @@ export default function CompetitorSpy() {
                   <SelectValue placeholder="Все аккаунты" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Все аккаунты</SelectItem>
+                  <SelectItem value="all">Все аккаунты</SelectItem>
                   <SelectItem value="active">Слежка ВКЛ</SelectItem>
                   <SelectItem value="inactive">Слежка ВЫКЛ</SelectItem>
                 </SelectContent>
