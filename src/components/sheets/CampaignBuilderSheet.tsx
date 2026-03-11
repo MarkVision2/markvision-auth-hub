@@ -352,8 +352,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               <TabsContent value="daily" className="mt-3 space-y-2">
                 <Label className="text-xs text-foreground/70">Дневной бюджет</Label>
                 <div className="relative">
-                  <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="5 000" />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">₸</span>
+                  <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="50" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
                 </div>
               </TabsContent>
 
@@ -361,8 +361,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 <div className="space-y-2">
                   <Label className="text-xs text-foreground/70">Общий бюджет</Label>
                   <div className="relative">
-                    <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="150 000" />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">₸</span>
+                    <Input value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} className="bg-secondary/30 border-border text-xs h-9 font-mono pr-8" placeholder="1000" />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">$</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
