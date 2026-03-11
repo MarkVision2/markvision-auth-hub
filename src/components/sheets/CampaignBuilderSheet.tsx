@@ -31,6 +31,8 @@ interface ClientConfig {
   page_id: string | null;
   page_name: string | null;
   fb_token: string | null;
+  city: string | null;
+  region_key: string | null;
 }
 
 type Objective = "whatsapp" | "website" | "leadform";
@@ -68,7 +70,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     setLoadingClients(true);
     (supabase as unknown)
       .from("clients_config")
-      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token")
+      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token, city, region_key")
       .eq("is_active", true)
       .order("client_name")
       .then(({ data, error }: unknown) => {
@@ -124,7 +126,12 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         client_id: selectedClient.id,
         ad_account_id: selectedClient.ad_account_id || "",
         page_id: selectedClient.page_id || "",
+        page_name: selectedClient.page_name || "",
         fb_token: selectedClient.fb_token || "",
+
+        // Targeting metadata from config
+        city: selectedClient.city || "",
+        region_key: selectedClient.region_key || "",
 
         // Media
         media_url: mediaUrl,
@@ -148,8 +155,9 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         end_date: endDate ? format(endDate, "yyyy-MM-dd") : "",
         schedule_time: launchTime,
 
-        // Source indicator (so n8n knows it's from webhook, not telegram)
+        // Source & Meta
         source: "webhook",
+        sent_at: new Date().toISOString(),
       };
 
       // 3. POST to n8n webhook
