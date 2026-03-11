@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { format as dateFmt } from "date-fns";
 
 import { useWorkspace } from "@/hooks/useWorkspace";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
-import { CompetitorAnalysis } from "@/components/content/CompetitorAnalysis";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
@@ -35,7 +35,7 @@ const MAX_HISTORY = 12;
 
 export default function ContentFactory() {
   const { active } = useWorkspace();
-  const [pageTab, setPageTab] = useState<"create" | "my-content" | "competitors">("create");
+  const [pageTab, setPageTab] = useState<"create" | "my-content">("create");
   const [history, setHistory] = useState<ContentTask[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
@@ -94,13 +94,6 @@ export default function ContentFactory() {
             >
               <Clock className="h-3.5 w-3.5" /> Мой Контент
             </button>
-            <button
-              onClick={() => setPageTab("competitors")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "competitors" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
-                }`}
-            >
-              <Users className="h-3.5 w-3.5" /> Конкуренты
-            </button>
           </div>
         </div>
 
@@ -111,13 +104,6 @@ export default function ContentFactory() {
           {pageTab === "create" && (
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-10">
               <ScenarioCreator />
-            </div>
-          )}
-
-          {/* ─── COMPETITORS TAB ─── */}
-          {pageTab === "competitors" && (
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-10">
-              <CompetitorAnalysis />
             </div>
           )}
 
@@ -158,8 +144,8 @@ export default function ContentFactory() {
                           <span className="text-xs font-bold text-foreground uppercase tracking-wider">{task.content_type === "video" ? "Видео" : "Фото"}</span>
                         </div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${task.status === "completed" ? "bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))]" :
-                            task.status === "error" ? "bg-destructive/10 border-destructive/30 text-destructive" :
-                              "bg-primary/10 border-primary/30 text-primary animate-pulse"
+                          task.status === "error" ? "bg-destructive/10 border-destructive/30 text-destructive" :
+                            "bg-primary/10 border-primary/30 text-primary animate-pulse"
                           }`}>
                           {task.status === "completed" ? "ГОТОВО" : task.status === "error" ? "ОШИБКА" : "В ПРОЦЕССЕ"}
                         </span>
