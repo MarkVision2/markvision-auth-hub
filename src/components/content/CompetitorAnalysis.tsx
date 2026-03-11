@@ -86,16 +86,29 @@ function scoreColor(score: number) {
 
 // ─── Trigger n8n webhook ───
 async function triggerScrape(url: string, payload: Record<string, unknown>) {
+    console.log(`[n8n] Triggering webhook: ${url}`, payload);
     try {
-        if (!url) throw new Error("n8n Webhook URL is not configured");
-        await fetch(`${url}`, {
+        if (!url) {
+            console.error("[n8n] Webhook URL is MISSING. Check VITE_N8N_... variables.");
+            throw new Error("n8n Webhook URL is not configured");
+        }
+        const response = await fetch(`${url}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
         });
-    } catch (e) {
-        console.error("n8n webhook error:", e);
-        throw new Error("Ошибка связи с n8n");
+
+        if (!response.ok) {
+            console.error(`[n8n] Server returned error ${response.status}: ${response.statusText}`);
+            throw new Error(`n8n error: ${response.status}`);
+        }
+        console.log("[n8n] Webhook triggered successfully");
+    } catch (e: any) {
+        console.error("n8n webhook connection error details:", e);
+        if (e.name === 'TypeError' && e.message === 'Failed to fetch') {
+            throw new Error("Ошибка CORS или n8n недоступен. Проверьте настройки n8n.");
+        }
+        throw new Error("Ошибка связи с n8n: " + e.message);
     }
 }
 
