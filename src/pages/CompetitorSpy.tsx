@@ -553,7 +553,7 @@ export default function CompetitorSpy() {
             </div>
 
             <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-start gap-2">
-              <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <Cpu className="h-4 w-4 text-primary mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground">
                 <span className="text-primary font-semibold">Instagram Profile Scraper (Boost)</span> скачает пост, транскрибирует видео, проведёт AI-анализ и создаст готовый сценарий для ваших Reels.
               </p>
@@ -695,7 +695,7 @@ export default function CompetitorSpy() {
             {displayAnalyses.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
-                  <Bot className="h-6 w-6 text-muted-foreground/30" />
+                  <Cpu className="h-6 w-6 text-muted-foreground/30" />
                 </div>
                 <p className="text-sm font-medium">Нет AI-разборов</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">Добавьте конкурента и нажмите «Спарсить»</p>
