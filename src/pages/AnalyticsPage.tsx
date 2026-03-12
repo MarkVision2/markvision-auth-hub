@@ -13,6 +13,7 @@ import { formatMoney, formatNum, calcRomi, type Channel, type Campaign } from "@
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ServiceAnalyticsTab } from "@/components/analytics/ServiceAnalyticsTab";
 
 const formatIcons: Record<string, React.ReactNode> = {
   Video: <Video className="h-3.5 w-3.5" />,
@@ -28,15 +29,13 @@ function KpiCard({
   icon: React.ReactNode; label: string; value: string; sub?: string; accent?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border p-5 flex flex-col gap-2 transition-all group hover:shadow-lg ${
-      accent
-        ? "border-primary/25 bg-primary/[0.04] hover:shadow-primary/5"
-        : "border-border bg-card hover:border-primary/20"
-    }`}>
+    <div className={`rounded-2xl border p-5 flex flex-col gap-2 transition-all group hover:shadow-lg ${accent
+      ? "border-primary/25 bg-primary/[0.04] hover:shadow-primary/5"
+      : "border-border bg-card hover:border-primary/20"
+      }`}>
       <div className="flex items-center gap-2">
-        <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${
-          accent ? "bg-primary/15 text-primary" : "bg-secondary border border-border text-muted-foreground"
-        }`}>
+        <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${accent ? "bg-primary/15 text-primary" : "bg-secondary border border-border text-muted-foreground"
+          }`}>
           {icon}
         </div>
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
@@ -119,7 +118,7 @@ function ChannelChart({ chartData }: { chartData: { name: string; spend: number;
         <BarChart data={chartData} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
           <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: number) => formatMoney(v)} />
+          <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: any) => formatMoney(v)} />
           <Tooltip
             contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
             labelStyle={{ color: "hsl(var(--muted-foreground))" }}
@@ -384,6 +383,9 @@ export default function AnalyticsPage() {
               <TabsTrigger value="drilldown" className="h-9 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Детализация по каналам
               </TabsTrigger>
+              <TabsTrigger value="services" className="h-9 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                Аналитика по услугам
+              </TabsTrigger>
               <TabsTrigger value="organic" className="h-9 px-4 text-sm font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                 Органика и контент
               </TabsTrigger>
@@ -422,6 +424,10 @@ export default function AnalyticsPage() {
                   </Table>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="services">
+              <ServiceAnalyticsTab />
             </TabsContent>
 
             <TabsContent value="organic">
