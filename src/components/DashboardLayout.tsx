@@ -15,12 +15,13 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isDoctor } = useRole();
   useRealtimeNotifications();
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      <AppSidebar />
+      {!isDoctor && <AppSidebar />}
 
       {/* Mobile drawer */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
