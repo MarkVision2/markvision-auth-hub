@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Patient } from "@/pages/DoctorTerminal";
+import { Patient } from "@/types/doctor";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,7 +30,7 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
         }
         setStatus('sold');
         toast.success("Пакет успешно продан!", {
-            className: "bg-[hsl(var(--status-good))] text-white border-none",
+            className: "bg-[hsl(var(--status-good))] text-white border-none text-[8px] font-bold uppercase",
         });
     };
 
@@ -45,43 +45,44 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
     const activePlanData = treatmentPlans.find(p => p.id === selectedPlan);
 
     return (
-        <div className="space-y-10 animate-in zoom-in-95 duration-700">
+        <div className="space-y-4 animate-in zoom-in-95 duration-500">
             <AnimatePresence mode="wait">
                 {status === 'sold' ? (
                     <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
+                        initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex flex-col items-center justify-center p-16 bg-[hsl(var(--status-good))]/5 border-2 border-[hsl(var(--status-good))]/20 rounded-[40px] text-center gap-8 shadow-2xl"
+                        className="flex flex-col items-center justify-center p-8 bg-card border border-border rounded-2xl text-center gap-4 shadow-xl relative overflow-hidden"
                     >
-                        <div className="w-28 h-28 bg-[hsl(var(--status-good))] rounded-full flex items-center justify-center shadow-[0_0_60px_rgb(var(--status-good-rgb),0.4)] animate-bounce">
-                            <Sparkles className="w-14 h-14 text-white" />
+                        <div className="absolute inset-0 bg-emerald-500/[0.02] pointer-events-none" />
+                        <div className="w-12 h-12 bg-[hsl(var(--status-good))] rounded-xl flex items-center justify-center shadow-[0_0_30px_rgb(var(--status-good-rgb),0.2)] animate-in fade-in zoom-in duration-700">
+                            <Sparkles className="w-6 h-6 text-white" />
                         </div>
-                        <div className="space-y-4">
-                            <h2 className="text-5xl font-black text-[hsl(var(--status-good))] tracking-tight uppercase">Победа!</h2>
-                            <p className="text-xl text-muted-foreground max-w-md font-medium">
-                                План лечения <span className="text-foreground font-bold">"{activePlanData?.name}"</span> успешно забронирован для пациента <span className="text-foreground font-bold">{patient.name}</span>.
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-black text-foreground tracking-tight uppercase">Sales Complete</h2>
+                            <p className="text-[11px] text-muted-foreground max-w-sm font-medium leading-relaxed">
+                                Plan <span className="text-primary font-bold">"{activePlanData?.name}"</span> has been booked for <span className="text-foreground font-bold">{patient.name}</span>.
                             </p>
                         </div>
                         <Button
                             onClick={() => setStatus('idle')}
-                            variant="outline"
-                            className="h-14 px-8 border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))]/10 rounded-2xl font-bold uppercase tracking-widest text-xs"
+                            variant="secondary"
+                            className="h-8 px-4 rounded-lg font-bold uppercase tracking-widest text-[9px] shadow-sm hover:translate-y-[-1px] transition-all"
                         >
-                            К следующему пациенту
+                            Next Patient
                         </Button>
                     </motion.div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div className="space-y-8">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Шаг 1: Выберите стратегию лечения</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] ml-1">Step 1: Clinical Strategy</label>
                                 <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-                                    <SelectTrigger className="w-full h-18 bg-card border-border text-xl font-bold rounded-2xl focus:ring-primary/20 hover:border-primary/30 transition-all shadow-sm">
-                                        <SelectValue placeholder="Выберите курс реабилитации" />
+                                    <SelectTrigger className="w-full h-10 bg-card border-border text-xs font-bold rounded-xl focus:ring-primary/20 hover:border-primary/30 transition-all shadow-sm">
+                                        <SelectValue placeholder="Select rehabilitation course" />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-card border-border text-foreground rounded-2xl shadow-2xl p-2">
+                                    <SelectContent className="bg-card border-border text-foreground rounded-xl shadow-2xl p-0.5">
                                         {treatmentPlans.map(plan => (
-                                            <SelectItem key={plan.id} value={plan.id} className="rounded-xl focus:bg-primary/10 py-5 text-lg cursor-pointer font-medium mb-1 last:mb-0 transition-colors">
+                                            <SelectItem key={plan.id} value={plan.id} className="rounded-lg focus:bg-primary/10 py-2 text-[11px] cursor-pointer font-bold mb-0.5 last:mb-0 transition-colors">
                                                 {plan.name}
                                             </SelectItem>
                                         ))}
@@ -89,26 +90,26 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
                                 </Select>
                             </div>
 
-                            <Card className="bg-card border-border overflow-hidden shadow-xl transition-all duration-500 hover:shadow-2xl hover:border-primary/10">
+                            <Card className="bg-card/50 border-border overflow-hidden shadow-sm transition-all duration-500 hover:border-primary/10">
                                 <CardContent className="p-0">
-                                    <div className="bg-muted/30 px-8 py-5 border-b border-border flex justify-between items-center">
-                                        <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.15em]">Сводка по курсу</span>
-                                        <Badge className="bg-primary text-primary-foreground font-black text-sm px-4 py-1.5 rounded-lg shadow-lg shadow-primary/20">
+                                    <div className="bg-muted/30 px-4 py-2 border-b border-border flex justify-between items-center">
+                                        <span className="text-[8px] text-muted-foreground/60 font-black uppercase tracking-[0.15em]">Proposal Summary</span>
+                                        <Badge className="bg-primary/10 text-primary border-none font-black text-[9px] px-2 py-0.5 rounded-md">
                                             {activePlanData?.price || "---"}
                                         </Badge>
                                     </div>
-                                    <div className="p-10 space-y-8">
+                                    <div className="p-4 space-y-4">
                                         {selectedPlan ? (
                                             <>
-                                                <div className="space-y-3">
-                                                    <h3 className="text-3xl font-black tracking-tight">{activePlanData?.name}</h3>
-                                                    <p className="text-muted-foreground font-medium leading-relaxed">{activePlanData?.description}</p>
+                                                <div className="space-y-1">
+                                                    <h3 className="text-sm font-black tracking-tight uppercase">{activePlanData?.name}</h3>
+                                                    <p className="text-[10px] text-muted-foreground font-medium leading-relaxed">{activePlanData?.description}</p>
                                                 </div>
-                                                <ul className="space-y-4">
-                                                    {["Гарантия результата", "Полное мед. сопровождение", "Налоговый вычет (13%)"].map(item => (
-                                                        <li key={item} className="flex items-center gap-4 text-primary font-bold text-sm">
-                                                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                                                <Check className="w-3.5 h-3.5" />
+                                                <ul className="grid grid-cols-1 gap-1.5">
+                                                    {["Result Guarantee", "Full Medical Support", "Tax Deduction (13%)"].map(item => (
+                                                        <li key={item} className="flex items-center gap-2 text-foreground/70 font-bold text-[9px] uppercase tracking-wide">
+                                                            <div className="h-4 w-4 rounded-md bg-primary/10 flex items-center justify-center text-primary border border-primary/10">
+                                                                <Check className="w-2.5 h-2.5" />
                                                             </div>
                                                             {item}
                                                         </li>
@@ -116,9 +117,9 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
                                                 </ul>
                                             </>
                                         ) : (
-                                            <div className="flex flex-col items-center justify-center py-16 opacity-30 gap-4 italic border-2 border-dashed border-border rounded-3xl">
-                                                <AlertCircle className="w-10 h-10 text-muted-foreground" />
-                                                <p className="text-sm font-bold uppercase tracking-widest">Выберите курс для просмотра деталей</p>
+                                            <div className="flex flex-col items-center justify-center py-6 opacity-30 gap-2 italic border border-dashed border-border rounded-xl bg-muted/5">
+                                                <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                                                <p className="text-[8px] font-black uppercase tracking-widest text-center px-4">Select course to view configuration</p>
                                             </div>
                                         )}
                                     </div>
@@ -126,72 +127,80 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
                             </Card>
                         </div>
 
-                        <div className="flex flex-col gap-6">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Шаг 2: Закройте продажу</label>
+                        <div className="flex flex-col gap-3">
+                            <div className="space-y-2">
+                                <label className="text-[8px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] ml-1">Step 2: Conversion</label>
 
-                                <Button
-                                    onClick={handleSale}
-                                    className="w-full h-28 bg-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))/0.9] text-white rounded-[32px] text-3xl font-black gap-5 shadow-[0_15px_40px_rgb(var(--status-good-rgb),0.25)] transition-all active:scale-95 group relative overflow-hidden"
-                                >
-                                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    <Check className="w-10 h-10 group-hover:scale-125 transition-transform" />
-                                    Пакет продан
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setStatus('thinking')}
-                                    className="w-full h-20 border-border bg-card hover:bg-muted/50 text-foreground rounded-[32px] text-xl font-black gap-4 shadow-sm transition-all hover:translate-y-[-2px]"
-                                >
-                                    <Calendar className="w-7 h-7 text-primary" />
-                                    Думает
-                                </Button>
-
-                                <div className="space-y-4 pt-6">
+                                <div className="grid grid-cols-1 gap-2">
                                     <Button
-                                        variant="ghost"
-                                        onClick={() => setStatus('refused')}
-                                        className="w-full h-14 text-destructive/60 hover:text-destructive hover:bg-destructive/5 rounded-2xl gap-3 font-bold uppercase tracking-widest text-xs"
+                                        onClick={handleSale}
+                                        className="w-full h-11 bg-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))/0.9] text-white rounded-xl text-xs font-black gap-2 shadow-[0_4px_15px_rgb(var(--status-good-rgb),0.1)] transition-all active:scale-95 group relative overflow-hidden uppercase tracking-wider"
                                     >
-                                        <X className="w-4 h-4" />
-                                        Отказ от пакета
+                                        <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        Confirm Sale
                                     </Button>
 
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setStatus('thinking')}
+                                            className="h-10 border-border bg-card hover:bg-muted/50 text-foreground rounded-lg text-[9px] font-black gap-1.5 uppercase tracking-widest shadow-sm transition-all hover:translate-y-[-1px]"
+                                        >
+                                            <Calendar className="w-3 h-3 text-primary" />
+                                            Thinking
+                                        </Button>
+
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setStatus('refused')}
+                                            className="h-10 text-destructive/60 hover:text-destructive hover:bg-destructive/5 rounded-lg gap-1.5 font-black uppercase tracking-widest text-[9px]"
+                                        >
+                                            <X className="w-3 h-3" />
+                                            Rejection
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <AnimatePresence>
                                     {status === 'refused' && (
-                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-4 px-2">
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-2 pt-1 overflow-hidden">
                                             <Select value={refusalReason} onValueChange={setRefusalReason}>
-                                                <SelectTrigger className="bg-destructive/5 border-destructive/20 text-destructive h-12 rounded-xl focus:ring-destructive/20">
-                                                    <SelectValue placeholder="Укажите причину отказа" />
+                                                <SelectTrigger className="bg-destructive/[0.02] border-destructive/20 text-destructive h-8 rounded-lg text-[9px] font-bold uppercase focus:ring-destructive/10">
+                                                    <SelectValue placeholder="Reason for refusal" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-card border-border rounded-xl">
-                                                    <SelectItem value="price" className="py-3 cursor-pointer">Дорого</SelectItem>
-                                                    <SelectItem value="time" className="py-3 cursor-pointer">Нет времени</SelectItem>
-                                                    <SelectItem value="competitor" className="py-3 cursor-pointer">Ушел к конкурентам</SelectItem>
-                                                    <SelectItem value="other" className="py-3 cursor-pointer">Другое</SelectItem>
+                                                <SelectContent className="bg-card border-border rounded-lg p-0.5">
+                                                    <SelectItem value="price" className="py-1.5 text-[9px] font-bold uppercase cursor-pointer">Price sensitive</SelectItem>
+                                                    <SelectItem value="time" className="py-1.5 text-[9px] font-bold uppercase cursor-pointer">Time constraints</SelectItem>
+                                                    <SelectItem value="competitor" className="py-1.5 text-[9px] font-bold uppercase cursor-pointer">Went to competitor</SelectItem>
+                                                    <SelectItem value="other" className="py-1.5 text-[9px] font-bold uppercase cursor-pointer">Other</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <Button
-                                                className="w-full bg-destructive/80 hover:bg-destructive h-12 rounded-xl font-bold uppercase tracking-widest text-xs"
+                                                className="w-full bg-destructive/80 hover:bg-destructive h-8 rounded-lg font-black uppercase tracking-widest text-[8px]"
                                                 onClick={handleRefusal}
                                             >
-                                                Зафиксировать отказ
+                                                Log Rejection
                                             </Button>
                                         </motion.div>
                                     )}
-                                </div>
+                                </AnimatePresence>
                             </div>
 
                             {status === 'thinking' && (
-                                <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-8 bg-primary/5 border border-primary/20 rounded-[32px] flex flex-col gap-5 shadow-inner">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                            <Calendar className="w-5 h-5 text-primary" />
+                                <motion.div initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="p-4 bg-primary/[0.02] border border-primary/10 rounded-xl flex flex-col gap-3 shadow-sm">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                                            <Calendar className="w-3 h-3 text-primary" />
                                         </div>
-                                        <span className="font-black uppercase tracking-widest text-primary text-xs">Назначить follow-up звонок</span>
+                                        <span className="font-black uppercase tracking-[0.1em] text-primary text-[8px]">Follow-up Schedule</span>
                                     </div>
-                                    <p className="text-sm text-muted-foreground leading-relaxed font-medium">Администратор свяжется с пациентом в указанную дату для уточнения окончательного решения по лечению.</p>
-                                    <Button className="bg-primary hover:bg-primary/90 h-14 rounded-2xl font-black text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:translate-y-[-2px]" onClick={() => { toast.info("Follow-up назначен"); setStatus('idle'); }}>Назначить на завтра</Button>
+                                    <p className="text-[9px] text-muted-foreground leading-relaxed font-bold uppercase opacity-60">Admin will follow up tomorrow.</p>
+                                    <Button
+                                        className="bg-primary hover:bg-primary/90 h-8 rounded-lg font-black text-primary-foreground text-[9px] uppercase tracking-widest shadow-md shadow-primary/10 transition-all hover:translate-y-[-1px]"
+                                        onClick={() => { toast.info("Follow-up scheduled"); setStatus('idle'); }}
+                                    >
+                                        Set for Tomorrow
+                                    </Button>
                                 </motion.div>
                             )}
                         </div>

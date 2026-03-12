@@ -1,20 +1,10 @@
 import React, { useState } from "react";
 import { PatientQueue } from "@/components/doctor/PatientQueue";
 import { DiagnosticEngine } from "@/components/doctor/DiagnosticEngine";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Activity, Users, TrendingUp, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
-export interface Patient {
-    id: string;
-    name: string;
-    time: string;
-    type: 'Первичный' | 'Повторный';
-    complaint?: string;
-    notes?: string;
-}
+import { Patient } from "@/types/doctor";
 
 const MOCK_PATIENTS: Patient[] = [
     {
@@ -22,24 +12,24 @@ const MOCK_PATIENTS: Patient[] = [
         name: "Иванов Иван Иванович",
         time: "14:00",
         type: "Первичный",
-        complaint: "Боль в пояснице, отдает в левую ногу уже 2 недели.",
-        notes: "Пациент жалуется на дискомфорт при длительном сидении. Настроен на комплексное обследование."
+        complaint: "Острая боль в пояснице после поднятия тяжестей 2 дня назад. Боль иррадиирует в левую ногу до колена.",
+        notes: "Пациент жалуется на сильную боль (8/10). Рекомендуется провести тест Ласега."
     },
     {
         id: "2",
         name: "Петрова Анна Сергеевна",
         time: "14:45",
         type: "Повторный",
-        complaint: "Контроль после курса физиотерапии.",
-        notes: "Наблюдается положительная динамика. Нужно скорректировать план упражнений."
+        complaint: "Плановый осмотр после 3-го сеанса терапии. Динамика положительная.",
+        notes: "Наблюдается увеличение амплитуды движений в шейном отделе на 15 градусов."
     },
     {
         id: "3",
         name: "Сидоров Алексей Петрович",
         time: "15:30",
         type: "Первичный",
-        complaint: "Онемение пальцев правой руки.",
-        notes: "Связывает с профессиональной деятельностью (ИТ). Рекомендовано МРТ шейного отдела."
+        complaint: "Хронические головные боли, головокружение, шум в ушах.",
+        notes: "Возможно нарушение кровообращения. Нужно проверить шейные позвонки."
     },
 ];
 
@@ -48,54 +38,62 @@ const DoctorTerminal = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans">
-            {/* TOP NAVIGATION BAR */}
-            <header className="h-16 border-b border-border glass flex items-center justify-between px-6 shrink-0 z-30">
-                <div className="flex items-center gap-4">
+        <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans antialiased selection:bg-primary/20">
+            {/* TOP NAVIGATION BAR - Slimmer & More Precise */}
+            <header className="h-12 border-b border-border bg-card/30 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-30 shadow-sm">
+                <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
-                        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                            <Activity className="w-5 h-5 text-primary" />
+                        <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
+                            <Activity className="w-3.5 h-3.5 text-primary" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-foreground">
-                            Terminal <span className="text-primary/40">|</span>
-                            <span className="ml-1.5 font-medium opacity-80">Dr. Murat</span>
-                        </span>
+                        <div className="flex flex-col">
+                            <span className="text-xs font-black tracking-tight leading-none uppercase text-foreground/90">
+                                Terminal <span className="text-primary mx-0.5">/</span>
+                                <span className="text-muted-foreground font-bold">Dr. Murat</span>
+                            </span>
+                            <span className="text-[8px] text-muted-foreground/60 font-bold uppercase tracking-widest mt-0.5">Medical Dashboard v2.0</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-6 text-[11px] uppercase tracking-wider font-bold">
-                        <div className="flex items-center gap-2.5 bg-card border border-border py-2 px-4 rounded-xl shadow-sm">
-                            <Users className="w-3.5 h-3.5 text-primary" />
-                            <span className="text-muted-foreground">Сегодня: <span className="text-foreground">5 пациентов</span></span>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.1em]">
+                        <div className="flex items-center gap-1.5 bg-muted/30 border border-border/50 py-1 px-3 rounded-lg">
+                            <Users className="w-2.5 h-2.5 text-primary" />
+                            <span className="text-muted-foreground">Today: <span className="text-foreground">5 patients</span></span>
                         </div>
-                        <div className="flex items-center gap-2.5 bg-card border border-border py-2 px-4 rounded-xl shadow-sm">
-                            <TrendingUp className="w-3.5 h-3.5 text-[hsl(var(--status-good))]" />
-                            <span className="text-muted-foreground">Конверсия: <span className="text-[hsl(var(--status-good))]">60%</span></span>
+                        <div className="flex items-center gap-1.5 bg-muted/30 border border-border/50 py-1 px-3 rounded-lg">
+                            <TrendingUp className="w-2.5 h-2.5 text-[hsl(var(--status-good))]" />
+                            <span className="text-muted-foreground">CR: <span className="text-[hsl(var(--status-good))]">60%</span></span>
                         </div>
                     </div>
+
+                    <div className="w-px h-5 bg-border mx-1" />
 
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => navigate("/")}
-                        className="text-muted-foreground hover:text-foreground hover:bg-muted/50 gap-2 h-10 rounded-xl px-4 border border-transparent hover:border-border transition-all"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 gap-1.5 h-8 rounded-lg px-2.5 transition-all text-xs font-bold border border-transparent hover:border-destructive/10"
                     >
-                        <LogOut className="w-4 h-4" />
-                        Выход
+                        <LogOut className="w-3 h-3" />
+                        Exit
                     </Button>
                 </div>
             </header>
 
             {/* MAIN CONTENT SPLIT SCREEN */}
             <main className="flex flex-1 overflow-hidden">
-                {/* LEFT COLUMN (Patient Queue) */}
-                <aside className="w-[320px] lg:w-[380px] border-r border-border flex flex-col bg-card/50 backdrop-blur-md z-20">
-                    <div className="p-6 border-b border-border flex items-center justify-between bg-muted/20">
-                        <h2 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Очередь приема</h2>
-                        <Badge variant="outline" className="text-[9px] border-primary/30 bg-primary/5 text-primary uppercase font-black px-2 py-0.5">Live</Badge>
+                {/* LEFT COLUMN (Patient Queue) - Fixed width, high density */}
+                <aside className="w-[280px] lg:w-[300px] border-r border-border flex flex-col bg-card/30 backdrop-blur-xl z-20">
+                    <div className="p-4 border-b border-border flex items-center justify-between bg-muted/10">
+                        <h2 className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.25em]">Workflow Queue</h2>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                            <span className="text-[7px] text-primary font-black uppercase tracking-tighter">Live Monitor</span>
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto scrub-scrollbar">
+                    <div className="flex-1 overflow-y-auto scrub-scrollbar custom-scrollbar">
                         <PatientQueue
                             patients={MOCK_PATIENTS}
                             activeId={activePatient?.id}
@@ -104,16 +102,20 @@ const DoctorTerminal = () => {
                     </div>
                 </aside>
 
-                {/* RIGHT COLUMN (Diagnostic & Sales Engine) */}
-                <section className="flex-1 flex flex-col bg-background/50 overflow-y-auto">
+                {/* RIGHT COLUMN (Diagnostic & Sales Engine) - Clean canvas */}
+                <section className="flex-1 flex flex-col bg-background relative overflow-y-auto">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--primary-rgb),transparent_500px)] opacity-[0.03] pointer-events-none" />
                     {activePatient ? (
                         <DiagnosticEngine patient={activePatient} />
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center opacity-20 gap-4">
-                            <div className="h-20 w-20 rounded-3xl bg-muted flex items-center justify-center">
-                                <Users className="w-10 h-10 text-muted-foreground" />
+                        <div className="flex-1 flex flex-col items-center justify-center opacity-30 gap-6">
+                            <div className="h-24 w-24 rounded-[40px] bg-muted/30 border border-border flex items-center justify-center shadow-xl">
+                                <Users className="w-10 h-10 text-muted-foreground/50" />
                             </div>
-                            <p className="text-xl font-bold tracking-tight text-muted-foreground">Выберите пациента для начала работы</p>
+                            <div className="text-center space-y-2">
+                                <p className="text-lg font-black tracking-tight text-foreground/50 uppercase">Waiting Area</p>
+                                <p className="text-xs font-medium text-muted-foreground">Select a patient card to begin diagnosis</p>
+                            </div>
                         </div>
                     )}
                 </section>
