@@ -12,7 +12,7 @@ interface PatientQueueProps {
 
 export const PatientQueue: React.FC<PatientQueueProps> = ({ patients, activeId, onSelect }) => {
     return (
-        <div className="p-3 space-y-2">
+        <div className="p-4 space-y-3">
             {patients.map((patient) => {
                 const isActive = patient.id === activeId;
                 return (
@@ -20,57 +20,75 @@ export const PatientQueue: React.FC<PatientQueueProps> = ({ patients, activeId, 
                         key={patient.id}
                         onClick={() => onSelect(patient)}
                         className={cn(
-                            "p-4 rounded-xl cursor-pointer transition-all duration-300 group relative border",
+                            "p-5 rounded-2xl cursor-pointer transition-all duration-500 group relative border shadow-sm overflow-hidden",
                             isActive
-                                ? "bg-blue-600/10 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-                                : "bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/10"
+                                ? "bg-primary/[0.08] border-primary/30 shadow-[0_8px_30px_rgb(var(--primary-rgb),0.1)] scale-[1.02]"
+                                : "bg-card border-border hover:bg-muted/50 hover:border-primary/10"
                         )}
                     >
                         {isActive && (
-                            <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-blue-500 rounded-r-full" />
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary group-hover:w-1.5 transition-all" />
                         )}
 
-                        <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2 text-white/40">
-                                <Clock className={cn("w-3.5 h-3.5", isActive && "text-blue-400")} />
-                                <span className={cn("text-xs font-medium", isActive && "text-blue-400")}>{patient.time}</span>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className={cn(
+                                    "p-1.5 rounded-lg transition-colors",
+                                    isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground/60"
+                                )}>
+                                    <Clock className="w-3.5 h-3.5" />
+                                </div>
+                                <span className={cn(
+                                    "text-xs font-bold tabular-nums tracking-tight",
+                                    isActive ? "text-primary" : "text-muted-foreground"
+                                )}>{patient.time}</span>
                             </div>
                             <Badge
                                 variant="outline"
                                 className={cn(
-                                    "text-[10px] px-1.5 py-0 leading-tight border-none",
+                                    "text-[9px] font-black uppercase tracking-tighter px-2 py-0 border-none",
                                     patient.type === "Первичный"
-                                        ? "bg-emerald-500/10 text-emerald-400"
-                                        : "bg-blue-500/10 text-blue-400"
+                                        ? "bg-emerald-500/10 text-[hsl(var(--status-good))]"
+                                        : "bg-primary/10 text-primary"
                                 )}
                             >
                                 {patient.type}
                             </Badge>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             <div className={cn(
-                                "w-10 h-10 rounded-full flex items-center justify-center border transition-colors",
-                                isActive ? "bg-blue-500/20 border-blue-400/30" : "bg-white/5 border-white/5"
+                                "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all duration-500 relative",
+                                isActive
+                                    ? "bg-primary/20 border-primary/30 ring-4 ring-primary/5"
+                                    : "bg-muted border-border group-hover:border-primary/20"
                             )}>
-                                <UserCircle2 className={cn("w-6 h-6", isActive ? "text-blue-300" : "text-white/20")} />
+                                <UserCircle2 className={cn("w-7 h-7", isActive ? "text-primary" : "text-muted-foreground/40")} />
+                                {isActive && (
+                                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border-2 border-background animate-pulse" />
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className={cn(
-                                    "text-sm font-semibold truncate transition-colors",
-                                    isActive ? "text-white" : "text-white/70 group-hover:text-white"
+                                <h4 className={cn(
+                                    "text-sm font-bold truncate transition-colors tracking-tight",
+                                    isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
                                 )}>
                                     {patient.name}
-                                </p>
-                                <p className="text-[11px] text-white/30 truncate mt-0.5">
-                                    ID: #{patient.id}00-42
+                                </h4>
+                                <p className="text-[10px] font-medium text-muted-foreground/50 tabular-nums uppercase tracking-widest mt-0.5">
+                                    Code: {patient.id}0A9
                                 </p>
                             </div>
                         </div>
 
                         {isActive && (
-                            <div className="mt-3 pt-3 border-t border-blue-500/20 animate-in fade-in slide-in-from-top-1 duration-300">
-                                <p className="text-[11px] text-blue-300/60 uppercase tracking-tighter font-bold">Активный прием</p>
+                            <div className="mt-4 pt-4 border-t border-primary/10 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-500">
+                                <span className="text-[9px] font-black text-primary uppercase tracking-[0.15em]">Текущий визит</span>
+                                <div className="flex gap-1">
+                                    <div className="h-1 w-1 rounded-full bg-primary animate-bounce delay-0" />
+                                    <div className="h-1 w-1 rounded-full bg-primary animate-bounce delay-150" />
+                                    <div className="h-1 w-1 rounded-full bg-primary animate-bounce delay-300" />
+                                </div>
                             </div>
                         )}
                     </div>

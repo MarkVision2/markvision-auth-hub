@@ -12,21 +12,25 @@ export const ServiceAnalyticsTab = () => {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <Skeleton className="h-[300px] w-full rounded-2xl" />
-                <Skeleton className="h-[400px] w-full rounded-2xl" />
+            <div className="grid grid-cols-1 gap-6">
+                <Skeleton className="h-[300px] w-full rounded-2xl animate-pulse bg-muted/20" />
+                <Skeleton className="h-[500px] w-full rounded-2xl animate-pulse bg-muted/20" />
             </div>
         );
     }
 
     if (data.length === 0) {
         return (
-            <div className="rounded-2xl border border-border bg-[#0a0a0a] flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-                <Inbox className="h-10 w-10 opacity-40" />
-                <p className="text-sm font-medium text-white">Нет данных по направлениям</p>
-                <p className="text-xs text-muted-foreground/60 text-center max-w-xs">
-                    Убедитесь, что UTM-метки настроены корректно и данные поступают в систему.
-                </p>
+            <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground shadow-sm">
+                <div className="h-12 w-12 rounded-2xl bg-secondary border border-border flex items-center justify-center">
+                    <Inbox className="h-5 w-5 opacity-40 text-primary" />
+                </div>
+                <div className="text-center space-y-1">
+                    <p className="text-sm font-semibold text-foreground">Нет данных по направлениям</p>
+                    <p className="text-xs text-muted-foreground/60 max-w-xs mx-auto px-4">
+                        Убедитесь, что UTM-метки настроены корректно и данные поступают в систему.
+                    </p>
+                </div>
             </div>
         );
     }
@@ -39,37 +43,58 @@ export const ServiceAnalyticsTab = () => {
     return (
         <div className="space-y-6">
             {/* Visual Header Chart */}
-            <div className="rounded-2xl border border-border bg-[#0a0a0a] p-6 shadow-2xl">
-                <h3 className="text-[13px] font-semibold text-foreground mb-6 uppercase tracking-wider flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    Выручка по направлениям
-                </h3>
-                <div className="h-[260px] w-full">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-primary/20 transition-all">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                            <TrendingUp className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">Результативность</h3>
+                            <p className="text-sm font-semibold text-foreground mt-1">Выручка по направлениям</p>
+                        </div>
+                    </div>
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold tracking-tighter">
+                        Top 10 Категорий
+                    </Badge>
+                </div>
+
+                <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                        <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} strokeOpacity={0.5} />
                             <XAxis
                                 dataKey="name"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: "#666", fontSize: 11 }}
+                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 500 }}
                                 interval={0}
                             />
                             <YAxis
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: "#666", fontSize: 11 }}
+                                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 500 }}
                                 tickFormatter={(val: any) => `${(val / 1000).toFixed(0)}k`}
                             />
                             <Tooltip
-                                cursor={{ fill: "rgba(255,255,255,0.03)" }}
-                                contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: "12px" }}
-                                itemStyle={{ color: "#10b981" }}
+                                cursor={{ fill: "hsl(var(--primary) / 0.05)" }}
+                                contentStyle={{
+                                    background: "hsl(var(--card))",
+                                    border: "1px solid hsl(var(--border))",
+                                    borderRadius: "12px",
+                                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+                                }}
+                                labelStyle={{ fontWeight: 700, marginBottom: "4px", fontSize: "12px" }}
+                                itemStyle={{ color: "hsl(var(--primary))", fontSize: "12px" }}
                                 formatter={(val: number) => [formatMoney(val), "Выручка"]}
                             />
-                            <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
+                            <Bar dataKey="revenue" radius={[4, 4, 0, 0]} barSize={32}>
                                 {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? "#10b981" : "#059669"} />
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={index === 0 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.7)"}
+                                        className="transition-all duration-300 hover:opacity-100 opacity-90"
+                                    />
                                 ))}
                             </Bar>
                         </BarChart>
@@ -78,63 +103,71 @@ export const ServiceAnalyticsTab = () => {
             </div>
 
             {/* High-Density Data Table */}
-            <div className="rounded-2xl border border-border bg-[#0a0a0a] overflow-hidden shadow-2xl">
-                <Table>
-                    <TableHeader className="bg-white/[0.02]">
-                        <TableRow className="border-border hover:bg-transparent">
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase py-4">Направление</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">Расходы</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">Лиды & CPL</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">Визиты</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">Продажи</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">CAC</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">Выручка</TableHead>
-                            <TableHead className="text-[11px] font-bold text-muted-foreground uppercase text-right">ROMI</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.map((item, idx) => (
-                            <TableRow key={item.service_category} className="border-border hover:bg-white/[0.03] transition-colors">
-                                <TableCell className="font-semibold text-white py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                        {item.service_category}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
-                                    {formatMoney(item.spend)}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-white font-medium">{formatNum(item.leads)}</span>
-                                        <Badge variant="outline" className="text-[10px] mt-1 border-white/10 bg-white/5 text-muted-foreground font-normal">
-                                            CPL: {formatMoney(item.cpl)}
-                                        </Badge>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums text-muted-foreground">
-                                    {formatNum(item.visits)}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums text-white">
-                                    {formatNum(item.sales)}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums text-muted-foreground text-[13px]">
-                                    {formatMoney(item.cac)}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums">
-                                    <span className="text-emerald-400 font-bold text-base">
-                                        {formatMoney(item.revenue)}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums font-black">
-                                    <span className={item.romi > 0 ? "text-emerald-500" : item.romi < 0 ? "text-red-500" : "text-muted-foreground"}>
-                                        {item.romi > 0 ? "+" : ""}{item.romi.toFixed(0)}%
-                                    </span>
-                                </TableCell>
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader className="bg-muted/30">
+                            <TableRow className="border-border hover:bg-transparent">
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase px-6 py-4 tracking-wider">Направление</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">Расходы</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">Лиды & CPL</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">Визиты</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">Продажи</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">CAC</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">Выручка</TableHead>
+                                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right tracking-wider">ROMI</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {data.map((item, idx) => (
+                                <TableRow key={item.service_category} className="border-border hover:bg-muted/30 transition-colors">
+                                    <TableCell className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]" />
+                                            <span className="font-bold text-foreground text-sm tracking-tight">{item.service_category}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                                        {formatMoney(item.spend)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex flex-col items-end gap-1">
+                                            <span className="text-sm font-bold tabular-nums text-foreground">{formatNum(item.leads)}</span>
+                                            <span className="text-[9px] font-medium text-muted-foreground/60 uppercase">CPL: {formatMoney(item.cpl)}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                                        {formatNum(item.visits)}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold text-sm tabular-nums text-foreground">
+                                        {formatNum(item.sales)}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">
+                                        {formatMoney(item.cac)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <span className="text-primary font-black text-sm tabular-nums">
+                                            {formatMoney(item.revenue)}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge
+                                            variant="outline"
+                                            className={`font-black tabular-nums border-none px-0 ${item.romi > 0
+                                                    ? "text-[hsl(var(--status-good))]"
+                                                    : item.romi < 0
+                                                        ? "text-destructive"
+                                                        : "text-muted-foreground"
+                                                }`}
+                                        >
+                                            {item.romi > 0 ? "+" : ""}{item.romi.toFixed(0)}%
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </div>
     );
