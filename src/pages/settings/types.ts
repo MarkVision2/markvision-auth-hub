@@ -4,18 +4,20 @@ import {
 } from "lucide-react";
 
 /* ── Role presets ── */
-export type RoleKey = "superadmin" | "client_admin" | "client_manager";
+export type RoleKey = "superadmin" | "client_admin" | "client_manager" | "doctor";
 
 export const ROLE_LABELS: Record<RoleKey, string> = {
     superadmin: "Суперадмин",
     client_admin: "Директор",
     client_manager: "Менеджер",
+    doctor: "Врач",
 };
 
 export const ROLE_COLORS: Record<RoleKey, string> = {
     superadmin: "bg-primary/15 text-primary border-primary/20",
     client_admin: "bg-blue-500/15 text-blue-400 border-blue-500/20",
     client_manager: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+    doctor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
 };
 
 /* ── Permissions structure ── */
@@ -79,6 +81,7 @@ export const ROLE_PRESETS: Record<RoleKey, string[]> = {
     superadmin: [...ALL_KEYS],
     client_admin: ["hq", "accounts", "ads", "content", "autoposting", "spy", "crm", "analytics", "scoreboard", "finance", "ai_reports"],
     client_manager: ["crm"],
+    doctor: ["analytics"],
 };
 
 /* ── Team member type ── */

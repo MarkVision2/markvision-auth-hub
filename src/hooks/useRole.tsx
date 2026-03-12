@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { ROLE_PRESETS, ALL_KEYS, loadTeam } from "@/pages/settings/types";
 
-export type AppRole = "superadmin" | "client_admin" | "client_manager";
+export type AppRole = "superadmin" | "client_admin" | "client_manager" | "doctor";
 
 interface RoleContextValue {
   role: AppRole;
@@ -9,6 +9,7 @@ interface RoleContextValue {
   isSuperadmin: boolean;
   isClientAdmin: boolean;
   isClientManager: boolean;
+  isDoctor: boolean;
   permissions: string[];
 }
 
@@ -27,6 +28,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     isSuperadmin: role === "superadmin",
     isClientAdmin: role === "client_admin",
     isClientManager: role === "client_manager",
+    isDoctor: role === "doctor",
     permissions,
   };
 

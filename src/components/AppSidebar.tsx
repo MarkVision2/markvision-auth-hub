@@ -79,6 +79,13 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "СПЕЦ. ИНТЕРФЕЙСЫ",
+    roles: ["superadmin", "doctor"],
+    items: [
+      { title: "Терминал Врача", path: "/doctor/terminal", icon: Activity },
+    ],
+  },
+  {
     label: "СИСТЕМА",
     roles: ["superadmin"],
     items: [
