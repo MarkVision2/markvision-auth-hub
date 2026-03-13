@@ -192,12 +192,13 @@ export default function ContentFactory() {
 
       const isVideo = mainType === "video";
       const mode = isVideo ? videoMode : photoMode;
-      const isCarousel = !isVideo && (photoFormat === "carousel7" || photoFormat === "carousel10");
-      const slideCount = photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1;
+      const isCarousel = !isVideo && (photoFormat === "carousel-7" || photoFormat === "carousel-10");
+      const slideCount = photoFormat === "carousel-10" ? 10 : photoFormat === "carousel-7" ? 7 : 1;
 
       const slides = (isVideo ? speakerText : mainText || "")
         .split(/\n/)
-        .filter(line => line.trim())
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
         .map(line => line.replace(/^слайд\s*\d+\s*[:：]\s*/i, "").trim())
         .filter(Boolean);
 
@@ -206,7 +207,7 @@ export default function ContentFactory() {
         source_type: mode,
         source_url: mode === "link" ? sourceUrl : null,
         visual_style: visualStyle || null,
-        main_text: isCarousel ? (slides.length > 0 ? slides.join('\n') : mainText) : (isVideo ? speakerText : mainText),
+        main_text: isCarousel ? (slides.length > 0 ? slides[0] : mainText) : (isVideo ? speakerText : mainText),
         format: isVideo ? videoFormat : photoFormat,
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
@@ -224,7 +225,7 @@ export default function ContentFactory() {
       setTask(data as ContentTask);
       setTaskId(data.id);
 
-      const formatMap: Record<string, string> = { banner: "fb-target", carousel7: "insta-carousel", carousel10: "insta-carousel" };
+      const formatMap: Record<string, string> = { banner: "fb-target", "carousel-7": "insta-carousel", "carousel-10": "insta-carousel" };
 
       const n8nPayload = {
         task_id: data.id,
@@ -568,8 +569,8 @@ export default function ContentFactory() {
                           <SelectTrigger className="h-11 bg-secondary/10 border-border"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="banner">ADS Баннер</SelectItem>
-                            <SelectItem value="carousel7">Карусель (7)</SelectItem>
-                            <SelectItem value="carousel10">Карусель (10)</SelectItem>
+                            <SelectItem value="carousel-7">Карусель (7)</SelectItem>
+                            <SelectItem value="carousel-10">Карусель (10)</SelectItem>
                           </SelectContent>
                         </Select>
                       )}

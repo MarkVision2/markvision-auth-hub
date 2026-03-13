@@ -14,7 +14,8 @@ interface Props {
 export function PhoneMockup({ contentMode, format, designPrompt, exactText, referencePreview, logoFile }: Props) {
   const slides = (exactText || "")
     .split(/\n/)
-    .filter(line => line.trim())
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
     .map(line => line.replace(/^слайд\s*\d+\s*[:：]\s*/i, "").trim())
     .filter(Boolean);
 
