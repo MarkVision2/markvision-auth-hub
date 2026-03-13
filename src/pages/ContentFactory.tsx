@@ -35,9 +35,11 @@ const MAX_HISTORY = 12;
 
 export default function ContentFactory() {
   const { active } = useWorkspace();
-  const [pageTab, setPageTab] = useState<"create" | "my-content">("create");
+  const [pageTab, setPageTab] = useState<"create" | "create-content" | "my-content">("create");
   const [history, setHistory] = useState<ContentTask[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [createType, setCreateType] = useState<"video" | "image">("video");
+  const [isCreating, setIsCreating] = useState(false);
 
   // Fetch history from content_tasks (legacy video/photo generation)
   const fetchHistory = useCallback(async () => {
@@ -63,6 +65,39 @@ export default function ContentFactory() {
     }
   }, [active.id]);
 
+  const handleCreateContent = async () => {
+    setIsCreating(true);
+    try {
+      // Trigger the new webhook
+      const webhookUrl = `https://n8n.zapoinov.com/webhook/content-factory-v2?project_id=${active.id}&type=${createType}`;
+
+      // Sending request to n8n webhook
+      // Usually webhooks are triggered via GET or POST depending on n8n config
+      const res = await fetch(webhookUrl, {
+        method: "GET",
+        mode: "no-cors" // common for simple triggers
+      });
+
+      toast({
+        title: "🚀 Запрос отправлен",
+        description: `Генерация ${createType === 'video' ? 'видео' : 'фото'} запущена.`,
+      });
+
+      // Switch to history tab to see progress (if it updates in real-time)
+      setTimeout(() => setPageTab("my-content"), 1500);
+
+    } catch (err) {
+      console.error("Webhook error:", err);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось запустить генерацию.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
@@ -72,20 +107,27 @@ export default function ContentFactory() {
       <div className="mx-auto max-w-6xl py-4 flex flex-col h-[calc(100vh-80px)]">
 
         {/* Header Section */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 text-center md:text-left">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
             <p className="text-sm text-muted-foreground mt-1">Создание сценариев · Мониторинг · AI-генерация</p>
           </div>
 
           {/* Page Tabs */}
-          <div className="flex bg-secondary/20 rounded-xl p-1 border border-border">
+          <div className="flex bg-secondary/20 rounded-xl p-1 border border-border scale-90 md:scale-100 origin-right">
             <button
               onClick={() => setPageTab("create")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "create" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
                 }`}
             >
-              <Sparkles className="h-3.5 w-3.5" /> Создать сценарий
+              <Sparkles className="h-3.5 w-3.5" /> Сценарий
+            </button>
+            <button
+              onClick={() => setPageTab("create-content")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "create-content" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <ImageIcon className="h-3.5 w-3.5" /> Создать контент
             </button>
             <button
               onClick={() => setPageTab("my-content")}
@@ -100,10 +142,69 @@ export default function ContentFactory() {
         {/* Tab Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
 
-          {/* ─── CREATE TAB ─── */}
+          {/* ─── CREATE SCENARIO TAB ─── */}
           {pageTab === "create" && (
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-10">
               <ScenarioCreator />
+            </div>
+          )}
+
+          {/* ─── CREATE CONTENT TAB ─── */}
+          {pageTab === "create-content" && (
+            <div className="flex-1 flex flex-col items-center justify-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-md w-full space-y-6 text-center">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-bold">Выберите тип контента</h2>
+                  <p className="text-sm text-muted-foreground">Нажмите кнопку создания, чтобы запустить AI-генерацию</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setCreateType("video")}
+                    className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 ${createType === "video"
+                      ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]"
+                      : "bg-secondary/20 border-border hover:border-primary/50"}`}
+                  >
+                    <div className={`p-3 rounded-xl ${createType === "video" ? "bg-primary text-white" : "bg-secondary text-muted-foreground"}`}>
+                      <Video className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-sm">Видео</span>
+                  </button>
+
+                  <button
+                    onClick={() => setCreateType("image")}
+                    className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3 ${createType === "image"
+                      ? "bg-primary/10 border-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.2)]"
+                      : "bg-secondary/20 border-border hover:border-primary/50"}`}
+                  >
+                    <div className={`p-3 rounded-xl ${createType === "image" ? "bg-primary text-white" : "bg-secondary text-muted-foreground"}`}>
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-sm">Фото</span>
+                  </button>
+                </div>
+
+                <Button
+                  onClick={handleCreateContent}
+                  disabled={isCreating}
+                  className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl hover:scale-[1.02] transition-transform"
+                >
+                  {isCreating ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Запуск...
+                    </div>
+                  ) : (
+                    "Создать контент"
+                  )}
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-medium uppercase tracking-widest opacity-50">
+                <span>Webhook Integration</span>
+                <div className="h-1 w-1 rounded-full bg-border" />
+                <span>n8n Powered</span>
+              </div>
             </div>
           )}
 
