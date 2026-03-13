@@ -271,6 +271,29 @@ export default function ContentFactory() {
     setReferencePreview(null);
   };
 
+  const handleDeleteTask = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent opening the task
+    if (!confirm("Вы уверены, что хотите удалить эту запись?")) return;
+
+    try {
+      const { error } = await (supabase as any)
+        .from("content_tasks")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({ title: "Удалено", description: "Запись успешно удалена" });
+      setHistory(prev => prev.filter(t => t.id !== id));
+      if (taskId === id) {
+        setTask(null);
+        setTaskId(null);
+      }
+    } catch (err: any) {
+      toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
+    }
+  };
+
   const loadHistoryItem = (item: ContentTask) => {
     setTask(item);
     setTaskId(item.id);
@@ -434,6 +457,14 @@ export default function ContentFactory() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${task.status === "completed" ? "bg-green-500/10 border-green-500/30 text-green-500" : "bg-primary/10 border-primary/30 text-primary"}`}>
                           {task.status === "completed" ? "ГОТОВО" : "ОЖИДАНИЕ"}
                         </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mr-1"
+                          onClick={(e) => handleDeleteTask(task.id, e)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                       {task.result_urls?.[0] && (
                         <div className="aspect-video rounded-lg overflow-hidden bg-secondary/30 relative">
