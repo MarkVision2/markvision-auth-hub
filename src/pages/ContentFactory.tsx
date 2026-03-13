@@ -191,12 +191,21 @@ export default function ContentFactory() {
 
       const isVideo = mainType === "video";
       const mode = isVideo ? videoMode : photoMode;
+      const isCarousel = !isVideo && (photoFormat === "carousel7" || photoFormat === "carousel10");
+      const slideCount = photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1;
+
+      const slides = (isVideo ? speakerText : mainText || "")
+        .split(/\n/)
+        .filter(line => line.trim())
+        .map(line => line.replace(/^слайд\s*\d+\s*[:：]\s*/i, "").trim())
+        .filter(Boolean);
+
       const payload: Record<string, any> = {
-        content_type: mainType,
+        content_type: isCarousel ? "carousel" : mainType,
         source_type: mode,
         source_url: mode === "link" ? sourceUrl : null,
         visual_style: visualStyle || null,
-        main_text: isVideo ? speakerText : mainText,
+        main_text: isCarousel ? (slides.length > 0 ? slides.join('\n') : mainText) : (isVideo ? speakerText : mainText),
         format: isVideo ? videoFormat : photoFormat,
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
@@ -214,8 +223,6 @@ export default function ContentFactory() {
       setTask(data as ContentTask);
       setTaskId(data.id);
 
-      const isCarousel = !isVideo && (photoFormat === "carousel7" || photoFormat === "carousel10");
-      const slideCount = photoFormat === "carousel10" ? 10 : photoFormat === "carousel7" ? 7 : 1;
       const formatMap: Record<string, string> = { banner: "fb-target", carousel7: "insta-carousel", carousel10: "insta-carousel" };
 
       const n8nPayload = {
@@ -232,8 +239,9 @@ export default function ContentFactory() {
         speaker_text: isVideo ? speakerText : "",
         design_template: payload.design_template || "modern",
         is_carousel: isCarousel,
-        num_slides: slideCount,
-        slide_count: slideCount,
+        num_slides: isCarousel ? Math.max(slideCount, slides.length) : 1,
+        slide_count: isCarousel ? Math.max(slideCount, slides.length) : 1,
+        slides: isCarousel ? slides : [],
         custom_logo_url: payload.custom_logo_url,
         timestamp: new Date().toISOString(),
       };
