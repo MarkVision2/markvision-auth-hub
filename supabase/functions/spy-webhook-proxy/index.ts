@@ -107,6 +107,36 @@ serve(async (req) => {
       );
     }
 
+    if (action === "trigger_scrape") {
+      const { url, payload } = body;
+      console.log(`[Proxy] Triggering scrape: ${url}`, payload);
+
+      if (!url) {
+        return new Response(
+          JSON.stringify({ error: "Missing URL for scrape" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const params = new URLSearchParams();
+      Object.entries(payload || {}).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) params.append(k, String(v));
+      });
+      const fullUrl = `${url}?${params.toString()}`;
+
+      const n8nRes = await fetch(fullUrl, { method: "GET" });
+      const responseText = await n8nRes.text();
+
+      if (!n8nRes.ok) {
+        throw new Error(`n8n error: ${n8nRes.status}`);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Webhook triggered successfully" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (action === "analyze_post") {
       // Use service role for insert (needed to bypass RLS for content_factory)
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

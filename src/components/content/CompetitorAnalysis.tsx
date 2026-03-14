@@ -46,6 +46,7 @@ import { format as dateFmt } from "date-fns";
 // ─── Constants ───
 const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
 const N8N_SCRAPE_LIGHT = import.meta.env.VITE_N8N_SCRAPE_LIGHT_URL || "";
+const BOOST_WEBHOOK_URL = import.meta.env.VITE_BOOST_WEBHOOK_URL || "";
 
 // ─── Types ───
 interface Competitor {
@@ -84,31 +85,43 @@ function scoreColor(score: number) {
     return "text-[hsl(var(--status-critical))]";
 }
 
+// ─── Trigger Boost.space webhook ───
+async function triggerBoostWebhook(payload: Record<string, unknown>) {
+    if (!BOOST_WEBHOOK_URL) throw new Error("VITE_BOOST_WEBHOOK_URL не задан");
+    const response = await fetch(BOOST_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`Boost webhook error: ${response.status}`);
+}
+
 // ─── Trigger n8n webhook ───
 async function triggerScrape(url: string, payload: Record<string, unknown>) {
-    console.log(`[n8n] Triggering webhook: ${url}`, payload);
+    console.log(`[Proxy] Triggering scrape via proxy: ${url}`, payload);
     try {
         if (!url) {
             console.error("[n8n] Webhook URL is MISSING. Check VITE_N8N_... variables.");
             throw new Error("n8n Webhook URL is not configured");
         }
-        const response = await fetch(`${url}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+
+        const { data, error } = await supabase.functions.invoke("spy-webhook-proxy", {
+            body: {
+                action: "trigger_scrape",
+                url: url,
+                payload: payload
+            }
         });
 
-        if (!response.ok) {
-            console.error(`[n8n] Server returned error ${response.status}: ${response.statusText}`);
-            throw new Error(`n8n error: ${response.status}`);
+        if (error) {
+            console.error("[Proxy] Invoke error:", error);
+            throw new Error(`Ошибка прокси: ${error.message}`);
         }
-        console.log("[n8n] Webhook triggered successfully");
+
+        console.log("[Proxy] Webhook triggered successfully via proxy", data);
     } catch (e: any) {
-        console.error("n8n webhook connection error details:", e);
-        if (e.name === 'TypeError' && e.message === 'Failed to fetch') {
-            throw new Error("Ошибка CORS или n8n недоступен. Проверьте настройки n8n.");
-        }
-        throw new Error("Ошибка связи с n8n: " + e.message);
+        console.error("n8n proxy connection error details:", e);
+        throw new Error("Ошибка связи через прокси: " + e.message);
     }
 }
 
