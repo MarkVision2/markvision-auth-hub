@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, RefreshCw } from "lucide-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useRole } from "@/hooks/useRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +21,171 @@ import PeriodPicker from "@/components/agency/PeriodPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
+
+// ─── Facebook Campaign Drill-Down ────────────────────────────────────────────
+
+const FB_API = "https://graph.facebook.com/v22.0";
+const LEAD_TYPES = ["onsite_conversion.lead_grouped", "onsite_conversion.messaging_conversation_started_7d"];
+
+interface FbCampaign {
+  id: string;
+  name: string;
+  status: string;
+  effective_status: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  insights?: {
+    data: Array<{
+      spend: string;
+      impressions: string;
+      clicks: string;
+      ctr: string;
+      actions?: Array<{ action_type: string; value: string }>;
+    }>;
+  };
+}
+
+function AccountCampaigns({ adAccountId, fbToken }: { adAccountId: string; fbToken: string }) {
+  const [campaigns, setCampaigns] = useState<FbCampaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState<Record<string, boolean>>({});
+
+  const fetchCampaigns = useCallback(async () => {
+    setLoading(true);
+    try {
+      const url = `${FB_API}/act_${adAccountId}/campaigns?fields=id,name,status,effective_status,daily_budget,lifetime_budget,insights.date_preset(today){spend,impressions,clicks,ctr,actions}&limit=50&filtering=[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED"]}]&access_token=${fbToken}`;
+      const resp = await fetch(url);
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error.message);
+      setCampaigns(json.data || []);
+    } catch (e: unknown) {
+      toast({ title: "Ошибка загрузки кампаний", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  }, [adAccountId, fbToken]);
+
+  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
+
+  const toggleCampaign = async (campaign: FbCampaign) => {
+    const newStatus = campaign.effective_status === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    setToggling(prev => ({ ...prev, [campaign.id]: true }));
+    try {
+      const resp = await fetch(`${FB_API}/${campaign.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus, access_token: fbToken }),
+      });
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error.message);
+      toast({ title: `${campaign.name}`, description: newStatus === "ACTIVE" ? "Запущена" : "На паузе" });
+      setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: newStatus, effective_status: newStatus } : c));
+    } catch (e: unknown) {
+      toast({ title: "Ошибка", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setToggling(prev => ({ ...prev, [campaign.id]: false }));
+    }
+  };
+
+  const getLeads = (c: FbCampaign) =>
+    (c.insights?.data?.[0]?.actions || [])
+      .filter(a => LEAD_TYPES.includes(a.action_type))
+      .reduce((s, a) => s + Number(a.value), 0);
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      <span className="text-sm">Загрузка кампаний из Meta...</span>
+    </div>
+  );
+
+  if (!campaigns.length) return (
+    <div className="py-5 text-center text-muted-foreground text-sm">Нет активных или приостановленных кампаний</div>
+  );
+
+  return (
+    <div className="px-4 pb-3 pt-1">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Кампании ({campaigns.length})</span>
+        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={fetchCampaigns}>
+          <RefreshCw className="h-3 w-3" /> Обновить
+        </Button>
+      </div>
+      <div className="rounded-lg border border-border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+              <TableHead className="text-xs py-2 pl-3">Кампания</TableHead>
+              <TableHead className="text-xs py-2 text-right">Бюджет/день</TableHead>
+              <TableHead className="text-xs py-2 text-right">Расход сег.</TableHead>
+              <TableHead className="text-xs py-2 text-right">Показы</TableHead>
+              <TableHead className="text-xs py-2 text-right">Клики</TableHead>
+              <TableHead className="text-xs py-2 text-right">CTR</TableHead>
+              <TableHead className="text-xs py-2 text-right">Лиды</TableHead>
+              <TableHead className="text-xs py-2 text-right">CPL</TableHead>
+              <TableHead className="text-xs py-2 text-center w-16">Стат.</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {campaigns.map(c => {
+              const ins = c.insights?.data?.[0];
+              const spend = Number(ins?.spend || 0);
+              const impressions = Number(ins?.impressions || 0);
+              const clicks = Number(ins?.clicks || 0);
+              const ctr = Number(ins?.ctr || 0);
+              const leads = getLeads(c);
+              const cpl = leads > 0 ? spend / leads : 0;
+              const budget = c.daily_budget ? Number(c.daily_budget) / 100 : null;
+              const isActive = c.effective_status === "ACTIVE";
+              return (
+                <TableRow key={c.id} className="border-b border-border hover:bg-accent/30 text-sm">
+                  <TableCell className="pl-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-[hsl(var(--status-good))]" : "bg-muted-foreground"}`} />
+                      <span className="text-foreground font-medium">{c.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {budget != null ? `$${budget.toFixed(0)}` : "—"}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold tabular-nums">
+                    {spend > 0 ? `$${spend.toFixed(2)}` : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {impressions > 0 ? impressions.toLocaleString("ru-RU") : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {clicks > 0 ? clicks : "—"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground tabular-nums">
+                    {ctr > 0 ? `${ctr.toFixed(2)}%` : "—"}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-bold">
+                    {leads > 0
+                      ? <span className="text-[hsl(var(--status-good))]">{leads}</span>
+                      : <span className="text-muted-foreground">0</span>}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {cpl > 0 ? (
+                      <span className={`font-bold ${cpl < 2 ? "text-[hsl(var(--status-good))]" : cpl > 3 ? "text-[hsl(var(--status-critical))]" : "text-yellow-500"}`}>
+                        ${cpl.toFixed(2)}
+                      </span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {toggling[c.id]
+                      ? <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
+                      : <Switch checked={isActive} onCheckedChange={() => toggleCampaign(c)} />}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
 
 interface MetricsRow {
   client_id: string;
@@ -112,6 +278,37 @@ export default function AgencyAccounts() {
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
+
+  // Campaign drill-down state
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [accountMeta, setAccountMeta] = useState<Record<string, { adAccountId: string; fbToken: string }>>({});
+  const [metaLoading, setMetaLoading] = useState<Record<string, boolean>>({});
+
+  const handleRowClick = useCallback(async (clientId: string) => {
+    if (expandedId === clientId) { setExpandedId(null); return; }
+    setExpandedId(clientId);
+    if (accountMeta[clientId]) return;
+    setMetaLoading(prev => ({ ...prev, [clientId]: true }));
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("clients_config")
+        .select("ad_account_id, fb_token")
+        .eq("id", clientId)
+        .maybeSingle();
+      if (data?.ad_account_id && data?.fb_token) {
+        setAccountMeta(prev => ({ ...prev, [clientId]: { adAccountId: data.ad_account_id, fbToken: data.fb_token } }));
+      } else {
+        toast({ title: "Нет токена", description: "fb_token не найден для этого кабинета", variant: "destructive" });
+        setExpandedId(null);
+      }
+    } catch {
+      toast({ title: "Ошибка загрузки токена", variant: "destructive" });
+      setExpandedId(null);
+    } finally {
+      setMetaLoading(prev => ({ ...prev, [clientId]: false }));
+    }
+  }, [expandedId, accountMeta]);
 
   const fetchMetrics = useCallback(async () => {
     if (!period.from) return;
@@ -394,14 +591,27 @@ export default function AgencyAccounts() {
                   const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
                   const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
 
+                  const isExpanded = expandedId === c.client_id;
+                  const isMetaLoading = metaLoading[c.client_id];
                   return (
+                    <>
                     <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
                       <TableCell className="py-4">
-                        <p className="text-[15px] font-bold text-foreground tabular-nums">{c.client_name}</p>
-                        <span className={`inline-flex items-center gap-1.5 text-xs mt-1.5 ${s.text}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                          {s.label}
-                        </span>
+                        <button
+                          onClick={() => handleRowClick(c.client_id)}
+                          className="flex items-start gap-2 text-left w-full"
+                        >
+                          {isMetaLoading
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground mt-0.5 flex-shrink-0" />
+                            : <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />}
+                          <div>
+                            <p className="text-[15px] font-bold text-foreground tabular-nums">{c.client_name}</p>
+                            <span className={`inline-flex items-center gap-1.5 text-xs mt-1.5 ${s.text}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                              {s.label}
+                            </span>
+                          </div>
+                        </button>
                       </TableCell>
 
                       {active.id === "hq" && (
@@ -449,6 +659,17 @@ export default function AgencyAccounts() {
                         <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
                       </TableCell>
                     </TableRow>
+                    {isExpanded && accountMeta[c.client_id] && (
+                      <TableRow key={`${c.client_id}-campaigns`} className="border-b border-border bg-secondary/20">
+                        <TableCell colSpan={active.id === "hq" ? 9 : 8} className="p-0">
+                          <AccountCampaigns
+                            adAccountId={accountMeta[c.client_id].adAccountId}
+                            fbToken={accountMeta[c.client_id].fbToken}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </>
                   );
                 })
               )}
