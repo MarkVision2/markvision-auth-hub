@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -49,6 +50,16 @@ interface ClientWithMetrics {
   romi: number;
   hasData: boolean;
   dailyMetrics: DailyMetric[];
+}
+
+interface Campaign {
+  id: string;
+  name: string;
+  status: string;
+  spend: number;
+  leads: number;
+  clicks: number;
+  impressions: number;
 }
 
 interface Alert {
@@ -230,6 +241,55 @@ export default function DashboardTarget() {
     }
   }, [selectedYear, selectedMonth, active.id]);
 
+  const [campaigns, setCampaigns] = useState<Record<string, Campaign[]>>({});
+  const [loadingCampaigns, setLoadingCampaigns] = useState<Record<string, boolean>>({});
+
+  const fetchCampaigns = async (clientConfigId: string) => {
+    if (loadingCampaigns[clientConfigId]) return;
+    setLoadingCampaigns(prev => ({ ...prev, [clientConfigId]: true }));
+    try {
+      const { data, error } = await (supabase as any)
+        .from("analytics_campaigns")
+        .select("*")
+        .eq("client_config_id", clientConfigId);
+      if (error) throw error;
+      setCampaigns(prev => ({ ...prev, [clientConfigId]: data || [] }));
+    } catch (err: any) {
+      console.error("Error fetching campaigns:", err);
+    } finally {
+      setLoadingCampaigns(prev => ({ ...prev, [clientConfigId]: false }));
+    }
+  };
+
+  const toggleCampaign = async (campaignId: string, currentStatus: string, clientConfigId: string) => {
+    const nextStatus = currentStatus === "ACTIVE" ? "PAUSED" : "ACTIVE";
+    try {
+      // Optimistic update
+      setCampaigns(prev => ({
+        ...prev,
+        [clientConfigId]: prev[clientConfigId].map(c => c.id === campaignId ? { ...c, status: nextStatus } : c)
+      }));
+
+      // In a real scenario, this would call a Supabase Edge Function or n8n webhook
+      // that interacts with the Facebook Marketing API.
+      const { error } = await (supabase as any)
+        .from("analytics_campaigns")
+        .update({ status: nextStatus })
+        .eq("id", campaignId);
+
+      if (error) throw error;
+
+      toast({ title: "Статус изменен", description: `Кампания ${nextStatus === "ACTIVE" ? "запущена" : "остановлена"}` });
+    } catch (err: any) {
+      // Revert on error
+      setCampaigns(prev => ({
+        ...prev,
+        [clientConfigId]: prev[clientConfigId].map(c => c.id === campaignId ? { ...c, status: currentStatus } : c)
+      }));
+      toast({ title: "Ошибка", description: "Не удалось изменить статус кампании", variant: "destructive" });
+    }
+  };
+
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
@@ -407,7 +467,7 @@ export default function DashboardTarget() {
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
-                {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
+                {["Клиент", "Показы", "Клики", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
                   <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
                 ))}
               </div>
@@ -431,7 +491,7 @@ export default function DashboardTarget() {
                   return (
                     <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
                       <CollapsibleTrigger asChild>
-                        <div className={`grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
+                        <div className={`grid grid-cols-[1fr_80px_70px_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
                           <div className="flex items-center gap-2.5">
                             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
                             <div className="min-w-0">
@@ -444,6 +504,8 @@ export default function DashboardTarget() {
                               </p>
                             </div>
                           </div>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmt(client.totalImpressions)}</span>
+                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmt(client.totalClicks)}</span>
                           <span className="text-sm font-mono tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
                           <span className={`text-sm font-mono tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-[hsl(var(--status-warning))]" : "text-foreground/80"}`}>
                             {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
@@ -524,6 +586,56 @@ export default function DashboardTarget() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Manual Ad Management Section */}
+                            <div className="space-y-3 pt-2 border-t border-border/40">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-1.5">
+                                  <Rocket className="h-3 w-3 text-primary" />
+                                  Активные кампании (Manual Ctrl)
+                                </h4>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-primary"
+                                  onClick={() => fetchCampaigns(client.id)}
+                                  disabled={loadingCampaigns[client.id]}
+                                >
+                                  {loadingCampaigns[client.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                                  Обновить список
+                                </Button>
+                              </div>
+
+                              <div className="space-y-2">
+                                {(campaigns[client.id] || []).length > 0 ? (
+                                  campaigns[client.id].map(camp => (
+                                    <div key={camp.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-card/50 hover:bg-card transition-colors">
+                                      <div className="min-w-0 flex-1 mr-4">
+                                        <div className="flex items-center gap-2">
+                                          <p className="text-xs font-semibold text-foreground truncate">{camp.name}</p>
+                                          <Badge variant="outline" className={`text-[9px] py-0 h-4 ${camp.status === "ACTIVE" ? "border-emerald-500/30 text-emerald-500 bg-emerald-500/5" : "border-muted-foreground/30 text-muted-foreground bg-muted/5"}`}>
+                                            {camp.status === "ACTIVE" ? "ACTIVE" : "PAUSED"}
+                                          </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground tabular-nums">
+                                          <span>Spend: {fmtCurrency(camp.spend)}</span>
+                                          <span>Leads: {camp.leads}</span>
+                                          <span>CPC: {camp.clicks > 0 ? fmtCurrency(Math.round(camp.spend / camp.clicks)) : "—"}</span>
+                                        </div>
+                                      </div>
+                                      <Switch
+                                        checked={camp.status === "ACTIVE"}
+                                        onCheckedChange={() => toggleCampaign(camp.id, camp.status, client.id)}
+                                      />
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-center py-6 rounded-lg border border-dashed border-border/60 bg-secondary/5">
+                                    <p className="text-[11px] text-muted-foreground">Нажмите «Обновить список» для загрузки кампаний</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ) : (
                           <div className="px-4 py-8 bg-secondary/5 border-b border-border text-center">
