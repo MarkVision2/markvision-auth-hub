@@ -87,7 +87,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 Оплата: ${formData.payment ? `${formData.payment.amount} ₸ (${formData.payment.method})` : "Нет"}
       `.trim();
 
-            const { error: noteError } = await supabase.from("crm_notes").insert({
+            const { error: noteError } = await (supabase as any).from("crm_notes").insert({
                 lead_id: lead.id,
                 body: summary,
                 author_name: adminName
@@ -100,7 +100,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                 const [hours, minutes] = formData.booking.time.split(":");
                 scheduledAt.setHours(parseInt(hours), parseInt(minutes));
 
-                const { error: leadError } = await supabase.from("leads").update({
+                const { error: leadError } = await (supabase as any).from("leads").update({
                     status: "Записан",
                     scheduled_at: scheduledAt.toISOString(),
                     doctor_name: formData.booking.doctor,
