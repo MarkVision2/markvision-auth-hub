@@ -23,12 +23,14 @@ import {
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Globe, Hash, Loader2, Check, CheckCheck, Trash2, Copy, Sparkles,
   Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
+  Stethoscope,
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
 import type { CallRecord, AITask } from "./types";
+import { DiagnosticMap } from "./DiagnosticMap";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -211,6 +213,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [officeName, setOfficeName] = useState<string>("");
   const [busySlots, setBusySlots] = useState<{ date: string; time: string; doctor: string }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [diagnosticOpen, setDiagnosticOpen] = useState(false);
 
   const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
   const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
@@ -449,7 +452,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     setMessage("");
     setSending(true);
     try {
-      const { error } = await (supabase as unknown).from("chat_messages").insert({
+      if (!lead) return;
+      const { error } = await (supabase as any).from("chat_messages").insert({
         lead_id: lead.id, message_text: body, is_inbound: false,
       });
       if (error) throw error;
@@ -461,8 +465,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           body: JSON.stringify({ lead_id: lead.id, phone: lead.phone || "", message: body }),
         }).catch(err => console.error("WA send webhook error:", err));
       }
-    } catch (err: unknown) {
-      toast({ title: "Ошибка отправки", description: err.message, variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Ошибка отправки", description: err.message || String(err), variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -567,6 +571,14 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
                 </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-[10px] border-border h-9 gap-1.5 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-bold uppercase tracking-widest"
+                onClick={() => setDiagnosticOpen(true)}
+              >
+                <Stethoscope className="h-4 w-4" /> Запись на диагностику
+              </Button>
               <div className="grid grid-cols-2 gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -948,6 +960,16 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           </div>
         </div>
       </SheetContent>
-    </Sheet >
+
+      <DiagnosticMap
+        lead={lead}
+        open={diagnosticOpen}
+        onOpenChange={setDiagnosticOpen}
+        onComplete={(data) => {
+          setDiagnosticOpen(false);
+          onLeadUpdated?.();
+        }}
+      />
+    </Sheet>
   );
 }
