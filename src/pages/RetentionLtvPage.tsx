@@ -484,7 +484,7 @@ export default function RetentionLtvPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground font-mono tabular-nums">
                           {task.sent_at
-                            ? new Date(task.sent_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                            ? new Date(task.sent_at).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
                             : <span className="text-muted-foreground/30">—</span>}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{task.template_name}</TableCell>
