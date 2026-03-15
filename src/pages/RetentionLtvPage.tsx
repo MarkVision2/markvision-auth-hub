@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -23,14 +24,16 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   DollarSign, RefreshCw, Clock, TrendingUp, Plus, Send,
-  CalendarDays, FileText, Users, Tag, TicketPercent,
+  CalendarDays, FileText, Tag, TicketPercent, CheckCircle2, Trash2,
+  Sparkles, MessageSquare,
 } from "lucide-react";
-
-const PROJECT_ID = import.meta.env.VITE_PROJECT_ID || "c6fdc17c-3e5b-4cf9-95a8-a0ef4f08f7a5";
 
 /* ── Types ── */
 interface RetentionTask {
@@ -40,6 +43,7 @@ interface RetentionTask {
   trigger_date: string;
   promo_code: string | null;
   status: string;
+  sent_at?: string | null;
   lead_name?: string;
   template_name?: string;
 }
@@ -202,14 +206,25 @@ export default function RetentionLtvPage() {
   const [templates, setTemplates] = useState<RetentionTemplate[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Form state
+  // Sheet: plan task
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [formLeadId, setFormLeadId] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
   const [formDate, setFormDate] = useState<Date | undefined>(undefined);
   const [formPromo, setFormPromo] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Sheet: create template
+  const [tplSheetOpen, setTplSheetOpen] = useState(false);
+  const [tplName, setTplName] = useState("");
+  const [tplPrompt, setTplPrompt] = useState("");
+  const [tplSaving, setTplSaving] = useState(false);
+
+  // Dialog: mark converted
+  const [convertTask, setConvertTask] = useState<RetentionTask | null>(null);
+  const [convertRevenue, setConvertRevenue] = useState("");
+  const [convertSaving, setConvertSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -241,6 +256,7 @@ export default function RetentionLtvPage() {
         trigger_date: r.trigger_date,
         promo_code: r.promo_code,
         status: r.status || "pending",
+        sent_at: r.sent_at || null,
         lead_name: r.leads?.name || "—",
         template_name: r.retention_templates?.name || "—",
       })));
@@ -262,6 +278,7 @@ export default function RetentionLtvPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Plan task
   const handleCreate = async () => {
     if (!formLeadId || !formTemplateId || !formDate) {
       toast({ title: "Заполните все поля", variant: "destructive" });
@@ -284,15 +301,92 @@ export default function RetentionLtvPage() {
       if (error) throw error;
       toast({ title: "✅ Касание запланировано" });
       setSheetOpen(false);
-      setFormLeadId("");
-      setFormTemplateId("");
-      setFormDate(undefined);
-      setFormPromo("");
+      setFormLeadId(""); setFormTemplateId(""); setFormDate(undefined); setFormPromo("");
       fetchData();
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Create template
+  const handleCreateTemplate = async () => {
+    if (!tplName.trim() || !tplPrompt.trim()) {
+      toast({ title: "Заполните название и промпт", variant: "destructive" });
+      return;
+    }
+    if (active.id === "hq") {
+      toast({ title: "Ошибка", description: "Выберите проект", variant: "destructive" });
+      return;
+    }
+    setTplSaving(true);
+    try {
+      const { error } = await (supabase as any).from("retention_templates").insert({
+        project_id: active.id,
+        name: tplName.trim(),
+        message_prompt: tplPrompt.trim(),
+      });
+      if (error) throw error;
+      toast({ title: "✅ Шаблон создан" });
+      setTplSheetOpen(false);
+      setTplName(""); setTplPrompt("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setTplSaving(false);
+    }
+  };
+
+  // Delete template
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const { error } = await (supabase as any).from("retention_templates").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Шаблон удалён" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    }
+  };
+
+  // Mark converted
+  const handleMarkConverted = async () => {
+    if (!convertTask) return;
+    const revenue = parseFloat(convertRevenue) || 0;
+    setConvertSaving(true);
+    try {
+      // Update task status
+      const { error: e1 } = await (supabase as any)
+        .from("retention_tasks")
+        .update({ status: "converted" })
+        .eq("id", convertTask.id);
+      if (e1) throw e1;
+
+      // Update template stats
+      if (convertTask.template_id) {
+        const tpl = templates.find(t => t.id === convertTask.template_id);
+        if (tpl) {
+          const { error: e2 } = await (supabase as any)
+            .from("retention_templates")
+            .update({
+              return_count: tpl.return_count + 1,
+              revenue_generated: tpl.revenue_generated + revenue,
+            })
+            .eq("id", convertTask.template_id);
+          if (e2) throw e2;
+        }
+      }
+
+      toast({ title: "✅ Возврат зафиксирован", description: revenue > 0 ? `+${formatMoney(revenue)} к выручке` : undefined });
+      setConvertTask(null);
+      setConvertRevenue("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setConvertSaving(false);
     }
   };
 
@@ -319,21 +413,30 @@ export default function RetentionLtvPage() {
 
         {/* ── Tabs ── */}
         <Tabs defaultValue="queue" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <TabsList className="bg-secondary/50">
               <TabsTrigger value="queue" className="text-xs gap-1.5">
                 <CalendarDays size={13} /> Очередь касаний
+                {pendingTasks > 0 && (
+                  <Badge className="ml-1 h-4 min-w-4 px-1 text-[9px] font-mono">{pendingTasks}</Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="templates" className="text-xs gap-1.5">
-                <FileText size={13} /> Аналитика шаблонов
+                <MessageSquare size={13} /> Шаблоны
+                <Badge variant="outline" className="ml-1 h-4 min-w-4 px-1 text-[9px] font-mono">{templates.length}</Badge>
               </TabsTrigger>
               <TabsTrigger value="promos" className="text-xs gap-1.5">
                 <TicketPercent size={13} /> Промокоды
               </TabsTrigger>
             </TabsList>
-            <Button size="sm" className="gap-1.5 text-xs" onClick={() => setSheetOpen(true)}>
-              <Plus size={13} /> Запланировать касание
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setTplSheetOpen(true)}>
+                <Sparkles size={13} /> Новый шаблон
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => setSheetOpen(true)}>
+                <Plus size={13} /> Запланировать касание
+              </Button>
+            </div>
           </div>
 
           {/* ── Tab 1: Queue ── */}
@@ -344,9 +447,11 @@ export default function RetentionLtvPage() {
                   <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Пациент</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Дата отправки</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Отправлено</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Шаблон</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Промокод</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Статус</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -355,14 +460,16 @@ export default function RetentionLtvPage() {
                       <TableRow key={i} className="border-border">
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell />
                       </TableRow>
                     ))
                   ) : tasks.length === 0 ? (
                     <TableRow className="border-border">
-                      <TableCell colSpan={5} className="text-center py-12">
+                      <TableCell colSpan={7} className="text-center py-12">
                         <Clock size={24} className="text-muted-foreground/20 mx-auto mb-2" />
                         <p className="text-sm text-muted-foreground">Нет запланированных касаний</p>
                         <p className="text-xs text-muted-foreground/50 mt-1">Нажмите «Запланировать касание» чтобы начать</p>
@@ -375,6 +482,11 @@ export default function RetentionLtvPage() {
                         <TableCell className="text-sm text-muted-foreground font-mono tabular-nums">
                           {new Date(task.trigger_date).toLocaleDateString("ru-RU")}
                         </TableCell>
+                        <TableCell className="text-sm text-muted-foreground font-mono tabular-nums">
+                          {task.sent_at
+                            ? new Date(task.sent_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+                            : <span className="text-muted-foreground/30">—</span>}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{task.template_name}</TableCell>
                         <TableCell>
                           {task.promo_code ? (
@@ -384,6 +496,18 @@ export default function RetentionLtvPage() {
                           )}
                         </TableCell>
                         <TableCell>{statusBadge(task.status)}</TableCell>
+                        <TableCell>
+                          {task.status === "sent" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] gap-1 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
+                              onClick={() => { setConvertTask(task); setConvertRevenue(""); }}
+                            >
+                              <CheckCircle2 size={12} /> Вернулся
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -392,35 +516,45 @@ export default function RetentionLtvPage() {
             </div>
           </TabsContent>
 
-          {/* ── Tab 2: Template Analytics ── */}
+          {/* ── Tab 2: Templates ── */}
           <TabsContent value="templates">
             <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+                <MessageSquare size={15} className="text-primary" />
+                <span className="text-sm font-semibold text-foreground">Шаблоны сообщений</span>
+                <Badge variant="outline" className="ml-auto text-[10px]">{templates.length} шаблонов</Badge>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Название шаблона</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Название</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Промпт (превью)</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Отправлено</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Вернулось</TableHead>
                     <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Конверсия</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Принёс выручки</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold text-right">Выручка</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     Array.from({ length: 3 }).map((_, i) => (
                       <TableRow key={i} className="border-border">
-                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                        <TableCell />
                       </TableRow>
                     ))
                   ) : templates.length === 0 ? (
                     <TableRow className="border-border">
-                      <TableCell colSpan={5} className="text-center py-12">
-                        <FileText size={24} className="text-muted-foreground/20 mx-auto mb-2" />
+                      <TableCell colSpan={7} className="text-center py-12">
+                        <Sparkles size={24} className="text-muted-foreground/20 mx-auto mb-2" />
                         <p className="text-sm text-muted-foreground">Шаблонов пока нет</p>
+                        <p className="text-xs text-muted-foreground/50 mt-1">Нажмите «Новый шаблон» чтобы создать первый</p>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -428,16 +562,41 @@ export default function RetentionLtvPage() {
                       const conv = t.sent_count > 0 ? Math.round((t.return_count / t.sent_count) * 100) : 0;
                       return (
                         <TableRow key={t.id} className="border-border hover:bg-muted/30">
-                          <TableCell className="text-sm font-medium text-foreground">{t.name}</TableCell>
+                          <TableCell className="text-sm font-semibold text-foreground">{t.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[200px]">
+                            <span className="line-clamp-2">{t.message_prompt}</span>
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground font-mono tabular-nums text-right">{t.sent_count}</TableCell>
                           <TableCell className="text-sm font-mono tabular-nums text-right">
                             <span className="text-emerald-600 dark:text-emerald-400">{t.return_count}</span>
                           </TableCell>
                           <TableCell className="text-sm font-mono tabular-nums text-right">
-                            <span className={conv >= 20 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}>{conv}%</span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-mono",
+                                conv >= 20
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                  : conv > 0
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                    : "text-muted-foreground"
+                              )}
+                            >
+                              {conv}%
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-sm font-mono tabular-nums text-right font-semibold text-foreground">
                             {formatMoney(t.revenue_generated)}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDeleteTemplate(t.id)}
+                            >
+                              <Trash2 size={13} />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
@@ -462,7 +621,6 @@ export default function RetentionLtvPage() {
             <SheetTitle>Запланировать касание</SheetTitle>
             <SheetDescription>Выберите пациента, шаблон и дату отправки сообщения.</SheetDescription>
           </SheetHeader>
-
           <div className="space-y-5 mt-6">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Пациент</Label>
@@ -477,7 +635,6 @@ export default function RetentionLtvPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Шаблон сообщения</Label>
               <Select value={formTemplateId} onValueChange={setFormTemplateId}>
@@ -490,18 +647,19 @@ export default function RetentionLtvPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {formTemplateId && (
+                <p className="text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2 line-clamp-3">
+                  {templates.find(t => t.id === formTemplateId)?.message_prompt}
+                </p>
+              )}
             </div>
-
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Дата отправки</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formDate && "text-muted-foreground"
-                    )}
+                    className={cn("w-full justify-start text-left font-normal", !formDate && "text-muted-foreground")}
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />
                     {formDate ? format(formDate, "d MMMM yyyy", { locale: ru }) : "Выберите дату"}
@@ -520,18 +678,88 @@ export default function RetentionLtvPage() {
                 </PopoverContent>
               </Popover>
             </div>
-
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Промокод (опционально)</Label>
-              <Input placeholder="CHECK2024" value={formPromo} onChange={e => setFormPromo(e.target.value)} />
+              <Input placeholder="AIVA-774" value={formPromo} onChange={e => setFormPromo(e.target.value)} />
             </div>
-
             <Button className="w-full gap-2" onClick={handleCreate} disabled={saving}>
               {saving ? "Сохранение..." : <><Send size={14} /> Запланировать</>}
             </Button>
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Create Template Sheet ── */}
+      <Sheet open={tplSheetOpen} onOpenChange={setTplSheetOpen}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Новый шаблон</SheetTitle>
+            <SheetDescription>Опишите сценарий реактивации. ИИ сгенерирует уникальный текст для каждого пациента.</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-5 mt-6">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Название шаблона</Label>
+              <Input placeholder="Реактивация через 3 месяца" value={tplName} onChange={e => setTplName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Промпт для ИИ</Label>
+              <Textarea
+                placeholder="Пациент не приходил 3 месяца. Напомни о профилактике и предложи скидку на чистку зубов. Тон — тёплый, без давления."
+                rows={5}
+                value={tplPrompt}
+                onChange={e => setTplPrompt(e.target.value)}
+                className="resize-none text-sm"
+              />
+              <p className="text-xs text-muted-foreground/60">ИИ автоматически вставит имя пациента и промокод</p>
+            </div>
+            <Button className="w-full gap-2" onClick={handleCreateTemplate} disabled={tplSaving}>
+              {tplSaving ? "Сохранение..." : <><Sparkles size={14} /> Создать шаблон</>}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Mark Converted Dialog ── */}
+      <Dialog open={!!convertTask} onOpenChange={open => { if (!open) setConvertTask(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 size={18} className="text-emerald-500" /> Зафиксировать возврат
+            </DialogTitle>
+            <DialogDescription>
+              Пациент <strong>{convertTask?.lead_name}</strong> пришёл по промокоду{" "}
+              {convertTask?.promo_code && (
+                <code className="bg-secondary px-1.5 py-0.5 rounded text-primary font-mono text-xs">{convertTask.promo_code}</code>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Сумма визита (₸)</Label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={convertRevenue}
+                onChange={e => setConvertRevenue(e.target.value)}
+                className="font-mono text-lg"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground/60">Сумма добавится к выручке шаблона для аналитики ROI</p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setConvertTask(null)}>Отмена</Button>
+            <Button
+              size="sm"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              onClick={handleMarkConverted}
+              disabled={convertSaving}
+            >
+              {convertSaving ? "Сохранение..." : <><CheckCircle2 size={14} /> Подтвердить возврат</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
