@@ -150,6 +150,7 @@ export function CompetitorAnalysis() {
     // Post analysis tab
     const [postUrl, setPostUrl] = useState("");
     const [postLoading, setPostLoading] = useState(false);
+    const [pendingAnalysisId, setPendingAnalysisId] = useState<string | null>(null);
     const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisResult | null>(null);
     const [scriptDialog, setScriptDialog] = useState<{ open: boolean; script: string | null }>({ open: false, script: null });
     const [adaptFormat, setAdaptFormat] = useState("video");
@@ -164,7 +165,30 @@ export function CompetitorAnalysis() {
                     (supabase as any).from("competitors").select("*").order("created_at", { ascending: false }),
                     (supabase as any).from("content_factory").select("*").order("created_at", { ascending: false }).limit(30),
                 ]);
-                if (compRes.data) setCompetitors(compRes.data);
+                if (compRes.data) {
+                    setCompetitors(compRes.data);
+                    // Auto-enrich competitors missing profile data or with old Instagram CDN URLs
+                    const missing = (compRes.data as Competitor[]).filter(
+                        (c) => c.is_active && (!c.avatar_url || c.avatar_url.includes("fbcdn") || c.avatar_url.includes("cdninstagram"))
+                    );
+                    if (missing.length > 0) {
+                        // Enrich one at a time to avoid overloading Apify
+                        (async () => {
+                            for (const comp of missing.slice(0, 3)) {
+                                try {
+                                    const { data: profileData } = await supabase.functions.invoke("spy-webhook-proxy", {
+                                        body: { action: "enrich_profile", competitor_id: comp.id, username: comp.username }
+                                    });
+                                    if (profileData?.profile) {
+                                        setCompetitors((prev) => prev.map((c) =>
+                                            c.id === comp.id ? { ...c, ...profileData.profile } : c
+                                        ));
+                                    }
+                                } catch {/* silent */}
+                            }
+                        })();
+                    }
+                }
                 if (analysisRes.data) setAnalyses(analysisRes.data);
             } catch (e) {
                 console.error("Load error:", e);
@@ -181,9 +205,35 @@ export function CompetitorAnalysis() {
                 setAnalyses((prev) => [row, ...prev]);
                 toast({ title: "🔔 Новый анализ конкурента", description: `Оценка: ${row.performance_score}/100` });
             })
+            .on("postgres_changes", { event: "UPDATE", schema: "public", table: "content_factory" }, (payload) => {
+                const row = payload.new as unknown as AnalysisResult;
+                // Обновляем список разборов
+                setAnalyses((prev) => prev.map((a) => a.id === row.id ? row : a));
+                // Если это тот самый pending-анализ с сайта — показываем результат
+                setPendingAnalysisId((pendingId) => {
+                    if (pendingId === row.id && row.status === "completed") {
+                        setPostLoading(false);
+                        setSelectedAnalysis(row);
+                        toast({ title: "✅ Анализ готов!", description: `Оценка виральности: ${row.performance_score}/100` });
+                        return null;
+                    }
+                    return pendingId;
+                });
+            })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        const compChannel = supabase
+            .channel("competitors_realtime")
+            .on("postgres_changes", { event: "UPDATE", schema: "public", table: "competitors" }, (payload) => {
+                const updated = payload.new as unknown as Competitor;
+                setCompetitors((prev) => prev.map((c) => c.id === updated.id ? { ...c, ...updated } : c));
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+            supabase.removeChannel(compChannel);
+        };
     }, [toast]);
 
     // ─── Filter / Sort competitors ───
@@ -220,13 +270,25 @@ export function CompetitorAnalysis() {
             setProfileQuery("");
             toast({ title: "✅ Конкурент добавлен", description: `@${username} — запускаю парсинг...` });
 
-            // Trigger n8n webhook (Light scrape by default for new)
+            // Enrich competitor profile data (avatar, followers, bio) via Apify
+            supabase.functions.invoke("spy-webhook-proxy", {
+                body: { action: "enrich_profile", competitor_id: data.id, username }
+            }).then(({ data: profileData }) => {
+                if (profileData?.profile) {
+                    setCompetitors((prev) => prev.map((c) =>
+                        c.id === data.id ? { ...c, ...profileData.profile } : c
+                    ));
+                    toast({ title: "✅ Профиль загружен", description: `@${username} — данные обновлены` });
+                }
+            }).catch(() => {/* silent */});
+
+            // Trigger n8n webhook for posts scrape
             try {
                 await triggerScrape(N8N_SCRAPE_HEAVY, {
                     username,
                     competitor_id: data.id,
                 });
-                toast({ title: "🚀 n8n запустил сканирование!", description: "Данные появятся через 1-2 мин" });
+                toast({ title: "🚀 Сканирование запущено!", description: "Посты появятся через 1-2 мин" });
             } catch {
                 toast({ title: "⚠️ Конкурент сохранён, но автоскан не запустился", variant: "destructive" });
             }
@@ -241,16 +303,30 @@ export function CompetitorAnalysis() {
         setScrapingId(comp.id);
         const url = mode === "heavy" ? N8N_SCRAPE_HEAVY : N8N_SCRAPE_LIGHT;
         try {
-            await triggerScrape(url, {
-                username: comp.username,
-                competitor_id: comp.id,
+            // Always enrich profile first (avatar, followers, bio)
+            const { data: profileData } = await supabase.functions.invoke("spy-webhook-proxy", {
+                body: { action: "enrich_profile", competitor_id: comp.id, username: comp.username }
             });
+            if (profileData?.profile) {
+                setCompetitors((prev) => prev.map((c) =>
+                    c.id === comp.id ? { ...c, ...profileData.profile } : c
+                ));
+            }
+
+            // Also trigger n8n for post data (if URL configured)
+            if (url) {
+                await triggerScrape(url, {
+                    username: comp.username,
+                    competitor_id: comp.id,
+                }).catch(() => {/* n8n optional */});
+            }
+
             toast({
-                title: mode === "heavy" ? "🚀 Полный парсинг запущен!" : "⚡️ Быстрый парсинг запущен!",
-                description: `@${comp.username} — данные придут через 1-2 мин`
+                title: mode === "heavy" ? "🚀 Профиль обновлён!" : "⚡️ Профиль обновлён!",
+                description: `@${comp.username} — аватар и данные загружены`
             });
         } catch (err: any) {
-            toast({ title: "Ошибка n8n", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка скрейпа", description: err.message, variant: "destructive" });
         } finally {
             setScrapingId(null);
         }
@@ -299,17 +375,21 @@ export function CompetitorAnalysis() {
         setPostLoading(true);
         setSelectedAnalysis(null);
         setAdaptedScript(null);
+        setPendingAnalysisId(null);
         try {
-            await triggerScrape(N8N_SCRAPE_HEAVY, {
-                url: postUrl.trim(),
-                action: "analyze_post"
+            const { data, error } = await supabase.functions.invoke("spy-webhook-proxy", {
+                body: { action: "analyze_video", url: postUrl.trim() },
             });
-            toast({ title: "⏳ Анализ запущен", description: "n8n обрабатывает пост..." });
+            if (error) throw new Error(error.message);
+            if (!data?.record_id) throw new Error("Не получен record_id от сервера");
+            // Сохраняем ID — realtime подписка покажет результат когда n8n завершит анализ
+            setPendingAnalysisId(data.record_id);
+            toast({ title: "⏳ Анализ запущен", description: "n8n скачивает и транскрибирует видео… 1-3 мин" });
         } catch (err: any) {
-            toast({ title: "Ошибка n8n", description: err.message, variant: "destructive" });
-        } finally {
             setPostLoading(false);
+            toast({ title: "Ошибка запуска анализа", description: err.message, variant: "destructive" });
         }
+        // postLoading сбрасывается в realtime UPDATE обработчике когда приходит результат
     }, [postUrl, toast]);
 
     const handleDeleteAnalysis = useCallback(async (id: string) => {
@@ -462,14 +542,21 @@ export function CompetitorAnalysis() {
                                 const isScrapingThis = scrapingId === comp.id;
                                 return (
                                     <motion.div key={comp.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-4 flex items-center gap-4 flex-wrap group">
-                                        {/* Avatar */}
-                                        {comp.avatar_url ? (
-                                            <img src={comp.avatar_url} alt={comp.username} className="h-12 w-12 rounded-full object-cover border-2 border-border shrink-0" />
-                                        ) : (
-                                            <div className="h-12 w-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary text-sm font-bold shrink-0">
+                                        {/* Avatar — initials as base, photo on top */}
+                                        <div className="relative h-12 w-12 shrink-0">
+                                            <div className="h-12 w-12 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary text-sm font-bold">
                                                 {initials}
                                             </div>
-                                        )}
+                                            {comp.avatar_url && (
+                                                <img
+                                                    src={comp.avatar_url}
+                                                    alt={comp.username}
+                                                    referrerPolicy="no-referrer"
+                                                    className="absolute inset-0 h-12 w-12 rounded-full object-cover border-2 border-border"
+                                                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                                />
+                                            )}
+                                        </div>
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-[140px]">
@@ -581,7 +668,7 @@ export function CompetitorAnalysis() {
                     <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-start gap-2">
                         <Cpu className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                         <p className="text-xs text-muted-foreground text-left">
-                            <span className="text-primary font-semibold">Instagram Profile Scraper (Boost)</span> скачает пост, транскрибирует видео, проведёт AI-анализ и создаст готовый сценарий для ваших Reels.
+                            <span className="text-primary font-semibold">n8n + Gemini 2.5 Pro</span> скачает видео, транскрибирует через Whisper, разберёт на части (хук, боль, решение, оффер, CTA) и создаст готовый сценарий. Поддерживает Instagram Reels, TikTok, YouTube.
                         </p>
                     </div>
 
@@ -709,8 +796,8 @@ export function CompetitorAnalysis() {
                                 <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
                                     <BarChart3 className="h-6 w-6 text-muted-foreground/30" />
                                 </div>
-                                <p className="text-sm font-medium">Вставьте ссылку на Reels или TikTok</p>
-                                <p className="text-xs text-muted-foreground/60 mt-1">Boost.space → скачает → AI → сценарий</p>
+                                <p className="text-sm font-medium">Вставьте ссылку на пост или видео</p>
+                                <p className="text-xs text-muted-foreground/60 mt-1">Instagram / TikTok / YouTube → транскрипция → AI-разбор → сценарий</p>
                             </motion.div>
                         )}
                     </AnimatePresence>
