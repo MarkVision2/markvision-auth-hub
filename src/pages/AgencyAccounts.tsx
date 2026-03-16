@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, RefreshCw } from "lucide-react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -21,171 +21,7 @@ import PeriodPicker from "@/components/agency/PeriodPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
-
-// ─── Facebook Campaign Drill-Down ────────────────────────────────────────────
-
-const FB_API = "https://graph.facebook.com/v22.0";
-const LEAD_TYPES = ["onsite_conversion.lead_grouped", "onsite_conversion.messaging_conversation_started_7d"];
-
-interface FbCampaign {
-  id: string;
-  name: string;
-  status: string;
-  effective_status: string;
-  daily_budget?: string;
-  lifetime_budget?: string;
-  insights?: {
-    data: Array<{
-      spend: string;
-      impressions: string;
-      clicks: string;
-      ctr: string;
-      actions?: Array<{ action_type: string; value: string }>;
-    }>;
-  };
-}
-
-function AccountCampaigns({ adAccountId, fbToken }: { adAccountId: string; fbToken: string }) {
-  const [campaigns, setCampaigns] = useState<FbCampaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState<Record<string, boolean>>({});
-
-  const fetchCampaigns = useCallback(async () => {
-    setLoading(true);
-    try {
-      const url = `${FB_API}/act_${adAccountId}/campaigns?fields=id,name,status,effective_status,daily_budget,lifetime_budget,insights.date_preset(today){spend,impressions,clicks,ctr,actions}&limit=50&filtering=[{"field":"effective_status","operator":"IN","value":["ACTIVE","PAUSED"]}]&access_token=${fbToken}`;
-      const resp = await fetch(url);
-      const json = await resp.json();
-      if (json.error) throw new Error(json.error.message);
-      setCampaigns(json.data || []);
-    } catch (e: unknown) {
-      toast({ title: "Ошибка загрузки кампаний", description: (e as Error).message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [adAccountId, fbToken]);
-
-  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
-
-  const toggleCampaign = async (campaign: FbCampaign) => {
-    const newStatus = campaign.effective_status === "ACTIVE" ? "PAUSED" : "ACTIVE";
-    setToggling(prev => ({ ...prev, [campaign.id]: true }));
-    try {
-      const resp = await fetch(`${FB_API}/${campaign.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, access_token: fbToken }),
-      });
-      const json = await resp.json();
-      if (json.error) throw new Error(json.error.message);
-      toast({ title: `${campaign.name}`, description: newStatus === "ACTIVE" ? "Запущена" : "На паузе" });
-      setCampaigns(prev => prev.map(c => c.id === campaign.id ? { ...c, status: newStatus, effective_status: newStatus } : c));
-    } catch (e: unknown) {
-      toast({ title: "Ошибка", description: (e as Error).message, variant: "destructive" });
-    } finally {
-      setToggling(prev => ({ ...prev, [campaign.id]: false }));
-    }
-  };
-
-  const getLeads = (c: FbCampaign) =>
-    (c.insights?.data?.[0]?.actions || [])
-      .filter(a => LEAD_TYPES.includes(a.action_type))
-      .reduce((s, a) => s + Number(a.value), 0);
-
-  if (loading) return (
-    <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      <span className="text-sm">Загрузка кампаний из Meta...</span>
-    </div>
-  );
-
-  if (!campaigns.length) return (
-    <div className="py-5 text-center text-muted-foreground text-sm">Нет активных или приостановленных кампаний</div>
-  );
-
-  return (
-    <div className="px-4 pb-3 pt-1">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Кампании ({campaigns.length})</span>
-        <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={fetchCampaigns}>
-          <RefreshCw className="h-3 w-3" /> Обновить
-        </Button>
-      </div>
-      <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-              <TableHead className="text-xs py-2 pl-3">Кампания</TableHead>
-              <TableHead className="text-xs py-2 text-right">Бюджет/день</TableHead>
-              <TableHead className="text-xs py-2 text-right">Расход сег.</TableHead>
-              <TableHead className="text-xs py-2 text-right">Показы</TableHead>
-              <TableHead className="text-xs py-2 text-right">Клики</TableHead>
-              <TableHead className="text-xs py-2 text-right">CTR</TableHead>
-              <TableHead className="text-xs py-2 text-right">Лиды</TableHead>
-              <TableHead className="text-xs py-2 text-right">CPL</TableHead>
-              <TableHead className="text-xs py-2 text-center w-16">Стат.</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {campaigns.map(c => {
-              const ins = c.insights?.data?.[0];
-              const spend = Number(ins?.spend || 0);
-              const impressions = Number(ins?.impressions || 0);
-              const clicks = Number(ins?.clicks || 0);
-              const ctr = Number(ins?.ctr || 0);
-              const leads = getLeads(c);
-              const cpl = leads > 0 ? spend / leads : 0;
-              const budget = c.daily_budget ? Number(c.daily_budget) / 100 : null;
-              const isActive = c.effective_status === "ACTIVE";
-              return (
-                <TableRow key={c.id} className="border-b border-border hover:bg-accent/30 text-sm">
-                  <TableCell className="pl-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${isActive ? "bg-[hsl(var(--status-good))]" : "bg-muted-foreground"}`} />
-                      <span className="text-foreground font-medium">{c.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground tabular-nums">
-                    {budget != null ? `$${budget.toFixed(0)}` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold tabular-nums">
-                    {spend > 0 ? `$${spend.toFixed(2)}` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground tabular-nums">
-                    {impressions > 0 ? impressions.toLocaleString("ru-RU") : "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground tabular-nums">
-                    {clicks > 0 ? clicks : "—"}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground tabular-nums">
-                    {ctr > 0 ? `${ctr.toFixed(2)}%` : "—"}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums font-bold">
-                    {leads > 0
-                      ? <span className="text-[hsl(var(--status-good))]">{leads}</span>
-                      : <span className="text-muted-foreground">0</span>}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {cpl > 0 ? (
-                      <span className={`font-bold ${cpl < 2 ? "text-[hsl(var(--status-good))]" : cpl > 3 ? "text-[hsl(var(--status-critical))]" : "text-yellow-500"}`}>
-                        ${cpl.toFixed(2)}
-                      </span>
-                    ) : <span className="text-muted-foreground">—</span>}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {toggling[c.id]
-                      ? <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
-                      : <Switch checked={isActive} onCheckedChange={() => toggleCampaign(c)} />}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-}
+import HqKpiCards from "@/components/hq/HqKpiCards";
 
 interface MetricsRow {
   client_id: string;
@@ -199,6 +35,7 @@ interface MetricsRow {
   cpl: number | null;
   cpv: number | null;
   cac: number | null;
+  followers: number | null;
   romi: number | null;
   project_name?: string | null;
 }
@@ -214,7 +51,7 @@ const statusCfg = {
   paused: { label: "Остановлен", dot: "bg-muted-foreground", text: "text-muted-foreground" },
 };
 
-type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "revenue" | "romi";
+type SortKey = "spend" | "meta_leads" | "visits" | "sales" | "revenue" | "followers";
 type SortDir = "asc" | "desc";
 
 function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string; clientId: string; onDeleted: () => void }) {
@@ -279,37 +116,6 @@ export default function AgencyAccounts() {
     to: endOfMonth(new Date()),
   });
 
-  // Campaign drill-down state
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [accountMeta, setAccountMeta] = useState<Record<string, { adAccountId: string; fbToken: string }>>({});
-  const [metaLoading, setMetaLoading] = useState<Record<string, boolean>>({});
-
-  const handleRowClick = useCallback(async (clientId: string) => {
-    if (expandedId === clientId) { setExpandedId(null); return; }
-    setExpandedId(clientId);
-    if (accountMeta[clientId]) return;
-    setMetaLoading(prev => ({ ...prev, [clientId]: true }));
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from("clients_config")
-        .select("ad_account_id, fb_token")
-        .eq("id", clientId)
-        .maybeSingle();
-      if (data?.ad_account_id && data?.fb_token) {
-        setAccountMeta(prev => ({ ...prev, [clientId]: { adAccountId: data.ad_account_id, fbToken: data.fb_token } }));
-      } else {
-        toast({ title: "Нет токена", description: "fb_token не найден для этого кабинета", variant: "destructive" });
-        setExpandedId(null);
-      }
-    } catch {
-      toast({ title: "Ошибка загрузки токена", variant: "destructive" });
-      setExpandedId(null);
-    } finally {
-      setMetaLoading(prev => ({ ...prev, [clientId]: false }));
-    }
-  }, [expandedId, accountMeta]);
-
   const fetchMetrics = useCallback(async () => {
     if (!period.from) return;
     setLoading(true);
@@ -344,22 +150,25 @@ export default function AgencyAccounts() {
       // 2. Get Daily Metrics for the period
       const { data: daily, error: dailyError } = await supabase
         .from("daily_data")
-        .select("*")
+        .select("*, followers")
         .in("client_config_id", cabIds)
         .gte("date", format(period.from, "yyyy-MM-dd"))
         .lte("date", format(period.to || period.from, "yyyy-MM-dd"));
       if (dailyError) throw dailyError;
 
+      const dailyData = (daily || []) as any[];
+
       // 3. Aggregate metrics in JS to show period-specific totals
-      const aggregated = (configs || []).map(c => {
-        const cDaily = (daily || []).filter(d => d.client_config_id === c.id);
+      const aggregated = (configs || []).map((c: any) => {
+        const cDaily = dailyData.filter(d => d.client_config_id === c.id);
         const sums = cDaily.reduce((acc, cur) => ({
           spend: acc.spend + (Number(cur.spend) || 0),
           leads: acc.leads + (Number(cur.leads) || 0),
           visits: acc.visits + (Number(cur.visits) || 0),
           sales: acc.sales + (Number(cur.sales) || 0),
           revenue: acc.revenue + (Number(cur.revenue) || 0),
-        }), { spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+          followers: acc.followers + (Number(cur.followers) || 0),
+        }), { spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0, followers: 0 });
 
         // Merge with base values from clients_config if applicable
         const totalSpend = sums.spend + (Number(c.spend) || 0);
@@ -372,7 +181,7 @@ export default function AgencyAccounts() {
         const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
         const cpv = totalVisits > 0 ? totalSpend / totalVisits : 0;
         const cac = totalSales > 0 ? totalSpend / totalSales : 0;
-        const romi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
+        const totalFollowers = sums.followers;
 
         return {
           client_id: c.id,
@@ -386,14 +195,15 @@ export default function AgencyAccounts() {
           cpl,
           cpv,
           cac,
-          romi,
-          project_name: (c as unknown).projects?.name
+          followers: totalFollowers,
+          romi: totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0,
+          project_name: (c as unknown as any).projects?.name
         };
       });
 
       setMetrics(aggregated);
-    } catch (err: unknown) {
-      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Ошибка загрузки", description: err.message || "Unknown error", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -447,28 +257,30 @@ export default function AgencyAccounts() {
     }
 
     // sort
-    list = [...list].sort((a, b) => {
-      const av = Number((a as unknown)[sortKey]) || 0;
-      const bv = Number((b as unknown)[sortKey]) || 0;
+    list = [...list].sort((a: any, b: any) => {
+      const av = Number(a[sortKey]) || 0;
+      const bv = Number(b[sortKey]) || 0;
       return sortDir === "desc" ? bv - av : av - bv;
     });
 
     return list;
   }, [metrics, search, filter, sortKey, sortDir, needsAttention]);
 
+  // Summary KPIs for filtered set
+  const summary = useMemo(() => {
+    const totalRevenue = filtered.reduce((s, c) => s + (Number(c.revenue) || 0), 0);
+    const totalSpend = filtered.reduce((s, c) => s + (Number(c.spend) || 0), 0);
+    const totalLeads = filtered.reduce((s, c) => s + (Number(c.meta_leads) || 0), 0);
+    const totalFollowers = filtered.reduce((s, c) => s + (Number(c.followers) || 0), 0);
+    const romi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
+    const activeProjects = filtered.filter(c => c.is_active !== false).length;
+
+    return { totalRevenue, totalSpend, romi, activeProjects, totalFollowers };
+  }, [filtered]);
+
   const attentionCount = useMemo(() => metrics.filter(needsAttention).length, [metrics, needsAttention]);
   const effectiveCount = useMemo(() => metrics.filter(c => c.is_active !== false && (c.romi ?? 0) > 0 && (c.meta_leads ?? 0) > 0).length, [metrics]);
   const inactiveCount = useMemo(() => metrics.filter(c => c.is_active === false).length, [metrics]);
-
-  // Summary KPIs for filtered set
-  const summary = useMemo(() => {
-    const totalSpend = filtered.reduce((s, c) => s + (Number(c.spend) || 0), 0);
-    const totalLeads = filtered.reduce((s, c) => s + (Number(c.meta_leads) || 0), 0);
-    const avgCplFiltered = totalLeads > 0 ? totalSpend / totalLeads : 0;
-    const romiValues = filtered.filter(c => (c.romi ?? 0) !== 0);
-    const avgRomi = romiValues.length > 0 ? romiValues.reduce((s, c) => s + (Number(c.romi) || 0), 0) / romiValues.length : 0;
-    return { totalSpend, totalLeads, avgCpl: avgCplFiltered, avgRomi };
-  }, [filtered]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -543,7 +355,9 @@ export default function AgencyAccounts() {
       </div>
 
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      {summary && <HqKpiCards metrics={summary} />}
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden mt-6">
         <div className="overflow-x-auto">
           <Table className="min-w-[700px]">
             <TableHeader>
@@ -557,20 +371,20 @@ export default function AgencyAccounts() {
                 <SortableHead label="Визиты" sortField="visits" />
                 <SortableHead label="Продажи" sortField="sales" />
                 <SortableHead label="Сумма продаж" sortField="revenue" />
-                <SortableHead label="ROMI" sortField="romi" />
+                <SortableHead label="Подписчики" sortField="followers" />
                 <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-12">
                     <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-12 text-muted-foreground">
                     {active.id === "hq" ? "Выберите или создайте проект в боковой панели" : "Нет рекламных кабинетов в этом проекте"}
                   </TableCell>
                 </TableRow>
@@ -585,25 +399,16 @@ export default function AgencyAccounts() {
                   const cpv = Number(c.cpv) || 0;
                   const sales = Number(c.sales) || 0;
                   const revenue = Number(c.revenue) || 0;
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const romi = Number(c.romi) || 0;
                   const cac = Number(c.cac) || 0;
 
                   const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
                   const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
 
-                  const isExpanded = expandedId === c.client_id;
-                  const isMetaLoading = metaLoading[c.client_id];
                   return (
-                    <>
                     <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
-                      <TableCell className="py-4">
-                        <button
-                          onClick={() => handleRowClick(c.client_id)}
-                          className="flex items-start gap-2 text-left w-full"
-                        >
-                          {isMetaLoading
-                            ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground mt-0.5 flex-shrink-0" />
-                            : <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />}
+                       <TableCell className="py-4 px-4">
                           <div>
                             <p className="text-[15px] font-bold text-foreground tabular-nums">{c.client_name}</p>
                             <span className={`inline-flex items-center gap-1.5 text-xs mt-1.5 ${s.text}`}>
@@ -611,7 +416,6 @@ export default function AgencyAccounts() {
                               {s.label}
                             </span>
                           </div>
-                        </button>
                       </TableCell>
 
                       {active.id === "hq" && (
@@ -650,26 +454,13 @@ export default function AgencyAccounts() {
                       </TableCell>
 
                       <TableCell className="py-4">
-                        <p className={`text-sm font-semibold tabular-nums ${romi > 0 ? "text-[hsl(var(--status-good))]" : romi < 0 ? "text-[hsl(var(--status-critical))]" : "text-foreground"}`}>
-                          {romi !== 0 ? `${romi > 0 ? "+" : ""}${Math.round(romi)}%` : "—"}
-                        </p>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
                       </TableCell>
 
                       <TableCell className="py-4">
                         <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
                       </TableCell>
                     </TableRow>
-                    {isExpanded && accountMeta[c.client_id] && (
-                      <TableRow key={`${c.client_id}-campaigns`} className="border-b border-border bg-secondary/20">
-                        <TableCell colSpan={active.id === "hq" ? 9 : 8} className="p-0">
-                          <AccountCampaigns
-                            adAccountId={accountMeta[c.client_id].adAccountId}
-                            fbToken={accountMeta[c.client_id].fbToken}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    </>
                   );
                 })
               )}

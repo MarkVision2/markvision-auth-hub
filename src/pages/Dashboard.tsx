@@ -20,12 +20,13 @@ interface ClientMetric {
   spend: number | null;
   meta_leads: number | null;
   revenue: number | null;
-  romi: number | null;
-  cpl: number | null;
-  cpv: number | null;
   visits: number | null;
   sales: number | null;
   cac: number | null;
+  romi: number | null;
+  cpl: number | null;
+  cpv: number | null;
+  followers?: number;
   impressions?: number;
   clicks?: number;
   is_agency?: boolean;
@@ -64,7 +65,7 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
     { label: "CPL", value: client.cpl ? formatMoney(client.cpl) : "—", icon: Target },
     { label: "Стоимость визита", value: client.cpv ? formatMoney(client.cpv) : "—", icon: Activity },
     { label: "Стоимость клиента", value: client.cac ? formatMoney(client.cac) : "—", icon: DollarSign },
-    { label: "ROMI", value: `${(client.romi ?? 0).toFixed(0)}%`, icon: TrendingUp },
+    { label: "Подписчики", value: (client.followers ?? 0).toLocaleString('ru-RU'), icon: Users },
     { label: "Визиты", value: (client.visits ?? 0).toLocaleString('ru-RU'), icon: CalendarDays },
     { label: "Продажи", value: (client.sales ?? 0).toLocaleString('ru-RU'), icon: BarChart3 },
   ];
@@ -129,9 +130,7 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
         <div>
           <p className="text-sm font-medium text-foreground mb-1">AI-Рекомендация</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            {client.romi && client.romi < 100
-              ? `Внимание! ROMI проекта составляет всего ${client.romi.toFixed(0)}%. Рекомендуем пересмотреть рекламные креативы и проверить воронку на этапе перехода Клики -> Лиды.`
-              : client.cpl && client.cpl > 5000
+            {client.cpl && client.cpl > 5000
                 ? `Стоимость лида (${formatMoney(client.cpl)}) превышает целевые показатели. Рекомендуем протестировать новые аудитории.`
                 : `Проект «${client.client_name}» работает в штатном режиме. Конверсия из визита в продажу составляет ${client.visits && client.sales ? ((client.sales / client.visits) * 100).toFixed(1) : 0}%.`}
           </p>
@@ -192,10 +191,10 @@ export default function Dashboard() {
             .select("id, impressions, clicks")
             .in("id", targetIds);
 
-          // Fetch daily impressions and clicks from daily_data PER client
+          // Fetch daily impressions, clicks and followers from daily_data PER client
           const { data: dailyData } = await (supabase as any)
             .from("daily_data")
-            .select("impressions, clicks, client_config_id")
+            .select("impressions, clicks, followers, client_config_id")
             .in("client_config_id", targetIds);
 
           const finalData = clientsData.map(c => {
@@ -205,7 +204,8 @@ export default function Dashboard() {
             return {
               ...c,
               impressions: clientDaily.reduce((s: number, d: any) => s + (d.impressions || 0), 0) + (clientBase?.impressions || 0),
-              clicks: clientDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0) + (clientBase?.clicks || 0)
+              clicks: clientDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0) + (clientBase?.clicks || 0),
+              followers: clientDaily.reduce((s: number, d: any) => s + (d.followers || 0), 0)
             };
           });
 
@@ -243,8 +243,8 @@ export default function Dashboard() {
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
       const profit = mrr - costs;
-      const margin = mrr > 0 ? (profit / mrr) * 100 : 0;
-      return { totalRevenue: mrr, totalSpend: costs, romi: margin, activeProjects: activeAccounts };
+      const totalFollowers = clients.reduce((s: number, c: any) => s + (c.followers ?? 0), 0);
+      return { totalRevenue: mrr, totalSpend: costs, totalFollowers, activeProjects: activeAccounts };
     })();
 
   const aggregateClientData = (clientList: ClientMetric[], id: string, name: string) => {
@@ -268,7 +268,7 @@ export default function Dashboard() {
       sales,
       impressions: imps,
       clicks: clks,
-      romi: spend > 0 ? ((rev - spend) / spend) * 100 : 0,
+      followers: clientList.reduce((s, c) => s + (c.followers ?? 0), 0),
       cpl: leads > 0 ? spend / leads : 0,
       cpv: v > 0 ? spend / v : 0,
       cac: sales > 0 ? spend / sales : 0,

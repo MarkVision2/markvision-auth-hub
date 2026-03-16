@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, Briefcase, BarChart3 } from "lucide-react";
+import { DollarSign, TrendingUp, Briefcase, BarChart3, Users } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface AgencyMetrics {
@@ -6,6 +6,7 @@ interface AgencyMetrics {
   totalSpend: number;
   romi: number;
   activeProjects: number;
+  totalFollowers: number;
 }
 
 function formatMoney(n: number): string {
@@ -80,12 +81,12 @@ export default function HqKpiCards({ metrics }: { metrics: AgencyMetrics | null 
         targetPct={Math.min(100, Math.round((metrics.totalSpend / spendTarget) * 100))}
       />
       <KpiCard
-        icon={<BarChart3 className="h-4 w-4 text-primary" />}
-        label="Маржа"
-        value={`${metrics.romi.toFixed(0)}%`}
-        target={`${romiTarget}%`}
-        targetPct={Math.min(100, Math.round((Math.max(0, metrics.romi) / romiTarget) * 100))}
-        accentClass={metrics.romi >= 0 ? "text-primary" : "text-destructive"}
+        icon={<Users className="h-4 w-4 text-primary" />}
+        label="Подписчики"
+        value={metrics.totalFollowers.toLocaleString('ru-RU')}
+        target="10,000"
+        targetPct={Math.min(100, Math.round((metrics.totalFollowers / 10000) * 100))}
+        accentClass="text-primary"
       />
       <KpiCard
         icon={<Briefcase className="h-4 w-4 text-primary" />}
