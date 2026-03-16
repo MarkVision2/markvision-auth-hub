@@ -281,7 +281,7 @@ export default function ScoreboardPage() {
         id: r.id, date: r.date,
         spend: Number(r.spend) || 0, impressions: Number(r.impressions) || 0,
         clicks: Number(r.clicks) || 0, leads: Number(r.leads) || 0,
-        followers: 0, visits: Number(r.visits) || 0,
+        followers: Number(r.followers) || 0, visits: Number(r.visits) || 0,
         sales: Number(r.sales) || 0, revenue: Number(r.revenue) || 0,
       })));
     } catch (err: any) { setRows([]); }
@@ -598,7 +598,7 @@ export default function ScoreboardPage() {
                 )}
 
                 {/* ── Daily rows ── */}
-                {!loading && fullMonth.map((row, i) => {
+                {!loading && fullMonth.map((row) => {
                   const isToday = row.date === todayIso;
                   const isFuture = row.date > todayIso;
                   const isWeekend = (() => {
