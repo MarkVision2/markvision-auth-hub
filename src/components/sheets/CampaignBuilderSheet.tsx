@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -57,6 +58,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [selectedPageId, setSelectedPageId] = useState("");
 
   const [objective, setObjective] = useState<Objective>("whatsapp");
+  const [headline, setHeadline] = useState("");
+  const [bodyText, setBodyText] = useState("");
   const [utmTags, setUtmTags] = useState("?utm_source=meta&utm_medium=cpc&utm_campaign=");
   const [siteUrl, setSiteUrl] = useState("");
   const [pixel, setPixel] = useState("");
@@ -234,8 +237,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
           mediaType: isVideo ? "VIDEO" : "PHOTO",
           mediaID: mediaUrl,
           websiteUrl: siteUrl,
-          headline: `Кампания: ${activePage.page_name || selectedClient.client_name}`,
-          adText: "Запущено автоматически через MarkVision Hub",
+          headline: headline || `Кампания: ${activePage.page_name || selectedClient.client_name}`,
+          adText: bodyText || "Запущено автоматически через MarkVision Hub",
           targeting: { age_min: 25, age_max: 65 },
         },
         destination: objective,
@@ -279,6 +282,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       setPixel("");
       setPixelEvent("");
       setLeadForm("");
+      setHeadline("");
+      setBodyText("");
       setUtmTags("?utm_source=meta&utm_medium=cpc&utm_campaign=");
 
       onOpenChange(false);
@@ -672,6 +677,37 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 <Scissors className="h-3 w-3 mr-1.5" />
                 Адаптировать размер
               </Button>
+            </div>
+            {/* Ad Copy Section */}
+            <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-primary" />
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-foreground/60">
+                  Текст объявления
+                </Label>
+              </div>
+              
+              <div className="space-y-3 rounded-xl border border-border/30 bg-secondary/10 p-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-muted-foreground uppercase font-bold px-1">Заголовок</Label>
+                  <Input 
+                    placeholder="Например: Скидка 20% на первое посещение"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    className="h-10 border-border/20 bg-background/50 focus:border-primary/50 transition-all text-sm"
+                  />
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] text-muted-foreground uppercase font-bold px-1">Основной текст</Label>
+                  <Textarea 
+                    placeholder="Опишите ваше предложение подробнее..."
+                    value={bodyText}
+                    onChange={(e) => setBodyText(e.target.value)}
+                    className="min-h-[100px] border-border/20 bg-background/50 focus:border-primary/50 transition-all text-sm resize-none"
+                  />
+                </div>
+              </div>
             </div>
           </section>
         </div>
