@@ -132,7 +132,6 @@ export default function DashboardTarget() {
       let clientsQuery = (supabase as any)
         .from("clients_config")
         .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue").eq("is_active", true)
-        .eq("is_agency", false)
         .order("client_name");
 
       if (active.id === "hq") {
