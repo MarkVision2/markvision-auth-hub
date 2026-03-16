@@ -18,9 +18,16 @@ export async function triggerAiAgent(leadId: string, newStatus: string) {
     });
     if (res.ok) {
       toast({ title: "🤖 ИИ принял в обработку", description: `Статус: ${newStatus}` });
+    } else {
+      console.warn(`[AI Agent] Server responded with ${res.status}: ${res.statusText}`);
     }
   } catch (err) {
-    console.error("[AI Agent] trigger failed:", err);
+    // Only log if it's not a generic network error to avoid console clutter when offline/server down
+    if (err instanceof TypeError && err.message === "Failed to fetch") {
+      console.warn("[AI Agent] n8n server is currently unreachable (possible CORS or network error)");
+    } else {
+      console.error("[AI Agent] trigger failed:", err);
+    }
   }
 }
 

@@ -155,13 +155,23 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     const url = `https://n8n.zapoinov.com/webhook/get-forms?page_id=${encodeURIComponent(pageIdToUse)}&ad_account_id=${encodeURIComponent(adAccountId)}`;
     
     fetch(url)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const text = await r.text();
+          console.error(`[CampaignBuilder] Forms fetch failed: ${r.status} ${r.statusText}`, text);
+          throw new Error(`Ошибка загрузки форм: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((data) => {
         const forms = data?.forms || [];
         setLeadFormsData(forms);
         if (forms.length === 1) setLeadForm(forms[0].id);
       })
-      .catch(() => setLeadFormsData([]))
+      .catch((err) => {
+        console.error("[CampaignBuilder] Forms fetch error:", err);
+        setLeadFormsData([]);
+      })
       .finally(() => setLoadingForms(false));
   }, [objective, selectedClientId, selectedPageId]);
 
@@ -245,7 +255,11 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(`Ошибка связи с сервером автоматизации (${res.status})`);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[CampaignBuilder] Launch failed with ${res.status}:`, errText);
+        throw new Error(`Ошибка сервера автоматизации (${res.status}). Убедитесь, что сценарии n8n активны.`);
+      }
 
       const pageName = activePage.page_name || selectedClient.client_name;
       toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Страница: ${pageName}` });
