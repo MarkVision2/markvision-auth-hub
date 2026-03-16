@@ -37,6 +37,9 @@ import {
     ScanSearch,
     Download,
     RotateCcw,
+    Globe,
+    TrendingUp,
+    Eye,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +51,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
 const N8N_SCRAPE_LIGHT = import.meta.env.VITE_N8N_SCRAPE_LIGHT_URL || "";
 const BOOST_WEBHOOK_URL = import.meta.env.VITE_BOOST_WEBHOOK_URL || "";
+const INSTAGRAM_ANALYSIS_WEBHOOK = "https://n8n.zapoinov.com/webhook/lovableinstagram";
 
 // ─── Types ───
 interface Competitor {
@@ -128,6 +132,9 @@ async function triggerScrape(url: string, payload: Record<string, unknown>) {
 }
 
 export function CompetitorAnalysis() {
+    const [profileAnalysisUrl, setProfileAnalysisUrl] = useState("");
+    const [profileLoading, setProfileLoading] = useState(false);
+
     const { toast } = useToast();
     const { active } = useWorkspace();
 
@@ -455,37 +462,80 @@ export function CompetitorAnalysis() {
         a.status === "completed" && (a.performance_score > 0 || !!a.hook || !!a.ai_analysis)
     );
 
+    // ─── Instagram Profile Analysis Handler ───
+    const handleProfileAnalyze = useCallback(async () => {
+        if (!profileAnalysisUrl.trim()) return;
+        setProfileLoading(true);
+        try {
+            const raw = profileAnalysisUrl.trim().replace(/^@/, "").replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
+            const username = raw.split("/").filter(Boolean).pop() || raw;
+            const instagramUrl = `https://www.instagram.com/${username}/`;
+
+            toast({ title: "⏳ Запускаю анализ профиля...", description: `@${username} → n8n обрабатывает` });
+
+            const response = await fetch(INSTAGRAM_ANALYSIS_WEBHOOK, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    url: instagramUrl,
+                    username,
+                    project_id: active.id === "hq" ? null : active.id,
+                }),
+            });
+
+            if (!response.ok) throw new Error(`Ошибка webhook: ${response.status}`);
+
+            let responseData: any = null;
+            try {
+                responseData = await response.json();
+            } catch { /* response may not be JSON */ }
+
+            toast({ title: "✅ Анализ профиля запущен!", description: "n8n обрабатывает данные. Результат появится в истории AI-Разборов." });
+            setProfileAnalysisUrl("");
+        } catch (err: any) {
+            toast({ title: "Ошибка запуска анализа", description: err.message, variant: "destructive" });
+        } finally {
+            setProfileLoading(false);
+        }
+    }, [profileAnalysisUrl, active, toast]);
+
     return (
         <div className="space-y-6">
-            {/* KPI Cards */}
+            {/* KPI Cards — Premium Glass */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                    { label: "Конкуренты", value: competitors.length, icon: Users },
-                    { label: "AI-разборов", value: displayAnalyses.length, icon: BarChart3 },
-                    { label: "Ср. оценка", value: displayAnalyses.length ? Math.round(displayAnalyses.reduce((s, a) => s + a.performance_score, 0) / displayAnalyses.length) : 0, icon: Zap },
-                    { label: "Сценариев", value: displayAnalyses.filter((a) => a.generated_script).length, icon: Sparkles },
+                    { label: "Конкуренты", value: competitors.length, icon: Users, gradient: "from-blue-500/10 to-cyan-500/5", iconColor: "text-blue-400" },
+                    { label: "AI-разборов", value: displayAnalyses.length, icon: BarChart3, gradient: "from-violet-500/10 to-purple-500/5", iconColor: "text-violet-400" },
+                    { label: "Ср. оценка", value: displayAnalyses.length ? Math.round(displayAnalyses.reduce((s, a) => s + a.performance_score, 0) / displayAnalyses.length) : 0, icon: TrendingUp, gradient: "from-amber-500/10 to-orange-500/5", iconColor: "text-amber-400" },
+                    { label: "Сценариев", value: displayAnalyses.filter((a) => a.generated_script).length, icon: Sparkles, gradient: "from-emerald-500/10 to-green-500/5", iconColor: "text-emerald-400" },
                 ].map((kpi) => (
-                    <div key={kpi.label} className="rounded-xl border border-border bg-card p-4 text-left">
+                    <motion.div key={kpi.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl border border-border/40 bg-gradient-to-br ${kpi.gradient} backdrop-blur-sm p-4 text-left hover:border-border/60 transition-all`}>
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs text-muted-foreground">{kpi.label}</span>
-                            <kpi.icon className="h-4 w-4 text-muted-foreground/40" />
+                            <span className="text-[11px] text-muted-foreground font-medium">{kpi.label}</span>
+                            <div className={`h-7 w-7 rounded-lg bg-card/60 border border-border/30 flex items-center justify-center`}>
+                                <kpi.icon className={`h-3.5 w-3.5 ${kpi.iconColor}`} />
+                            </div>
                         </div>
                         <p className="text-2xl font-bold text-foreground font-mono tabular-nums">{kpi.value}</p>
-                    </div>
+                    </motion.div>
                 ))}
             </div>
 
             {/* Main Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="h-11 bg-secondary/50 border border-border p-1 rounded-xl w-full max-w-xl">
+                <TabsList className="h-11 bg-secondary/50 border border-border p-1 rounded-xl w-full">
                     <TabsTrigger value="competitors" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-                        <ScanSearch className="h-3.5 w-3.5" /> Конкуренты
+                        <Users className="h-3.5 w-3.5" /> Конкуренты
+                        {competitors.length > 0 && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-bold">{competitors.length}</span>}
+                    </TabsTrigger>
+                    <TabsTrigger value="profile" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
+                        <Globe className="h-3.5 w-3.5" /> Анализ аккаунта
                     </TabsTrigger>
                     <TabsTrigger value="post" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-                        <BarChart3 className="h-3.5 w-3.5" /> Разбор контента
+                        <Play className="h-3.5 w-3.5" /> Разбор контента
                     </TabsTrigger>
                     <TabsTrigger value="analyses" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-                        <Cpu className="h-3.5 w-3.5" /> AI-Разборы
+                        <Sparkles className="h-3.5 w-3.5" /> AI-Разборы
                         {displayAnalyses.length > 0 && (
                             <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{displayAnalyses.length}</span>
                         )}
@@ -678,7 +728,80 @@ export function CompetitorAnalysis() {
                     )}
                 </TabsContent>
 
-                {/* ═══ TAB 2: РАЗБОР КОНТЕНТА ═══ */}
+                {/* ═══ TAB 2: АНАЛИЗ АККАУНТА ═══ */}
+                <TabsContent value="profile" className="space-y-5">
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+                            <Input
+                                value={profileAnalysisUrl}
+                                onChange={(e) => setProfileAnalysisUrl(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && handleProfileAnalyze()}
+                                placeholder="Ссылка на Instagram аккаунт или @username..."
+                                className="pl-10 h-11 bg-secondary/30 border-border text-sm"
+                            />
+                        </div>
+                        <Button onClick={handleProfileAnalyze} disabled={profileLoading || !profileAnalysisUrl.trim()} className="h-11 px-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold gap-1.5 border-0">
+                            {profileLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                            Анализировать
+                        </Button>
+                    </div>
+
+                    <div className="rounded-xl bg-gradient-to-r from-violet-500/5 to-purple-500/5 border border-violet-500/15 p-4 flex items-start gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                            <Cpu className="h-4 w-4 text-violet-400" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-semibold text-foreground mb-0.5">AI-анализ профиля Instagram</p>
+                            <p className="text-xs text-muted-foreground">
+                                n8n автоматически проанализирует профиль — подписчики, вовлеченность, качество контента, стиль коммуникации, частоту постов и даст рекомендации по улучшению стратегии.
+                            </p>
+                        </div>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        {profileLoading && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-xl border border-border bg-card p-8">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="relative">
+                                        <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-violet-500/30 flex items-center justify-center">
+                                            <Loader2 className="h-7 w-7 text-violet-400 animate-spin" />
+                                        </div>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-semibold text-foreground">Анализ профиля запущен</p>
+                                        <p className="text-xs text-muted-foreground mt-1">n8n обрабатывает данные… Это может занять 1–3 минуты</p>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 w-full max-w-sm mt-2">
+                                        {["Парсинг профиля", "Анализ контента", "Генерация отчёта"].map((step, i) => (
+                                            <div key={step} className="flex flex-col items-center gap-1.5">
+                                                <div className={`h-1.5 w-full rounded-full ${i === 0 ? 'bg-violet-500' : 'bg-border'}`} />
+                                                <span className="text-[10px] text-muted-foreground">{step}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {!profileLoading && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
+                                    <Globe className="h-7 w-7 text-violet-400/50" />
+                                </div>
+                                <p className="text-sm font-medium">Вставьте ссылку на Instagram-аккаунт</p>
+                                <p className="text-xs text-muted-foreground/60 mt-1">Например: https://instagram.com/username или @username</p>
+                                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                                    {["Анализ подписчиков", "Качество контента", "Стратегия", "Рекомендации"].map((tag) => (
+                                        <span key={tag} className="text-[10px] px-2.5 py-1 rounded-full bg-violet-500/8 border border-violet-500/15 text-violet-400/80">{tag}</span>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </TabsContent>
+
+                {/* ═══ TAB 3: РАЗБОР КОНТЕНТА ═══ */}
                 <TabsContent value="post" className="space-y-5">
                     <div className="flex gap-2">
                         <div className="relative flex-1">
