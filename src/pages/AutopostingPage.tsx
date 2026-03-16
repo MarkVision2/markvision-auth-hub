@@ -46,8 +46,8 @@ const SOCIAL_CHANNELS = [
   { id: "blog", label: "Блог / Сайт", emoji: "🌐", color: "from-emerald-500 to-teal-600" },
 ];
 
-const fmt = (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v);
-const fmtMoney = (v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(1)}M ₸` : v >= 1000 ? `${(v / 1000).toFixed(0)}K ₸` : `${v} ₸`;
+const fmt = (v: number) => new Intl.NumberFormat("ru-RU").format(Math.round(v));
+const fmtMoney = (v: number) => `${fmt(v)} ₸`;
 
 export default function AutopostingPage() {
   const { toast } = useToast();

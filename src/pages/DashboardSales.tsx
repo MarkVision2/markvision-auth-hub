@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2, ChevronRight, Handshake, MessageSquare, Phone, UserCheck, DollarSign, TrendingUp, Eye, ShoppingCart, Users, Send, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -40,6 +41,7 @@ interface Lead {
 }
 
 export default function DashboardSales() {
+  const { active } = useWorkspace();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -47,18 +49,19 @@ export default function DashboardSales() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await (supabase as unknown)
-        .from("leads")
-        .select("*")
-        .order("created_at", { ascending: false });
+      let query = (supabase as any).from("leads").select("*").order("created_at", { ascending: false });
+      if (active.id !== "hq") {
+        query = query.eq("project_id", active.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       setLeads((data as Lead[]) ?? []);
     } catch (err: unknown) {
-      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+      toast({ title: "Ошибка загрузки", description: (err as any).message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [active.id]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 

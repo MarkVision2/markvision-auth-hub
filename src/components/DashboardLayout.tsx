@@ -7,6 +7,7 @@ import AppSidebar, { SidebarContentInner } from "@/components/AppSidebar";
 import NotificationBell from "@/components/NotificationBell";
 import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 import { useRole } from "@/hooks/useRole";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -16,6 +17,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isDoctor } = useRole();
+  const { active } = useWorkspace();
   useRealtimeNotifications();
 
   return (
@@ -70,7 +72,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
 
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main key={active.id} className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>

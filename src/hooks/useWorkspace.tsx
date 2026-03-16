@@ -12,6 +12,15 @@ export interface Workspace {
 
 const HQ: Workspace = { id: "hq", name: "MarkVision AI", type: "agency" };
 
+function loadCachedProjects(): Workspace[] {
+  try {
+    const cached = localStorage.getItem("cachedWorkspaceProjects");
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
+
 interface WorkspaceContextValue {
   workspaces: Workspace[];
   active: Workspace;
@@ -25,7 +34,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [activeId, setActiveId] = useState(() => localStorage.getItem("activeProjectId") || "hq");
-  const [projects, setProjects] = useState<Workspace[]>([]);
+  const [projects, setProjects] = useState<Workspace[]>(loadCachedProjects);
 
   const fetchProjects = async () => {
     try {
@@ -37,11 +46,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data) {
-        setProjects(data.map(p => ({
+        const mapped = data.map(p => ({
           id: p.id,
           name: p.name,
           type: "client" as const,
-        })));
+        }));
+        setProjects(mapped);
+        localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(mapped));
       }
     } catch (err) {
       console.error("WorkspaceProvider: failed to fetch projects", err);

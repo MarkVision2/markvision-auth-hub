@@ -99,8 +99,23 @@ export default function AiReportsPage() {
           channelsQ = channelsQ.eq("project_id", active.id);
           creativesQ = creativesQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
 
-          // Data Isolation Fix: Gather explicitly connected client_config_ids
-          const clientIds = clients.map(c => c.id);
+          // Data Isolation Fix: Fetch client IDs inline to avoid stale `clients` state
+          // when switching workspaces (race condition: active.id changes before clients state updates)
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", active.id);
+          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+          let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true);
+          if (sharedCabIds.length > 0) {
+            cQuery = cQuery.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+          } else {
+            cQuery = cQuery.eq("project_id", active.id);
+          }
+          const { data: configData } = await cQuery;
+          const clientIds = (configData || []).map((c: any) => c.id) as string[];
+
           if (clientIds.length > 0) {
             curQ = curQ.in("client_config_id", clientIds);
             prevQ = prevQ.in("client_config_id", clientIds);

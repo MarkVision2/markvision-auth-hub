@@ -44,9 +44,7 @@ interface MetricsRow {
 }
 
 function fmt(n: number, suffix = ""): string {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M" + suffix;
-  if (n >= 1000) return new Intl.NumberFormat("ru-RU").format(Math.round(n)) + suffix;
-  return Math.round(n).toString() + suffix;
+  return new Intl.NumberFormat("ru-RU").format(Math.round(n)) + suffix;
 }
 
 const statusCfg = {

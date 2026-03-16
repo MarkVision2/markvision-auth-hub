@@ -22,6 +22,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 /* ── Types ── */
 interface DailyMetric {
@@ -33,6 +35,7 @@ interface DailyMetric {
   visits: number;
   sales: number;
   revenue: number;
+  followers?: number;
 }
 
 interface ClientWithMetrics {
@@ -62,14 +65,19 @@ interface Alert {
 
 /* ── Helpers ── */
 function fmt(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return String(Math.round(n));
+  return new Intl.NumberFormat("ru-RU").format(Math.round(n));
 }
 
 function fmtCurrency(n: number) {
   return `${fmt(n)} ₸`;
 }
+
+const fmtDate = (iso: string) => {
+  const d = new Date(iso + "T00:00:00");
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"][d.getMonth()];
+  return `${day} ${month}`;
+};
 
 const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -89,18 +97,19 @@ type StatusFilter = "all" | "with-data" | "no-data";
 /* ── KPI Card component ── */
 function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string; sub?: string; color: string }) {
   return (
-    <Card className="bg-card border-border hover:border-primary/20 transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${color}`}>
+    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-lg overflow-hidden">
+      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-colors shadow-sm", color)}>
             <Icon className="h-4 w-4" />
           </div>
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-bold">{label}</span>
         </div>
-        <p className="text-xl font-bold font-mono tabular-nums text-foreground">{value}</p>
-        {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
-      </CardContent>
-    </Card>
+        <p className="text-2xl font-bold font-mono tabular-nums text-foreground tracking-tight">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground mt-1.5 font-medium opacity-70">{sub}</p>}
+      </div>
+    </div>
   );
 }
 
@@ -163,7 +172,7 @@ export default function DashboardTarget() {
 
       let metricsQuery = (supabase as any)
         .from("daily_data")
-        .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue")
+        .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue, followers")
         .gte("date", start)
         .lt("date", end)
         .order("date", { ascending: true });
@@ -402,158 +411,214 @@ export default function DashboardTarget() {
         </FadeUpItem>
 
         <FadeUpItem>
-          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-            <div className="overflow-x-auto max-h-[700px] scrollbar-thin scrollbar-thumb-muted-foreground/20">
-              <div className="grid grid-cols-[1fr_100px_90px_70px_70px_80px_100px_48px] items-center px-6 py-4 border-b border-border/50 bg-card/95 backdrop-blur-md sticky top-0 z-20 min-w-[800px]">
-                {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", ""].map((h, i) => (
-                  <span key={i} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 whitespace-nowrap">{h}</span>
-                ))}
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <KpiCard icon={DollarSign} label="Общий расход" value={fmtCurrency(totals.spend)} sub={`${MONTH_NAMES[selectedMonth]} ${selectedYear}`} color="bg-primary/10 border-primary/20 text-primary" />
+            <KpiCard icon={Users} label="Всего лидов" value={String(totals.leads)} sub={`CPL: ${fmtCurrency(totals.cpl)}`} color="bg-[hsl(var(--status-good))]/10 border-[hsl(var(--status-good))]/20 text-[hsl(var(--status-good))]" />
+            <KpiCard icon={ShoppingCart} label="Всего продаж" value={String(totals.sales)} sub={`Доход: ${fmtCurrency(totals.revenue)}`} color="bg-purple-500/10 border-purple-500/20 text-purple-500" />
+            <KpiCard icon={TrendingUp} label="ROMI" value={`${totals.romi}%`} sub="Эффективность маркетинга" color="bg-amber-500/10 border-amber-500/20 text-amber-500" />
+          </div>
 
-              {filteredClients.length === 0 && (
-                <div className="px-4 py-16 text-center">
-                  <div className="h-14 w-14 rounded-2xl glass flex items-center justify-center mx-auto mb-3">
-                    <Megaphone className="h-6 w-6 text-muted-foreground/30" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground/60">Данных пока нет</p>
-                  <p className="text-xs text-muted-foreground/50 mt-1">Попробуйте изменить фильтры</p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-6 mb-2">
+              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/50">Список рекламных кабинетов</span>
+              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/50">{filteredClients.length} Кабинетов</span>
+            </div>
+
+            {filteredClients.length === 0 && (
+              <div className="rounded-3xl border border-border border-dashed bg-card/30 p-20 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                  <Megaphone className="h-8 w-8 text-muted-foreground/20" />
                 </div>
-              )}
+                <p className="text-sm font-bold text-foreground/60 tracking-tight">Кабинеты не найдены</p>
+                <p className="text-xs text-muted-foreground mt-1">Попробуйте изменить поисковый запрос</p>
+              </div>
+            )}
 
-              <div className="min-w-[800px]">
-                {filteredClients.map((client) => {
-                  const isOpen = expandedAccounts.has(client.name);
-                  const hasAlert = alerts.some(a => a.account === client.name);
-                  const budgetPct = monthlyPlan?.plan_spend > 0 ? Math.min(100, Math.round((client.totalSpend / monthlyPlan.plan_spend) * 100)) : 0;
+            <AnimatePresence mode="popLayout">
+              {filteredClients.map((client, idx) => {
+                const isOpen = expandedAccounts.has(client.name);
+                const hasAlert = alerts.some(a => a.account === client.name);
+                const planSpend = monthlyPlan?.plan_spend ?? 0;
+                const budgetPct = planSpend > 0 ? Math.min(100, Math.round((client.totalSpend / planSpend) * 100)) : 0;
 
-                  return (
-                    <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
-                      <CollapsibleTrigger asChild>
-                        <div className={`grid grid-cols-[1fr_100px_90px_70px_70px_80px_100px_48px] items-center px-6 py-4 border-b border-border/30 hover:bg-accent/30 transition-all duration-200 cursor-pointer ${hasAlert ? "bg-destructive/[0.03]" : ""}`}>
-                          <div className="flex items-center gap-4">
-                            <ChevronDown className={`h-4 w-4 text-muted-foreground/60 transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold text-foreground truncate tracking-tight">{client.name}</p>
-                                {client.hasData && (
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--status-good))] shadow-[0_0_8px_rgba(var(--status-good-rgb),0.5)]" />
+                return (
+                  <motion.div
+                    layout
+                    key={client.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3, delay: idx * 0.05 }}
+                    className={cn(
+                      "group rounded-3xl border border-border bg-card shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden",
+                      isOpen ? "border-primary/20 shadow-primary/5 ring-1 ring-primary/5" : "hover:border-primary/10"
+                    )}
+                  >
+                    {/* Header Strip */}
+                    <div 
+                      className={cn(
+                        "flex flex-col md:flex-row md:items-center gap-6 p-6 cursor-pointer",
+                        isOpen ? "bg-primary/[0.02]" : "hover:bg-accent/40"
+                      )}
+                      onClick={() => toggleAccount(client.name)}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className={cn(
+                          "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                          client.hasData ? "bg-primary/10 text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]" : "bg-muted text-muted-foreground/50"
+                        )}>
+                          <Megaphone className="h-6 w-6" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-[16px] font-bold text-foreground tracking-tight truncate">{client.name}</h3>
+                            {hasAlert && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-mono text-muted-foreground/60 tracking-wider">ID: {client.ad_account_id || "—"}</span>
+                            <div className="h-1 w-1 rounded-full bg-border" />
+                            {client.hasData && (
+                              <Badge variant="outline" className="h-4 text-[9px] font-bold uppercase tracking-widest border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))] px-1 bg-[hsl(var(--status-good))]/5">
+                                Active
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Metrics Overview */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 md:gap-12 shrink-0 md:border-l border-border/50 md:pl-12">
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Расход</p>
+                          <p className="text-[15px] font-bold tabular-nums text-foreground">{fmtCurrency(client.totalSpend)}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Лиды</p>
+                          <div className="flex items-center gap-2">
+                             <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalLeads}</p>
+                             {client.cpl > 0 && <span className="text-[10px] font-medium text-muted-foreground">({fmt(client.cpl)}₸)</span>}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Продажи</p>
+                          <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalSales}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Выручка</p>
+                          <p className="text-[15px] font-bold tabular-nums text-primary">{fmtCurrency(client.totalRevenue)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 md:ml-4">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-secondary" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border shadow-2xl">
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
+                               <ExternalLink className="h-4 w-4 text-primary" />
+                               <span className="text-sm font-semibold">Открыть в Meta Ads</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={(e) => {
+                               e.stopPropagation();
+                               setEditingAccount(rawClients.find(rc => rc.id === client.id));
+                               setSheetOpen(true);
+                             }}>
+                               <Pencil className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-semibold">Редактировать</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => toast({ title: "Дублировано", description: client.name })}>
+                               <Copy className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-semibold">Дублировать</span>
+                             </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className={cn("transition-transform duration-300", isOpen && "rotate-180")}>
+                           <ChevronDown className="h-5 w-5 text-muted-foreground/40" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar in Strip */}
+                    {planSpend > 0 && (
+                      <div className="px-6 pb-4">
+                        <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                          <motion.div 
+                             initial={{ width: 0 }}
+                             animate={{ width: `${budgetPct}%` }}
+                             className={cn(
+                               "h-full rounded-full transition-colors",
+                               budgetPct >= 100 ? "bg-destructive" : budgetPct >= 80 ? "bg-amber-500" : "bg-[hsl(var(--status-good))]"
+                             )} 
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Content Section */}
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                          <div className="px-6 pb-6 pt-2 border-t border-border/30 bg-secondary/10">
+                            {/* Detailed Metrics Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                               {[
+                                 { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—", color: "text-amber-500" },
+                                 { label: "CPM", value: client.totalImpressions > 0 ? fmtCurrency(Math.round(client.totalSpend / (client.totalImpressions / 1000))) : "—", color: "text-blue-500" },
+                                 { label: "CTR", value: client.totalImpressions > 0 ? `${((client.totalClicks / client.totalImpressions) * 100).toFixed(2)}%` : "—", color: "text-purple-500" },
+                                 { label: "CPC", value: client.totalClicks > 0 ? fmtCurrency(Math.round(client.totalSpend / client.totalClicks)) : "—", color: "text-pink-500" },
+                                 { label: "ROMI", value: `${client.romi}%`, color: client.romi > 0 ? "text-[hsl(var(--status-good))]" : "text-destructive" },
+                                 { label: "Подписчики", value: client.dailyMetrics.reduce((s, d) => s + (d.followers || 0), 0) || "—", color: "text-primary" },
+                               ].map(stat => (
+                                 <div key={stat.label} className="bg-card border border-border/50 rounded-2xl p-4 shadow-sm">
+                                   <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 mb-1">{stat.label}</p>
+                                   <p className={cn("text-[16px] font-bold tabular-nums tracking-tight", stat.color)}>{stat.value}</p>
+                                 </div>
+                               ))}
+                            </div>
+
+                            {/* Daily Statistics Sub-table */}
+                            <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-inner">
+                              <div className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-2.5 bg-secondary/40 border-b border-border text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
+                                <span>Дата</span>
+                                <span className="text-right">Расход</span>
+                                <span className="text-right">Лиды</span>
+                                <span className="text-right">CPL</span>
+                                <span className="text-right">Визиты</span>
+                                <span className="text-right">Продажи</span>
+                              </div>
+                              <div className="max-h-[300px] overflow-y-auto divide-y divide-border/30">
+                                {client.dailyMetrics.length === 0 ? (
+                                  <div className="py-12 text-center text-xs text-muted-foreground font-medium italic">Дневная статистика отсутствует для этого периода</div>
+                                ) : (
+                                  client.dailyMetrics.slice().reverse().map(day => (
+                                    <div key={day.date} className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-3 hover:bg-accent/20 transition-colors">
+                                      <span className="text-[12px] font-medium text-muted-foreground/80">{fmtDate(day.date)}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{fmtCurrency(day.spend)}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.leads}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-muted-foreground/60">{day.leads > 0 ? fmtCurrency(Math.round(day.spend / day.leads)) : "—"}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.visits}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-[hsl(var(--status-good))]">{day.sales > 0 ? day.sales : "—"}</span>
+                                    </div>
+                                  ))
                                 )}
                               </div>
-                              <p className="text-[10px] text-muted-foreground/50 font-mono tracking-tight mt-0.5">
-                                {client.ad_account_id || "ID не указан"}
-                              </p>
                             </div>
                           </div>
-                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
-                          <span className={`text-[14px] font-bold tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-amber-500" : "text-foreground/80"}`}>
-                            {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
-                          </span>
-                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
-                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
-                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
-                          <span className="text-[14px] font-bold tabular-nums text-primary">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-border shadow-2xl">
-                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
-                                <ExternalLink className="h-4 w-4 text-primary" /> Открыть в Meta Ads
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-sm gap-2 cursor-pointer" onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingAccount(rawClients.find(rc => rc.id === client.id));
-                                setSheetOpen(true);
-                              }}>
-                                <Pencil className="h-4 w-4 text-muted-foreground" /> Настройки
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => toast({ title: "Дублировано", description: client.name })}>
-                                <Copy className="h-4 w-4 text-muted-foreground" /> Дублировать
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <div className="px-4 py-4 bg-secondary/5 border-b border-border space-y-4">
-
-
-                          {client.hasData && (
-                            <div className="pt-4 border-t border-border/40 space-y-5">
-                              {monthlyPlan?.plan_spend > 0 && (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between text-xs">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground font-medium">Освоение бюджета</span>
-                                      <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-mono">
-                                        {fmtCurrency(client.totalSpend)} / {fmtCurrency(monthlyPlan.plan_spend)}
-                                      </span>
-                                    </div>
-                                    <span className={`font-mono font-bold ${budgetPct >= 100 ? "text-destructive" : budgetPct >= 80 ? "text-amber-500" : "text-[hsl(var(--status-good))]"}`}>
-                                      {budgetPct}%
-                                    </span>
-                                  </div>
-                                  <div className="relative h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full transition-all duration-500 rounded-full ${budgetPct >= 100 ? "bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)]" :
-                                        budgetPct >= 80 ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
-                                          "bg-[hsl(var(--status-good))] shadow-[0_0_8px_rgba(var(--status-good-rgb),0.5)]"
-                                        }`}
-                                      style={{ width: `${budgetPct}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                                {[
-                                  { label: "Расход", value: fmtCurrency(client.totalSpend), icon: CreditCard, color: "text-blue-500" },
-                                  { label: "Лиды", value: client.totalLeads > 0 ? String(client.totalLeads) : "—", icon: Users, color: "text-primary" },
-                                  { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—", icon: DollarSign, color: "text-amber-500" },
-                                  { label: "Визиты", value: client.totalVisits > 0 ? String(client.totalVisits) : "—", icon: Eye, color: "text-purple-500" },
-                                  { label: "Продажи", value: client.totalSales > 0 ? String(client.totalSales) : "—", icon: ShoppingCart, color: "text-emerald-500" },
-                                  { label: "Выручка", value: client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—", icon: TrendingUp, color: "text-[hsl(var(--status-good))]" },
-                                ].map((m) => (
-                                  <div key={m.label} className="group rounded-xl border border-border bg-card p-3 hover:border-primary/20 transition-all hover:shadow-sm">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <m.icon className={`h-3 w-3 ${m.color}`} />
-                                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{m.label}</p>
-                                    </div>
-                                    <p className="text-sm font-bold font-mono tabular-nums text-foreground group-hover:text-primary transition-colors">{m.value}</p>
-                                  </div>
-                                ))}
-                              </div>
-                              {client.dailyMetrics.length > 0 && (
-                                <div className="rounded-lg border border-border overflow-hidden">
-                                  <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 bg-secondary/30 border-b border-border">
-                                    {["Дата", "Расход", "Лиды", "CPL", "Визиты", "Продажи"].map(h => (
-                                      <span key={h} className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</span>
-                                    ))}
-                                  </div>
-                                  <div className="max-h-[200px] overflow-y-auto">
-                                    {client.dailyMetrics.slice(-10).reverse().map(dm => (
-                                      <div key={dm.date} className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 border-b border-border/50 hover:bg-accent/20 transition-colors">
-                                        <span className="text-[11px] text-muted-foreground font-mono">{dm.date.slice(5)}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{fmtCurrency(dm.spend)}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads || "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.leads > 0 ? fmtCurrency(Math.round(dm.spend / dm.leads)) : "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.visits || "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{dm.sales || "—"}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  );
-                })}
-              </div>
-            </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         </FadeUpItem>
       </StaggerContainer>
