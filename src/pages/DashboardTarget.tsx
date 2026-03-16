@@ -248,8 +248,9 @@ export default function DashboardTarget() {
     if (!adAccountId || loadingCampaigns[clientConfigId]) return;
     setLoadingCampaigns(prev => ({ ...prev, [clientConfigId]: true }));
     try {
+      const { start, end } = getMonthRange(selectedYear, selectedMonth);
       const resp = await fetch(
-        `https://n8n.zapoinov.com/webhook/get-campaigns?ad_account_id=${encodeURIComponent(adAccountId)}`
+        `https://n8n.zapoinov.com/webhook/get-campaigns?ad_account_id=${encodeURIComponent(adAccountId)}&since=${start}&until=${end}`
       );
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
