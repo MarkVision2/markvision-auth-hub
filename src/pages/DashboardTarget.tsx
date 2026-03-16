@@ -464,8 +464,8 @@ export default function DashboardTarget() {
         <FadeUpItem>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <div className="grid grid-cols-[1fr_80px_70px_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
-                {["Клиент", "Показы", "Клики", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI", ""].map((h, i) => (
+              <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
+                {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", ""].map((h, i) => (
                   <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
                 ))}
               </div>
@@ -489,7 +489,7 @@ export default function DashboardTarget() {
                   return (
                     <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
                       <CollapsibleTrigger asChild>
-                        <div className={`grid grid-cols-[1fr_80px_70px_90px_80px_65px_65px_70px_80px_60px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
+                        <div className={`grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
                           <div className="flex items-center gap-2.5">
                             <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
                             <div className="min-w-0">
@@ -502,8 +502,6 @@ export default function DashboardTarget() {
                               </p>
                             </div>
                           </div>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmt(client.totalImpressions)}</span>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmt(client.totalClicks)}</span>
                           <span className="text-sm font-mono tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
                           <span className={`text-sm font-mono tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-[hsl(var(--status-warning))]" : "text-foreground/80"}`}>
                             {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
@@ -512,9 +510,6 @@ export default function DashboardTarget() {
                           <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
                           <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
                           <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
-                          <span className={`text-sm font-mono tabular-nums font-semibold ${client.romi > 0 ? "text-[hsl(var(--status-good))]" : client.romi < 0 ? "text-destructive" : "text-muted-foreground"}`}>
-                            {client.hasData ? `${client.romi}%` : "—"}
-                          </span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>

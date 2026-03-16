@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 // ─── Constants ───
 const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
@@ -75,6 +76,7 @@ interface AnalysisResult {
     strengths: string[] | null;
     weaknesses: string[] | null;
     hook: string | null;
+    status: string | null;
     created_at: string;
 }
 
@@ -127,6 +129,7 @@ async function triggerScrape(url: string, payload: Record<string, unknown>) {
 
 export function CompetitorAnalysis() {
     const { toast } = useToast();
+    const { active } = useWorkspace();
 
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
@@ -146,6 +149,9 @@ export function CompetitorAnalysis() {
     const [postsDialog, setPostsDialog] = useState<{ open: boolean; competitor: Competitor | null }>({ open: false, competitor: null });
     const [postsForDialog, setPostsForDialog] = useState<AnalysisResult[]>([]);
     const [loadingPosts, setLoadingPosts] = useState(false);
+
+    // Active tab
+    const [activeTab, setActiveTab] = useState("competitors");
 
     // Post analysis tab
     const [postUrl, setPostUrl] = useState("");
@@ -203,7 +209,10 @@ export function CompetitorAnalysis() {
             .on("postgres_changes", { event: "INSERT", schema: "public", table: "content_factory" }, (payload) => {
                 const row = payload.new as unknown as AnalysisResult;
                 setAnalyses((prev) => [row, ...prev]);
-                toast({ title: "🔔 Новый анализ конкурента", description: `Оценка: ${row.performance_score}/100` });
+                // Тост только для завершённых записей (не для pending)
+                if (row.status === "completed" && row.performance_score > 0) {
+                    toast({ title: "🔔 Новый AI-разбор", description: `Оценка: ${row.performance_score}/100` });
+                }
             })
             .on("postgres_changes", { event: "UPDATE", schema: "public", table: "content_factory" }, (payload) => {
                 const row = payload.new as unknown as AnalysisResult;
@@ -214,6 +223,7 @@ export function CompetitorAnalysis() {
                     if (pendingId === row.id && row.status === "completed") {
                         setPostLoading(false);
                         setSelectedAnalysis(row);
+                        setActiveTab("post");
                         toast({ title: "✅ Анализ готов!", description: `Оценка виральности: ${row.performance_score}/100` });
                         return null;
                     }
@@ -261,7 +271,7 @@ export function CompetitorAnalysis() {
 
             const { data, error } = await (supabase as any)
                 .from("competitors")
-                .insert({ username, platform: "instagram", display_name: username, is_active: true })
+                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: active.id === "hq" ? null : active.id })
                 .select()
                 .single();
             if (error) throw error;
@@ -287,6 +297,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(N8N_SCRAPE_HEAVY, {
                     username,
                     competitor_id: data.id,
+                    project_id: active.id === "hq" ? null : active.id,
                 });
                 toast({ title: "🚀 Сканирование запущено!", description: "Посты появятся через 1-2 мин" });
             } catch {
@@ -318,6 +329,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(url, {
                     username: comp.username,
                     competitor_id: comp.id,
+                    project_id: active.id === "hq" ? null : active.id,
                 }).catch(() => {/* n8n optional */});
             }
 
@@ -378,19 +390,34 @@ export function CompetitorAnalysis() {
         setPendingAnalysisId(null);
         try {
             const { data, error } = await supabase.functions.invoke("spy-webhook-proxy", {
-                body: { action: "analyze_video", url: postUrl.trim() },
+                body: {
+                    action: "analyze_video",
+                    url: postUrl.trim(),
+                    project_id: active.id === "hq" ? null : active.id,
+                },
             });
             if (error) throw new Error(error.message);
             if (!data?.record_id) throw new Error("Не получен record_id от сервера");
             // Сохраняем ID — realtime подписка покажет результат когда n8n завершит анализ
             setPendingAnalysisId(data.record_id);
             toast({ title: "⏳ Анализ запущен", description: "n8n скачивает и транскрибирует видео… 1-3 мин" });
+            // Таймаут 5 мин — сбрасываем загрузку если n8n не ответил
+            setTimeout(() => {
+                setPendingAnalysisId((currentId) => {
+                    if (currentId === data.record_id) {
+                        setPostLoading(false);
+                        toast({ title: "⚠️ Анализ занял слишком долго", description: "Попробуйте ещё раз или проверьте n8n", variant: "destructive" });
+                        return null;
+                    }
+                    return currentId;
+                });
+            }, 5 * 60 * 1000);
         } catch (err: any) {
             setPostLoading(false);
             toast({ title: "Ошибка запуска анализа", description: err.message, variant: "destructive" });
         }
         // postLoading сбрасывается в realtime UPDATE обработчике когда приходит результат
-    }, [postUrl, toast]);
+    }, [postUrl, toast, active.id]);
 
     const handleDeleteAnalysis = useCallback(async (id: string) => {
         try {
@@ -424,7 +451,9 @@ export function CompetitorAnalysis() {
         }
     }, [adaptFormat, toast]);
 
-    const displayAnalyses = analyses;
+    const displayAnalyses = analyses.filter((a) =>
+        a.status === "completed" && (a.performance_score > 0 || !!a.hook || !!a.ai_analysis)
+    );
 
     return (
         <div className="space-y-6">
@@ -447,7 +476,7 @@ export function CompetitorAnalysis() {
             </div>
 
             {/* Main Tabs */}
-            <Tabs defaultValue="competitors" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="h-11 bg-secondary/50 border border-border p-1 rounded-xl w-full max-w-xl">
                     <TabsTrigger value="competitors" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
                         <ScanSearch className="h-3.5 w-3.5" /> Конкуренты
@@ -457,6 +486,9 @@ export function CompetitorAnalysis() {
                     </TabsTrigger>
                     <TabsTrigger value="analyses" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
                         <Cpu className="h-3.5 w-3.5" /> AI-Разборы
+                        {displayAnalyses.length > 0 && (
+                            <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{displayAnalyses.length}</span>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
@@ -805,6 +837,15 @@ export function CompetitorAnalysis() {
 
                 {/* ═══ TAB 3: AI-РАЗБОРЫ ═══ */}
                 <TabsContent value="analyses" className="space-y-5">
+                    {/* Pending analyses indicator */}
+                    {analyses.filter((a) => a.status === "pending").length > 0 && (
+                        <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
+                            <p className="text-xs text-muted-foreground">
+                                <span className="text-primary font-semibold">{analyses.filter((a) => a.status === "pending").length} анализ</span> в обработке — n8n + Gemini 2.5 Pro работает…
+                            </p>
+                        </div>
+                    )}
                     {displayAnalyses.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                             <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
@@ -844,7 +885,7 @@ export function CompetitorAnalysis() {
                                             <Button onClick={() => setScriptDialog({ open: true, script: analysis.generated_script })} size="sm" className="flex-1 h-8 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground gap-1">
                                                 <Sparkles className="h-3 w-3" /> Сценарий
                                             </Button>
-                                            <Button onClick={() => setSelectedAnalysis(analysis)} size="sm" variant="outline" className="h-8 px-2.5 text-[11px] border-border">
+                                            <Button onClick={() => { setSelectedAnalysis(analysis); setAdaptedScript(null); setActiveTab("post"); }} size="sm" variant="outline" className="h-8 px-2.5 text-[11px] border-border">
                                                 Подробнее
                                             </Button>
                                             <Button onClick={() => handleDeleteAnalysis(analysis.id)} size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">

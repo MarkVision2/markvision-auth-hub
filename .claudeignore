@@ -1,0 +1,52 @@
+# --- Системный мусор и IDE ---
+.git/
+.vscode/
+.idea/
+.history/
+.DS_Store
+*.code-workspace
+Thumbs.db
+
+# --- Зависимости (сжирают 90% лимитов!) ---
+node_modules/
+vendor/
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+.cache/
+
+# --- Специфично для Antigravity и Python-стека ---
+.antigravity/
+antigravity.log
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# --- Временные файлы и секреты ---
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+
+# --- Медиа и бинарники (Клод их не читает, а токены тратит) ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+*.exe
+*.dll
+*.so
+
+
+
