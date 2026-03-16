@@ -549,13 +549,14 @@ export default function DashboardTarget() {
                               )}
 
                               {/* Detail metrics grid */}
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                                 {[
-                                  { label: "Показы", value: fmt(client.totalImpressions) },
-                                  { label: "Клики", value: fmt(client.totalClicks) },
-                                  { label: "CTR", value: client.totalImpressions > 0 ? `${((client.totalClicks / client.totalImpressions) * 100).toFixed(2)}%` : "—" },
-                                  { label: "CR Лид→Продажа", value: client.totalLeads > 0 ? `${((client.totalSales / client.totalLeads) * 100).toFixed(1)}%` : "—" },
-                                  { label: "CAC", value: client.totalSales > 0 ? fmtCurrency(Math.round(client.totalSpend / client.totalSales)) : "—" },
+                                  { label: "Расход", value: fmtCurrency(client.totalSpend) },
+                                  { label: "Лиды", value: client.totalLeads > 0 ? String(client.totalLeads) : "—" },
+                                  { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—" },
+                                  { label: "Визиты", value: client.totalVisits > 0 ? String(client.totalVisits) : "—" },
+                                  { label: "Продажи", value: client.totalSales > 0 ? String(client.totalSales) : "—" },
+                                  { label: "Выручка", value: client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—" },
                                 ].map((m) => (
                                   <div key={m.label} className="rounded-lg border border-border bg-card p-2.5">
                                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
