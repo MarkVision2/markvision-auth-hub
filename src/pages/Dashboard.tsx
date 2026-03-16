@@ -251,13 +251,14 @@ export default function Dashboard() {
     })();
 
   const aggregateClientData = (clientList: ClientMetric[], id: string, name: string) => {
-    const spend = clientList.reduce((s, c) => s + (c.spend ?? 0), 0);
-    const leads = clientList.reduce((s, c) => s + (c.meta_leads ?? 0), 0);
-    const rev = clientList.reduce((s, c) => s + (c.revenue ?? 0), 0);
-    const v = clientList.reduce((s, c) => s + (c.visits ?? 0), 0);
-    const sales = clientList.reduce((s, c) => s + (c.sales ?? 0), 0);
-    const imps = clientList.reduce((s, c) => s + (c.impressions ?? 0), 0);
-    const clks = clientList.reduce((s, c) => s + (c.clicks ?? 0), 0);
+    const list = clientList.filter(c => c.is_agency === false);
+    const spend = list.reduce((s, c) => s + (c.spend ?? 0), 0);
+    const leads = list.reduce((s, c) => s + (c.meta_leads ?? 0), 0);
+    const rev = list.reduce((s, c) => s + (c.revenue ?? 0), 0);
+    const v = list.reduce((s, c) => s + (c.visits ?? 0), 0);
+    const sales = list.reduce((s, c) => s + (c.sales ?? 0), 0);
+    const imps = list.reduce((s, c) => s + (c.impressions ?? 0), 0);
+    const clks = list.reduce((s, c) => s + (c.clicks ?? 0), 0);
 
     return {
       client_id: id,
@@ -271,7 +272,7 @@ export default function Dashboard() {
       sales,
       impressions: imps,
       clicks: clks,
-      followers: clientList.filter(c => c.is_agency === false).reduce((s, c) => s + (c.followers ?? 0), 0),
+      followers: list.reduce((s, c) => s + (c.followers ?? 0), 0),
       cpl: leads > 0 ? spend / leads : 0,
       cpv: v > 0 ? spend / v : 0,
       cac: sales > 0 ? spend / sales : 0,
