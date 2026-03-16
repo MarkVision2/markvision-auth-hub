@@ -192,20 +192,20 @@ export default function ScoreboardPage() {
       try {
         let query = (supabase as any).from("clients_config")
           .select("id, client_name, project_id, spend, meta_leads, visits, sales, revenue")
-          .eq("is_active", true);
+          .eq("is_active", true)
+          .eq("is_agency", false); // Only personal accounts for Scoreboard
 
-        if (active.id !== "hq") {
-          const { data: shared } = await (supabase as any)
-            .from("client_config_visibility")
-            .select("client_config_id")
-            .eq("project_id", active.id);
-          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+        // Strict project filtering (no HQ exception)
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
-          if (sharedCabIds.length > 0) {
-            query = query.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
-          } else {
-            query = query.eq("project_id", active.id);
-          }
+        if (sharedCabIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
         }
 
         const { data, error } = await query.order("client_name");
@@ -213,12 +213,7 @@ export default function ScoreboardPage() {
 
         console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts for project ${active.id}`, data);
 
-        const filteredAccs = (data || []).filter((acc: any) => {
-          if (active.id === "hq") return true;
-          return acc.project_id === active.id;
-        });
-
-        const accs = filteredAccs as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
+        const accs = (data || []) as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
         setAccounts(accs);
 
         if (accs.length > 0) {
@@ -291,11 +286,8 @@ export default function ScoreboardPage() {
   // Fetch monthly plan
   const fetchPlan = useCallback(async () => {
     try {
-      let query = (supabase as any).from("monthly_plans").select("*");
-
-      if (active.id !== "hq") {
-        query = query.eq("project_id", active.id);
-      }
+      let query = (supabase as any).from("monthly_plans").select("*")
+        .eq("project_id", active.id);
 
       const { data } = await query.eq("month_year", monthYear).limit(1);
       if (data && data.length > 0) {
