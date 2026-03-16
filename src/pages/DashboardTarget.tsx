@@ -15,7 +15,7 @@ import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
   ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
-  ExternalLink,
+  ExternalLink, TrendingUp,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -113,7 +113,7 @@ export default function DashboardTarget() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [monthlyPlan, setMonthlyPlan] = useState<any>(null);
 
   const goMonth = (dir: -1 | 1) => {
     let m = selectedMonth + dir;
@@ -221,6 +221,15 @@ export default function DashboardTarget() {
 
       setClients(mapped);
       setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
+
+      // Fetch monthly plan for budget alerts
+      const { data: planData } = await (supabase as any)
+        .from("monthly_plans")
+        .select("plan_spend")
+        .eq("project_id", active.id)
+        .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
+        .maybeSingle();
+      setMonthlyPlan(planData);
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
@@ -240,24 +249,34 @@ export default function DashboardTarget() {
 
   const alerts = useMemo<Alert[]>(() => {
     const result: Alert[] = [];
-    clients.forEach((c) => {
-      if (c.daily_budget > 0 && c.totalSpend >= c.daily_budget * 30) {
-        result.push({ account: c.name, issue: "Бюджет исчерпан на 100%", icon: CreditCard, severity: "critical" });
+    const totalSpend = clients.reduce((s, c) => s + c.totalSpend, 0);
+    const planSpend = monthlyPlan?.plan_spend ?? 0;
+
+    if (planSpend > 0) {
+      const budgetPct = Math.round((totalSpend / planSpend) * 100);
+      if (budgetPct >= 90) {
+        result.push({
+          account: active.name,
+          issue: `Бюджет израсходован на ${budgetPct}% (${fmt(totalSpend)} / ${fmt(planSpend)})`,
+          icon: CreditCard,
+          severity: budgetPct >= 100 ? "critical" : "warning"
+        });
       }
+    }
+
+    clients.forEach((c) => {
       if (c.cpl > 10000 && c.totalLeads > 0) {
         result.push({ account: c.name, issue: `CPL ${fmtCurrency(c.cpl)} — выше нормы`, icon: TrendingDown, severity: "warning" });
       }
     });
     return result;
-  }, [clients]);
+  }, [clients, monthlyPlan, active.name]);
 
   const filteredClients = useMemo(() => {
     return clients.filter((c) => {
-      const matchesFilter = statusFilter === "all" || (statusFilter === "with-data" ? c.hasData : !c.hasData);
-      const matchesSearch = !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesFilter && matchesSearch;
+      return !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase());
     });
-  }, [clients, searchQuery, statusFilter]);
+  }, [clients, searchQuery]);
 
   const totals = useMemo(() => {
     const spend = clients.reduce((s, c) => s + c.totalSpend, 0);
@@ -347,17 +366,17 @@ export default function DashboardTarget() {
 
         {alerts.length > 0 && (
           <FadeUpItem>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {alerts.map((a, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${a.severity === "critical" ? "bg-destructive/10" : "bg-[hsl(var(--status-warning))]/10"}`}>
-                    <a.icon className={`h-4 w-4 ${a.severity === "critical" ? "text-destructive" : "text-[hsl(var(--status-warning))]"}`} />
+                <div key={i} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-lg hover:border-primary/20">
+                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${a.severity === "critical" ? "bg-destructive/10 group-hover:bg-destructive/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
+                    <a.icon className={`h-5 w-5 ${a.severity === "critical" ? "text-destructive" : "text-amber-500"}`} />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{a.account}</p>
-                    <p className="text-xs text-muted-foreground">{a.issue}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground truncate">{a.account}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{a.issue}</p>
                   </div>
-                  <Badge variant="outline" className={`ml-auto shrink-0 text-[10px] ${a.severity === "critical" ? "border-destructive/30 text-destructive" : "border-[hsl(var(--status-warning))]/30 text-[hsl(var(--status-warning))]"}`}>
+                  <Badge variant="outline" className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 ${a.severity === "critical" ? "border-destructive/30 text-destructive bg-destructive/5" : "border-amber-500/30 text-amber-500 bg-amber-500/5"}`}>
                     {a.severity === "critical" ? "Критично" : "Внимание"}
                   </Badge>
                 </div>
@@ -367,27 +386,9 @@ export default function DashboardTarget() {
         )}
 
         <FadeUpItem className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Поиск клиента..." className="pl-8 h-9 text-sm bg-secondary/30 border-border" />
-          </div>
-          <div className="flex items-center gap-1 bg-secondary/20 border border-border rounded-lg p-0.5">
-            {([
-              { value: "all" as StatusFilter, label: "Все" },
-              { value: "with-data" as StatusFilter, label: "С данными" },
-              { value: "no-data" as StatusFilter, label: "Без данных" },
-            ]).map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setStatusFilter(f.value)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-all ${statusFilter === f.value
-                  ? "bg-primary/15 text-primary shadow-sm"
-                  : "text-muted-foreground hover:text-foreground/70"
-                  }`}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Поиск по кабинетам..." className="pl-9 h-10 text-sm bg-card border-border rounded-xl focus-visible:ring-primary/20" />
           </div>
           <div className="ml-auto">
             <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1.5" onClick={handleExport}>
@@ -397,11 +398,11 @@ export default function DashboardTarget() {
         </FadeUpItem>
 
         <FadeUpItem>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <div className="grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_36px] items-center px-4 py-2.5 border-b border-border bg-secondary/20 min-w-[700px]">
+          <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+            <div className="overflow-x-auto max-h-[700px] scrollbar-thin scrollbar-thumb-muted-foreground/20">
+              <div className="grid grid-cols-[1fr_100px_90px_70px_70px_80px_100px_48px] items-center px-6 py-4 border-b border-border/50 bg-card/95 backdrop-blur-md sticky top-0 z-20 min-w-[800px]">
                 {["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", ""].map((h, i) => (
-                  <span key={i} className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap">{h}</span>
+                  <span key={i} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 whitespace-nowrap">{h}</span>
                 ))}
               </div>
 
@@ -415,51 +416,53 @@ export default function DashboardTarget() {
                 </div>
               )}
 
-              <div className="min-w-[700px]">
+              <div className="min-w-[800px]">
                 {filteredClients.map((client) => {
                   const isOpen = expandedAccounts.has(client.name);
                   const hasAlert = alerts.some(a => a.account === client.name);
-                  const budgetPct = client.daily_budget > 0 ? Math.min(100, Math.round((client.totalSpend / (client.daily_budget * 30)) * 100)) : 0;
+                  const budgetPct = monthlyPlan?.plan_spend > 0 ? Math.min(100, Math.round((client.totalSpend / monthlyPlan.plan_spend) * 100)) : 0;
 
                   return (
                     <Collapsible key={client.id} open={isOpen} onOpenChange={() => toggleAccount(client.name)}>
                       <CollapsibleTrigger asChild>
-                        <div className={`grid grid-cols-[1fr_90px_80px_65px_65px_70px_80px_36px] items-center px-4 py-3 border-b border-border hover:bg-accent/30 transition-colors cursor-pointer ${hasAlert ? "bg-destructive/5" : ""}`}>
-                          <div className="flex items-center gap-2.5">
-                            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
+                        <div className={`grid grid-cols-[1fr_100px_90px_70px_70px_80px_100px_48px] items-center px-6 py-4 border-b border-border/30 hover:bg-accent/30 transition-all duration-200 cursor-pointer ${hasAlert ? "bg-destructive/[0.03]" : ""}`}>
+                          <div className="flex items-center gap-4">
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground/60 transition-transform shrink-0 ${isOpen ? "" : "-rotate-90"}`} />
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-semibold text-foreground truncate">{client.name}</p>
-                                {client.hasData && <div className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--status-good))]" />}
+                                <p className="text-sm font-bold text-foreground truncate tracking-tight">{client.name}</p>
+                                {client.hasData && (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--status-good))] shadow-[0_0_8px_rgba(var(--status-good-rgb),0.5)]" />
+                                )}
                               </div>
-                              <p className="text-[10px] text-muted-foreground font-mono truncate">
-                                {client.ad_account_id || "Нет ad account"}
+                              <p className="text-[10px] text-muted-foreground/50 font-mono tracking-tight mt-0.5">
+                                {client.ad_account_id || "ID не указан"}
                               </p>
                             </div>
                           </div>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
-                          <span className={`text-sm font-mono tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-[hsl(var(--status-warning))]" : "text-foreground/80"}`}>
+                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{fmtCurrency(client.totalSpend)}</span>
+                          <span className={`text-[14px] font-bold tabular-nums ${client.cpl > 10000 ? "text-destructive" : client.cpl > 5000 ? "text-amber-500" : "text-foreground/80"}`}>
                             {client.cpl > 0 ? fmtCurrency(client.cpl) : "—"}
                           </span>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
-                          <span className="text-sm font-mono tabular-nums text-foreground/80">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
+                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalLeads || "—"}</span>
+                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalVisits || "—"}</span>
+                          <span className="text-[14px] font-bold tabular-nums text-foreground/80">{client.totalSales || "—"}</span>
+                          <span className="text-[14px] font-bold tabular-nums text-primary">{client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—"}</span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/80" onClick={(e) => e.stopPropagation()}>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem className="text-sm gap-2" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
-                                <ExternalLink className="h-3.5 w-3.5" /> Открыть в Meta Ads
+                            <DropdownMenuContent align="end" className="w-48 p-1.5 rounded-xl border-border shadow-2xl">
+                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
+                                <ExternalLink className="h-4 w-4 text-primary" /> Открыть в Meta Ads
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Настройки", description: client.name })}>
-                                <Pencil className="h-3.5 w-3.5" /> Настройки
+                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => toast({ title: "Настройки", description: client.name })}>
+                                <Pencil className="h-4 w-4 text-muted-foreground" /> Настройки
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Дублировано", description: client.name })}>
-                                <Copy className="h-3.5 w-3.5" /> Дублировать
+                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => toast({ title: "Дублировано", description: client.name })}>
+                                <Copy className="h-4 w-4 text-muted-foreground" /> Дублировать
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -470,28 +473,46 @@ export default function DashboardTarget() {
 
 
                           {client.hasData && (
-                            <div className="pt-4 border-t border-border/40 space-y-4">
-                              {client.daily_budget > 0 && (
-                                <div className="space-y-1.5">
+                            <div className="pt-4 border-t border-border/40 space-y-5">
+                              {monthlyPlan?.plan_spend > 0 && (
+                                <div className="space-y-2">
                                   <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">Бюджет ({fmtCurrency(client.totalSpend)} / {fmtCurrency(client.daily_budget * 30)})</span>
-                                    <span className={`font-mono font-semibold ${budgetPct >= 90 ? "text-destructive" : budgetPct >= 70 ? "text-[hsl(var(--status-warning))]" : "text-muted-foreground"}`}>{budgetPct}%</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground font-medium">Освоение бюджета</span>
+                                      <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-mono">
+                                        {fmtCurrency(client.totalSpend)} / {fmtCurrency(monthlyPlan.plan_spend)}
+                                      </span>
+                                    </div>
+                                    <span className={`font-mono font-bold ${budgetPct >= 100 ? "text-destructive" : budgetPct >= 80 ? "text-amber-500" : "text-[hsl(var(--status-good))]"}`}>
+                                      {budgetPct}%
+                                    </span>
                                   </div>
-                                  <Progress value={budgetPct} className="h-1.5 bg-secondary" />
+                                  <div className="relative h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full transition-all duration-500 rounded-full ${budgetPct >= 100 ? "bg-destructive shadow-[0_0_8px_rgba(var(--destructive-rgb),0.5)]" :
+                                        budgetPct >= 80 ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
+                                          "bg-[hsl(var(--status-good))] shadow-[0_0_8px_rgba(var(--status-good-rgb),0.5)]"
+                                        }`}
+                                      style={{ width: `${budgetPct}%` }}
+                                    />
+                                  </div>
                                 </div>
                               )}
-                              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                                 {[
-                                  { label: "Расход", value: fmtCurrency(client.totalSpend) },
-                                  { label: "Лиды", value: client.totalLeads > 0 ? String(client.totalLeads) : "—" },
-                                  { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—" },
-                                  { label: "Визиты", value: client.totalVisits > 0 ? String(client.totalVisits) : "—" },
-                                  { label: "Продажи", value: client.totalSales > 0 ? String(client.totalSales) : "—" },
-                                  { label: "Выручка", value: client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—" },
+                                  { label: "Расход", value: fmtCurrency(client.totalSpend), icon: CreditCard, color: "text-blue-500" },
+                                  { label: "Лиды", value: client.totalLeads > 0 ? String(client.totalLeads) : "—", icon: Users, color: "text-primary" },
+                                  { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—", icon: DollarSign, color: "text-amber-500" },
+                                  { label: "Визиты", value: client.totalVisits > 0 ? String(client.totalVisits) : "—", icon: Eye, color: "text-purple-500" },
+                                  { label: "Продажи", value: client.totalSales > 0 ? String(client.totalSales) : "—", icon: ShoppingCart, color: "text-emerald-500" },
+                                  { label: "Выручка", value: client.totalRevenue > 0 ? fmtCurrency(client.totalRevenue) : "—", icon: TrendingUp, color: "text-[hsl(var(--status-good))]" },
                                 ].map((m) => (
-                                  <div key={m.label} className="rounded-lg border border-border bg-card p-2.5">
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{m.label}</p>
-                                    <p className="text-sm font-bold font-mono tabular-nums text-foreground mt-0.5">{m.value}</p>
+                                  <div key={m.label} className="group rounded-xl border border-border bg-card p-3 hover:border-primary/20 transition-all hover:shadow-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <m.icon className={`h-3 w-3 ${m.color}`} />
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{m.label}</p>
+                                    </div>
+                                    <p className="text-sm font-bold font-mono tabular-nums text-foreground group-hover:text-primary transition-colors">{m.value}</p>
                                   </div>
                                 ))}
                               </div>
