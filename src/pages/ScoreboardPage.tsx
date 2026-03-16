@@ -57,15 +57,22 @@ const fmtDate = (iso: string) => {
 /* ── KPI Card ── */
 function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/20 transition-colors">
-      <div className="flex items-center gap-2 mb-2.5">
-        <div className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center">
-          <Icon className="h-3.5 w-3.5 text-primary" />
+    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.05)] overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-500" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <Icon className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">{label}</span>
         </div>
-        <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold leading-tight">{label}</span>
+        
+        <div className="flex items-baseline gap-1">
+          <p className="text-2xl md:text-3xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-2 font-medium opacity-80">{sub}</p>
       </div>
-      <p className="text-2xl md:text-3xl font-mono font-bold text-foreground tabular-nums tracking-tight mt-1">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1.5">{sub}</p>
     </div>
   );
 }
@@ -498,16 +505,16 @@ export default function ScoreboardPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
+        {/* Table Container */}
+        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+          <div className="overflow-x-auto max-h-[700px] scrollbar-thin scrollbar-thumb-muted-foreground/20">
             <Table>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-muted/20">
+              <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md">
+                <TableRow className="border-b border-border/50 hover:bg-transparent">
                   {columns.map(col => (
                     <TableHead
                       key={col.key}
-                      className={`text-sm font-bold text-muted-foreground whitespace-nowrap px-4 py-3.5 ${col.align === "right" ? "text-right" : "text-left"
+                      className={`text-[10px] uppercase tracking-widest font-black text-muted-foreground/70 px-6 py-4 ${col.align === "right" ? "text-right" : "text-left"
                         }`}
                     >
                       {col.label}
@@ -517,18 +524,18 @@ export default function ScoreboardPage() {
               </TableHeader>
               <TableBody>
                 {/* ── PLAN ROW ── */}
-                <TableRow className="bg-primary/[0.03] border-b border-border hover:bg-primary/[0.06]">
+                <TableRow className="bg-primary/[0.02] border-b border-border/40 hover:bg-primary/[0.05] transition-colors">
                   {columns.map(col => (
-                    <TableCell key={col.key} className={`px-4 py-4 whitespace-nowrap font-mono text-[15px] tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
+                    <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-sm tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-5 w-5 rounded-md bg-primary/10 flex items-center justify-center">
-                            <Target className="h-3 w-3 text-primary" />
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Target className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <span className="font-semibold text-primary text-xs">ПЛАН</span>
+                          <span className="font-bold text-primary tracking-tight text-[11px]">ПЛАН</span>
                         </div>
                       ) : (
-                        <span className="text-primary/80 font-semibold">
+                        <span className="text-primary/90 font-bold">
                           {getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
                             ? fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))
                             : "—"
@@ -540,15 +547,15 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* ── FACT ROW ── */}
-                <TableRow className="bg-secondary/20 border-b border-border hover:bg-secondary/30">
+                <TableRow className="bg-foreground/[0.01] border-b border-border/40 hover:bg-foreground/[0.03] transition-colors">
                   {columns.map(col => (
-                    <TableCell key={col.key} className={`px-4 py-4 whitespace-nowrap font-mono text-sm tabular-nums font-bold ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}>
+                    <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[15px] tabular-nums font-black ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}>
                       {col.key === "date" ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-5 w-5 rounded-md bg-secondary flex items-center justify-center">
-                            <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-lg bg-muted flex items-center justify-center">
+                            <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
                           </div>
-                          <span className="font-semibold text-foreground text-xs">ФАКТ</span>
+                          <span className="font-bold text-foreground tracking-tight text-[11px]">ФАКТ</span>
                         </div>
                       ) : (
                         getVal(fact as unknown as Record<string, number>, col.key as MetricKey) > 0
@@ -560,20 +567,20 @@ export default function ScoreboardPage() {
                 </TableRow>
 
                 {/* ── PCT ROW ── */}
-                <TableRow className="border-b-2 border-border bg-muted/10 hover:bg-muted/20">
+                <TableRow className="border-b-[3px] border-border bg-muted/5 hover:bg-muted/10 transition-colors">
                   {columns.map(col => (
-                    <TableCell key={col.key} className={`px-4 py-4 whitespace-nowrap text-sm ${col.key === "date" ? "text-left" : "text-right"}`}>
+                    <TableCell key={col.key} className={`px-6 py-5 whitespace-nowrap text-sm ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.key === "date" ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-5 w-5 rounded-md bg-[hsl(var(--status-warning)/0.1)] flex items-center justify-center">
-                            <TrendingUp className="h-3 w-3 text-[hsl(var(--status-warning))]" />
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                            <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
                           </div>
-                          <span className="text-xs font-semibold text-[hsl(var(--status-warning))]">% ВЫПОЛН.</span>
+                          <span className="text-[11px] font-bold text-amber-500 tracking-tight">% ВЫПОЛН.</span>
                         </div>
                       ) : (
                         getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
                           ? <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))} />
-                          : <span className="text-xs text-muted-foreground/30">—</span>
+                          : <span className="text-xs text-muted-foreground/20">—</span>
                       )}
                     </TableCell>
                   ))}
@@ -601,39 +608,39 @@ export default function ScoreboardPage() {
                   return (
                     <TableRow
                       key={row.id}
-                      className={`border-b border-border/40 transition-colors ${isToday
-                        ? "bg-primary/[0.06] border-l-2 border-l-primary"
+                      className={`border-b border-border/30 transition-all duration-200 ${isToday
+                        ? "bg-primary/[0.04] border-l-[3px] border-l-primary"
                         : isWeekend && !isFuture
-                          ? "bg-muted/[0.06]"
+                          ? "bg-muted/[0.03]"
                           : ""
-                        } ${isFuture ? "opacity-60" : "hover:bg-accent/20"}`}
+                        } ${isFuture ? "opacity-40" : "hover:bg-accent/30"}`}
                     >
                       {columns.map(col => (
-                        <TableCell key={col.key} className={`px-4 py-3.5 whitespace-nowrap font-mono text-[15px] tabular-nums ${col.key === "date"
-                          ? `text-left font-medium ${isToday ? "text-primary font-bold" : isWeekend ? "text-muted-foreground/60" : "text-muted-foreground"}`
-                          : "text-right text-foreground/80"
+                        <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[14px] tabular-nums ${col.key === "date"
+                          ? `text-left font-semibold ${isToday ? "text-primary" : isWeekend ? "text-muted-foreground/50" : "text-muted-foreground/80"}`
+                          : "text-right text-foreground/70"
                           }`}>
                           {col.key === "date" ? (
-                            <div className="flex items-center gap-1.5">
-                              <span>{fmtDate(row.date)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="tracking-tight">{fmtDate(row.date)}</span>
                               {isToday && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
                               )}
                             </div>
                           ) : isFuture ? (
-                            <span className="text-muted-foreground/20">—</span>
+                            <span className="text-muted-foreground/10">—</span>
                           ) : col.key === "cpl" ? (
                             row.leads > 0 ? (
-                              <span>{fmt(cplCalc(row.spend, row.leads))}</span>
+                              <span className="font-medium">{fmt(cplCalc(row.spend, row.leads))}</span>
                             ) : (
-                              <span className="text-muted-foreground/30">—</span>
+                              <span className="text-muted-foreground/20">—</span>
                             )
                           ) : ((row as unknown as Record<string, number>)[col.key] ?? 0) > 0 ? (
-                            <span className={col.key === "revenue" && (row as unknown as Record<string, number>)[col.key] > 0 ? "text-primary font-semibold" : ""}>
+                            <span className={col.key === "revenue" && (row as unknown as Record<string, number>)[col.key] > 0 ? "text-primary font-bold" : "font-medium"}>
                               {fmt((row as unknown as Record<string, number>)[col.key])}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/30">—</span>
+                            <span className="text-muted-foreground/20">—</span>
                           )}
                         </TableCell>
                       ))}
