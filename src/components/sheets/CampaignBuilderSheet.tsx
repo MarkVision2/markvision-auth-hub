@@ -452,6 +452,24 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 </div>
               </div>
             )}
+
+            {objective === "leadform" && (
+              <div className="space-y-2">
+                <Label className="text-xs text-foreground/70">Лид-форма Meta</Label>
+                <Select value={leadForm} onValueChange={setLeadForm} disabled={loadingForms || leadFormsData.length === 0}>
+                  <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                    <SelectValue placeholder={loadingForms ? "Загрузка форм..." : leadFormsData.length === 0 ? "Нет доступных форм" : "Выберите форму"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leadFormsData.map((f) => (
+                      <SelectItem key={f.id} value={f.id} className="text-xs">
+                        {f.name} {f.status === "ACTIVE" ? "" : "(Неактивна)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </section>
 
           <Separator className="bg-border" />
