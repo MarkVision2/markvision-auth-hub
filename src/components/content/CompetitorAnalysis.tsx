@@ -792,50 +792,72 @@ export function CompetitorAnalysis() {
                         )}
 
                         {/* ─── Profile Analysis Result ─── */}
-                        {!profileLoading && profileResult && (
-                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 text-left">
-                                {/* Account Overview */}
-                                {profileResult.account_overview && (
-                                    <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-purple-500/5 p-5 space-y-3">
-                                        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                                            <Globe className="h-4 w-4 text-violet-400" />
-                                            @{profileResult.account_overview.username}
-                                        </h3>
-                                        {profileResult.account_overview.positioning_summary && (
-                                            <p className="text-sm text-foreground/80">{profileResult.account_overview.positioning_summary}</p>
-                                        )}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {profileResult.account_overview.target_audience_guess && (
-                                                <div className="rounded-lg bg-card/60 border border-border/30 p-2.5">
-                                                    <p className="text-[10px] text-muted-foreground mb-0.5">Целевая аудитория</p>
-                                                    <p className="text-xs text-foreground/80">{profileResult.account_overview.target_audience_guess}</p>
-                                                </div>
+                        {!profileLoading && profileResult && (() => {
+                            const scores = profileResult.scores_0_10 || {};
+                            const scoreValues = Object.values(scores).map((v: any) => Number(v) || 0);
+                            const avgScore = scoreValues.length ? Math.round(scoreValues.reduce((a: number, b: number) => a + b, 0) / scoreValues.length * 10) : 0;
+                            const avgColor = avgScore >= 70 ? "text-emerald-400" : avgScore >= 40 ? "text-amber-400" : "text-red-400";
+                            const avgBg = avgScore >= 70 ? "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30" : avgScore >= 40 ? "from-amber-500/20 to-amber-600/5 border-amber-500/30" : "from-red-500/20 to-red-600/5 border-red-500/30";
+
+                            return (
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 text-left">
+
+                                {/* ═══ HERO HEADER ═══ */}
+                                <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-600/8 via-purple-600/5 to-indigo-600/8 p-6 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-violet-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+                                    <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                                        {/* Overall Score */}
+                                        <div className={`shrink-0 h-24 w-24 rounded-2xl bg-gradient-to-br ${avgBg} border flex flex-col items-center justify-center`}>
+                                            <span className={`text-3xl font-black font-mono ${avgColor}`}>{avgScore}</span>
+                                            <span className="text-[9px] text-muted-foreground font-medium tracking-wide uppercase">/100</span>
+                                        </div>
+                                        {/* Account Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                                @{profileResult.account_overview?.username || "—"}
+                                                <a href={`https://instagram.com/${profileResult.account_overview?.username}`} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300"><ExternalLink className="h-4 w-4" /></a>
+                                            </h2>
+                                            {profileResult.account_overview?.positioning_summary && (
+                                                <p className="text-sm text-foreground/70 mt-1.5 leading-relaxed">{profileResult.account_overview.positioning_summary}</p>
                                             )}
-                                            {profileResult.account_overview.main_offer_guess && (
-                                                <div className="rounded-lg bg-card/60 border border-border/30 p-2.5">
-                                                    <p className="text-[10px] text-muted-foreground mb-0.5">Основной оффер</p>
-                                                    <p className="text-xs text-foreground/80">{profileResult.account_overview.main_offer_guess}</p>
-                                                </div>
-                                            )}
+                                            <div className="flex flex-wrap gap-2 mt-3">
+                                                {profileResult.account_overview?.target_audience_guess && (
+                                                    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-card/60 border border-border/40 text-foreground/80">
+                                                        <Users className="h-3 w-3 text-violet-400" /> {profileResult.account_overview.target_audience_guess}
+                                                    </span>
+                                                )}
+                                                {profileResult.account_overview?.main_offer_guess && (
+                                                    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-card/60 border border-border/40 text-foreground/80">
+                                                        <Zap className="h-3 w-3 text-amber-400" /> {profileResult.account_overview.main_offer_guess}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                )}
+                                </div>
 
-                                {/* Scores */}
+                                {/* ═══ SCORE BARS ═══ */}
                                 {profileResult.scores_0_10 && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                    <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
                                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-amber-400" /> Оценки (0–10)
+                                            <TrendingUp className="h-4 w-4 text-amber-400" /> Оценки по категориям
                                         </h3>
-                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                        <div className="space-y-3">
                                             {Object.entries(profileResult.scores_0_10).map(([key, val]) => {
-                                                const labels: Record<string, string> = { profile_packaging: "Профиль", content_strategy: "Контент", engagement: "Вовлечённость", growth_potential: "Рост", sales_funnel: "Воронка" };
+                                                const labels: Record<string, string> = { profile_packaging: "Оформление профиля", content_strategy: "Контент-стратегия", engagement: "Вовлечённость аудитории", growth_potential: "Потенциал роста", sales_funnel: "Воронка продаж" };
                                                 const score = Number(val) || 0;
-                                                const color = score >= 7 ? "text-emerald-400" : score >= 4 ? "text-amber-400" : "text-red-400";
+                                                const pct = score * 10;
+                                                const barColor = score >= 7 ? "bg-emerald-500" : score >= 4 ? "bg-amber-500" : "bg-red-500";
+                                                const textColor = score >= 7 ? "text-emerald-400" : score >= 4 ? "text-amber-400" : "text-red-400";
                                                 return (
-                                                    <div key={key} className="rounded-lg bg-secondary/30 border border-border/30 p-3 text-center">
-                                                        <p className={`text-xl font-bold font-mono ${color}`}>{score}</p>
-                                                        <p className="text-[10px] text-muted-foreground mt-0.5">{labels[key] || key}</p>
+                                                    <div key={key} className="space-y-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[13px] text-foreground/80 font-medium">{labels[key] || key}</span>
+                                                            <span className={`text-sm font-bold font-mono ${textColor}`}>{score}/10</span>
+                                                        </div>
+                                                        <div className="h-2.5 rounded-full bg-secondary/40 overflow-hidden">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }} className={`h-full rounded-full ${barColor}`} />
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -843,133 +865,198 @@ export function CompetitorAnalysis() {
                                     </div>
                                 )}
 
-                                {/* Top Mistakes */}
-                                {profileResult.top_mistakes && profileResult.top_mistakes.length > 0 && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <XCircle className="h-4 w-4 text-red-400" /> Ошибки
-                                        </h3>
-                                        <div className="space-y-2">
-                                            {profileResult.top_mistakes.map((m: any, i: number) => (
-                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="rounded-lg bg-red-500/5 border border-red-500/10 p-3 space-y-1">
-                                                    <p className="text-xs font-semibold text-foreground">❌ {m.title}</p>
-                                                    <p className="text-[11px] text-muted-foreground">{m.why_bad}</p>
-                                                    <p className="text-[11px] text-emerald-400">→ {m.how_fix}</p>
-                                                </motion.div>
-                                            ))}
+                                {/* ═══ MISTAKES & QUICK WINS — TWO COLUMNS ═══ */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {/* Mistakes */}
+                                    {profileResult.top_mistakes && profileResult.top_mistakes.length > 0 && (
+                                        <div className="rounded-2xl border border-red-500/15 bg-gradient-to-br from-red-500/5 to-transparent p-5 space-y-3">
+                                            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-lg bg-red-500/15 flex items-center justify-center">
+                                                    <XCircle className="h-3.5 w-3.5 text-red-400" />
+                                                </div>
+                                                Что исправить
+                                            </h3>
+                                            <div className="space-y-2.5">
+                                                {profileResult.top_mistakes.map((m: any, i: number) => (
+                                                    <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
+                                                        <p className="text-[13px] font-semibold text-foreground leading-snug">{m.title}</p>
+                                                        <p className="text-[12px] text-muted-foreground leading-relaxed">{m.why_bad}</p>
+                                                        <div className="flex items-start gap-2 bg-emerald-500/8 rounded-lg p-2.5 border border-emerald-500/15">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                                                            <p className="text-[12px] text-emerald-300/90 leading-relaxed">{m.how_fix}</p>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
 
-                                {/* Quick Wins */}
-                                {profileResult.quick_wins_24h && profileResult.quick_wins_24h.length > 0 && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <Zap className="h-4 w-4 text-amber-400" /> Быстрые улучшения (24ч)
-                                        </h3>
-                                        <div className="space-y-2">
-                                            {profileResult.quick_wins_24h.map((w: any, i: number) => (
-                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3 space-y-1">
-                                                    <p className="text-xs font-semibold text-foreground">⚡ {w.action}</p>
-                                                    {w.example && <p className="text-[11px] text-muted-foreground">Пример: {w.example}</p>}
-                                                    {w.expected_effect && <p className="text-[11px] text-emerald-400">Результат: {w.expected_effect}</p>}
-                                                </motion.div>
-                                            ))}
+                                    {/* Quick Wins */}
+                                    {profileResult.quick_wins_24h && profileResult.quick_wins_24h.length > 0 && (
+                                        <div className="rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/5 to-transparent p-5 space-y-3">
+                                            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                <div className="h-6 w-6 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                                                    <Zap className="h-3.5 w-3.5 text-amber-400" />
+                                                </div>
+                                                Быстрые победы за 24ч
+                                            </h3>
+                                            <div className="space-y-2.5">
+                                                {profileResult.quick_wins_24h.map((w: any, i: number) => (
+                                                    <motion.div key={i} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
+                                                        <p className="text-[13px] font-semibold text-foreground leading-snug">⚡ {w.action}</p>
+                                                        {w.example && (
+                                                            <div className="rounded-lg bg-secondary/30 border border-border/30 p-2.5">
+                                                                <p className="text-[10px] text-muted-foreground/70 mb-0.5">Пример</p>
+                                                                <p className="text-[12px] text-foreground/70 leading-relaxed">{w.example}</p>
+                                                            </div>
+                                                        )}
+                                                        {w.expected_effect && (
+                                                            <p className="text-[12px] text-emerald-400/80 flex items-center gap-1.5">
+                                                                <TrendingUp className="h-3 w-3 shrink-0" /> {w.expected_effect}
+                                                            </p>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
 
-                                {/* Bio Rewrite */}
+                                {/* ═══ BIO REWRITE ═══ */}
                                 {profileResult.bio_rewrite && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                    <div className="rounded-2xl border border-blue-500/15 bg-gradient-to-br from-blue-500/5 to-cyan-500/3 p-5 space-y-3">
                                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-blue-400" /> Переписать BIO
+                                            <div className="h-6 w-6 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                                                <FileText className="h-3.5 w-3.5 text-blue-400" />
+                                            </div>
+                                            Готовые варианты BIO
                                         </h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {profileResult.bio_rewrite.version_1_short && (
-                                                <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
-                                                    <p className="text-[10px] text-blue-400 font-semibold mb-1">Вариант 1 (короткий)</p>
-                                                    <p className="text-xs text-foreground/80">{profileResult.bio_rewrite.version_1_short}</p>
+                                                <div className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2 group">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] text-blue-400 font-bold tracking-wide uppercase">Вариант 1 · Короткий</span>
+                                                        <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_1_short); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[13px] text-foreground/85 leading-relaxed">{profileResult.bio_rewrite.version_1_short}</p>
                                                 </div>
                                             )}
                                             {profileResult.bio_rewrite.version_2_with_offer && (
-                                                <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
-                                                    <p className="text-[10px] text-blue-400 font-semibold mb-1">Вариант 2 (с оффером)</p>
-                                                    <p className="text-xs text-foreground/80">{profileResult.bio_rewrite.version_2_with_offer}</p>
+                                                <div className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2 group">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] text-blue-400 font-bold tracking-wide uppercase">Вариант 2 · С оффером</span>
+                                                        <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_2_with_offer); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[13px] text-foreground/85 leading-relaxed">{profileResult.bio_rewrite.version_2_with_offer}</p>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Content Plan */}
+                                {/* ═══ CONTENT PLAN — 5 REELS ═══ */}
                                 {profileResult.content_plan_5_reels && profileResult.content_plan_5_reels.length > 0 && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                    <div className="rounded-2xl border border-violet-500/15 bg-gradient-to-br from-violet-500/5 to-purple-500/3 p-5 space-y-4">
                                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <Play className="h-4 w-4 text-violet-400" /> Контент-план (5 Reels)
+                                            <div className="h-6 w-6 rounded-lg bg-violet-500/15 flex items-center justify-center">
+                                                <Play className="h-3.5 w-3.5 text-violet-400" />
+                                            </div>
+                                            Контент-план · 5 идей для Reels
+                                            <span className="text-[10px] text-muted-foreground/60 font-normal ml-auto">укради и адаптируй под себя</span>
                                         </h3>
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
                                             {profileResult.content_plan_5_reels.map((r: any, i: number) => (
-                                                <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="rounded-lg bg-violet-500/5 border border-violet-500/10 p-3 space-y-1.5">
-                                                    <p className="text-xs font-semibold text-foreground">🎬 {r.hook}</p>
-                                                    <p className="text-[11px] text-muted-foreground">Тема: {r.topic}</p>
-                                                    {r.structure_3_steps && (
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {r.structure_3_steps.map((s: string, j: number) => (
-                                                                <span key={j} className="text-[9px] px-2 py-0.5 rounded bg-violet-500/10 text-violet-300">{j + 1}. {s}</span>
-                                                            ))}
+                                                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="rounded-xl bg-card/80 border border-border/40 overflow-hidden">
+                                                    <div className="flex">
+                                                        <div className="w-12 shrink-0 bg-violet-500/10 flex items-center justify-center border-r border-border/30">
+                                                            <span className="text-lg font-black text-violet-400/60 font-mono">{i + 1}</span>
                                                         </div>
-                                                    )}
-                                                    {r.cta && <p className="text-[11px] text-primary">CTA: {r.cta}</p>}
+                                                        <div className="flex-1 p-4 space-y-2.5">
+                                                            <p className="text-[14px] font-bold text-foreground leading-snug">🪝 {r.hook}</p>
+                                                            <p className="text-[12px] text-muted-foreground">{r.topic}</p>
+                                                            {r.structure_3_steps && (
+                                                                <div className="space-y-1">
+                                                                    {r.structure_3_steps.map((s: string, j: number) => (
+                                                                        <div key={j} className="flex items-start gap-2">
+                                                                            <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 rounded-md px-1.5 py-0.5 shrink-0">{j + 1}</span>
+                                                                            <span className="text-[12px] text-foreground/70 leading-relaxed">{s}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {r.cta && (
+                                                                <div className="flex items-center gap-2 bg-primary/8 rounded-lg px-3 py-1.5 border border-primary/15 w-fit">
+                                                                    <span className="text-[10px] font-bold text-primary uppercase">CTA</span>
+                                                                    <span className="text-[12px] text-foreground/80">{r.cta}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </motion.div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* 3-Day Plan */}
+                                {/* ═══ 3-DAY PLAN ═══ */}
                                 {profileResult.next_3_days_plan && profileResult.next_3_days_plan.length > 0 && (
-                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                    <div className="rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/5 to-green-500/3 p-5 space-y-3">
                                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> План на 3 дня
+                                            <div className="h-6 w-6 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                            </div>
+                                            План действий на 3 дня
                                         </h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             {profileResult.next_3_days_plan.map((d: any) => (
-                                                <div key={d.day} className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
-                                                    <p className="text-[10px] text-emerald-400 font-bold mb-1">День {d.day}</p>
-                                                    <ul className="space-y-0.5">
+                                                <div key={d.day} className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="h-7 w-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-bold text-sm font-mono">{d.day}</span>
+                                                        <span className="text-[12px] font-semibold text-foreground">День {d.day}</span>
+                                                    </div>
+                                                    <div className="space-y-1.5">
                                                         {(d.tasks || []).map((t: string, i: number) => (
-                                                            <li key={i} className="text-[11px] text-foreground/70">• {t}</li>
+                                                            <div key={i} className="flex items-start gap-2">
+                                                                <div className="h-4 w-4 rounded border border-emerald-500/30 shrink-0 mt-0.5 flex items-center justify-center">
+                                                                    <div className="h-1.5 w-1.5 rounded-sm bg-emerald-500/40" />
+                                                                </div>
+                                                                <p className="text-[12px] text-foreground/70 leading-relaxed">{t}</p>
+                                                            </div>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Copy All Button */}
-                                <div className="flex gap-2">
+                                {/* ═══ ACTION BAR ═══ */}
+                                <div className="flex gap-2 pt-1">
                                     <Button
                                         onClick={() => {
                                             navigator.clipboard.writeText(JSON.stringify(profileResult, null, 2));
-                                            toast({ title: "📋 Анализ скопирован" });
+                                            toast({ title: "📋 Полный анализ скопирован" });
                                         }}
                                         variant="outline"
-                                        className="h-10 border-border gap-1.5"
+                                        className="h-11 px-5 border-border/50 gap-2 text-sm font-medium"
                                     >
-                                        <Copy className="h-3.5 w-3.5" /> Копировать анализ
+                                        <Copy className="h-4 w-4" /> Копировать всё
                                     </Button>
                                     <Button
                                         onClick={() => setProfileResult(null)}
                                         variant="ghost"
-                                        className="h-10 text-muted-foreground gap-1.5"
+                                        className="h-11 px-5 text-muted-foreground gap-2 text-sm"
                                     >
-                                        <RotateCcw className="h-3.5 w-3.5" /> Новый анализ
+                                        <RotateCcw className="h-4 w-4" /> Новый анализ
                                     </Button>
                                 </div>
                             </motion.div>
-                        )}
+                            );
+                        })()}
                     </AnimatePresence>
                 </TabsContent>
 
