@@ -8,14 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { supabase } from "@/integrations/supabase/client";
-import { Switch } from "@/components/ui/switch";
+
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
   ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
-  BarChart3, Target, Zap,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -52,16 +52,6 @@ interface ClientWithMetrics {
   dailyMetrics: DailyMetric[];
 }
 
-interface Campaign {
-  id: string;
-  name: string;
-  status: string;
-  spend: number;
-  leads: number;
-  clicks: number;
-  impressions: number;
-}
-
 interface Alert {
   account: string;
   issue: string;
@@ -84,8 +74,6 @@ const MONTH_NAMES = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ];
-
-
 
 function getMonthRange(year: number, month: number) {
   const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
@@ -150,7 +138,6 @@ export default function DashboardTarget() {
       if (active.id === "hq") {
         // MarkVision AI (HQ) sees everything
       } else {
-        // Client projects: own + shared
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
@@ -241,54 +228,6 @@ export default function DashboardTarget() {
     }
   }, [selectedYear, selectedMonth, active.id]);
 
-  const [campaigns, setCampaigns] = useState<Record<string, Campaign[]>>({});
-  const [loadingCampaigns, setLoadingCampaigns] = useState<Record<string, boolean>>({});
-
-  const fetchCampaigns = async (clientConfigId: string, adAccountId: string | null) => {
-    if (!adAccountId || loadingCampaigns[clientConfigId]) return;
-    setLoadingCampaigns(prev => ({ ...prev, [clientConfigId]: true }));
-    try {
-      const { start, end } = getMonthRange(selectedYear, selectedMonth);
-      const resp = await fetch(
-        `https://n8n.zapoinov.com/webhook/get-campaigns?ad_account_id=${encodeURIComponent(adAccountId)}&since=${start}&until=${end}`
-      );
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error);
-      setCampaigns(prev => ({ ...prev, [clientConfigId]: data.campaigns || [] }));
-    } catch (err: any) {
-      console.error("Error fetching campaigns:", err);
-      toast({ title: "Ошибка загрузки кампаний", description: err.message, variant: "destructive" });
-    } finally {
-      setLoadingCampaigns(prev => ({ ...prev, [clientConfigId]: false }));
-    }
-  };
-
-  const toggleCampaign = async (campaignId: string, currentStatus: string, clientConfigId: string, adAccountId: string | null) => {
-    const nextStatus = currentStatus === "ACTIVE" ? "PAUSED" : "ACTIVE";
-    // Optimistic update
-    setCampaigns(prev => ({
-      ...prev,
-      [clientConfigId]: prev[clientConfigId].map(c => c.id === campaignId ? { ...c, status: nextStatus } : c),
-    }));
-    try {
-      const resp = await fetch("https://n8n.zapoinov.com/webhook/toggle-campaign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaign_id: campaignId, ad_account_id: adAccountId, status: nextStatus }),
-      });
-      const data = await resp.json();
-      if (data.error) throw new Error(data.error);
-      toast({ title: "Статус изменен", description: `Кампания ${nextStatus === "ACTIVE" ? "запущена" : "остановлена"}` });
-    } catch (err: any) {
-      // Revert on error
-      setCampaigns(prev => ({
-        ...prev,
-        [clientConfigId]: prev[clientConfigId].map(c => c.id === campaignId ? { ...c, status: currentStatus } : c),
-      }));
-      toast({ title: "Ошибка", description: err.message || "Не удалось изменить статус", variant: "destructive" });
-    }
-  };
-
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
@@ -368,7 +307,6 @@ export default function DashboardTarget() {
   return (
     <DashboardLayout breadcrumb="Таргетолог">
       <StaggerContainer className="space-y-5">
-        {/* Header */}
         <FadeUpItem className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
@@ -407,8 +345,6 @@ export default function DashboardTarget() {
           </div>
         </FadeUpItem>
 
-
-        {/* Alerts */}
         {alerts.length > 0 && (
           <FadeUpItem>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -430,7 +366,6 @@ export default function DashboardTarget() {
           </FadeUpItem>
         )}
 
-        {/* Filters */}
         <FadeUpItem className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px] max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -461,7 +396,6 @@ export default function DashboardTarget() {
           </div>
         </FadeUpItem>
 
-        {/* Data table */}
         <FadeUpItem>
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -518,6 +452,9 @@ export default function DashboardTarget() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem className="text-sm gap-2" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
+                                <ExternalLink className="h-3.5 w-3.5" /> Открыть в Meta Ads
+                              </DropdownMenuItem>
                               <DropdownMenuItem className="text-sm gap-2" onClick={() => toast({ title: "Настройки", description: client.name })}>
                                 <Pencil className="h-3.5 w-3.5" /> Настройки
                               </DropdownMenuItem>
@@ -530,10 +467,10 @@ export default function DashboardTarget() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="px-4 py-4 bg-secondary/5 border-b border-border space-y-4">
-                          {/* Stats section — only when data exists */}
+
+
                           {client.hasData && (
-                            <>
-                              {/* Budget progress */}
+                            <div className="pt-4 border-t border-border/40 space-y-4">
                               {client.daily_budget > 0 && (
                                 <div className="space-y-1.5">
                                   <div className="flex items-center justify-between text-xs">
@@ -543,8 +480,6 @@ export default function DashboardTarget() {
                                   <Progress value={budgetPct} className="h-1.5 bg-secondary" />
                                 </div>
                               )}
-
-                              {/* Detail metrics grid */}
                               <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
                                 {[
                                   { label: "Расход", value: fmtCurrency(client.totalSpend) },
@@ -560,8 +495,6 @@ export default function DashboardTarget() {
                                   </div>
                                 ))}
                               </div>
-
-                              {/* Daily metrics mini-table */}
                               {client.dailyMetrics.length > 0 && (
                                 <div className="rounded-lg border border-border overflow-hidden">
                                   <div className="grid grid-cols-[80px_1fr_1fr_1fr_1fr_1fr] items-center px-3 py-1.5 bg-secondary/30 border-b border-border">
@@ -583,74 +516,8 @@ export default function DashboardTarget() {
                                   </div>
                                 </div>
                               )}
-                            </>
+                            </div>
                           )}
-
-                          {/* Active Campaigns — shown for ALL clients */}
-                          <div className={`space-y-3 ${client.hasData ? "pt-2 border-t border-border/40" : ""}`}>
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-[11px] font-bold text-foreground/70 uppercase tracking-widest flex items-center gap-1.5">
-                                <BarChart3 className="h-3 w-3 text-primary" />
-                                Активные кампании
-                              </h4>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-primary"
-                                onClick={() => fetchCampaigns(client.id, client.ad_account_id)}
-                                disabled={loadingCampaigns[client.id] || !client.ad_account_id}
-                              >
-                                {loadingCampaigns[client.id] ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                                {campaigns[client.id] ? "Обновить" : "Загрузить из Meta"}
-                              </Button>
-                            </div>
-
-                            <div className="space-y-2">
-                              {!client.ad_account_id ? (
-                                <div className="text-center py-5 rounded-lg border border-dashed border-border/60 bg-secondary/5">
-                                  <p className="text-[11px] text-muted-foreground">Ad Account ID не указан в настройках клиента</p>
-                                </div>
-                              ) : !campaigns[client.id] ? (
-                                <div className="text-center py-5 rounded-lg border border-dashed border-border/60 bg-secondary/5">
-                                  <p className="text-[11px] text-muted-foreground">Нажмите «Загрузить из Meta» для получения актуальных кампаний</p>
-                                </div>
-                              ) : campaigns[client.id].length === 0 ? (
-                                <div className="text-center py-5 rounded-lg border border-dashed border-border/60 bg-secondary/5">
-                                  <p className="text-[11px] text-muted-foreground">Активных кампаний не найдено</p>
-                                </div>
-                              ) : (
-                                <>
-                                  {/* Campaigns table header */}
-                                  <div className="grid grid-cols-[1fr_70px_55px_55px_55px_44px] items-center px-3 py-1.5 rounded-t-lg bg-secondary/30 border border-border border-b-0">
-                                    {["Кампания", "Расход", "Лиды", "CPL", "Клики", ""].map((h, i) => (
-                                      <span key={i} className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{h}</span>
-                                    ))}
-                                  </div>
-                                  <div className="rounded-b-lg border border-border border-t-0 overflow-hidden divide-y divide-border/50">
-                                    {campaigns[client.id].map(camp => (
-                                      <div key={camp.id} className="grid grid-cols-[1fr_70px_55px_55px_55px_44px] items-center px-3 py-2.5 bg-card/50 hover:bg-card transition-colors">
-                                        <div className="min-w-0 pr-2">
-                                          <div className="flex items-center gap-1.5">
-                                            <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${camp.status === "ACTIVE" ? "bg-emerald-500" : "bg-muted-foreground/40"}`} />
-                                            <p className="text-xs font-medium text-foreground truncate">{camp.name}</p>
-                                          </div>
-                                        </div>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{camp.spend > 0 ? fmtCurrency(Math.round(camp.spend)) : "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{camp.leads || "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{camp.leads > 0 && camp.spend > 0 ? fmtCurrency(Math.round(camp.spend / camp.leads)) : "—"}</span>
-                                        <span className="text-[11px] font-mono tabular-nums text-foreground/80">{camp.clicks || "—"}</span>
-                                        <Switch
-                                          checked={camp.status === "ACTIVE"}
-                                          onCheckedChange={() => toggleCampaign(camp.id, camp.status, client.id, client.ad_account_id)}
-                                          className="scale-75"
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
