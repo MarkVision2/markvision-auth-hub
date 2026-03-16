@@ -134,6 +134,7 @@ async function triggerScrape(url: string, payload: Record<string, unknown>) {
 export function CompetitorAnalysis() {
     const [profileAnalysisUrl, setProfileAnalysisUrl] = useState("");
     const [profileLoading, setProfileLoading] = useState(false);
+    const [profileResult, setProfileResult] = useState<any>(null);
 
     const { toast } = useToast();
     const { active } = useWorkspace();
@@ -466,6 +467,7 @@ export function CompetitorAnalysis() {
     const handleProfileAnalyze = useCallback(async () => {
         if (!profileAnalysisUrl.trim()) return;
         setProfileLoading(true);
+        setProfileResult(null);
         try {
             const raw = profileAnalysisUrl.trim().replace(/^@/, "").replace(/https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "");
             const username = raw.split("/").filter(Boolean).pop() || raw;
@@ -485,15 +487,12 @@ export function CompetitorAnalysis() {
 
             if (!response.ok) throw new Error(`Ошибка webhook: ${response.status}`);
 
-            let responseData: any = null;
-            try {
-                responseData = await response.json();
-            } catch { /* response may not be JSON */ }
-
-            toast({ title: "✅ Анализ профиля запущен!", description: "n8n обрабатывает данные. Результат появится в истории AI-Разборов." });
+            const data = await response.json();
+            setProfileResult(data);
+            toast({ title: "✅ Анализ готов!", description: `@${data?.account_overview?.username || username}` });
             setProfileAnalysisUrl("");
         } catch (err: any) {
-            toast({ title: "Ошибка запуска анализа", description: err.message, variant: "destructive" });
+            toast({ title: "Ошибка анализа", description: err.message, variant: "destructive" });
         } finally {
             setProfileLoading(false);
         }
@@ -777,7 +776,7 @@ export function CompetitorAnalysis() {
                             </motion.div>
                         )}
 
-                        {!profileLoading && (
+                        {!profileLoading && !profileResult && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20 flex items-center justify-center mb-4">
                                     <Globe className="h-7 w-7 text-violet-400/50" />
@@ -788,6 +787,186 @@ export function CompetitorAnalysis() {
                                     {["Анализ подписчиков", "Качество контента", "Стратегия", "Рекомендации"].map((tag) => (
                                         <span key={tag} className="text-[10px] px-2.5 py-1 rounded-full bg-violet-500/8 border border-violet-500/15 text-violet-400/80">{tag}</span>
                                     ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {/* ─── Profile Analysis Result ─── */}
+                        {!profileLoading && profileResult && (
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 text-left">
+                                {/* Account Overview */}
+                                {profileResult.account_overview && (
+                                    <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-purple-500/5 p-5 space-y-3">
+                                        <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                                            <Globe className="h-4 w-4 text-violet-400" />
+                                            @{profileResult.account_overview.username}
+                                        </h3>
+                                        {profileResult.account_overview.positioning_summary && (
+                                            <p className="text-sm text-foreground/80">{profileResult.account_overview.positioning_summary}</p>
+                                        )}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {profileResult.account_overview.target_audience_guess && (
+                                                <div className="rounded-lg bg-card/60 border border-border/30 p-2.5">
+                                                    <p className="text-[10px] text-muted-foreground mb-0.5">Целевая аудитория</p>
+                                                    <p className="text-xs text-foreground/80">{profileResult.account_overview.target_audience_guess}</p>
+                                                </div>
+                                            )}
+                                            {profileResult.account_overview.main_offer_guess && (
+                                                <div className="rounded-lg bg-card/60 border border-border/30 p-2.5">
+                                                    <p className="text-[10px] text-muted-foreground mb-0.5">Основной оффер</p>
+                                                    <p className="text-xs text-foreground/80">{profileResult.account_overview.main_offer_guess}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Scores */}
+                                {profileResult.scores_0_10 && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <TrendingUp className="h-4 w-4 text-amber-400" /> Оценки (0–10)
+                                        </h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                            {Object.entries(profileResult.scores_0_10).map(([key, val]) => {
+                                                const labels: Record<string, string> = { profile_packaging: "Профиль", content_strategy: "Контент", engagement: "Вовлечённость", growth_potential: "Рост", sales_funnel: "Воронка" };
+                                                const score = Number(val) || 0;
+                                                const color = score >= 7 ? "text-emerald-400" : score >= 4 ? "text-amber-400" : "text-red-400";
+                                                return (
+                                                    <div key={key} className="rounded-lg bg-secondary/30 border border-border/30 p-3 text-center">
+                                                        <p className={`text-xl font-bold font-mono ${color}`}>{score}</p>
+                                                        <p className="text-[10px] text-muted-foreground mt-0.5">{labels[key] || key}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Top Mistakes */}
+                                {profileResult.top_mistakes && profileResult.top_mistakes.length > 0 && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <XCircle className="h-4 w-4 text-red-400" /> Ошибки
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {profileResult.top_mistakes.map((m: any, i: number) => (
+                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="rounded-lg bg-red-500/5 border border-red-500/10 p-3 space-y-1">
+                                                    <p className="text-xs font-semibold text-foreground">❌ {m.title}</p>
+                                                    <p className="text-[11px] text-muted-foreground">{m.why_bad}</p>
+                                                    <p className="text-[11px] text-emerald-400">→ {m.how_fix}</p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quick Wins */}
+                                {profileResult.quick_wins_24h && profileResult.quick_wins_24h.length > 0 && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <Zap className="h-4 w-4 text-amber-400" /> Быстрые улучшения (24ч)
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {profileResult.quick_wins_24h.map((w: any, i: number) => (
+                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="rounded-lg bg-amber-500/5 border border-amber-500/10 p-3 space-y-1">
+                                                    <p className="text-xs font-semibold text-foreground">⚡ {w.action}</p>
+                                                    {w.example && <p className="text-[11px] text-muted-foreground">Пример: {w.example}</p>}
+                                                    {w.expected_effect && <p className="text-[11px] text-emerald-400">Результат: {w.expected_effect}</p>}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Bio Rewrite */}
+                                {profileResult.bio_rewrite && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-blue-400" /> Переписать BIO
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {profileResult.bio_rewrite.version_1_short && (
+                                                <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
+                                                    <p className="text-[10px] text-blue-400 font-semibold mb-1">Вариант 1 (короткий)</p>
+                                                    <p className="text-xs text-foreground/80">{profileResult.bio_rewrite.version_1_short}</p>
+                                                </div>
+                                            )}
+                                            {profileResult.bio_rewrite.version_2_with_offer && (
+                                                <div className="rounded-lg bg-blue-500/5 border border-blue-500/10 p-3">
+                                                    <p className="text-[10px] text-blue-400 font-semibold mb-1">Вариант 2 (с оффером)</p>
+                                                    <p className="text-xs text-foreground/80">{profileResult.bio_rewrite.version_2_with_offer}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Content Plan */}
+                                {profileResult.content_plan_5_reels && profileResult.content_plan_5_reels.length > 0 && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <Play className="h-4 w-4 text-violet-400" /> Контент-план (5 Reels)
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {profileResult.content_plan_5_reels.map((r: any, i: number) => (
+                                                <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }} className="rounded-lg bg-violet-500/5 border border-violet-500/10 p-3 space-y-1.5">
+                                                    <p className="text-xs font-semibold text-foreground">🎬 {r.hook}</p>
+                                                    <p className="text-[11px] text-muted-foreground">Тема: {r.topic}</p>
+                                                    {r.structure_3_steps && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {r.structure_3_steps.map((s: string, j: number) => (
+                                                                <span key={j} className="text-[9px] px-2 py-0.5 rounded bg-violet-500/10 text-violet-300">{j + 1}. {s}</span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {r.cta && <p className="text-[11px] text-primary">CTA: {r.cta}</p>}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 3-Day Plan */}
+                                {profileResult.next_3_days_plan && profileResult.next_3_days_plan.length > 0 && (
+                                    <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-400" /> План на 3 дня
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            {profileResult.next_3_days_plan.map((d: any) => (
+                                                <div key={d.day} className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-3">
+                                                    <p className="text-[10px] text-emerald-400 font-bold mb-1">День {d.day}</p>
+                                                    <ul className="space-y-0.5">
+                                                        {(d.tasks || []).map((t: string, i: number) => (
+                                                            <li key={i} className="text-[11px] text-foreground/70">• {t}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Copy All Button */}
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(JSON.stringify(profileResult, null, 2));
+                                            toast({ title: "📋 Анализ скопирован" });
+                                        }}
+                                        variant="outline"
+                                        className="h-10 border-border gap-1.5"
+                                    >
+                                        <Copy className="h-3.5 w-3.5" /> Копировать анализ
+                                    </Button>
+                                    <Button
+                                        onClick={() => setProfileResult(null)}
+                                        variant="ghost"
+                                        className="h-10 text-muted-foreground gap-1.5"
+                                    >
+                                        <RotateCcw className="h-3.5 w-3.5" /> Новый анализ
+                                    </Button>
                                 </div>
                             </motion.div>
                         )}
