@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -143,6 +143,8 @@ export function CompetitorAnalysis() {
     const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [scrapingId, setScrapingId] = useState<string | null>(null);
+    const reportRef = useRef<HTMLDivElement>(null);
+    const [downloadingPdf, setDownloadingPdf] = useState(false);
 
     // Add competitor
     const [profileQuery, setProfileQuery] = useState("");
@@ -458,6 +460,45 @@ export function CompetitorAnalysis() {
             setAdaptLoading(false);
         }
     }, [adaptFormat, toast]);
+
+    // ─── PDF Export Logic ───
+    const handleDownloadPdf = useCallback(async () => {
+        if (!reportRef.current || !profileResult) return;
+        setDownloadingPdf(true);
+        try {
+            const [html2canvas, { default: jsPDF }] = await Promise.all([
+                import("html2canvas").then(m => m.default),
+                import("jspdf")
+            ]);
+
+            const canvas = await html2canvas(reportRef.current, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#00000000", // Transparent to match glass look
+                logging: false,
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "px",
+                format: [canvas.width / 2, canvas.height / 2], // 1:1 scale for canvas
+            });
+
+            pdf.addImage(imgData, "PNG", 0, 0, canvas.width / 2, canvas.height / 2, undefined, 'FAST');
+            pdf.save(`analysis_${profileResult.account_overview?.username || "report"}_${dateFmt(new Date(), "yyyy-MM-dd")}.pdf`);
+            toast({ title: "✅ Отчёт успешно скачан" });
+        } catch (error) {
+            console.error("PDF Export failed:", error);
+            toast({
+                title: "❌ Ошибка при генерации PDF",
+                description: "Попробуйте еще раз или используйте скриншот",
+                variant: "destructive"
+            });
+        } finally {
+            setDownloadingPdf(false);
+        }
+    }, [profileResult, toast]);
 
     const displayAnalyses = analyses.filter((a) =>
         a.status === "completed" && (a.performance_score > 0 || !!a.hook || !!a.ai_analysis)
@@ -796,15 +837,16 @@ export function CompetitorAnalysis() {
 
                             return (
                             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 text-left">
-
+                                {/* Result Area */}
+                                <div ref={reportRef} className="space-y-6 pt-4">
                                 {/* ═══ HERO HEADER ═══ */}
                                 <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-600/8 via-purple-600/5 to-indigo-600/8 p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-48 h-48 bg-violet-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
                                     <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
                                         {/* Overall Score */}
-                                        <div className={`shrink-0 h-24 w-24 rounded-2xl bg-gradient-to-br ${avgBg} border flex flex-col items-center justify-center`}>
+                                        <div className={`shrink-0 h-24 w-24 rounded-2xl bg-card border-2 ${avgBg} flex flex-col items-center justify-center shadow-inner`}>
                                             <span className={`text-3xl font-black font-mono ${avgColor}`}>{avgScore}</span>
-                                            <span className="text-[9px] text-muted-foreground font-medium tracking-wide uppercase">/100</span>
+                                            <span className="text-[10px] text-foreground/50 font-black tracking-widest uppercase">/100</span>
                                         </div>
                                         {/* Account Info */}
                                         <div className="flex-1 min-w-0">
@@ -845,13 +887,13 @@ export function CompetitorAnalysis() {
                                                 const barColor = score >= 7 ? "bg-emerald-500" : score >= 4 ? "bg-amber-500" : "bg-red-500";
                                                 const textColor = score >= 7 ? "text-emerald-400" : score >= 4 ? "text-amber-400" : "text-red-400";
                                                 return (
-                                                    <div key={key} className="space-y-1.5">
+                                                    <div key={key} className="space-y-2">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-sm text-foreground font-semibold">{labels[key] || key}</span>
-                                                            <span className={`text-sm font-black font-mono ${textColor}`}>{score}/10</span>
+                                                            <span className="text-sm text-foreground font-black">{labels[key] || key}</span>
+                                                            <span className={`text-sm font-black font-mono ${textColor.replace('400', '600')}`}>{score}/10</span>
                                                         </div>
-                                                        <div className="h-2.5 rounded-full bg-secondary/40 overflow-hidden">
-                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }} className={`h-full rounded-full ${barColor}`} />
+                                                        <div className="h-3 rounded-full bg-secondary/60 border border-border/20 overflow-hidden shadow-sm">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }} className={`h-full rounded-full ${barColor} shadow-[0_0_10px_rgba(0,0,0,0.1)]`} />
                                                         </div>
                                                     </div>
                                                 );
@@ -871,14 +913,14 @@ export function CompetitorAnalysis() {
                                                 </div>
                                                 Что исправить
                                             </h3>
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-3">
                                                 {profileResult.top_mistakes.map((m: any, i: number) => (
-                                                    <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
-                                                        <p className="text-[14px] font-bold text-foreground leading-snug">{m.title}</p>
-                                                        <p className="text-[13px] font-medium text-foreground/90 leading-relaxed">{m.why_bad}</p>
-                                                        <div className="flex items-start gap-2 bg-emerald-500/10 rounded-lg p-2.5 border border-emerald-500/20">
-                                                            <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                                                            <p className="text-[13px] font-semibold text-emerald-100 leading-relaxed">{m.how_fix}</p>
+                                                    <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card border border-border/60 p-4 space-y-2.5 shadow-sm">
+                                                        <p className="text-[15px] font-black text-foreground leading-tight">{m.title}</p>
+                                                        <p className="text-[13px] font-medium text-foreground/80 leading-relaxed">{m.why_bad}</p>
+                                                        <div className="flex items-start gap-2.5 bg-emerald-500/10 rounded-lg p-3 border border-emerald-500/20 shadow-inner">
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                                                            <p className="text-[13px] font-extrabold text-foreground leading-relaxed">{m.how_fix}</p>
                                                         </div>
                                                     </motion.div>
                                                 ))}
@@ -895,18 +937,18 @@ export function CompetitorAnalysis() {
                                                 </div>
                                                 Быстрые победы за 24ч
                                             </h3>
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-3">
                                                 {profileResult.quick_wins_24h.map((w: any, i: number) => (
-                                                    <motion.div key={i} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
-                                                        <p className="text-[14px] font-bold text-foreground leading-snug">⚡ {w.action}</p>
+                                                    <motion.div key={i} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card border border-border/60 p-4 space-y-2.5 shadow-sm">
+                                                        <p className="text-[15px] font-black text-foreground leading-tight">⚡ {w.action}</p>
                                                         {w.example && (
-                                                            <div className="rounded-lg bg-secondary/40 border border-border/40 p-3">
-                                                                <p className="text-[11px] font-bold text-foreground/60 mb-1">Пример</p>
-                                                                <p className="text-[13px] font-medium text-foreground leading-relaxed italic">«{w.example}»</p>
+                                                            <div className="rounded-lg bg-secondary/50 border border-border/50 p-3">
+                                                                <p className="text-[11px] font-black text-foreground/40 mb-1 uppercase tracking-tighter">Пример</p>
+                                                                <p className="text-[13px] font-bold text-foreground leading-relaxed italic">«{w.example}»</p>
                                                             </div>
                                                         )}
                                                         {w.expected_effect && (
-                                                            <p className="text-[13px] font-bold text-emerald-400 flex items-center gap-1.5">
+                                                            <p className="text-[13px] font-black text-emerald-600 flex items-center gap-1.5">
                                                                 <TrendingUp className="h-4 w-4 shrink-0" /> {w.expected_effect}
                                                             </p>
                                                         )}
@@ -965,7 +1007,7 @@ export function CompetitorAnalysis() {
                                         </h3>
                                         <div className="space-y-3">
                                             {profileResult.content_plan_5_reels.map((r: any, i: number) => (
-                                                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="rounded-xl bg-card/80 border border-border/40 overflow-hidden">
+                                                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-card/80 border border-border/40 overflow-hidden">
                                                     <div className="flex">
                                                         <div className="w-12 shrink-0 bg-violet-500/10 flex items-center justify-center border-r border-border/30">
                                                             <span className="text-lg font-black text-violet-400/60 font-mono">{i + 1}</span>
@@ -1028,23 +1070,22 @@ export function CompetitorAnalysis() {
                                         </div>
                                     </div>
                                 )}
+                                </div>
 
                                 {/* ═══ ACTION BAR ═══ */}
-                                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                                <div className="flex flex-col sm:flex-row gap-2 pt-2 print:hidden">
                                     <Button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(JSON.stringify(profileResult, null, 2));
-                                            toast({ title: "📋 Полный анализ скопирован" });
-                                        }}
-                                        variant="outline"
-                                        className="h-11 flex-1 border-border/80 bg-background hover:bg-secondary/20 gap-2 text-sm font-bold text-foreground shadow-sm"
+                                        onClick={handleDownloadPdf}
+                                        disabled={downloadingPdf}
+                                        className="h-11 flex-1 bg-violet-600 hover:bg-violet-700 text-white gap-2 text-sm font-bold shadow-lg shadow-violet-500/20"
                                     >
-                                        <Copy className="h-4 w-4" /> Копировать весь отчет JSON
+                                        {downloadingPdf ? <Loader2 className="h-4 w-4 animate-spin text-white/50" /> : <Download className="h-4 w-4" />}
+                                        {downloadingPdf ? "Генерация отчета..." : "Скачать полный отчет PDF"}
                                     </Button>
                                     <Button
                                         onClick={() => setProfileResult(null)}
-                                        variant="ghost"
-                                        className="h-11 px-6 text-foreground/60 hover:text-foreground hover:bg-secondary/40 gap-2 text-sm font-semibold transition-colors"
+                                        variant="outline"
+                                        className="h-11 px-6 border-border/60 text-foreground font-bold hover:bg-secondary/40 gap-2 text-sm transition-colors"
                                     >
                                         <RotateCcw className="h-4 w-4" /> Новый анализ
                                     </Button>
