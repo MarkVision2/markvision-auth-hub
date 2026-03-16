@@ -562,13 +562,6 @@ export function CompetitorAnalysis() {
                         </Button>
                     </div>
 
-                    {/* Boost.space info */}
-                    <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-start gap-2">
-                        <Zap className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        <p className="text-xs text-muted-foreground text-left">
-                            <span className="text-primary font-semibold">Boost.space Instagram Scraper</span> автоматически парсит профиль + последние посты → AI анализирует контент → генерирует сценарии для вас.
-                        </p>
-                    </div>
 
                     {/* Filter Bar */}
                     <div className="flex gap-2 flex-wrap bg-secondary/20 border border-border rounded-xl p-3">
@@ -820,12 +813,6 @@ export function CompetitorAnalysis() {
                         </Button>
                     </div>
 
-                    <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-start gap-2">
-                        <Cpu className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        <p className="text-xs text-muted-foreground text-left">
-                            <span className="text-primary font-semibold">n8n + Gemini 2.5 Pro</span> скачает видео, транскрибирует через Whisper, разберёт на части (хук, боль, решение, оффер, CTA) и создаст готовый сценарий. Поддерживает Instagram Reels, TikTok, YouTube.
-                        </p>
-                    </div>
 
                     <AnimatePresence mode="wait">
                         {postLoading && (
@@ -960,15 +947,7 @@ export function CompetitorAnalysis() {
 
                 {/* ═══ TAB 3: AI-РАЗБОРЫ ═══ */}
                 <TabsContent value="analyses" className="space-y-5">
-                    {/* Pending analyses indicator */}
-                    {analyses.filter((a) => a.status === "pending").length > 0 && (
-                        <div className="rounded-lg bg-primary/5 border border-primary/10 p-3 flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />
-                            <p className="text-xs text-muted-foreground">
-                                <span className="text-primary font-semibold">{analyses.filter((a) => a.status === "pending").length} анализ</span> в обработке — n8n + Gemini 2.5 Pro работает…
-                            </p>
-                        </div>
-                    )}
+
                     {displayAnalyses.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                             <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
