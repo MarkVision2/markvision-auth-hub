@@ -30,9 +30,17 @@ interface ClientConfig {
   ad_account_id: string | null;
   page_id: string | null;
   page_name: string | null;
+  instagram_user_id: string | null;
   fb_token: string | null;
   city: string | null;
   region_key: string | null;
+}
+
+interface BusinessPage {
+  id: string;
+  page_name: string;
+  page_id: string;
+  instagram_user_id: string | null;
 }
 
 type Objective = "whatsapp" | "website" | "leadform";
@@ -43,6 +51,11 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [clients, setClients] = useState<ClientConfig[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
+
+  // Business pages for selected client
+  const [businessPages, setBusinessPages] = useState<BusinessPage[]>([]);
+  const [selectedPageId, setSelectedPageId] = useState("");
+
   const [objective, setObjective] = useState<Objective>("whatsapp");
   const [utmTags, setUtmTags] = useState("?utm_source=meta&utm_medium=cpc&utm_campaign=");
   const [siteUrl, setSiteUrl] = useState("");
@@ -65,14 +78,20 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const { pushNotification } = useNotifications();
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
+  const selectedPage = businessPages.find((p) => p.id === selectedPageId);
 
-  // Load clients from Supabase
+  // Active page_id and instagram to send: prefer selected business page, fallback to clients_config
+  const activePage = selectedPage
+    ? { page_id: selectedPage.page_id, page_name: selectedPage.page_name, instagram_user_id: selectedPage.instagram_user_id }
+    : { page_id: selectedClient?.page_id ?? "", page_name: selectedClient?.page_name ?? "", instagram_user_id: selectedClient?.instagram_user_id ?? "" };
+
+  // Load clients
   useEffect(() => {
     if (!open) return;
     setLoadingClients(true);
     (supabase as any)
       .from("clients_config")
-      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, fb_token, city, region_key")
+      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, fb_token, city, region_key")
       .eq("is_active", true)
       .order("client_name")
       .then(({ data, error }: any) => {
@@ -80,6 +99,29 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         setLoadingClients(false);
       });
   }, [open]);
+
+  // Load business pages when client changes
+  useEffect(() => {
+    setBusinessPages([]);
+    setSelectedPageId("");
+    setLeadFormsData([]);
+    setLeadForm("");
+
+    if (!selectedClientId) return;
+
+    (supabase as any)
+      .from("business_pages")
+      .select("id, page_name, page_id, instagram_user_id")
+      .eq("client_config_id", selectedClientId)
+      .order("page_name")
+      .then(({ data }: any) => {
+        if (data && data.length > 0) {
+          setBusinessPages(data);
+          // Auto-select if only one page
+          if (data.length === 1) setSelectedPageId(data[0].id);
+        }
+      });
+  }, [selectedClientId]);
 
   // Auto-fill pixel/site when client changes
   useEffect(() => {
@@ -90,15 +132,28 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     }
   }, [selectedClientId]);
 
-  // Load lead forms when objective=leadform and client selected
+  // Load lead forms when objective=leadform, client and page selected
   useEffect(() => {
-    if (objective !== "leadform" || !selectedClient?.ad_account_id) {
+    if (objective !== "leadform") {
       setLeadFormsData([]);
       return;
     }
+    
+    // We strictly need page_id now
+    const pageIdToUse = activePage.page_id;
+    if (!pageIdToUse) {
+      setLeadFormsData([]);
+      return;
+    }
+
     setLoadingForms(true);
     setLeadForm("");
-    const url = `https://n8n.zapoinov.com/webhook/get-forms?ad_account_id=${encodeURIComponent(selectedClient.ad_account_id)}`;
+
+    // Fetch lead forms by page_id as requested
+    // ad_account_id is kept as extra context if needed by n8n
+    const adAccountId = selectedClient?.ad_account_id || "";
+    const url = `https://n8n.zapoinov.com/webhook/get-forms?page_id=${encodeURIComponent(pageIdToUse)}&ad_account_id=${encodeURIComponent(adAccountId)}`;
+    
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
@@ -108,7 +163,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       })
       .catch(() => setLeadFormsData([]))
       .finally(() => setLoadingForms(false));
-  }, [objective, selectedClientId]);
+  }, [objective, selectedClientId, selectedPageId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -126,6 +181,10 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       toast({ title: "Выберите клиента", variant: "destructive" });
       return;
     }
+    if (businessPages.length > 0 && !selectedPageId) {
+      toast({ title: "Выберите страницу", description: "У этого клиента несколько страниц — выберите одну", variant: "destructive" });
+      return;
+    }
     setLaunching(true);
     try {
       // 1. Upload media to Supabase Storage
@@ -140,7 +199,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       const { data: urlData } = supabase.storage.from("content_assets").getPublicUrl(filePath);
       const mediaUrl = urlData?.publicUrl || "";
 
-      // 2. Build payload matching n8n AI-targetolog workflow
+      // 2. Build payload
       const isVideo = creativeFile.type.startsWith("video/");
 
       const payload = {
@@ -148,8 +207,9 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
           client_id: selectedClient.id,
           client_name: selectedClient.client_name,
           ad_account_id: selectedClient.ad_account_id || "",
-          page_id: selectedClient.page_id || "",
-          page_name: selectedClient.page_name || "",
+          page_id: activePage.page_id,
+          page_name: activePage.page_name,
+          instagram_user_id: activePage.instagram_user_id || "",
           fb_token: selectedClient.fb_token || "",
           city: selectedClient.city || "",
           region_key: selectedClient.region_key || "",
@@ -164,11 +224,10 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
           mediaType: isVideo ? "VIDEO" : "PHOTO",
           mediaID: mediaUrl,
           websiteUrl: siteUrl,
-          headline: `Кампания: ${selectedClient.client_name}`,
+          headline: `Кампания: ${activePage.page_name || selectedClient.client_name}`,
           adText: "Запущено автоматически через MarkVision Hub",
           targeting: { age_min: 25, age_max: 65 },
         },
-        // destination — единый источник истины для n8n
         destination: objective,
         ...(objective === "leadform" && leadForm ? { leadFormId: leadForm } : {}),
         mediaType: isVideo ? "VIDEO" : "PHOTO",
@@ -188,11 +247,14 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
       if (!res.ok) throw new Error(`Ошибка связи с сервером автоматизации (${res.status})`);
 
-      toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Клиент: ${selectedClient.client_name}` });
-      pushNotification("info", "Кампания отправлена на запуск", `Клиент: ${selectedClient.client_name}, бюджет: ${budgetAmount}₽`, "Управление рекламой");
+      const pageName = activePage.page_name || selectedClient.client_name;
+      toast({ title: "✅ Кампания отправлена в ИИ-Таргетолог!", description: `Страница: ${pageName}` });
+      pushNotification("info", "Кампания отправлена на запуск", `Страница: ${pageName}, бюджет: ${budgetAmount}₽`, "Управление рекламой");
 
-      // Reset form on success
+      // Reset
       setSelectedClientId("");
+      setSelectedPageId("");
+      setBusinessPages([]);
       setObjective("whatsapp");
       setBudgetAmount("");
       setStartDate(undefined);
@@ -215,7 +277,6 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       setLaunching(false);
     }
   };
-
 
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
@@ -245,8 +306,9 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               Основные настройки
             </h3>
 
+            {/* Client selector */}
             <div className="space-y-2">
-              <Label className="text-xs text-foreground/70">Клиент</Label>
+              <Label className="text-xs text-foreground/70">Клиент / Кабинет</Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
                   <SelectValue placeholder={loadingClients ? "Загрузка..." : "Выберите клиента"} />
@@ -264,6 +326,67 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               )}
             </div>
 
+            {/* Page selector — shown when client has business pages */}
+            {businessPages.length > 0 && (
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[11px] font-bold uppercase tracking-wider text-foreground/60 flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-primary" />
+                    Бизнес-страница Facebook
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                    {businessPages.length} {businessPages.length === 1 ? 'страница' : 'страницы'}
+                  </span>
+                </div>
+                
+                <div className="grid gap-2.5">
+                  {businessPages.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedPageId(p.id)}
+                      className={cn(
+                        "group relative flex items-center gap-4 rounded-xl border p-3 text-left transition-all duration-200",
+                        selectedPageId === p.id
+                          ? "border-primary/50 bg-primary/5 shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]"
+                          : "border-border bg-secondary/20 hover:border-border/80 hover:bg-secondary/40"
+                      )}
+                    >
+                      <div className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                        selectedPageId === p.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border group-hover:border-border/80"
+                      )}>
+                        <div className="text-sm font-bold">{p.page_name.charAt(0)}</div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={cn("text-sm font-bold truncate", selectedPageId === p.id ? "text-primary" : "text-foreground")}>
+                            {p.page_name}
+                          </p>
+                          {p.instagram_user_id && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-pink-500/10 text-[9px] text-pink-500 font-bold uppercase tracking-tighter">
+                              IG
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5 mt-1 truncate">
+                          ID: {p.page_id}
+                        </p>
+                      </div>
+                      
+                      <div className={cn(
+                        "h-5 w-5 rounded-full border flex items-center justify-center transition-all",
+                        selectedPageId === p.id ? "bg-primary border-primary" : "border-border group-hover:border-border/80"
+                      )}>
+                        {selectedPageId === p.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Objective */}
             <div className="space-y-2">
               <Label className="text-xs text-foreground/70">Цель кампании</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -317,28 +440,41 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
             {objective === "leadform" && (
               <div className="space-y-3 animate-in fade-in-0 slide-in-from-top-2 duration-200">
                 <div className="space-y-2">
-                  <Label className="text-xs text-foreground/70">Лид-форма Meta</Label>
-                  <Select value={leadForm} onValueChange={setLeadForm}>
-                    <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
-                      <SelectValue placeholder="Выберите форму" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingForms ? (
-                        <SelectItem value="__loading" disabled className="text-xs text-muted-foreground">Загрузка форм...</SelectItem>
-                      ) : leadFormsData.length === 0 ? (
-                        <SelectItem value="__empty" disabled className="text-xs text-muted-foreground">
-                          {selectedClient ? "Формы не найдены" : "Сначала выберите клиента"}
-                        </SelectItem>
-                      ) : (
-                        leadFormsData.map((f) => (
-                          <SelectItem key={f.id} value={f.id} className="text-xs">
-                            {f.name}
-                            {f.status !== "ACTIVE" && <span className="ml-1 text-muted-foreground">({f.status})</span>}
+                  <Label className="text-xs text-foreground/70">
+                    Лид-форма Meta
+                    {activePage.page_name && (
+                      <span className="ml-1 text-muted-foreground/60 normal-case font-normal">
+                        · {activePage.page_name}
+                      </span>
+                    )}
+                  </Label>
+                  {businessPages.length > 0 && !selectedPageId ? (
+                    <p className="text-[11px] text-muted-foreground/60 rounded-lg border border-dashed border-border p-3 text-center">
+                      Сначала выберите страницу выше
+                    </p>
+                  ) : (
+                    <Select value={leadForm} onValueChange={setLeadForm}>
+                      <SelectTrigger className="bg-secondary/30 border-border text-xs h-9">
+                        <SelectValue placeholder="Выберите форму" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingForms ? (
+                          <SelectItem value="__loading" disabled className="text-xs text-muted-foreground">Загрузка форм...</SelectItem>
+                        ) : leadFormsData.length === 0 ? (
+                          <SelectItem value="__empty" disabled className="text-xs text-muted-foreground">
+                            {selectedClient ? "Формы не найдены" : "Сначала выберите клиента"}
                           </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                        ) : (
+                          leadFormsData.map((f) => (
+                            <SelectItem key={f.id} value={f.id} className="text-xs">
+                              {f.name}
+                              {f.status !== "ACTIVE" && <span className="ml-1 text-muted-foreground">({f.status})</span>}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
             )}
