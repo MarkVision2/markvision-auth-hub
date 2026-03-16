@@ -59,6 +59,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [creativePreview, setCreativePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [launching, setLaunching] = useState(false);
+  const [leadFormsData, setLeadFormsData] = useState<{ id: string; name: string; status: string }[]>([]);
+  const [loadingForms, setLoadingForms] = useState(false);
   const { toast } = useToast();
   const { pushNotification } = useNotifications();
 
@@ -87,6 +89,26 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       if (selectedClient.website_url) setSiteUrl(selectedClient.website_url);
     }
   }, [selectedClientId]);
+
+  // Load lead forms when objective=leadform and client selected
+  useEffect(() => {
+    if (objective !== "leadform" || !selectedClient?.ad_account_id) {
+      setLeadFormsData([]);
+      return;
+    }
+    setLoadingForms(true);
+    setLeadForm("");
+    const url = `https://n8n.zapoinov.com/webhook/get-forms?ad_account_id=${encodeURIComponent(selectedClient.ad_account_id)}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        const forms = data?.forms || [];
+        setLeadFormsData(forms);
+        if (forms.length === 1) setLeadForm(forms[0].id);
+      })
+      .catch(() => setLeadFormsData([]))
+      .finally(() => setLoadingForms(false));
+  }, [objective, selectedClientId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -122,7 +144,6 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       const isVideo = creativeFile.type.startsWith("video/");
 
       const payload = {
-        // Подготовка данных в точном формате, который ожидает n8n (клиентский конфиг + план ИИ)
         clientConfig: {
           client_id: selectedClient.id,
           client_name: selectedClient.client_name,
@@ -132,25 +153,24 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
           fb_token: selectedClient.fb_token || "",
           city: selectedClient.city || "",
           region_key: selectedClient.region_key || "",
-          whatsapp_number: objective === "whatsapp" ? (selectedClient.whatsapp_number || "") : "",
-          website_url: objective === "website" ? siteUrl : "",
-          fb_pixel_id: objective === "website" ? pixel : "",
-          pixel_event: objective === "website" ? pixelEvent : "",
-          daily_budget: Math.round((Number(budgetAmount.replace(/\s/g, "")) || 5) * 100), // Перевод в центы
+          whatsapp_number: selectedClient.whatsapp_number || "",
+          website_url: siteUrl || selectedClient.website_url || "",
+          fb_pixel_id: pixel || selectedClient.fb_pixel_id || "",
+          pixel_event: pixelEvent || selectedClient.pixel_event || "",
+          daily_budget: Math.round((Number(budgetAmount.replace(/\s/g, "")) || 5) * 100),
         },
         plan: {
-          goal: objective === "website" ? "WEBSITE" : "WHATSAPP",
+          goal: objective === "website" ? "WEBSITE" : objective === "leadform" ? "LEADS" : "WHATSAPP",
           mediaType: isVideo ? "VIDEO" : "PHOTO",
-          mediaID: mediaUrl, // Передача прямой ссылки, которую n8n обработает как isUrl
+          mediaID: mediaUrl,
           websiteUrl: siteUrl,
           headline: `Кампания: ${selectedClient.client_name}`,
           adText: "Запущено автоматически через MarkVision Hub",
-          targeting: {
-            age_min: 25,
-            age_max: 65
-          }
+          targeting: { age_min: 25, age_max: 65 },
         },
-        // Дублирование на верхнем уровне для обратной совместимости n8n скрипта
+        // destination — единый источник истины для n8n
+        destination: objective,
+        ...(objective === "leadform" && leadForm ? { leadFormId: leadForm } : {}),
         mediaType: isVideo ? "VIDEO" : "PHOTO",
         mediaID: mediaUrl,
         source: "markvision-webhook",
@@ -196,11 +216,6 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     }
   };
 
-  const leadForms = [
-    { id: "form_1", name: "Запись на консультацию" },
-    { id: "form_2", name: "Обратный звонок" },
-    { id: "form_3", name: "Получить прайс" },
-  ];
 
   const objectiveOptions: { value: Objective; label: string }[] = [
     { value: "whatsapp", label: "WhatsApp" },
@@ -308,9 +323,20 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                       <SelectValue placeholder="Выберите форму" />
                     </SelectTrigger>
                     <SelectContent>
-                      {leadForms.map((f) => (
-                        <SelectItem key={f.id} value={f.id} className="text-xs">{f.name}</SelectItem>
-                      ))}
+                      {loadingForms ? (
+                        <SelectItem value="__loading" disabled className="text-xs text-muted-foreground">Загрузка форм...</SelectItem>
+                      ) : leadFormsData.length === 0 ? (
+                        <SelectItem value="__empty" disabled className="text-xs text-muted-foreground">
+                          {selectedClient ? "Формы не найдены" : "Сначала выберите клиента"}
+                        </SelectItem>
+                      ) : (
+                        leadFormsData.map((f) => (
+                          <SelectItem key={f.id} value={f.id} className="text-xs">
+                            {f.name}
+                            {f.status !== "ACTIVE" && <span className="ml-1 text-muted-foreground">({f.status})</span>}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
