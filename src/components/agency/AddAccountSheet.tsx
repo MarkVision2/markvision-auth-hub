@@ -100,6 +100,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.website_url) row.website_url = form.website_url;
     if (form.impressions) row.impressions = Number(form.impressions);
     if (form.clicks) row.clicks = Number(form.clicks);
+    // Default FB token (shared across all accounts)
+    row.fb_token = "EAANaVrGsWLYBQx2zJZCYxaz16KSfXDHFwIZA5xuZACh8fXnWD1gHcu4YryOs5lCcydaQ0f0D0EhDteeIZBMpD99QBy2a5BEB6JULlKi81zgQIjqnXo46dixFo1NB0BdHo1wAQkJ1fwdiZAqtg5AY2DY8XLDDPIMsJJbUkkhtswZCt48Vw8WuU5Ml5es1X9egMK";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: cab, error } = await (supabase as any).from("clients_config").insert(row).select().single();
