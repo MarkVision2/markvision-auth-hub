@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from "lucide-react";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -105,8 +105,10 @@ export default function AgencyAccounts() {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
   const [metrics, setMetrics] = useState<MetricsRow[]>([]);
+  const [rawConfigs, setRawConfigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("spend");
@@ -144,6 +146,7 @@ export default function AgencyAccounts() {
       }
       const { data: configs, error: cabError } = await cabQuery;
       if (cabError) throw cabError;
+      setRawConfigs(configs || []);
 
       const cabIds = (configs || []).map(c => c.id);
 
@@ -455,7 +458,16 @@ export default function AgencyAccounts() {
                         <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
                       </TableCell>
 
-                      <TableCell className="py-4">
+                      <TableCell className="py-4 flex items-center gap-2">
+                        <button
+                          className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/row:opacity-100"
+                          onClick={() => {
+                            setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
+                            setSheetOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                         <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
                       </TableCell>
                     </TableRow>
@@ -467,7 +479,15 @@ export default function AgencyAccounts() {
         </div>
       </div>
 
-      <AddAccountSheet open={sheetOpen} onOpenChange={setSheetOpen} onSaved={fetchMetrics} />
+      <AddAccountSheet
+        open={sheetOpen}
+        onOpenChange={(open) => {
+          setSheetOpen(open);
+          if (!open) setEditingAccount(null);
+        }}
+        onSaved={fetchMetrics}
+        account={editingAccount}
+      />
     </DashboardLayout>
   );
 }

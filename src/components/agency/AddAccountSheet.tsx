@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,11 @@ const emptyForm = {
   project_id: "",
   impressions: "",
   clicks: "",
+  spend: "",
+  meta_leads: "",
+  visits: "",
+  sales: "",
+  revenue: "",
   is_agency: false,
 };
 
@@ -51,14 +56,47 @@ interface AddAccountSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  account?: any; // Pass account data for editing
 }
 
-export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAccountSheetProps) {
+export default function AddAccountSheet({ open, onOpenChange, onSaved, account }: AddAccountSheetProps) {
   const { active, workspaces } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [showInMarkVision, setShowInMarkVision] = useState(false);
   const [showInCPR, setShowInCPR] = useState(false);
+
+  useEffect(() => {
+    if (account) {
+      setForm({
+        client_name: account.client_name || "",
+        daily_budget: account.daily_budget ? String(account.daily_budget) : "",
+        city: account.city || "",
+        region_key: account.region_key || "",
+        brief: account.brief || "",
+        ad_account_id: account.ad_account_id || "",
+        page_id: account.page_id || "",
+        page_name: account.page_name || "",
+        instagram_user_id: account.instagram_user_id || "",
+        telegram_group_id: account.telegram_group_id || "",
+        whatsapp_number: account.whatsapp_number || "",
+        fb_pixel_id: account.fb_pixel_id || "",
+        pixel_event: account.pixel_event || "",
+        website_url: account.website_url || "",
+        project_id: account.project_id || "",
+        impressions: account.impressions ? String(account.impressions) : "",
+        clicks: account.clicks ? String(account.clicks) : "",
+        spend: account.spend ? String(account.spend) : "",
+        meta_leads: account.meta_leads ? String(account.meta_leads) : "",
+        visits: account.visits ? String(account.visits) : "",
+        sales: account.sales ? String(account.sales) : "",
+        revenue: account.revenue ? String(account.revenue) : "",
+        is_agency: !!account.is_agency,
+      });
+    } else {
+      setForm(emptyForm);
+    }
+  }, [account, open]);
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
 
   // Find real project IDs by name
@@ -100,11 +138,22 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     if (form.website_url) row.website_url = form.website_url;
     if (form.impressions) row.impressions = Number(form.impressions);
     if (form.clicks) row.clicks = Number(form.clicks);
+    if (form.spend) row.spend = Number(form.spend);
+    if (form.meta_leads) row.meta_leads = Number(form.meta_leads);
+    if (form.visits) row.visits = Number(form.visits);
+    if (form.sales) row.sales = Number(form.sales);
+    if (form.revenue) row.revenue = Number(form.revenue);
     // Default FB token (shared across all accounts)
     row.fb_token = "EAANaVrGsWLYBQx2zJZCYxaz16KSfXDHFwIZA5xuZACh8fXnWD1gHcu4YryOs5lCcydaQ0f0D0EhDteeIZBMpD99QBy2a5BEB6JULlKi81zgQIjqnXo46dixFo1NB0BdHo1wAQkJ1fwdiZAqtg5AY2DY8XLDDPIMsJJbUkkhtswZCt48Vw8WuU5Ml5es1X9egMK";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: cab, error } = await (supabase as any).from("clients_config").insert(row).select().single();
+    let res;
+    if (account?.id) {
+      res = await (supabase as any).from("clients_config").update(row).eq("id", account.id).select().single();
+    } else {
+      res = await (supabase as any).from("clients_config").insert(row).select().single();
+    }
+    const { data: cab, error } = res;
 
     if (error) {
       setSaving(false);
@@ -147,7 +196,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto border-border bg-card">
         <SheetHeader>
-          <SheetTitle className="text-foreground">Добавить кабинет</SheetTitle>
+          <SheetTitle className="text-foreground">
+            {account ? "Настройки кабинета" : "Добавить кабинет"}
+          </SheetTitle>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-2">
@@ -164,6 +215,15 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Показы (База)" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
                   <Field label="Клики (База)" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Расход (База)" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
+                  <Field label="Лиды (База)" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
+                  <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />
+                  <Field label="Выручка" value={form.revenue} onChange={(v) => updateField("revenue", v)} placeholder="0" />
                 </div>
 
                 {/* Cabinet type */}
@@ -265,7 +325,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved }: AddAcco
           <div className="pt-4">
             <Button type="submit" className="w-full" disabled={saving}>
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Создать кабинет
+              {account ? "Сохранить изменения" : "Создать кабинет"}
             </Button>
           </div>
         </form>

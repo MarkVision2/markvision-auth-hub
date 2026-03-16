@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
+import AddAccountSheet from "@/components/agency/AddAccountSheet";
 import { supabase } from "@/integrations/supabase/client";
 
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -112,7 +113,10 @@ export default function DashboardTarget() {
   const [loading, setLoading] = useState(true);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [rawClients, setRawClients] = useState<any[]>([]);
   const [monthlyPlan, setMonthlyPlan] = useState<any>(null);
 
   const goMonth = (dir: -1 | 1) => {
@@ -131,7 +135,7 @@ export default function DashboardTarget() {
     try {
       let clientsQuery = (supabase as any)
         .from("clients_config")
-        .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue").eq("is_active", true)
+        .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
         .order("client_name");
 
       if (active.id === "hq") {
@@ -153,6 +157,7 @@ export default function DashboardTarget() {
 
       const { data: clientsData, error: cErr } = await (clientsQuery as any);
       if (cErr) throw cErr;
+      setRawClients(clientsData || []);
 
       const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
@@ -196,8 +201,8 @@ export default function DashboardTarget() {
         const totalVisits = metrics.reduce((s, m) => s + m.visits, 0) + (Number(c.visits) || 0);
         const totalSales = metrics.reduce((s, m) => s + m.sales, 0) + (Number(c.sales) || 0);
         const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0) + (Number(c.revenue) || 0);
-        const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0);
-        const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0);
+        const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0) + (Number(c.clicks) || 0);
+        const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0) + (Number(c.impressions) || 0);
 
         return {
           id: c.id,
@@ -273,9 +278,9 @@ export default function DashboardTarget() {
 
   const filteredClients = useMemo(() => {
     return clients.filter((c) => {
-      return !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return !search || c.name.toLowerCase().includes(search.toLowerCase());
     });
-  }, [clients, searchQuery]);
+  }, [clients, search]);
 
   const totals = useMemo(() => {
     const spend = clients.reduce((s, c) => s + c.totalSpend, 0);
@@ -387,7 +392,7 @@ export default function DashboardTarget() {
         <FadeUpItem className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Поиск по кабинетам..." className="pl-9 h-10 text-sm bg-card border-border rounded-xl focus-visible:ring-primary/20" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по кабинетам..." className="pl-9 h-10 text-sm bg-card border-border rounded-xl focus-visible:ring-primary/20" />
           </div>
           <div className="ml-auto">
             <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1.5" onClick={handleExport}>
@@ -457,7 +462,11 @@ export default function DashboardTarget() {
                               <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
                                 <ExternalLink className="h-4 w-4 text-primary" /> Открыть в Meta Ads
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => toast({ title: "Настройки", description: client.name })}>
+                              <DropdownMenuItem className="text-sm gap-2 cursor-pointer" onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingAccount(rawClients.find(rc => rc.id === client.id));
+                                setSheetOpen(true);
+                              }}>
                                 <Pencil className="h-4 w-4 text-muted-foreground" /> Настройки
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-xs font-semibold gap-2.5 p-2 rounded-lg cursor-pointer" onClick={() => toast({ title: "Дублировано", description: client.name })}>
@@ -549,6 +558,15 @@ export default function DashboardTarget() {
         </FadeUpItem>
       </StaggerContainer>
       <CampaignBuilderSheet open={builderOpen} onOpenChange={setBuilderOpen} />
+      <AddAccountSheet
+        open={sheetOpen}
+        onOpenChange={(open) => {
+          setSheetOpen(open);
+          if (!open) setEditingAccount(null);
+        }}
+        onSaved={fetchData}
+        account={editingAccount}
+      />
     </DashboardLayout>
   );
 }
