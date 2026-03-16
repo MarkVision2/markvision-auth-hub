@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil } from "lucide-react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Wallet, Users, Target, BarChart3, TrendingUp, AlertCircle, CheckCircle2, PauseCircle, Eye, MousePointer2, CreditCard, UserPlus, Presentation } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { useRole } from "@/hooks/useRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +23,7 @@ import PeriodPicker from "@/components/agency/PeriodPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
+import HqKpiCards from "@/components/hq/HqKpiCards";
 
 
 interface MetricsRow {
@@ -290,12 +293,13 @@ export default function AgencyAccounts() {
     else { setSortKey(key); setSortDir("desc"); }
   };
 
-  const SortableHead = ({ label, sortField }: { label: string; sortField: SortKey }) => (
+  const SortableHead = ({ label, sortField, icon: Icon }: { label: string; sortField: SortKey; icon?: any }) => (
     <TableHead
-      className="text-sm font-bold text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors py-4 px-4"
+      className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 cursor-pointer select-none hover:text-foreground transition-colors py-4 px-4"
       onClick={() => toggleSort(sortField)}
     >
-      <span className="flex items-center">
+      <span className="flex items-center gap-1.5 whitespace-nowrap">
+        {Icon && <Icon className="h-3 w-3 opacity-60" />}
         {label}
         <SortIcon active={sortKey === sortField} dir={sortDir} />
       </span>
@@ -303,12 +307,11 @@ export default function AgencyAccounts() {
   );
 
   function getRowIndicator(c: MetricsRow) {
-    const spend = Number(c.spend) || 0;
-    const leads = Number(c.meta_leads) || 0;
+    if (c.is_active === false) return "bg-muted-foreground/10";
     const romi = Number(c.romi) || 0;
-    if (romi > 0) return "border-l-2 border-l-[hsl(var(--status-good))]";
-    if (romi < 0 || (spend > 0 && leads === 0)) return "border-l-2 border-l-[hsl(var(--status-critical))]";
-    return "border-l-2 border-l-transparent";
+    if (romi > 0) return "bg-[hsl(var(--status-good))]/10";
+    if (needsAttention(c)) return "bg-destructive/10";
+    return "bg-primary/5";
   }
 
   const pageTitle = isSuperadmin ? "Агентские кабинеты" : "Мои рекламные кабинеты";
@@ -325,154 +328,210 @@ export default function AgencyAccounts() {
         )}
       </div>
 
-      <div className="flex flex-col gap-4 mb-4 md:mb-6">
-        <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="bg-secondary border border-border w-full overflow-x-auto flex-nowrap">
-            <TabsTrigger value="all" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
-              Все ({metrics.length})
-            </TabsTrigger>
-            <TabsTrigger value="attention" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
-              ⚠️ <span className="hidden sm:inline">Внимание</span> ({attentionCount})
-            </TabsTrigger>
-            <TabsTrigger value="effective" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
-              ✅ <span className="hidden sm:inline">Эффективные</span> ({effectiveCount})
-            </TabsTrigger>
-            <TabsTrigger value="inactive" className="data-[state=active]:bg-accent data-[state=active]:text-foreground text-xs min-h-[44px] flex-1 gap-1.5">
-              ⏸ <span className="hidden sm:inline">Отключенные</span> ({inactiveCount})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="space-y-6">
+        <HqKpiCards metrics={summary} />
 
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Поиск..."
-              className="h-10 min-h-[44px] w-full pl-8 text-xs bg-secondary border-border"
-            />
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
+          <Tabs value={filter} onValueChange={setFilter} className="w-full md:w-auto">
+            <TabsList className="bg-secondary/40 border border-border p-1 h-auto flex-wrap sm:flex-nowrap">
+              <TabsTrigger 
+                value="all" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2"
+              >
+                Все
+                <span className="bg-secondary px-1.5 py-0.5 rounded text-[10px] font-bold opacity-70">{metrics.length}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="attention" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2 data-[state=active]:text-destructive"
+              >
+                <AlertCircle className="h-3 w-3" />
+                Внимание
+                <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px] font-bold">{attentionCount}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="effective" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2 data-[state=active]:text-[hsl(var(--status-good))]"
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                Эффективные
+                <span className="bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))] px-1.5 py-0.5 rounded text-[10px] font-bold">{effectiveCount}</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="inactive" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2"
+              >
+                <PauseCircle className="h-3 w-3" />
+                Отключенные
+                <span className="bg-secondary px-1.5 py-0.5 rounded text-[10px] font-bold opacity-70">{inactiveCount}</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative flex-1 md:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+              <Input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Поиск по кабинетам..."
+                className="h-10 w-full pl-9 text-[13px] bg-secondary/30 border-border focus:bg-background transition-all"
+              />
+            </div>
+            <PeriodPicker value={period} onChange={setPeriod} />
           </div>
-          <PeriodPicker value={period} onChange={setPeriod} />
         </div>
       </div>
 
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden mt-6">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[700px]">
+      <div className="mt-8">
+        <div className="overflow-x-auto pb-4">
+          <Table className="min-w-[900px] border-separate border-spacing-y-2.5">
             <TableHeader>
-              <TableRow className="border-b border-border hover:bg-transparent bg-secondary/50">
-                <TableHead className="text-sm font-bold text-muted-foreground w-[180px] px-4 py-4">Кабинет</TableHead>
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 w-[240px] px-6 py-4">Кабинет</TableHead>
                 {active.id === "hq" && (
-                  <TableHead className="text-sm font-bold text-muted-foreground px-4 py-4">Проект</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 px-4 py-4">Проект</TableHead>
                 )}
-                <SortableHead label="Расходы" sortField="spend" />
-                <SortableHead label="Лиды" sortField="meta_leads" />
-                <SortableHead label="Визиты" sortField="visits" />
-                <SortableHead label="Продажи" sortField="sales" />
-                <SortableHead label="Сумма продаж" sortField="revenue" />
-                <SortableHead label="Подписчики" sortField="followers" />
-                <TableHead className="text-xs font-medium text-muted-foreground w-10"></TableHead>
+                <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
+                <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
+                <SortableHead label="Визиты" sortField="visits" icon={MousePointer2} />
+                <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
+                <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
+                <SortableHead label="Подписчики" sortField="followers" icon={UserPlus} />
+                <TableHead className="w-10 px-6"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="before:block before:h-1">
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-12">
-                    <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-20 bg-card/30 rounded-2xl border border-dashed border-border/50">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary/40 mb-3" />
+                    <p className="text-sm text-muted-foreground font-medium">Обновляем показатели...</p>
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-12 text-muted-foreground">
-                    {active.id === "hq" ? "Выберите или создайте проект в боковой панели" : "Нет рекламных кабинетов в этом проекте"}
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-20 bg-card/30 rounded-2xl border border-dashed border-border/50">
+                    <Presentation className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto">
+                      {active.id === "hq" ? "Выберите или создайте проект в боковой панели, чтобы увидеть данные" : "В этом проекте пока нет рекламных кабинетов"}
+                    </p>
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((c) => {
-                  const isActiveCabinet = c.is_active !== false;
-                  const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
-                  const spend = Number(c.spend) || 0;
-                  const leads = Number(c.meta_leads) || 0;
-                  const cpl = Number(c.cpl) || 0;
-                  const visits = Number(c.visits) || 0;
-                  const cpv = Number(c.cpv) || 0;
-                  const sales = Number(c.sales) || 0;
-                  const revenue = Number(c.revenue) || 0;
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  const romi = Number(c.romi) || 0;
-                  const cac = Number(c.cac) || 0;
+                <AnimatePresence mode="popLayout">
+                  {filtered.map((c, idx) => {
+                    const isActiveCabinet = c.is_active !== false;
+                    const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
+                    const spend = Number(c.spend) || 0;
+                    const leads = Number(c.meta_leads) || 0;
+                    const cpl = Number(c.cpl) || 0;
+                    const visits = Number(c.visits) || 0;
+                    const cpv = Number(c.cpv) || 0;
+                    const sales = Number(c.sales) || 0;
+                    const revenue = Number(c.revenue) || 0;
+                    const cac = Number(c.cac) || 0;
+                    const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
+                    const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
+                    const indicatorClass = getRowIndicator(c);
 
-                  const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
-                  const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
-
-                  return (
-                    <TableRow key={c.client_id} className={`group/row border-b border-border hover:bg-accent/50 transition-colors ${getRowIndicator(c)}`}>
-                       <TableCell className="py-4 px-4">
-                          <div>
-                            <p className="text-[15px] font-bold text-foreground tabular-nums">{c.client_name}</p>
-                            <span className={`inline-flex items-center gap-1.5 text-xs mt-1.5 ${s.text}`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                              {s.label}
-                            </span>
+                    return (
+                      <motion.tr
+                        layout
+                        key={c.client_id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.2, delay: idx * 0.03 }}
+                        className="group/row bg-card hover:bg-card/80 border border-border/50 hover:border-primary/20 transition-all cursor-default shadow-sm hover:shadow-md h-24"
+                      >
+                        <TableCell className="py-4 px-6 rounded-l-2xl border-l border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <div className="flex items-center gap-4">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${indicatorClass}`}>
+                               <Target className={cn(
+                                 "h-5 w-5",
+                                 c.is_active === false ? "text-muted-foreground/40" : 
+                                 needsAttention(c) ? "text-destructive" : "text-primary"
+                               )} />
+                            </div>
+                            <div>
+                              <p className="text-[14px] font-bold text-foreground leading-tight">{c.client_name}</p>
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className={cn(
+                                  "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase",
+                                  isActiveCabinet ? "bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))]" : "bg-muted text-muted-foreground"
+                                )}>
+                                  {s.label}
+                                </span>
+                                {needsAttention(c) && (
+                                  <span className="bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase">
+                                    Требует внимания
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                      </TableCell>
-
-                      {active.id === "hq" && (
-                        <TableCell className="py-4">
-                          <p className="text-sm text-foreground">{c.project_name || "HQ / MarkVision"}</p>
                         </TableCell>
-                      )}
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
-                      </TableCell>
+                        {active.id === "hq" && (
+                          <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                            <p className="text-[12px] text-muted-foreground font-medium">{c.project_name || "HQ / Admin"}</p>
+                          </TableCell>
+                        )}
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{leads || "—"}</p>
-                        {cpl > 0 && <p className="text-[11px] text-muted-foreground tabular-nums mt-0.5">CPL: {fmt(cpl, " ₸")}</p>}
-                      </TableCell>
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                        </TableCell>
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{visits || "—"}</p>
-                        <div className="flex flex-col gap-0.5 mt-0.5">
-                          {cpv > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">CPV: {fmt(cpv, " ₸")}</span>}
-                          {leadToVisitCr > 0 && <span className="text-[11px] text-muted-foreground/70 tabular-nums">CR: {leadToVisitCr.toFixed(1)}%</span>}
-                        </div>
-                      </TableCell>
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-foreground tabular-nums">{leads || "—"}</p>
+                          {cpl > 0 && <p className="text-[10px] font-bold text-muted-foreground/60 tabular-nums tracking-tighter uppercase mt-0.5">CPL: {fmt(cpl, " ₸")}</p>}
+                        </TableCell>
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{sales || "—"}</p>
-                        <div className="flex flex-col gap-0.5 mt-0.5">
-                          {cac > 0 && <span className="text-[11px] text-muted-foreground tabular-nums">CAC: {fmt(cac, " ₸")}</span>}
-                          {visitToSaleCr > 0 && <span className="text-[11px] text-muted-foreground/70 tabular-nums">CR: {visitToSaleCr.toFixed(1)}%</span>}
-                        </div>
-                      </TableCell>
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-foreground tabular-nums">{visits || "—"}</p>
+                          <div className="flex flex-col gap-0.5 mt-0.5">
+                            {cpv > 0 && <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums uppercase">CPV: {fmt(cpv, " ₸")}</span>}
+                            {leadToVisitCr > 0 && <span className="text-[10px] font-bold text-primary/60 tabular-nums uppercase">CR: {leadToVisitCr.toFixed(1)}%</span>}
+                          </div>
+                        </TableCell>
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
-                      </TableCell>
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-foreground tabular-nums">{sales || "—"}</p>
+                          <div className="flex flex-col gap-0.5 mt-0.5">
+                            {cac > 0 && <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums uppercase">CAC: {fmt(cac, " ₸")}</span>}
+                            {visitToSaleCr > 0 && <span className="text-[10px] font-bold text-primary/60 tabular-nums uppercase">CR: {visitToSaleCr.toFixed(1)}%</span>}
+                          </div>
+                        </TableCell>
 
-                      <TableCell className="py-4">
-                        <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
-                      </TableCell>
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-[hsl(var(--status-good))] tabular-nums">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
+                        </TableCell>
 
-                      <TableCell className="py-4 flex items-center gap-2">
-                        <button
-                          className="text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/row:opacity-100"
-                          onClick={() => {
-                            setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
-                            setSheetOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <p className="text-[15px] font-bold text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
+                          <p className="text-[10px] font-bold text-muted-foreground/60 tabular-nums tracking-tighter uppercase mt-0.5">Всего</p>
+                        </TableCell>
+
+                        <TableCell className="py-4 px-6 rounded-r-2xl border-r border-t border-b border-border/50 group-hover/row:border-primary/20">
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover/row:opacity-100"
+                              onClick={() => {
+                                setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
+                                setSheetOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                            <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
+                          </div>
+                        </TableCell>
+                      </motion.tr>
+                    );
+                  })}
+                </AnimatePresence>
               )}
             </TableBody>
           </Table>
