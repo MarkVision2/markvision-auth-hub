@@ -188,7 +188,7 @@ export default function Dashboard() {
           // Fetch base impressions and clicks from clients_config PER client
           const { data: baseData } = await (supabase as any)
             .from("clients_config")
-            .select("id, impressions, clicks")
+            .select("id, impressions, clicks, is_agency")
             .in("id", targetIds);
 
           // Fetch daily impressions, clicks and followers from daily_data PER client
@@ -203,6 +203,7 @@ export default function Dashboard() {
 
             return {
               ...c,
+              is_agency: clientBase?.is_agency,
               impressions: clientDaily.reduce((s: number, d: any) => s + (d.impressions || 0), 0) + (clientBase?.impressions || 0),
               clicks: clientDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0) + (clientBase?.clicks || 0),
               followers: clientDaily.reduce((s: number, d: any) => s + (d.followers || 0), 0)
@@ -243,7 +244,9 @@ export default function Dashboard() {
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
       const profit = mrr - costs;
-      const totalFollowers = clients.reduce((s: number, c: any) => s + (c.followers ?? 0), 0);
+      const totalFollowers = clients
+        .filter((c: any) => c.is_agency === false)
+        .reduce((s: number, c: any) => s + (c.followers ?? 0), 0);
       return { totalRevenue: mrr, totalSpend: costs, totalFollowers, activeProjects: activeAccounts };
     })();
 
@@ -268,7 +271,7 @@ export default function Dashboard() {
       sales,
       impressions: imps,
       clicks: clks,
-      followers: clientList.reduce((s, c) => s + (c.followers ?? 0), 0),
+      followers: clientList.filter(c => c.is_agency === false).reduce((s, c) => s + (c.followers ?? 0), 0),
       cpl: leads > 0 ? spend / leads : 0,
       cpv: v > 0 ? spend / v : 0,
       cac: sales > 0 ? spend / sales : 0,
