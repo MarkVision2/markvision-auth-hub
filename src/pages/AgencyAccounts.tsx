@@ -21,7 +21,7 @@ import PeriodPicker from "@/components/agency/PeriodPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
-import HqKpiCards from "@/components/hq/HqKpiCards";
+
 
 interface MetricsRow {
   client_id: string;
@@ -354,8 +354,6 @@ export default function AgencyAccounts() {
         </div>
       </div>
 
-
-      {summary && <HqKpiCards metrics={summary} />}
 
       <div className="rounded-xl border border-border bg-card overflow-hidden mt-6">
         <div className="overflow-x-auto">
