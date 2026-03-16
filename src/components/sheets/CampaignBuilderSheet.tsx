@@ -201,7 +201,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
   // Sync aspect ratio when tab changes
   useEffect(() => {
-    setAspect(creativeTab === "feed" ? 1 : 9/16);
+    setAspect(creativeTab === "feed" ? 4/5 : 9/16);
   }, [creativeTab]);
 
   const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
@@ -725,7 +725,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                       creativeTab === tab ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground/70"
                     )}
                   >
-                    {tab === "feed" ? "Лента (1:1)" : "Stories/Reels (9:16)"}
+                    {tab === "feed" ? "Лента (4:5)" : "Stories/Reels (9:16)"}
                   </button>
                 ))}
               </div>
@@ -733,7 +733,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
               <div className="flex justify-center">
                 <div className={cn(
                   "rounded-2xl border border-border bg-secondary/20 overflow-hidden relative shadow-inner",
-                  creativeTab === "feed" ? "w-48 h-48" : "w-32 h-56",
+                  creativeTab === "feed" ? "w-40 h-50" : "w-32 h-56",
                   isCropping && "opacity-20 grayscale pointer-events-none"
                 )}>
                   <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
@@ -782,7 +782,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     video={originalFile?.type.startsWith("video/") ? originalPreview : undefined}
                     crop={crop}
                     zoom={zoom}
-                    aspect={creativeTab === "feed" ? 1 : 9/16}
+                    aspect={creativeTab === "feed" ? 4/5 : 9/16}
                     onCropChange={setCrop}
                     onCropComplete={onCropComplete}
                     onZoomChange={setZoom}
