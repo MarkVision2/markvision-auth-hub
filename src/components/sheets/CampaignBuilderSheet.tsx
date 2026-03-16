@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import Cropper from "react-easy-crop";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { CalendarIcon, Upload, Scissors, Rocket, Loader2 } from "lucide-react";
+import { CalendarIcon, Upload, Scissors, Rocket, Loader2, Check, X, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -73,6 +74,15 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const [creativeTab, setCreativeTab] = useState<"feed" | "stories">("feed");
   const [creativeFile, setCreativeFile] = useState<File | null>(null);
   const [creativePreview, setCreativePreview] = useState<string | null>(null);
+  
+  // Cropping state
+  const [isCropping, setIsCropping] = useState(false);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [aspect, setAspect] = useState(1); // 1 for feed, 9/16 for stories
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [launching, setLaunching] = useState(false);
   const [leadFormsData, setLeadFormsData] = useState<{ id: string; name: string; status: string }[]>([]);
@@ -183,6 +193,77 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     if (!file) return;
     setCreativeFile(file);
     setCreativePreview(URL.createObjectURL(file));
+    setOriginalFile(file);
+    setOriginalPreview(URL.createObjectURL(file));
+    setCreativeFile(file);
+    setCreativePreview(URL.createObjectURL(file));
+  };
+
+  // Sync aspect ratio when tab changes
+  useEffect(() => {
+    setAspect(creativeTab === "feed" ? 1 : 9/16);
+  }, [creativeTab]);
+
+  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const createImage = (url: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener("load", () => resolve(image));
+      image.addEventListener("error", (error) => reject(error));
+      image.setAttribute("crossOrigin", "anonymous");
+      image.src = url;
+    });
+
+  const getCroppedImg = async (imageSrc: string, pixelCrop: any): Promise<Blob | null> => {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) return null;
+
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob);
+      }, "image/jpeg");
+    });
+  };
+
+  const handleApplyCrop = async () => {
+    if (!originalPreview || !croppedAreaPixels || !originalFile) return;
+    
+    // For video, we don't actually crop in browser easily, so we just exit crop mode
+    // but for images, we generate a new file
+    if (originalFile.type.startsWith("image/")) {
+      try {
+        const croppedBlob = await getCroppedImg(originalPreview, croppedAreaPixels);
+        if (croppedBlob) {
+          const croppedFile = new File([croppedBlob], originalFile.name, { type: "image/jpeg" });
+          setCreativeFile(croppedFile);
+          setCreativePreview(URL.createObjectURL(croppedBlob));
+        }
+      } catch (e) {
+        console.error("Error cropping image:", e);
+      }
+    }
+    setIsCropping(false);
   };
 
   const handleLaunch = async () => {
@@ -635,7 +716,10 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                 {(["feed", "stories"] as const).map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setCreativeTab(tab)}
+                    onClick={() => {
+                      setCreativeTab(tab);
+                      if (isCropping) setAspect(tab === "feed" ? 1 : 9/16);
+                    }}
                     className={cn(
                       "text-[11px] font-medium px-3 py-1 rounded-md transition-all",
                       creativeTab === tab ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground/70"
@@ -648,36 +732,86 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
               <div className="flex justify-center">
                 <div className={cn(
-                  "rounded-2xl border border-border bg-secondary/20 overflow-hidden relative",
-                  creativeTab === "feed" ? "w-48 h-48" : "w-32 h-56"
+                  "rounded-2xl border border-border bg-secondary/20 overflow-hidden relative shadow-inner",
+                  creativeTab === "feed" ? "w-48 h-48" : "w-32 h-56",
+                  isCropping && "opacity-20 grayscale pointer-events-none"
                 )}>
-                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
+                  <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-muted-foreground/15" style={{ left: `${(i + 1) * 25}%` }} />
+                      <div key={`v-${i}`} className="absolute top-0 bottom-0 border-l border-dashed border-muted-foreground/30" style={{ left: `${(i + 1) * 25}%` }} />
                     ))}
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-dashed border-muted-foreground/15" style={{ top: `${(i + 1) * 25}%` }} />
+                      <div key={`h-${i}`} className="absolute left-0 right-0 border-t border-dashed border-muted-foreground/30" style={{ top: `${(i + 1) * 25}%` }} />
                     ))}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center">
                     {creativePreview ? (
-                      creativeFile?.type.startsWith("video/") ? (
+                      originalFile?.type.startsWith("video/") ? (
                         <video src={creativePreview} className="w-full h-full object-cover" muted autoPlay loop />
                       ) : (
                         <img src={creativePreview} alt="Превью" className="w-full h-full object-cover" />
                       )
                     ) : (
-                      <span className="text-[10px] text-muted-foreground/40">Превью</span>
+                      <span className="text-[10px] text-muted-foreground/40 font-medium">Превью</span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <Button variant="outline" size="sm" className="w-full text-xs border-border h-8">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className={cn(
+                  "w-full text-xs border-border h-8 transition-all hover:bg-primary/5",
+                  isCropping && "bg-primary/10 border-primary/30"
+                )}
+                onClick={() => setIsCropping(!isCropping)}
+                disabled={!creativePreview}
+              >
                 <Scissors className="h-3 w-3 mr-1.5" />
-                Адаптировать размер
+                {isCropping ? "Закрыть редактор" : "Адаптировать размер"}
               </Button>
             </div>
+            
+            {/* Cropping Area - Overlay */}
+            {isCropping && originalPreview && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="relative h-[400px] w-full bg-black rounded-xl overflow-hidden border border-border shadow-2xl">
+                  <Cropper
+                    image={originalFile?.type.startsWith("image/") ? originalPreview : undefined}
+                    video={originalFile?.type.startsWith("video/") ? originalPreview : undefined}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={creativeTab === "feed" ? 1 : 9/16}
+                    onCropChange={setCrop}
+                    onCropComplete={onCropComplete}
+                    onZoomChange={setZoom}
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button 
+                    className="flex-1 bg-primary text-primary-foreground font-bold h-9 text-xs"
+                    onClick={handleApplyCrop}
+                  >
+                    <Check className="h-3 w-3 mr-1.5" />
+                    Применить
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    className="flex-1 text-muted-foreground font-bold h-9 text-xs border border-border"
+                    onClick={() => setIsCropping(false)}
+                  >
+                    <X className="h-3 w-3 mr-1.5" />
+                    Отмена
+                  </Button>
+                </div>
+                
+                <p className="text-[10px] text-center text-muted-foreground/60 italic">
+                  * Потяните за края или перетащите изображение внутри рамки
+                </p>
+              </div>
+            )}
             {/* Ad Copy Section */}
             <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <div className="flex items-center gap-2">
