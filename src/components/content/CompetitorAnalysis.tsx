@@ -532,12 +532,7 @@ export function CompetitorAnalysis() {
                     </TabsTrigger>
                     <TabsTrigger value="post" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
                         <Play className="h-3.5 w-3.5" /> Разбор контента
-                    </TabsTrigger>
-                    <TabsTrigger value="analyses" className="flex-1 h-9 text-xs font-medium rounded-lg data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5" /> AI-Разборы
-                        {displayAnalyses.length > 0 && (
-                            <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{displayAnalyses.length}</span>
-                        )}
+                        {displayAnalyses.length > 0 && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">{displayAnalyses.length}</span>}
                     </TabsTrigger>
                 </TabsList>
 
@@ -634,10 +629,10 @@ export function CompetitorAnalysis() {
 
                                         {/* Info */}
                                         <div className="flex-1 min-w-[140px]">
-                                            <p className="text-sm font-semibold text-foreground">@{comp.username}</p>
-                                            <p className="text-xs text-muted-foreground">{comp.display_name || comp.username}</p>
+                                            <p className="text-sm font-bold text-foreground">@{comp.username}</p>
+                                            <p className="text-[12px] font-medium text-foreground/80">{comp.display_name || comp.username}</p>
                                             {comp.created_at && (
-                                                <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                                                <p className="text-[10px] text-foreground/50 mt-1 font-medium">
                                                     Добавлен {dateFmt(new Date(comp.created_at), "dd.MM.yyyy")}
                                                 </p>
                                             )}
@@ -646,7 +641,7 @@ export function CompetitorAnalysis() {
                                         {/* Stats & Actions */}
                                         <div className="flex items-center gap-2 flex-wrap">
                                             {followersNum && (
-                                                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-secondary text-muted-foreground font-medium border border-border">
+                                                <span className="text-[12px] px-3 py-1 rounded-lg bg-secondary/80 text-foreground font-bold border border-border/50">
                                                     {followersNum} подп.
                                                 </span>
                                             )}
@@ -813,22 +808,22 @@ export function CompetitorAnalysis() {
                                         </div>
                                         {/* Account Info */}
                                         <div className="flex-1 min-w-0">
-                                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                            <h2 className="text-xl font-extrabold text-foreground flex items-center gap-2">
                                                 @{profileResult.account_overview?.username || "—"}
-                                                <a href={`https://instagram.com/${profileResult.account_overview?.username}`} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300"><ExternalLink className="h-4 w-4" /></a>
+                                                <a href={`https://instagram.com/${profileResult.account_overview?.username}`} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 transition-colors"><ExternalLink className="h-4 w-4" /></a>
                                             </h2>
                                             {profileResult.account_overview?.positioning_summary && (
-                                                <p className="text-sm text-foreground/70 mt-1.5 leading-relaxed">{profileResult.account_overview.positioning_summary}</p>
+                                                <p className="text-sm font-medium text-foreground mt-2 leading-relaxed">{profileResult.account_overview.positioning_summary}</p>
                                             )}
-                                            <div className="flex flex-wrap gap-2 mt-3">
+                                            <div className="flex flex-wrap gap-2 mt-4">
                                                 {profileResult.account_overview?.target_audience_guess && (
-                                                    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-card/60 border border-border/40 text-foreground/80">
-                                                        <Users className="h-3 w-3 text-violet-400" /> {profileResult.account_overview.target_audience_guess}
+                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card/80 border border-violet-500/20 text-foreground">
+                                                        <Users className="h-3.5 w-3.5 text-violet-400" /> {profileResult.account_overview.target_audience_guess}
                                                     </span>
                                                 )}
                                                 {profileResult.account_overview?.main_offer_guess && (
-                                                    <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-lg bg-card/60 border border-border/40 text-foreground/80">
-                                                        <Zap className="h-3 w-3 text-amber-400" /> {profileResult.account_overview.main_offer_guess}
+                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card/80 border border-amber-500/20 text-foreground">
+                                                        <Zap className="h-3.5 w-3.5 text-amber-400" /> {profileResult.account_overview.main_offer_guess}
                                                     </span>
                                                 )}
                                             </div>
@@ -852,8 +847,8 @@ export function CompetitorAnalysis() {
                                                 return (
                                                     <div key={key} className="space-y-1.5">
                                                         <div className="flex items-center justify-between">
-                                                            <span className="text-[13px] text-foreground/80 font-medium">{labels[key] || key}</span>
-                                                            <span className={`text-sm font-bold font-mono ${textColor}`}>{score}/10</span>
+                                                            <span className="text-sm text-foreground font-semibold">{labels[key] || key}</span>
+                                                            <span className={`text-sm font-black font-mono ${textColor}`}>{score}/10</span>
                                                         </div>
                                                         <div className="h-2.5 rounded-full bg-secondary/40 overflow-hidden">
                                                             <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.1 }} className={`h-full rounded-full ${barColor}`} />
@@ -879,11 +874,11 @@ export function CompetitorAnalysis() {
                                             <div className="space-y-2.5">
                                                 {profileResult.top_mistakes.map((m: any, i: number) => (
                                                     <motion.div key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
-                                                        <p className="text-[13px] font-semibold text-foreground leading-snug">{m.title}</p>
-                                                        <p className="text-[12px] text-muted-foreground leading-relaxed">{m.why_bad}</p>
-                                                        <div className="flex items-start gap-2 bg-emerald-500/8 rounded-lg p-2.5 border border-emerald-500/15">
-                                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                                                            <p className="text-[12px] text-emerald-300/90 leading-relaxed">{m.how_fix}</p>
+                                                        <p className="text-[14px] font-bold text-foreground leading-snug">{m.title}</p>
+                                                        <p className="text-[13px] font-medium text-foreground/90 leading-relaxed">{m.why_bad}</p>
+                                                        <div className="flex items-start gap-2 bg-emerald-500/10 rounded-lg p-2.5 border border-emerald-500/20">
+                                                            <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                                                            <p className="text-[13px] font-semibold text-emerald-100 leading-relaxed">{m.how_fix}</p>
                                                         </div>
                                                     </motion.div>
                                                 ))}
@@ -903,16 +898,16 @@ export function CompetitorAnalysis() {
                                             <div className="space-y-2.5">
                                                 {profileResult.quick_wins_24h.map((w: any, i: number) => (
                                                     <motion.div key={i} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="rounded-xl bg-card/80 border border-border/40 p-3.5 space-y-2">
-                                                        <p className="text-[13px] font-semibold text-foreground leading-snug">⚡ {w.action}</p>
+                                                        <p className="text-[14px] font-bold text-foreground leading-snug">⚡ {w.action}</p>
                                                         {w.example && (
-                                                            <div className="rounded-lg bg-secondary/30 border border-border/30 p-2.5">
-                                                                <p className="text-[10px] text-muted-foreground/70 mb-0.5">Пример</p>
-                                                                <p className="text-[12px] text-foreground/70 leading-relaxed">{w.example}</p>
+                                                            <div className="rounded-lg bg-secondary/40 border border-border/40 p-3">
+                                                                <p className="text-[11px] font-bold text-foreground/60 mb-1">Пример</p>
+                                                                <p className="text-[13px] font-medium text-foreground leading-relaxed italic">«{w.example}»</p>
                                                             </div>
                                                         )}
                                                         {w.expected_effect && (
-                                                            <p className="text-[12px] text-emerald-400/80 flex items-center gap-1.5">
-                                                                <TrendingUp className="h-3 w-3 shrink-0" /> {w.expected_effect}
+                                                            <p className="text-[13px] font-bold text-emerald-400 flex items-center gap-1.5">
+                                                                <TrendingUp className="h-4 w-4 shrink-0" /> {w.expected_effect}
                                                             </p>
                                                         )}
                                                     </motion.div>
@@ -935,12 +930,12 @@ export function CompetitorAnalysis() {
                                             {profileResult.bio_rewrite.version_1_short && (
                                                 <div className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2 group">
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-[10px] text-blue-400 font-bold tracking-wide uppercase">Вариант 1 · Короткий</span>
-                                                        <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_1_short); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                                        <span className="text-[11px] text-blue-400 font-black tracking-wider uppercase">Вариант 1 · Короткий</span>
+                                                        <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_1_short); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50 p-1 rounded">
+                                                            <Copy className="h-3.5 w-3.5 text-foreground hover:text-primary transition-colors" />
                                                         </button>
                                                     </div>
-                                                    <p className="text-[13px] text-foreground/85 leading-relaxed">{profileResult.bio_rewrite.version_1_short}</p>
+                                                    <p className="text-sm font-medium text-foreground leading-relaxed">{profileResult.bio_rewrite.version_1_short}</p>
                                                 </div>
                                             )}
                                             {profileResult.bio_rewrite.version_2_with_offer && (
@@ -976,22 +971,22 @@ export function CompetitorAnalysis() {
                                                             <span className="text-lg font-black text-violet-400/60 font-mono">{i + 1}</span>
                                                         </div>
                                                         <div className="flex-1 p-4 space-y-2.5">
-                                                            <p className="text-[14px] font-bold text-foreground leading-snug">🪝 {r.hook}</p>
-                                                            <p className="text-[12px] text-muted-foreground">{r.topic}</p>
+                                                            <p className="text-base font-black text-foreground leading-tight">🪝 {r.hook}</p>
+                                                            <p className="text-[13px] font-semibold text-foreground/70">{r.topic}</p>
                                                             {r.structure_3_steps && (
-                                                                <div className="space-y-1">
+                                                                <div className="space-y-1.5">
                                                                     {r.structure_3_steps.map((s: string, j: number) => (
-                                                                        <div key={j} className="flex items-start gap-2">
-                                                                            <span className="text-[10px] font-bold text-violet-400 bg-violet-500/10 rounded-md px-1.5 py-0.5 shrink-0">{j + 1}</span>
-                                                                            <span className="text-[12px] text-foreground/70 leading-relaxed">{s}</span>
+                                                                        <div key={j} className="flex items-start gap-2.5">
+                                                                            <span className="text-[11px] font-black text-violet-400 bg-violet-500/15 rounded px-2 py-0.5 shrink-0">{j + 1}</span>
+                                                                            <span className="text-[13px] font-medium text-foreground leading-relaxed">{s}</span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
                                                             )}
                                                             {r.cta && (
-                                                                <div className="flex items-center gap-2 bg-primary/8 rounded-lg px-3 py-1.5 border border-primary/15 w-fit">
-                                                                    <span className="text-[10px] font-bold text-primary uppercase">CTA</span>
-                                                                    <span className="text-[12px] text-foreground/80">{r.cta}</span>
+                                                                <div className="flex items-center gap-2 bg-primary/10 rounded-lg px-3 py-2 border border-primary/20 w-fit">
+                                                                    <span className="text-[11px] font-black text-primary tracking-widest uppercase">CTA</span>
+                                                                    <span className="text-[13px] font-bold text-foreground">{r.cta}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1013,18 +1008,18 @@ export function CompetitorAnalysis() {
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             {profileResult.next_3_days_plan.map((d: any) => (
-                                                <div key={d.day} className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2.5">
+                                                <div key={d.day} className="rounded-xl bg-card border border-border/60 p-4 space-y-3 shadow-sm hover:shadow-md transition-shadow">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="h-7 w-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-bold text-sm font-mono">{d.day}</span>
-                                                        <span className="text-[12px] font-semibold text-foreground">День {d.day}</span>
+                                                        <span className="h-8 w-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-black text-sm font-mono border border-emerald-500/20">{d.day}</span>
+                                                        <span className="text-sm font-bold text-foreground">День {d.day}</span>
                                                     </div>
-                                                    <div className="space-y-1.5">
+                                                    <div className="space-y-2">
                                                         {(d.tasks || []).map((t: string, i: number) => (
-                                                            <div key={i} className="flex items-start gap-2">
-                                                                <div className="h-4 w-4 rounded border border-emerald-500/30 shrink-0 mt-0.5 flex items-center justify-center">
-                                                                    <div className="h-1.5 w-1.5 rounded-sm bg-emerald-500/40" />
+                                                            <div key={i} className="flex items-start gap-2.5">
+                                                                <div className="h-4.5 w-4.5 rounded-full border-2 border-emerald-500/30 shrink-0 mt-0.5 flex items-center justify-center">
+                                                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                                                                 </div>
-                                                                <p className="text-[12px] text-foreground/70 leading-relaxed">{t}</p>
+                                                                <p className="text-[13px] font-medium text-foreground leading-relaxed">{t}</p>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1035,21 +1030,21 @@ export function CompetitorAnalysis() {
                                 )}
 
                                 {/* ═══ ACTION BAR ═══ */}
-                                <div className="flex gap-2 pt-1">
+                                <div className="flex flex-col sm:flex-row gap-2 pt-2">
                                     <Button
                                         onClick={() => {
                                             navigator.clipboard.writeText(JSON.stringify(profileResult, null, 2));
                                             toast({ title: "📋 Полный анализ скопирован" });
                                         }}
                                         variant="outline"
-                                        className="h-11 px-5 border-border/50 gap-2 text-sm font-medium"
+                                        className="h-11 flex-1 border-border/80 bg-background hover:bg-secondary/20 gap-2 text-sm font-bold text-foreground shadow-sm"
                                     >
-                                        <Copy className="h-4 w-4" /> Копировать всё
+                                        <Copy className="h-4 w-4" /> Копировать весь отчет JSON
                                     </Button>
                                     <Button
                                         onClick={() => setProfileResult(null)}
                                         variant="ghost"
-                                        className="h-11 px-5 text-muted-foreground gap-2 text-sm"
+                                        className="h-11 px-6 text-foreground/60 hover:text-foreground hover:bg-secondary/40 gap-2 text-sm font-semibold transition-colors"
                                     >
                                         <RotateCcw className="h-4 w-4" /> Новый анализ
                                     </Button>
@@ -1060,8 +1055,9 @@ export function CompetitorAnalysis() {
                     </AnimatePresence>
                 </TabsContent>
 
-                {/* ═══ TAB 3: РАЗБОР КОНТЕНТА ═══ */}
-                <TabsContent value="post" className="space-y-5">
+                {/* ═══ TAB 3: РАЗБОР КОНТЕНТА (merged with history) ═══ */}
+                <TabsContent value="post" className="space-y-6">
+                    {/* Input */}
                     <div className="flex gap-2">
                         <div className="relative flex-1">
                             <Play className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
@@ -1079,90 +1075,105 @@ export function CompetitorAnalysis() {
                         </Button>
                     </div>
 
-
                     <AnimatePresence mode="wait">
                         {postLoading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-xl border border-border bg-card p-6 space-y-4">
-                                <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-                                    <Skeleton className="aspect-[9/16] rounded-lg" />
-                                    <div className="space-y-3">
-                                        <Skeleton className="h-6 w-48" />
-                                        <Skeleton className="h-4 w-full" />
-                                        <Skeleton className="h-4 w-3/4" />
-                                        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-full rounded-lg" />)}
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="rounded-2xl border border-border bg-card p-8 space-y-4">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center">
+                                        <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-semibold text-foreground">Анализирую контент...</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Скачиваю → Транскрибирую → AI-разбор</p>
                                     </div>
                                 </div>
                             </motion.div>
                         )}
 
                         {!postLoading && selectedAnalysis && (
-                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 text-left">
-                                <div className="rounded-xl border border-border bg-card overflow-hidden">
-                                    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr]">
-                                        <div className="bg-secondary/20 p-6 flex flex-col items-center justify-center border-r border-border">
-                                            <div className="aspect-[9/16] w-full max-w-[180px] rounded-lg bg-secondary/40 flex items-center justify-center">
-                                                <Play className="h-10 w-10 text-foreground/10" />
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 text-left">
+                                {/* Analysis Detail Card */}
+                                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+                                    <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr]">
+                                        {/* Left: Score */}
+                                        <div className="bg-gradient-to-b from-primary/8 to-transparent p-6 flex flex-col items-center justify-center border-r border-border/30 gap-3">
+                                            <div className={`h-20 w-20 rounded-2xl bg-gradient-to-br ${
+                                                selectedAnalysis.performance_score >= 70 ? "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30" :
+                                                selectedAnalysis.performance_score >= 40 ? "from-amber-500/20 to-amber-600/5 border-amber-500/30" :
+                                                "from-red-500/20 to-red-600/5 border-red-500/30"
+                                            } border flex flex-col items-center justify-center`}>
+                                                <span className={`text-2xl font-black font-mono ${scoreColor(selectedAnalysis.performance_score)}`}>{selectedAnalysis.performance_score}</span>
+                                                <span className="text-[9px] text-muted-foreground uppercase tracking-wider">/100</span>
                                             </div>
-                                            <div className="mt-4 text-center">
-                                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/20 mx-auto w-fit">
-                                                    <Zap className="h-3.5 w-3.5 text-primary" />
-                                                    <span className={`text-lg font-bold font-mono tabular-nums ${scoreColor(selectedAnalysis.performance_score)}`}>{selectedAnalysis.performance_score}/100</span>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-2">Оценка виральности</p>
-                                            </div>
+                                            <p className="text-[11px] text-muted-foreground font-medium">Виральность</p>
+                                            <span className="text-[9px] px-2 py-0.5 rounded bg-secondary/60 text-muted-foreground border border-border/40">{selectedAnalysis.post_type || "reels"}</span>
                                         </div>
 
+                                        {/* Right: Content */}
                                         <div className="p-5 space-y-4">
                                             <h3 className="text-base font-bold text-foreground">AI-Разбор контента</h3>
+
+                                            {/* Hook */}
                                             {selectedAnalysis.hook && (
-                                                <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
-                                                    <p className="text-[10px] text-primary font-semibold mb-1">🪝 ХУК</p>
-                                                    <p className="text-sm text-foreground/80">{selectedAnalysis.hook}</p>
+                                                <div className="rounded-xl bg-gradient-to-r from-primary/8 to-transparent border border-primary/15 p-4">
+                                                    <p className="text-[10px] text-primary font-bold tracking-wide uppercase mb-1.5">🪝 ХУК</p>
+                                                    <p className="text-[14px] text-foreground font-medium leading-relaxed">{selectedAnalysis.hook}</p>
                                                 </div>
                                             )}
+
+                                            {/* AI Analysis Text */}
                                             {selectedAnalysis.ai_analysis && (
-                                                <div className="rounded-lg bg-secondary/20 border border-border p-3">
-                                                    <p className="text-[10px] text-muted-foreground mb-1">Анализ</p>
-                                                    <p className="text-sm text-foreground/80">{selectedAnalysis.ai_analysis}</p>
+                                                <div className="rounded-xl bg-secondary/20 border border-border/40 p-4">
+                                                    <p className="text-[10px] text-muted-foreground font-bold tracking-wide uppercase mb-1.5">Анализ</p>
+                                                    <p className="text-[13px] text-foreground/90 leading-relaxed">{selectedAnalysis.ai_analysis}</p>
                                                 </div>
                                             )}
-                                            {selectedAnalysis.strengths && selectedAnalysis.strengths.length > 0 && (
-                                                <div>
-                                                    <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                                                        <CheckCircle2 className="h-4 w-4 text-[hsl(var(--status-good))]" /> Сильные стороны
-                                                    </p>
-                                                    <div className="space-y-1">
-                                                        {selectedAnalysis.strengths.map((s, i) => (
-                                                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex items-start gap-2 text-sm text-foreground/80">
-                                                                <span className="text-[hsl(var(--status-good))] mt-0.5">✓</span><span>{s}</span>
-                                                            </motion.div>
-                                                        ))}
+
+                                            {/* Strengths & Weaknesses — two columns */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {selectedAnalysis.strengths && selectedAnalysis.strengths.length > 0 && (
+                                                    <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/15 p-4 space-y-2">
+                                                        <p className="text-[12px] font-bold text-foreground flex items-center gap-1.5">
+                                                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> Сильные стороны
+                                                        </p>
+                                                        <div className="space-y-1.5">
+                                                            {selectedAnalysis.strengths.map((s: string, i: number) => (
+                                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }} className="flex items-start gap-2">
+                                                                    <span className="text-emerald-400 text-[12px] mt-0.5 shrink-0">✓</span>
+                                                                    <span className="text-[12px] text-foreground/85 leading-relaxed">{s}</span>
+                                                                </motion.div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            {selectedAnalysis.weaknesses && selectedAnalysis.weaknesses.length > 0 && (
-                                                <div>
-                                                    <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                                                        <XCircle className="h-4 w-4 text-destructive" /> Слабые места
-                                                    </p>
-                                                    <div className="space-y-1">
-                                                        {selectedAnalysis.weaknesses.map((w, i) => (
-                                                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 + 0.2 }} className="flex items-start gap-2 text-sm text-foreground/80">
-                                                                <span className="text-destructive mt-0.5">✗</span><span>{w}</span>
-                                                            </motion.div>
-                                                        ))}
+                                                )}
+                                                {selectedAnalysis.weaknesses && selectedAnalysis.weaknesses.length > 0 && (
+                                                    <div className="rounded-xl bg-red-500/5 border border-red-500/15 p-4 space-y-2">
+                                                        <p className="text-[12px] font-bold text-foreground flex items-center gap-1.5">
+                                                            <XCircle className="h-3.5 w-3.5 text-red-400" /> Слабые места
+                                                        </p>
+                                                        <div className="space-y-1.5">
+                                                            {selectedAnalysis.weaknesses.map((w: string, i: number) => (
+                                                                <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 + 0.2 }} className="flex items-start gap-2">
+                                                                    <span className="text-red-400 text-[12px] mt-0.5 shrink-0">✗</span>
+                                                                    <span className="text-[12px] text-foreground/85 leading-relaxed">{w}</span>
+                                                                </motion.div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Adapt */}
-                                <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+                                {/* Adapt Section */}
+                                <div className="rounded-2xl border border-border/50 bg-card p-5 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <Sparkles className="h-4 w-4 text-[hsl(var(--status-ai))]" /> Адаптировать под нас
+                                            <div className="h-6 w-6 rounded-lg bg-primary/15 flex items-center justify-center">
+                                                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                                            </div>
+                                            Адаптировать под себя
                                         </h3>
                                         <Select value={adaptFormat} onValueChange={setAdaptFormat}>
                                             <SelectTrigger className="w-48 h-9 bg-secondary/30 border-border text-sm">
@@ -1182,8 +1193,8 @@ export function CompetitorAnalysis() {
                                         </Button>
                                     ) : (
                                         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-                                            <div className="rounded-lg bg-secondary/20 border border-border p-4 max-h-[360px] overflow-y-auto">
-                                                <pre className="text-sm text-foreground/85 whitespace-pre-wrap font-sans leading-relaxed">{adaptedScript}</pre>
+                                            <div className="rounded-xl bg-secondary/20 border border-border/40 p-4 max-h-[360px] overflow-y-auto">
+                                                <pre className="text-[13px] text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">{adaptedScript}</pre>
                                             </div>
                                             <div className="flex gap-2">
                                                 <Button onClick={() => toast({ title: "✅ Отправлено в Контент-Завод" })} className="flex-1 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2">
@@ -1196,75 +1207,83 @@ export function CompetitorAnalysis() {
                                         </motion.div>
                                     )}
                                 </div>
+
+                                {/* Back Button */}
+                                <Button onClick={() => { setSelectedAnalysis(null); setAdaptedScript(null); }} variant="ghost" className="text-muted-foreground gap-2 text-sm">
+                                    <RotateCcw className="h-4 w-4" /> Назад к списку
+                                </Button>
                             </motion.div>
                         )}
 
                         {!postLoading && !selectedAnalysis && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                                <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
-                                    <BarChart3 className="h-6 w-6 text-muted-foreground/30" />
-                                </div>
-                                <p className="text-sm font-medium">Вставьте ссылку на пост или видео</p>
-                                <p className="text-xs text-muted-foreground/60 mt-1">Instagram / TikTok / YouTube → транскрипция → AI-разбор → сценарий</p>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                                {/* Empty Hero */}
+                                {displayAnalyses.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                                        <div className="h-16 w-16 rounded-2xl bg-secondary/30 flex items-center justify-center mb-4">
+                                            <BarChart3 className="h-7 w-7 text-muted-foreground/30" />
+                                        </div>
+                                        <p className="text-sm font-semibold text-foreground">Вставьте ссылку на пост или видео</p>
+                                        <p className="text-xs text-muted-foreground mt-1">Instagram / TikTok / YouTube → транскрипция → AI-разбор → сценарий</p>
+                                    </div>
+                                )}
+
+                                {/* ─── History of completed analyses ─── */}
+                                {displayAnalyses.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <Sparkles className="h-4 w-4 text-primary" />
+                                            История разборов
+                                            <span className="text-[10px] text-muted-foreground font-normal">({displayAnalyses.length})</span>
+                                        </h3>
+                                        <div className="space-y-2">
+                                            {displayAnalyses.map((analysis, idx) => (
+                                                <motion.div key={analysis.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
+                                                    className="rounded-xl border border-border/50 bg-card hover:border-border hover:bg-card/80 transition-all group cursor-pointer"
+                                                    onClick={() => { setSelectedAnalysis(analysis); setAdaptedScript(null); }}
+                                                >
+                                                    <div className="flex items-center gap-4 p-3.5">
+                                                        {/* Score Badge */}
+                                                        <div className={`shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br ${
+                                                            analysis.performance_score >= 70 ? "from-emerald-500/15 to-emerald-600/5 border-emerald-500/25" :
+                                                            analysis.performance_score >= 40 ? "from-amber-500/15 to-amber-600/5 border-amber-500/25" :
+                                                            "from-red-500/15 to-red-600/5 border-red-500/25"
+                                                        } border flex flex-col items-center justify-center`}>
+                                                            <span className={`text-base font-bold font-mono ${scoreColor(analysis.performance_score)}`}>{analysis.performance_score}</span>
+                                                        </div>
+
+                                                        {/* Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            {analysis.hook && <p className="text-[13px] font-semibold text-foreground truncate">🪝 {analysis.hook}</p>}
+                                                            <p className="text-[12px] text-muted-foreground truncate mt-0.5">{analysis.post_caption || analysis.transcription || "—"}</p>
+                                                            <div className="flex items-center gap-2 mt-1.5">
+                                                                <span className="text-[9px] px-2 py-0.5 rounded bg-secondary/60 text-muted-foreground border border-border/30">{analysis.post_type || "reels"}</span>
+                                                                {analysis.strengths && analysis.strengths.length > 0 && (
+                                                                    <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/15">
+                                                                        ✓ {analysis.strengths[0].length > 25 ? analysis.strengths[0].slice(0, 25) + "…" : analysis.strengths[0]}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Actions */}
+                                                        <div className="flex items-center gap-1.5 shrink-0">
+                                                            <Button onClick={(e) => { e.stopPropagation(); setScriptDialog({ open: true, script: analysis.generated_script }); }} size="sm" className="h-8 text-[11px] bg-primary/15 hover:bg-primary/25 text-primary border border-primary/20 gap-1">
+                                                                <Sparkles className="h-3 w-3" /> Сценарий
+                                                            </Button>
+                                                            <Button onClick={(e) => { e.stopPropagation(); handleDeleteAnalysis(analysis.id); }} size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <Trash2 className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
-                </TabsContent>
-
-                {/* ═══ TAB 3: AI-РАЗБОРЫ ═══ */}
-                <TabsContent value="analyses" className="space-y-5">
-
-                    {displayAnalyses.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                            <div className="h-14 w-14 rounded-xl bg-secondary/30 flex items-center justify-center mb-4">
-                                <Cpu className="h-6 w-6 text-muted-foreground/30" />
-                            </div>
-                            <p className="text-sm font-medium">Нет AI-разборов</p>
-                            <p className="text-xs text-muted-foreground/60 mt-1">Добавьте конкурента и нажмите «Спарсить»</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
-                            {displayAnalyses.map((analysis, idx) => (
-                                <motion.div key={analysis.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.06 }} className="rounded-xl border border-border bg-card overflow-hidden group">
-                                    <div className="aspect-[4/5] bg-secondary/30 relative flex items-center justify-center">
-                                        <Play className="h-10 w-10 text-foreground/10" />
-                                        <span className="absolute top-2 left-2 text-[9px] px-1.5 py-0.5 rounded bg-card/80 backdrop-blur-sm text-muted-foreground border border-border/50">
-                                            {analysis.post_type || "reels"}
-                                        </span>
-                                        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md bg-card/80 backdrop-blur-sm border border-border/50">
-                                            <Zap className="h-3 w-3 text-primary" />
-                                            <span className={`text-[10px] font-bold font-mono ${scoreColor(analysis.performance_score)}`}>{analysis.performance_score}</span>
-                                        </div>
-                                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background/90 to-transparent p-3 pt-8">
-                                            {analysis.hook && <p className="text-[11px] text-foreground/80 font-medium line-clamp-2">🪝 {analysis.hook}</p>}
-                                        </div>
-                                    </div>
-
-                                    <div className="p-3.5 space-y-2.5">
-                                        <p className="text-xs text-foreground/70 line-clamp-2">{analysis.post_caption || analysis.transcription}</p>
-                                        {analysis.strengths && analysis.strengths.length > 0 && (
-                                            <div className="flex flex-wrap gap-1">
-                                                {analysis.strengths.slice(0, 2).map((s, i) => (
-                                                    <span key={i} className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">✓ {s.length > 30 ? s.slice(0, 30) + "…" : s}</span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="flex gap-1.5 pt-1">
-                                            <Button onClick={() => setScriptDialog({ open: true, script: analysis.generated_script })} size="sm" className="flex-1 h-8 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground gap-1">
-                                                <Sparkles className="h-3 w-3" /> Сценарий
-                                            </Button>
-                                            <Button onClick={() => { setSelectedAnalysis(analysis); setAdaptedScript(null); setActiveTab("post"); }} size="sm" variant="outline" className="h-8 px-2.5 text-[11px] border-border">
-                                                Подробнее
-                                            </Button>
-                                            <Button onClick={() => handleDeleteAnalysis(analysis.id)} size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
-                                                <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
                 </TabsContent>
             </Tabs>
 
