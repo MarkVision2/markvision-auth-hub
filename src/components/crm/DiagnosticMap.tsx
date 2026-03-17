@@ -68,7 +68,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
         finalPhone: lead.phone || "",
         createLtvTrigger: true,
     });
-    const totalSteps = 7;
+    const totalSteps = 3;
 
     const adminName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Администратор";
 
@@ -90,7 +90,6 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
     const handleFinalSave = async () => {
         setIsSaving(true);
         try {
-            // 1. Create a note with diagnostic summary
             const summary = `
 [ДИАГНОСТИЧЕСКАЯ КАРТА]
 1. ВЫЯВЛЕНИЕ ПРОБЛЕМЫ
@@ -123,7 +122,6 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
             });
             if (noteError) throw noteError;
 
-            // 2. Update lead status if booked
             if (formData.booking) {
                 const scheduledAt = new Date(formData.booking.date);
                 const [hours, minutes] = formData.booking.time.split(":");
@@ -148,106 +146,113 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl w-[90vw] h-[90vh] p-0 flex flex-col bg-background border-border overflow-hidden">
-                <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
+            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden">
+                <DialogHeader className="px-8 py-6 border-b border-border shrink-0 bg-background z-10">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                                <Stethoscope className="h-6 w-6 text-primary" />
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                <Stethoscope className="h-7 w-7 text-primary" />
                             </div>
                             <div>
-                                <DialogTitle className="text-xl font-bold tracking-tight">Диагностическая карта</DialogTitle>
-                                <p className="text-xs text-muted-foreground mt-0.5">Лид: {lead.name}</p>
+                                <DialogTitle className="text-2xl font-bold tracking-tight">Диагностика и запись на прием</DialogTitle>
+                                <p className="text-sm text-muted-foreground mt-0.5">Клиент: <span className="text-foreground font-semibold">{lead.name}</span> · {lead.phone}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Шаг {step} из {totalSteps}</span>
-                            <div className="flex gap-1">
-                                {Array.from({ length: totalSteps }).map((_, i) => (
-                                    <div
-                                        key={i}
-                                        className={cn(
-                                            "h-1.5 w-6 rounded-full transition-all duration-300",
-                                            i + 1 <= step ? "bg-primary" : "bg-muted"
-                                        )}
-                                    />
-                                ))}
+                        <div className="flex items-center gap-6">
+                            <div className="flex flex-col items-end gap-1.5">
+                                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Прогресс диагностики</span>
+                                <div className="flex gap-1.5">
+                                    {Array.from({ length: totalSteps }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={cn(
+                                                "h-1.5 w-12 rounded-full transition-all duration-500",
+                                                i + 1 <= step ? "bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.3)]" : "bg-muted"
+                                            )}
+                                        />
+                                    ))}
+                                </div>
                             </div>
+                            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full h-10 w-10">
+                                <Check className="h-5 w-5 rotate-45" />
+                            </Button>
                         </div>
                     </div>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 p-6">
-                    <div className="max-w-2xl mx-auto py-4">
+                <div className="flex-1 flex overflow-hidden">
+                    {/* LEFT PANEL: MAIN CONTENT */}
+                    <div className="flex-1 overflow-y-auto bg-background p-10 relative">
+                        <div className="max-w-3xl mx-auto">
                         {/* Step 1: Выявление проблемы (formerly step 2) */}
                         {step === 1 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
-                                <div className="space-y-4 text-center sm:text-left">
-                                    <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                                        <ClipboardList className="h-6 w-6 text-primary" /> Диагностика пациента
+                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-12 pb-12">
+                                <div className="space-y-4">
+                                    <h2 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
+                                        <ClipboardList className="h-8 w-8 text-primary" /> 1. Первичный опрос
                                     </h2>
-                                    <p className="text-sm text-muted-foreground">Заполните данные для формирования диагностической карты</p>
+                                    <p className="text-muted-foreground text-lg">Задайте вопросы клиенту и зафиксируйте ответы для врача.</p>
                                 </div>
 
-                                <div className="space-y-10">
+                                <div className="space-y-12">
                                     {/* Section 1: Выявление проблемы */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
-                                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground/80">Выявление проблемы пациента</h3>
+                                    <div className="space-y-8 bg-secondary/5 rounded-3xl p-8 border border-border/50">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</div>
+                                            <h3 className="text-lg font-bold">Выявление проблемы пациента</h3>
                                         </div>
                                         
-                                        <div className="grid gap-6 pl-9">
+                                        <div className="grid gap-8 pl-12 border-l-2 border-primary/10">
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Что именно вас сейчас беспокоит?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Что именно вас сейчас беспокоит?</Label>
                                               <Textarea
                                                   placeholder="Боль в пояснице, шее, между лопатками, в суставах?"
-                                                  className="bg-secondary/20 border-border focus:ring-primary h-20 text-sm resize-none"
+                                                  className="bg-background border-border focus:ring-primary h-24 text-base resize-none"
                                                   value={formData.complaints}
                                                   onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
                                               />
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Как давно появилась эта проблема?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Как давно появилась эта проблема?</Label>
                                               <Input
-                                                  placeholder="Укажите срок..."
-                                                  className="bg-secondary/20 border-border text-sm h-11"
+                                                  placeholder="Укажите примерный срок (недели, месяцы)..."
+                                                  className="bg-background border-border text-base h-12"
                                                   value={formData.painDuration}
                                                   onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
                                               />
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Характер боли</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Характер боли</Label>
                                               <RadioGroup
                                                   value={formData.painType}
                                                   onValueChange={(v) => setFormData({ ...formData, painType: v })}
                                                   className="flex gap-4"
                                               >
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, painType: "constant" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, painType: "constant" })}>
                                                       <RadioGroupItem value="constant" id="type-constant" />
-                                                      <Label htmlFor="type-constant" className="text-sm font-medium cursor-pointer">Постоянная</Label>
+                                                      <Label htmlFor="type-constant" className="text-base font-medium cursor-pointer">Постоянная</Label>
                                                   </div>
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, painType: "periodic" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, painType: "periodic" })}>
                                                       <RadioGroupItem value="periodic" id="type-periodic" />
-                                                      <Label htmlFor="type-periodic" className="text-sm font-medium cursor-pointer">Периодическая</Label>
+                                                      <Label htmlFor="type-periodic" className="text-base font-medium cursor-pointer">Периодическая</Label>
                                                   </div>
                                               </RadioGroup>
                                           </div>
 
-                                          <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">В какой момент боль усиливается?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
+                                          <div className="space-y-4">
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">В какой момент боль усиливается?</Label>
+                                              <div className="grid grid-cols-2 gap-4">
                                                   {[
                                                       { id: "walking", label: "При ходьбе" },
                                                       { id: "sitting", label: "При сидении" },
                                                       { id: "bending", label: "При наклонах" },
                                                       { id: "morning", label: "Утром после сна" },
                                                   ].map((t) => (
-                                                      <div key={t.id} className="flex items-center space-x-2 bg-secondary/10 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-colors cursor-pointer" onClick={() => toggleArrayItem("painTriggers", t.id)}>
+                                                      <div key={t.id} className="flex items-center space-x-3 bg-background border border-border p-4 rounded-xl hover:bg-secondary/10 transition-colors cursor-pointer" onClick={() => toggleArrayItem("painTriggers", t.id)}>
                                                           <Checkbox checked={formData.painTriggers.includes(t.id)} />
-                                                          <span className="text-xs font-medium">{t.label}</span>
+                                                          <span className="text-sm font-medium">{t.label}</span>
                                                       </div>
                                                   ))}
                                               </div>
@@ -256,64 +261,64 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                     </div>
 
                                     {/* Section 2: Уточнение состояния */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">2</div>
-                                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground/80">Уточнение состояния</h3>
+                                    <div className="space-y-8 bg-secondary/5 rounded-3xl p-8 border border-border/50">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</div>
+                                            <h3 className="text-lg font-bold">Уточнение состояния</h3>
                                         </div>
 
-                                        <div className="grid gap-6 pl-9">
-                                          <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Пробовали ли вы уже как-то лечить эту проблему?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid gap-8 pl-12 border-l-2 border-primary/10">
+                                          <div className="space-y-4">
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Пробовали ли вы уже как-то лечить эту проблему?</Label>
+                                              <div className="grid grid-cols-2 gap-4">
                                                   {[
                                                       { id: "massage", label: "Массаж" },
                                                       { id: "pills", label: "Таблетки" },
                                                       { id: "injections", label: "Уколы" },
                                                       { id: "physio", label: "Физиотерапия" },
                                                   ].map((m) => (
-                                                      <div key={m.id} className="flex items-center space-x-2 bg-secondary/10 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-colors cursor-pointer" onClick={() => toggleArrayItem("previousTreatment", m.id)}>
+                                                      <div key={m.id} className="flex items-center space-x-3 bg-background border border-border p-4 rounded-xl hover:bg-secondary/10 transition-colors cursor-pointer" onClick={() => toggleArrayItem("previousTreatment", m.id)}>
                                                           <Checkbox checked={formData.previousTreatment.includes(m.id)} />
-                                                          <span className="text-xs font-medium">{m.label}</span>
+                                                          <span className="text-sm font-medium">{m.label}</span>
                                                       </div>
                                                   ))}
                                               </div>
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Обращались ли ранее к врачам? Какой диагноз ставили?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Обращались ли ранее к врачам? Какой диагноз ставили?</Label>
                                               <Input
-                                                  placeholder="Укажите диагноз или клинику..."
-                                                  className="bg-secondary/20 border-border text-sm h-11"
+                                                  placeholder="Диагнозы или посещенные клиники..."
+                                                  className="bg-background border-border text-base h-12"
                                                   value={formData.medicalHistory}
                                                   onChange={(e) => setFormData({ ...formData, medicalHistory: e.target.value })}
                                               />
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Делали ли вы МРТ или КТ? Когда проводилось?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Делали ли вы МРТ или КТ? Когда проводилось?</Label>
                                               <Input
-                                                  placeholder="Укажите дату и вид обследования..."
-                                                  className="bg-secondary/20 border-border text-sm h-11"
+                                                  placeholder="Пример: МРТ поясницы в октябре 2023..."
+                                                  className="bg-background border-border text-base h-12"
                                                   value={formData.mriCtHistory}
                                                   onChange={(e) => setFormData({ ...formData, mriCtHistory: e.target.value })}
                                               />
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли у вас результаты обследований на руках?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли у вас результаты обследований на руках?</Label>
                                               <RadioGroup
                                                   value={formData.hasResults}
                                                   onValueChange={(v) => setFormData({ ...formData, hasResults: v })}
                                                   className="flex gap-4"
                                               >
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, hasResults: "yes" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, hasResults: "yes" })}>
                                                       <RadioGroupItem value="yes" id="results-yes" />
-                                                      <Label htmlFor="results-yes" className="text-sm font-medium cursor-pointer">Да</Label>
+                                                      <Label htmlFor="results-yes" className="text-base font-medium cursor-pointer">Да</Label>
                                                   </div>
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, hasResults: "no" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, hasResults: "no" })}>
                                                       <RadioGroupItem value="no" id="results-no" />
-                                                      <Label htmlFor="results-no" className="text-sm font-medium cursor-pointer">Нет</Label>
+                                                      <Label htmlFor="results-no" className="text-base font-medium cursor-pointer">Нет</Label>
                                                   </div>
                                               </RadioGroup>
                                           </div>
@@ -321,45 +326,45 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                     </div>
 
                                     {/* Section 3: Дополнительные вопросы */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">3</div>
-                                            <h3 className="text-sm font-bold uppercase tracking-wider text-foreground/80">Дополнительные уточняющие вопросы</h3>
+                                    <div className="space-y-8 bg-secondary/5 rounded-3xl p-8 border border-border/50">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</div>
+                                            <h3 className="text-lg font-bold">Дополнительные уточняющие вопросы</h3>
                                         </div>
 
-                                        <div className="grid gap-6 pl-9">
-                                          <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Боль отдает куда-то?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid gap-8 pl-12 border-l-2 border-primary/10">
+                                          <div className="space-y-4">
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Боль отдает куда-то?</Label>
+                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                   {[
                                                       { id: "leg", label: "В ногу" },
                                                       { id: "arm", label: "В руку" },
                                                       { id: "shoulder", label: "В плечо" },
                                                   ].map((r) => (
-                                                      <div key={r.id} className="flex items-center space-x-2 bg-secondary/10 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-colors cursor-pointer" onClick={() => toggleArrayItem("painRadiation", r.id)}>
+                                                      <div key={r.id} className="flex items-center space-x-3 bg-background border border-border p-4 rounded-xl hover:bg-secondary/10 transition-colors cursor-pointer" onClick={() => toggleArrayItem("painRadiation", r.id)}>
                                                           <Checkbox checked={formData.painRadiation.includes(r.id)} />
-                                                          <span className="text-xs font-medium">{r.label}</span>
+                                                          <span className="text-sm font-medium">{r.label}</span>
                                                       </div>
                                                   ))}
                                               </div>
                                           </div>
 
-                                          <div className="space-y-6">
+                                          <div className="space-y-8">
                                               <div className="flex items-center justify-between">
-                                                  <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Насколько сильная боль (1-10)?</Label>
-                                                  <span className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">{formData.painIntensity}</span>
+                                                  <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Насколько сильная боль (1-10)?</Label>
+                                                  <span className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-lg">{formData.painIntensity}</span>
                                               </div>
-                                              <div className="flex items-center justify-between gap-1">
+                                              <div className="flex items-center justify-between gap-1 sm:gap-2">
                                                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                                                       <button
                                                           key={num}
                                                           type="button"
                                                           onClick={() => setFormData({ ...formData, painIntensity: num })}
                                                           className={cn(
-                                                              "flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-all border",
+                                                              "flex-1 h-14 rounded-xl flex items-center justify-center text-base font-bold transition-all border shadow-sm",
                                                               formData.painIntensity === num
-                                                                  ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105"
-                                                                  : "bg-secondary/20 text-muted-foreground border-border hover:border-primary/50"
+                                                                  ? "bg-primary text-primary-foreground border-primary shadow-[0_5px_15px_-5px_var(--primary)] scale-110 z-10"
+                                                                  : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:bg-secondary/5"
                                                           )}
                                                       >
                                                           {num}
@@ -369,34 +374,34 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                           </div>
 
                                           <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли онемение или покалывание в руках или ногах?</Label>
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли онемение или покалывание в руках или ногах?</Label>
                                               <RadioGroup
                                                   value={formData.numbness}
                                                   onValueChange={(v) => setFormData({ ...formData, numbness: v })}
                                                   className="flex gap-4"
                                               >
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, numbness: "yes" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, numbness: "yes" })}>
                                                       <RadioGroupItem value="yes" id="numbness-yes" />
-                                                      <Label htmlFor="numbness-yes" className="text-sm font-medium cursor-pointer">Да</Label>
+                                                      <Label htmlFor="numbness-yes" className="text-base font-medium cursor-pointer">Да</Label>
                                                   </div>
-                                                  <div className="flex items-center space-x-2 bg-secondary/10 px-4 py-3 rounded-lg flex-1 cursor-pointer" onClick={() => setFormData({ ...formData, numbness: "no" })}>
+                                                  <div className="flex items-center space-x-3 bg-background border border-border px-6 py-4 rounded-xl flex-1 cursor-pointer hover:border-primary/50 transition-all" onClick={() => setFormData({ ...formData, numbness: "no" })}>
                                                       <RadioGroupItem value="no" id="numbness-no" />
-                                                      <Label htmlFor="numbness-no" className="text-sm font-medium cursor-pointer">Нет</Label>
+                                                      <Label htmlFor="numbness-no" className="text-base font-medium cursor-pointer">Нет</Label>
                                                   </div>
                                               </RadioGroup>
                                           </div>
 
-                                          <div className="space-y-3">
-                                              <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Мешает ли эта проблема в повседневной жизни?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
+                                          <div className="space-y-4">
+                                              <Label className="text-[12px] uppercase font-bold tracking-widest text-muted-foreground">Мешает ли эта проблема в повседневной жизни?</Label>
+                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                   {[
                                                       { id: "sitting", label: "Трудно сидеть" },
                                                       { id: "working", label: "Трудно работать" },
                                                       { id: "sleeping", label: "Трудно спать" },
                                                   ].map((l) => (
-                                                      <div key={l.id} className="flex items-center space-x-2 bg-secondary/10 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-colors cursor-pointer" onClick={() => toggleArrayItem("lifeImpact", l.id)}>
+                                                      <div key={l.id} className="flex items-center space-x-3 bg-background border border-border p-4 rounded-xl hover:bg-secondary/10 transition-colors cursor-pointer" onClick={() => toggleArrayItem("lifeImpact", l.id)}>
                                                           <Checkbox checked={formData.lifeImpact.includes(l.id)} />
-                                                          <span className="text-xs font-medium">{l.label}</span>
+                                                          <span className="text-sm font-medium">{l.label}</span>
                                                       </div>
                                                   ))}
                                               </div>
@@ -408,161 +413,74 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                         )}
 
                         {step === 2 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-                                <div className="space-y-4 text-center">
-                                    <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                                        <Info className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Как мы работаем</h2>
+                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-12 pb-12">
+                                <div className="space-y-4">
+                                    <h2 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
+                                        <Calendar className="h-8 w-8 text-primary" /> 2. Запись и Оплата
+                                    </h2>
+                                    <p className="text-muted-foreground text-lg">Нужно получить предоплату, чтобы зафиксировать время.</p>
                                 </div>
-                                <div className="space-y-6">
-                                    <div className="bg-secondary/20 rounded-2xl p-6 border border-border relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-primary mb-3 block">Скрипт для администратора</Label>
-                                        <p className="text-lg leading-relaxed text-foreground/90 italic">
-                                            «Мы используем комплексный подход. На диагностике врач не просто посмотрит снимки, но и проведет функциональные тесты. Это позволит найти первопричину боли, а не просто убрать симптом.»
-                                        </p>
+
+                                <div className="grid grid-cols-1 gap-12">
+                                    <div className="space-y-6">
+                                        <h3 className="text-xl font-bold flex items-center gap-2 italic">
+                                            <ArrowRight className="h-5 w-5 text-primary" /> Выбор свободного окна
+                                        </h3>
+                                        <BookingWidget
+                                            selectedDoctor={formData.booking?.doctor}
+                                            selectedDate={formData.booking?.date}
+                                            selectedTime={formData.booking?.time}
+                                            onBookingChange={(booking) => setFormData({ ...formData, booking })}
+                                        />
                                     </div>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {[
-                                            { title: "Точная диагностика", desc: "Используем современное оборудование и тесты." },
-                                            { title: "Индивидуальный план", desc: "Каждый случай уникален, и лечение тоже." },
-                                        ].map((item, i) => (
-                                            <div key={i} className="flex gap-4 p-4 rounded-xl border border-border bg-background transition-all hover:bg-secondary/5">
-                                                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                                    <Check className="h-5 w-5 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-sm text-foreground">{item.title}</h4>
-                                                    <p className="text-xs text-muted-foreground">{item.desc}</p>
-                                                </div>
-                                            </div>
-                                        ))}
+
+                                    <div className="space-y-6 bg-primary/5 p-8 rounded-3xl border border-primary/20">
+                                        <h3 className="text-xl font-bold flex items-center gap-2 italic">
+                                            <Star className="h-5 w-5 text-primary" /> Оплата диагностики
+                                        </h3>
+                                        <p className="text-sm text-balance leading-relaxed mb-6">
+                                            Администратор говорит про важность предоплаты и выставляет счет в WhatsApp.
+                                        </p>
+                                        <PaymentBlock
+                                            customerPhone={lead.phone || ""}
+                                            onPaymentConfirm={(payment) => setFormData({ ...formData, payment })}
+                                        />
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {step === 3 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-                                <div className="space-y-4 text-center">
-                                    <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                                        <Sparkles className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Ценность для клиента</h2>
-                                </div>
-                                <div className="space-y-6">
-                                    <div className="bg-secondary/20 rounded-2xl p-6 border border-border relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-primary mb-3 block">Скрипт для администратора</Label>
-                                        <p className="text-lg leading-relaxed text-foreground/90 italic">
-                                            «После диагностики вы получите четкое понимание: что происходит с вашим организмом и сколько времени займет восстановление. Мы работаем на результат.»
-                                        </p>
-                                    </div>
-                                    <div className="flex bg-primary/5 rounded-2xl p-6 border border-primary/10 gap-4 transition-all hover:bg-primary/10">
-                                        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                            <Star className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-base mb-1 text-foreground">Почему это важно?</h4>
-                                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                                Без точного диагноза лечение может быть неэффективным или даже вредным. Наша цель — вернуть вам качество жизни.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 4 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-                                <div className="space-y-4 text-center">
-                                    <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                                        <FileText className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold tracking-tight text-foreground">Подготовка</h2>
-                                </div>
-                                <div className="space-y-6">
-                                    <div className="bg-secondary/20 rounded-2xl p-6 border border-border relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-primary mb-3 block">Скрипт для администратора</Label>
-                                        <p className="text-lg leading-relaxed text-foreground/90 italic">
-                                            «Пожалуйста, возьмите с собой все имеющиеся результаты обследований (МРТ, КТ, выписки). Также рекомендуем надеть удобную одежду для проведения тестов.»
-                                        </p>
+                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-12 flex flex-col items-center justify-center min-h-[60vh] text-center">
+                                <div className="space-y-8 max-w-xl">
+                                    <div className="h-32 w-32 rounded-full bg-[hsl(var(--status-good))/0.1] flex items-center justify-center mx-auto animate-bounce-subtle">
+                                        <CheckCheck className="h-16 w-16 text-[hsl(var(--status-good))]" />
                                     </div>
                                     <div className="space-y-4">
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground block text-center">Чек-лист для клиента</Label>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {[
-                                                "Снимки МРТ/КТ",
-                                                "Заключения врачей",
-                                                "Спортивная одежда",
-                                                "Хорошее настроение",
-                                            ].map((item, i) => (
-                                                <div key={i} className="flex items-center gap-3 p-4 rounded-xl bg-background border border-border shadow-sm transition-all hover:shadow-md">
-                                                    <CheckCheck className="h-5 w-5 text-[hsl(var(--status-good))]" />
-                                                    <span className="text-sm font-medium text-foreground">{item}</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <h2 className="text-4xl font-black tracking-tighter text-foreground">Запись подтверждена!</h2>
+                                        <p className="text-xl text-muted-foreground font-medium italic leading-relaxed">
+                                            «Ваша запись подтверждена. Мы отправим вам информацию о клинике и видео как до нас добраться до встречи.»
+                                        </p>
                                     </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 5 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
-                                <div className="space-y-2 text-center sm:text-left">
-                                    <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                                        <Calendar className="h-6 w-6 text-primary" /> Запись на время
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">Выберите удобное окно в расписании</p>
-                                </div>
-                                <BookingWidget
-                                    selectedDoctor={formData.booking?.doctor}
-                                    selectedDate={formData.booking?.date}
-                                    selectedTime={formData.booking?.time}
-                                    onBookingChange={(booking) => setFormData({ ...formData, booking })}
-                                />
-                            </div>
-                        )}
-
-                        {step === 6 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
-                                <div className="space-y-2 text-center sm:text-left">
-                                    <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
-                                        <Star className="h-6 w-6 text-primary" /> Оплата и подтверждение
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground">Выставите счет для закрепления записи</p>
-                                </div>
-                                <PaymentBlock
-                                    customerPhone={lead.phone || ""}
-                                    onPaymentConfirm={(payment) => setFormData({ ...formData, payment })}
-                                />
-                            </div>
-                        )}
-
-                        {step === 7 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
-                                <div className="space-y-4 text-center">
-                                    <div className="h-20 w-20 rounded-full bg-[hsl(var(--status-good))/0.1] flex items-center justify-center mx-auto scale-110">
-                                        <CheckCheck className="h-10 w-10 text-[hsl(var(--status-good))]" />
-                                    </div>
-                                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Завершение</h2>
-                                    <p className="text-sm text-muted-foreground italic">
-                                        «Ваша запись подтверждена. Мы отправили вам детали встречи в WhatsApp. Ждем вас!»
-                                    </p>
-                                </div>
-                                <div className="grid gap-6 bg-secondary/10 p-8 rounded-3xl border border-border/50">
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="bg-secondary/10 p-10 rounded-[40px] border border-border/50 text-left">
+                                        <div className="grid gap-6">
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">ФИО Клиента</Label>
-                                                <Input value={formData.finalFio} onChange={(e) => setFormData({ ...formData, finalFio: e.target.value })} className="bg-background" />
+                                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">ФИО Клиента для системы</Label>
+                                                <Input 
+                                                    value={formData.finalFio} 
+                                                    onChange={(e) => setFormData({ ...formData, finalFio: e.target.value })} 
+                                                    className="bg-background text-lg h-14 rounded-2xl border-border"
+                                                />
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Телефон</Label>
-                                                <Input value={formData.finalPhone} disabled className="bg-background opacity-50" />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="p-4 rounded-2xl bg-background border border-border">
+                                                    <span className="block text-[10px] uppercase font-black text-muted-foreground mb-1">Время</span>
+                                                    <span className="text-lg font-bold">{formData.booking?.time || "—"}</span>
+                                                </div>
+                                                <div className="p-4 rounded-2xl bg-background border border-border">
+                                                    <span className="block text-[10px] uppercase font-black text-muted-foreground mb-1">Сумма</span>
+                                                    <span className="text-lg font-bold text-primary">{formData.payment?.amount ? `${formData.payment.amount} ₸` : "—"}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -570,21 +488,91 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
 
-                <div className="px-6 py-4 border-t border-border flex items-center justify-between bg-muted/20 shrink-0">
+                {/* RIGHT SIDEBAR: ADMIN ASSISTANT */}
+                <aside className="w-[380px] border-l border-border bg-muted/30 flex flex-col overflow-hidden">
+                        <div className="px-6 py-8 border-b border-border bg-background">
+                            <h3 className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-primary" /> Admin Assistant
+                            </h3>
+                        </div>
+
+                        <ScrollArea className="flex-1">
+                            <div className="p-6 space-y-8 pb-12">
+                                {/* Checklist */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Чек-лист опроса</h4>
+                                    <div className="space-y-2">
+                                        {[
+                                            { label: "Жалобы пациента", filled: !!formData.complaints },
+                                            { label: "Срок проблемы", filled: !!formData.painDuration },
+                                            { label: "Характер и триггеры", filled: formData.painTriggers.length > 0 },
+                                            { label: "Предыдущее лечение", filled: formData.previousTreatment.length > 0 },
+                                            { label: "Интенсивность боли", filled: true },
+                                            { label: "Наличие МРТ/КТ", filled: !!formData.mriCtHistory },
+                                            { label: "Влияние на жизнь", filled: formData.lifeImpact.length > 0 },
+                                        ].map((item, i) => (
+                                            <div key={i} className={cn(
+                                                "flex items-center gap-3 p-3 rounded-xl border transition-all",
+                                                item.filled ? "bg-primary/5 border-primary/20 text-foreground" : "bg-background border-border text-muted-foreground"
+                                            )}>
+                                                <div className={cn(
+                                                    "h-5 w-5 rounded-full flex items-center justify-center shrink-0 border-2",
+                                                    item.filled ? "bg-primary border-primary" : "border-muted"
+                                                )}>
+                                                    {item.filled && <Check className="h-3 w-3 text-primary-foreground" />}
+                                                </div>
+                                                <span className="text-xs font-bold">{item.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Objection Handling */}
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Работа с возражениями</h4>
+                                    <div className="space-y-3">
+                                        <div className="p-4 rounded-2xl bg-background border border-border space-y-2 shadow-sm">
+                                            <p className="text-[11px] font-bold text-primary">"Зачем нужна предоплата?"</p>
+                                            <p className="text-[11px] leading-relaxed italic">«Это гарантирует, что время врача будет закреплено именно за вами. Мы — серьезная клиника, и у нас плотный график.»</p>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-background border border-border space-y-2 shadow-sm">
+                                            <p className="text-[11px] font-bold text-primary">"Я хочу подумать"</p>
+                                            <p className="text-[11px] leading-relaxed italic">«Я понимаю. Однако боли могут усилиться, и свободного времени станет меньше. Давайте забронируем окно сейчас?»</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tips */}
+                                <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">
+                                        <Info className="h-12 w-12" />
+                                    </div>
+                                    <h4 className="text-xs font-black uppercase mb-2">Совет дня</h4>
+                                    <p className="text-[11px] leading-relaxed text-foreground/80">
+                                        Слушайте пациента внимательно. Чем больше деталей вы укажете, тем точнее врач подготовится к приему.
+                                    </p>
+                                </div>
+                            </div>
+                        </ScrollArea>
+                    </aside>
+                </div>
+
+                <div className="px-10 py-6 border-t border-border flex items-center justify-between bg-muted/10 shrink-0 z-10">
                     <Button
                         variant="ghost"
                         onClick={prevStep}
                         disabled={step === 1 || isSaving}
-                        className="gap-2 font-bold uppercase tracking-widest text-[10px]"
+                        className="gap-2 font-bold uppercase tracking-widest text-xs h-12 px-6 rounded-xl hover:bg-secondary/10"
                     >
                         <ArrowLeft className="h-4 w-4" /> Назад
                     </Button>
                     {step < totalSteps ? (
                         <Button
                             onClick={nextStep}
-                            className="gap-2 px-8 font-bold uppercase tracking-widest text-[10px]"
+                            className="gap-2 px-10 h-12 font-bold uppercase tracking-widest text-xs rounded-xl shadow-lg shadow-primary/20"
+                            disabled={step === 2 && (!formData.booking || !formData.payment)}
                         >
                             Далее <ArrowRight className="h-4 w-4" />
                         </Button>
@@ -592,9 +580,9 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                         <Button
                             onClick={handleFinalSave}
                             disabled={isSaving}
-                            className="gap-2 px-10 bg-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))/0.9] font-bold uppercase tracking-widest text-[10px]"
+                            className="gap-2 px-12 h-14 bg-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))/0.9] font-black uppercase tracking-widest text-xs rounded-xl shadow-xl shadow-[hsl(var(--status-good))/0.3]"
                         >
-                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4" /> Завершить</>}
+                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-5 w-5" /> Завершить</>}
                         </Button>
                     )}
                 </div>
