@@ -499,59 +499,109 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                         </div>
 
                         <ScrollArea className="flex-1">
-                            <div className="p-6 space-y-8 pb-12">
-                                {/* Checklist */}
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Чек-лист опроса</h4>
+                            <div className="p-6 space-y-10 pb-12">
+                                {/* Checklist Grouped */}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Чек-лист опроса</h4>
+                                        <span className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full">
+                                            {[ 
+                                                formData.complaints.length > 5, 
+                                                !!formData.painDuration, 
+                                                formData.painTriggers.length > 0, 
+                                                formData.previousTreatment.length > 0, 
+                                                !!formData.mriCtHistory, 
+                                                formData.hasResults !== "", 
+                                                formData.lifeImpact.length > 0 
+                                            ].filter(Boolean).length} / 7
+                                        </span>
+                                    </div>
+                                    
                                     <div className="space-y-2">
-                                        {[
-                                            { label: "Жалобы пациента", filled: !!formData.complaints },
-                                            { label: "Срок проблемы", filled: !!formData.painDuration },
-                                            { label: "Характер и триггеры", filled: formData.painTriggers.length > 0 },
-                                            { label: "Предыдущее лечение", filled: formData.previousTreatment.length > 0 },
-                                            { label: "Интенсивность боли", filled: true },
-                                            { label: "Наличие МРТ/КТ", filled: !!formData.mriCtHistory },
-                                            { label: "Влияние на жизнь", filled: formData.lifeImpact.length > 0 },
+                                        {[ 
+                                            { label: "Жалобы пациента", filled: formData.complaints.length > 5, icon: Stethoscope },
+                                            { label: "Срок проблемы", filled: !!formData.painDuration, icon: Calendar },
+                                            { label: "Характер и триггеры", filled: formData.painTriggers.length > 0, icon: Sparkles },
+                                            { label: "Пред. лечение", filled: formData.previousTreatment.length > 0, icon: ClipboardList },
+                                            { label: "МРТ / КТ история", filled: !!formData.mriCtHistory, icon: FileText },
+                                            { label: "Наличие результатов", filled: formData.hasResults !== "", icon: CheckCheck },
+                                            { label: "Влияние на жизнь", filled: formData.lifeImpact.length > 0, icon: User },
                                         ].map((item, i) => (
                                             <div key={i} className={cn(
-                                                "flex items-center gap-3 p-3 rounded-xl border transition-all",
-                                                item.filled ? "bg-primary/5 border-primary/20 text-foreground" : "bg-background border-border text-muted-foreground"
+                                                "flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300",
+                                                item.filled 
+                                                    ? "bg-primary/[0.03] border-primary/20 shadow-sm" 
+                                                    : "bg-background border-border"
                                             )}>
                                                 <div className={cn(
-                                                    "h-5 w-5 rounded-full flex items-center justify-center shrink-0 border-2",
-                                                    item.filled ? "bg-primary border-primary" : "border-muted"
+                                                    "h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all duration-500",
+                                                    item.filled 
+                                                        ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                                        : "border-muted text-muted-foreground bg-muted/20"
                                                 )}>
-                                                    {item.filled && <Check className="h-3 w-3 text-primary-foreground" />}
+                                                    {item.filled ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : <item.icon className="h-3.5 w-3.5" />}
                                                 </div>
-                                                <span className="text-xs font-bold">{item.label}</span>
+                                                <span className={cn(
+                                                    "text-[11px] font-bold tracking-tight",
+                                                    item.filled ? "text-foreground" : "text-muted-foreground"
+                                                )}>{item.label}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Objection Handling */}
-                                <div className="space-y-4">
-                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Работа с возражениями</h4>
-                                    <div className="space-y-3">
-                                        <div className="p-4 rounded-2xl bg-background border border-border space-y-2 shadow-sm">
-                                            <p className="text-[11px] font-bold text-primary">"Зачем нужна предоплата?"</p>
-                                            <p className="text-[11px] leading-relaxed italic">«Это гарантирует, что время врача будет закреплено именно за вами. Мы — серьезная клиника, и у нас плотный график.»</p>
-                                        </div>
-                                        <div className="p-4 rounded-2xl bg-background border border-border space-y-2 shadow-sm">
-                                            <p className="text-[11px] font-bold text-primary">"Я хочу подумать"</p>
-                                            <p className="text-[11px] leading-relaxed italic">«Я понимаю. Однако боли могут усилиться, и свободного времени станет меньше. Давайте забронируем окно сейчас?»</p>
+                                {/* Sales Scripts */}
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Скрипты продаж</h4>
+                                    
+                                    <div className="grid gap-3">
+                                        {[ 
+                                            { 
+                                                q: "Зачем предоплата?", 
+                                                a: "«Это гарантирует ваше место в графике врача. Мы клиника с плотной записью, и так мы уверены, что вы точно придете.»" 
+                                            },
+                                            { 
+                                                q: "\"Дорого\"", 
+                                                a: "«Здоровье — это инвестиция. Мы не просто снимаем боль, мы решаем причину, чтобы вы больше не тратили на таблетки.»" 
+                                            },
+                                            { 
+                                                q: "\"Я подумаю\"", 
+                                                a: "«Конечно, подумайте. Но помните, что грыжи и протрузии сами не проходят. Пока вы думаете, процесс разрушения идет.»" 
+                                            }
+                                        ].map((script, i) => (
+                                            <div key={i} className="p-4 rounded-2xl bg-background border border-border hover:border-primary/20 transition-all space-y-2 group cursor-default shadow-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                    <p className="text-[9px] font-black text-primary uppercase">{script.q}</p>
+                                                </div>
+                                                <p className="text-[11px] leading-relaxed italic text-muted-foreground group-hover:text-foreground transition-colors">
+                                                    {script.a}
+                                                </p>
+                                            </div>
+                                        ))}
+
+                                        <div className="p-5 rounded-3xl bg-primary/[0.04] border-2 border-primary/20 space-y-2.5 relative overflow-hidden">
+                                            <div className="absolute -right-2 -top-2 opacity-5">
+                                                <Sparkles className="h-12 w-12" />
+                                            </div>
+                                            <p className="text-[10px] font-black text-primary uppercase flex items-center gap-1.5">
+                                                Закрытие на запись
+                                            </p>
+                                            <p className="text-[12px] leading-relaxed font-bold">
+                                                «Давайте я забронирую вам время на завтра в 14:00, чтобы вы уже после первого сеанса почувствовали облегчение?»
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Tips */}
-                                <div className="p-6 rounded-3xl bg-primary/10 border border-primary/20 relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">
+                                {/* Admin Tip Card */}
+                                <div className="p-6 rounded-[32px] bg-foreground text-background relative overflow-hidden shadow-xl">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10">
                                         <Info className="h-12 w-12" />
                                     </div>
-                                    <h4 className="text-xs font-black uppercase mb-2">Совет дня</h4>
-                                    <p className="text-[11px] leading-relaxed text-foreground/80">
-                                        Слушайте пациента внимательно. Чем больше деталей вы укажете, тем точнее врач подготовится к приему.
+                                    <h5 className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">Золотое правило</h5>
+                                    <p className="text-[12px] leading-snug font-medium">
+                                        Будьте уверены в голосе. Вы не продаете услугу, вы предлагаете решение боли пациента.
                                     </p>
                                 </div>
                             </div>
