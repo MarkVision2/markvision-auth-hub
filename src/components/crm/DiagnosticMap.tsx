@@ -72,6 +72,15 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 
     const adminName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Администратор";
 
+    const [callChecklist, setCallChecklist] = useState<Record<string, boolean>>({});
+
+    const toggleChecklistItem = (id: string) => {
+        setCallChecklist(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
+
     const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
@@ -491,122 +500,262 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                 </div>
 
                 {/* RIGHT SIDEBAR: ADMIN ASSISTANT */}
-                <aside className="w-[380px] border-l border-border bg-muted/30 flex flex-col overflow-hidden">
-                        <div className="px-6 py-8 border-b border-border bg-background">
-                            <h3 className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Sparkles className="h-4 w-4 text-primary" /> Admin Assistant
-                            </h3>
-                        </div>
+                <aside className="w-[380px] border-l border-border bg-muted/30 flex flex-col overflow-hidden shrink-0">
+                    <div className="px-6 py-8 border-b border-border bg-background">
+                        <h3 className="text-sm font-black uppercase tracking-[0.2em] flex items-center gap-2 text-foreground/80">
+                            <Sparkles className="h-4 w-4 text-primary" /> Admin Assistant
+                        </h3>
+                    </div>
 
-                        <ScrollArea className="flex-1">
-                            <div className="p-6 space-y-10 pb-12">
-                                {/* Checklist Grouped */}
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Чек-лист опроса</h4>
-                                        <span className="text-[10px] font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full">
-                                            {[ 
-                                                formData.complaints.length > 5, 
-                                                !!formData.painDuration, 
-                                                formData.painTriggers.length > 0, 
-                                                formData.previousTreatment.length > 0, 
-                                                !!formData.mriCtHistory, 
-                                                formData.hasResults !== "", 
-                                                formData.lifeImpact.length > 0 
-                                            ].filter(Boolean).length} / 7
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                        {[ 
-                                            { label: "Жалобы пациента", filled: formData.complaints.length > 5, icon: Stethoscope },
-                                            { label: "Срок проблемы", filled: !!formData.painDuration, icon: Calendar },
-                                            { label: "Характер и триггеры", filled: formData.painTriggers.length > 0, icon: Sparkles },
-                                            { label: "Пред. лечение", filled: formData.previousTreatment.length > 0, icon: ClipboardList },
-                                            { label: "МРТ / КТ история", filled: !!formData.mriCtHistory, icon: FileText },
-                                            { label: "Наличие результатов", filled: formData.hasResults !== "", icon: CheckCheck },
-                                            { label: "Влияние на жизнь", filled: formData.lifeImpact.length > 0, icon: User },
-                                        ].map((item, i) => (
-                                            <div key={i} className={cn(
-                                                "flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300",
-                                                item.filled 
-                                                    ? "bg-primary/[0.03] border-primary/20 shadow-sm" 
-                                                    : "bg-background border-border"
-                                            )}>
-                                                <div className={cn(
-                                                    "h-7 w-7 rounded-full flex items-center justify-center shrink-0 border transition-all duration-500",
-                                                    item.filled 
-                                                        ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                                                        : "border-muted text-muted-foreground bg-muted/20"
-                                                )}>
-                                                    {item.filled ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : <item.icon className="h-3.5 w-3.5" />}
-                                                </div>
-                                                <span className={cn(
-                                                    "text-[11px] font-bold tracking-tight",
-                                                    item.filled ? "text-foreground" : "text-muted-foreground"
-                                                )}>{item.label}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                    <ScrollArea className="flex-1">
+                        <div className="p-6 space-y-10 pb-12">
+                            {/* Call Checklist Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">📋 Чек-лист звонка</h4>
+                                    <span className="text-[10px] font-black text-primary px-2.5 py-1 bg-primary/10 rounded-full border border-primary/20">
+                                        {Object.values(callChecklist).filter(Boolean).length} / 17
+                                    </span>
                                 </div>
 
-                                {/* Sales Scripts */}
-                                <div className="space-y-6">
-                                    <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Скрипты продаж</h4>
-                                    
-                                    <div className="grid gap-3">
-                                        {[ 
-                                            { 
-                                                q: "Зачем предоплата?", 
-                                                a: "«Это гарантирует ваше место в графике врача. Мы клиника с плотной записью, и так мы уверены, что вы точно придете.»" 
-                                            },
-                                            { 
-                                                q: "\"Дорого\"", 
-                                                a: "«Здоровье — это инвестиция. Мы не просто снимаем боль, мы решаем причину, чтобы вы больше не тратили на таблетки.»" 
-                                            },
-                                            { 
-                                                q: "\"Я подумаю\"", 
-                                                a: "«Конечно, подумайте. Но помните, что грыжи и протрузии сами не проходят. Пока вы думаете, процесс разрушения идет.»" 
-                                            }
-                                        ].map((script, i) => (
-                                            <div key={i} className="p-4 rounded-2xl bg-background border border-border hover:border-primary/20 transition-all space-y-2 group cursor-default shadow-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                                    <p className="text-[9px] font-black text-primary uppercase">{script.q}</p>
+                                {/* Checklist Items */}
+                                <div className="grid gap-8">
+                                    {/* 1. Contact & Empathy */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">1. Контакт и Эмпатия</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "name1", label: "Обратиться по имени №1", sub: "В начале разговора" },
+                                                { id: "empathy", label: "Проявить эмпатию", sub: "«Понимаю вас, [Имя]...»" },
+                                                { id: "name2", label: "Обратиться по имени №2", sub: "При презентации" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
                                                 </div>
-                                                <p className="text-[11px] leading-relaxed italic text-muted-foreground group-hover:text-foreground transition-colors">
-                                                    {script.a}
-                                                </p>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
+                                    </div>
 
-                                        <div className="p-5 rounded-3xl bg-primary/[0.04] border-2 border-primary/20 space-y-2.5 relative overflow-hidden">
-                                            <div className="absolute -right-2 -top-2 opacity-5">
-                                                <Sparkles className="h-12 w-12" />
-                                            </div>
-                                            <p className="text-[10px] font-black text-primary uppercase flex items-center gap-1.5">
-                                                Закрытие на запись
-                                            </p>
-                                            <p className="text-[12px] leading-relaxed font-bold">
-                                                «Давайте я забронирую вам время на завтра в 14:00, чтобы вы уже после первого сеанса почувствовали облегчение?»
-                                            </p>
+                                    {/* 2. Value Presentation */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">2. Презентация ценности</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "v-2in1", label: "Акцент на «2 в 1»", sub: "Терапевт + Реабилитолог" },
+                                                { id: "v-service", label: "Раскрыть состав услуги", sub: "Диагностика + Тесты + Снимки" },
+                                                { id: "v-bonus", label: "Главный бонус", sub: "Процедура в день обращения" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Pricing & Closing */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">3. Стоимость и закрытие</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "p-price", label: "Озвучить цену: 9 990 тг", sub: "Уверенно, без пауз" },
+                                                { id: "p-choice", label: "Техника «Выбор без выбора»", sub: "Утро или вечер?" },
+                                                { id: "p-name3", label: "Обратиться по имени №3", sub: "При подтверждении" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 4. Objections */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">4. Работа с возражениями</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "obj-listen", label: "Слушать — Понимать", sub: "Не перебивать пациента" },
+                                                { id: "obj-trans", label: "Трансформация возражения", sub: "Акцент на план восстановления" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 5. Prepayment */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">5. Фиксация и Предоплата</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "pre-term", label: "«Забронировать время»", sub: "Вместо «оплатить»" },
+                                                { id: "pre-sum", label: "Сумма брони: 5 000 тг", sub: "Входит в стоимость" },
+                                                { id: "pre-kaspi", label: "«Номер привязан к Kaspi?»", sub: "Вопрос-закрытие" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 6. Final Service */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-[10px] font-black uppercase text-foreground/70">6. Финальный сервис</p>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            {[ 
+                                                { id: "fin-data", label: "Зафиксировать ФИО", sub: "Для медицинской карты" },
+                                                { id: "fin-route", label: "Проверить маршрут", sub: "Знает ли как добраться?" },
+                                                { id: "fin-bye", label: "Вежливое прощание", sub: "До встречи в клинике" }
+                                            ].map((item) => (
+                                                <div key={item.id} 
+                                                    onClick={() => toggleChecklistItem(item.id)}
+                                                    className={cn(
+                                                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                                                        callChecklist[item.id] ? "bg-primary/5 border-primary/20" : "bg-background border-border hover:border-primary/20"
+                                                    )}
+                                                >
+                                                    <div className={cn(
+                                                        "h-4 w-4 rounded-sm border shrink-0 mt-0.5 flex items-center justify-center transition-colors",
+                                                        callChecklist[item.id] ? "bg-primary border-primary" : "border-muted"
+                                                    )}>
+                                                        {callChecklist[item.id] && <Check className="h-3 w-3 text-white stroke-[4]" />}
+                                                    </div>
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[11px] font-bold leading-none">{item.label}</p>
+                                                        <p className="text-[10px] text-muted-foreground leading-tight">{item.sub}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Admin Tip Card */}
-                                <div className="p-6 rounded-[32px] bg-foreground text-background relative overflow-hidden shadow-xl">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                                        <Info className="h-12 w-12" />
+                            {/* Cheat Sheet Section */}
+                            <div className="space-y-6 pt-6 border-t border-border">
+                                <h4 className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">💡 Шпаргалка админа</h4>
+                                <div className="grid gap-3">
+                                    <div className="p-4 rounded-2xl bg-secondary/5 border border-border space-y-4">
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-red-500 uppercase flex items-center gap-1.5">
+                                                <span className="h-1 w-1 rounded-full bg-red-500" /> НЕ ГОВОРИТЬ
+                                            </p>
+                                            <ul className="text-[11px] space-y-1 font-medium text-muted-foreground list-disc pl-4">
+                                                <li>Оплатите диагностику</li>
+                                                <li>У нас такие правила</li>
+                                                <li>Просто осмотр</li>
+                                            </ul>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black text-emerald-500 uppercase flex items-center gap-1.5">
+                                                <span className="h-1 w-1 rounded-full bg-emerald-500" /> НУЖНО ГОВОРИТЬ
+                                            </p>
+                                            <ul className="text-[11px] space-y-1 font-bold text-foreground list-disc pl-4">
+                                                <li>Забронируйте время врача</li>
+                                                <li>Чтобы место не занял другой</li>
+                                                <li>Комплексная диагностика 2 врачами</li>
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <h5 className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-2">Золотое правило</h5>
-                                    <p className="text-[12px] leading-snug font-medium">
-                                        Будьте уверены в голосе. Вы не продаете услугу, вы предлагаете решение боли пациента.
-                                    </p>
                                 </div>
                             </div>
-                        </ScrollArea>
-                    </aside>
+                        </div>
+                    </ScrollArea>
+                </aside>
                 </div>
 
                 <div className="px-10 py-6 border-t border-border flex items-center justify-between bg-muted/10 shrink-0 z-10">
