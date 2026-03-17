@@ -56,7 +56,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
         finalPhone: lead.phone || "",
         createLtvTrigger: true,
     });
-    const totalSteps = 8;
+    const totalSteps = 7;
 
     const adminName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Администратор";
 
@@ -150,31 +150,8 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 
                 <ScrollArea className="flex-1 p-6">
                     <div className="max-w-2xl mx-auto py-4">
+                        {/* Step 1: Выявление проблемы (formerly step 2) */}
                         {step === 1 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8 text-center py-10">
-                                <div className="space-y-4">
-                                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-                                        <User className="h-10 w-10 text-primary" />
-                                    </div>
-                                    <h2 className="text-3xl font-bold tracking-tight text-foreground">Приветствие</h2>
-                                    <div className="bg-secondary/30 rounded-2xl p-8 border border-border/50 relative overflow-hidden group">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                                        <p className="text-xl leading-relaxed text-foreground italic font-medium text-pretty px-4">
-                                            «Добрый день, <span className="text-primary font-bold">{lead.name}</span>. Меня зовут <span className="text-primary font-bold">{adminName}</span>.
-                                            Сейчас я создам вашу диагностическую карту, задам несколько вопросов,
-                                            чтобы наша встреча с врачом прошла максимально продуктивно. Договорились?»
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-center pt-4">
-                                    <Button onClick={nextStep} size="lg" className="rounded-full px-12 h-14 text-sm font-black uppercase tracking-widest gap-2 shadow-lg shadow-primary/20">
-                                        Да, договорились <ArrowRight className="h-5 w-5" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 2 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
                                 <div className="space-y-2 text-center sm:text-left">
                                     <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
@@ -226,14 +203,23 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                             <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Интенсивность боли (1-10)</Label>
                                             <span className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">{formData.painIntensity}</span>
                                         </div>
-                                        <Slider
-                                            defaultValue={[5]}
-                                            max={10}
-                                            step={1}
-                                            value={[formData.painIntensity]}
-                                            onValueChange={([val]) => setFormData({ ...formData, painIntensity: val })}
-                                            className="py-4"
-                                        />
+                                        <div className="flex items-center justify-between gap-1 sm:gap-2">
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                                <button
+                                                    key={num}
+                                                    type="button"
+                                                    onClick={() => setFormData({ ...formData, painIntensity: num })}
+                                                    className={cn(
+                                                        "flex-1 aspect-square sm:h-12 sm:w-12 rounded-lg flex items-center justify-center text-sm font-bold transition-all border",
+                                                        formData.painIntensity === num
+                                                            ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-110"
+                                                            : "bg-secondary/20 text-muted-foreground border-border hover:border-primary/50 hover:bg-secondary/40"
+                                                    )}
+                                                >
+                                                    {num}
+                                                </button>
+                                            ))}
+                                        </div>
                                         <div className="flex justify-between text-[10px] text-muted-foreground px-1 uppercase font-medium">
                                             <span>Легкая</span>
                                             <span>Невыносимая</span>
@@ -261,7 +247,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 3 && (
+                        {step === 2 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
                                 <div className="space-y-4 text-center">
                                     <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -297,7 +283,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 4 && (
+                        {step === 3 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
                                 <div className="space-y-4 text-center">
                                     <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -328,7 +314,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 5 && (
+                        {step === 4 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
                                 <div className="space-y-4 text-center">
                                     <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
@@ -364,7 +350,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 6 && (
+                        {step === 5 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
                                 <div className="space-y-2 text-center sm:text-left">
                                     <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
@@ -381,7 +367,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 7 && (
+                        {step === 6 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
                                 <div className="space-y-2 text-center sm:text-left">
                                     <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center sm:justify-start gap-2">
@@ -396,7 +382,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {step === 8 && (
+                        {step === 7 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-8">
                                 <div className="space-y-4 text-center">
                                     <div className="h-20 w-20 rounded-full bg-[hsl(var(--status-good))/0.1] flex items-center justify-center mx-auto scale-110">
