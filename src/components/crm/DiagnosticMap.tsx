@@ -876,256 +876,45 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                     <aside className="w-[380px] border-l border-border bg-muted/5 flex flex-col shrink-0 overflow-hidden">
                         <div className="p-6 border-b border-border bg-background">
                             <div className="flex items-center gap-2 mb-1">
-                                <Heart className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-bold uppercase tracking-widest">Admin Assistant</h3>
+                                <ClipboardList className="h-4 w-4 text-primary" />
+                                <h3 className="text-sm font-bold uppercase tracking-widest">Структура разговора</h3>
                             </div>
-                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Чек-лист текущего этапа</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Шпаргалка для администратора</p>
                         </div>
                         <ScrollArea className="flex-1 p-6">
-                            {step === 1 && (
-                                <div className="space-y-8 pb-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            1. Контакт и эмпатия
+                            <div className="space-y-3 pb-10">
+                                {[
+                                    "1. Приветствие",
+                                    "2. Подтверждение заявки",
+                                    "3. Выявление проблемы",
+                                    "4. Уточнение симптомов",
+                                    "5. Эмпатия ( сочуствие )",
+                                    "6. Презентация диагностики",
+                                    "7. Озвучивание стоимости",
+                                    "8. Работа с возражениями",
+                                    "9. Закрытие на запись",
+                                    "10. Подведение к предоплате и Работа с возражениями",
+                                    "11. Подтверждение записи",
+                                    "12. Финальное завершение"
+                                ].map((stepText, i) => (
+                                    <div key={i} className="p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/30 transition-all flex items-center gap-3">
+                                        <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-black">
+                                            {i + 1}
                                         </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Обратиться по имени №1", h: "В начале разговора" },
-                                                { t: "Проявить эмпатию", h: "«Понимаю вас...»" },
-                                                { t: "Обратиться по имени №2", h: "После ответов пациента" },
-                                            ].map((item, i) => (
-                                                <div key={i} className="group p-3 rounded-xl bg-background border border-border/50 hover:border-primary/30 transition-all cursor-default">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-md border border-border flex items-center justify-center mt-0.5 group-hover:border-primary/50 transition-colors">
-                                                            <Check className="h-3 w-3 text-transparent group-hover:text-primary/20" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-bold leading-none mb-1">{item.t}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-medium">{item.h}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        <span className="text-xs font-bold leading-tight">{stepText.split('. ')[1] || stepText}</span>
                                     </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            2. Что обязательно уточнить
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {[
-                                                { t: "Локализация боли", v: !!formData.complaints },
-                                                { t: "Срок проблемы", v: !!formData.painDuration },
-                                                { t: "Усиление боли", v: formData.painTriggers.length > 0 },
-                                                { t: "Интенсивность", v: true },
-                                                { t: "Онемение", v: !!formData.numbness },
-                                                { t: "Ограничения в жизни", v: formData.lifeImpact.length > 0 },
-                                                { t: "Наличие МРТ / КТ", v: !!formData.mriCtHistory },
-                                            ].map((item, i) => (
-                                                <div key={i} className={cn(
-                                                    "flex items-center justify-between p-3 rounded-xl border transition-all",
-                                                    item.v ? "bg-primary/5 border-primary/20 text-primary" : "bg-background border-border/50 text-muted-foreground"
-                                                )}>
-                                                    <span className="text-[11px] font-bold">{item.t}</span>
-                                                    {item.v ? <Check className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-muted" />}
-                                                </div>
-                                            ))}
-                                        </div>
+                                ))}
+                                
+                                <div className="mt-8 p-6 rounded-[32px] bg-primary/5 border border-primary/10 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Info className="h-4 w-4 text-primary" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Важно помнить</span>
                                     </div>
-                                    
-                                    <div className="p-4 rounded-2xl bg-primary text-primary-foreground space-y-2 shadow-lg shadow-primary/20">
-                                        <div className="flex items-center gap-2">
-                                            <Info className="h-3 w-3" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Совет администратору</span>
-                                        </div>
-                                        <p className="text-[11px] font-medium leading-relaxed italic">
-                                            «Слушайте пациента внимательно. Важно не просто заполнить форму, а почувствовать его боль и желание вылечиться.»
-                                        </p>
-                                    </div>
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
+                                        Разговор всегда идет по этой схеме. Не перескакивайте через этапы, ведите пациента плавно от приветствия до подтверждения записи.
+                                    </p>
                                 </div>
-                            )}
-
-                            {step === 2 && (
-                                <div className="space-y-8 pb-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            1. Акценты презентации
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Не просто консультация", h: "Комплексная диагностика" },
-                                                { t: "2 врача", h: "Терапевт + реабилитолог" },
-                                                { t: "Понять причину боли", h: "Не просто снять симптомы" },
-                                                { t: "Есть план лечения", h: "Понятные дальнейшие шаги" },
-                                                { t: "Есть первая процедура", h: "В день обращения" },
-                                            ].map((item, i) => (
-                                                <div key={i} className="group p-3 rounded-xl bg-background border border-border/50 hover:border-primary/30 transition-all">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-md border border-border flex items-center justify-center mt-0.5">
-                                                            <Check className="h-3 w-3 text-transparent group-hover:text-primary/20" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-bold leading-none mb-1">{item.t}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-medium">{item.h}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            2. Правила подачи
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Спокойно и уверенно", h: "Без давления на пациента" },
-                                                { t: "Связать с его жалобой", h: "«Так как у вас болит...»" },
-                                                { t: "Подвести к записи", h: "После ценности сразу к делу" },
-                                            ].map((item, i) => (
-                                                <div key={i} className="p-3 rounded-xl border border-border/50 bg-background">
-                                                    <p className="text-[11px] font-bold mb-0.5">{item.t}</p>
-                                                    <p className="text-[10px] text-muted-foreground">{item.h}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 3 && (
-                                <div className="space-y-8 pb-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            1. Как закрывать на запись
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Не спрашивать «будете?»", h: "Только выбор времени" },
-                                                { t: "Дать 2 варианта", h: "Утро или вечер / 11:00 или 17:00" },
-                                                { t: "Повторить время вслух", h: "Для фиксации в сознании" },
-                                                { t: "Записываю вас...", h: "Утвердительная форма" },
-                                            ].map((item, i) => (
-                                                <div key={i} className="group p-3 rounded-xl bg-background border border-border/50 hover:border-primary/30 transition-all">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-md border border-border flex items-center justify-center mt-0.5">
-                                                            <Check className="h-3 w-3 text-transparent group-hover:text-primary/20" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-bold leading-none mb-1">{item.t}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-medium">{item.h}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className={cn(
-                                        "p-5 rounded-3xl border transition-all space-y-3",
-                                        formData.bookingDate && formData.bookingTime ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" : "bg-background border-border"
-                                    )}>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest">Текущий выбор</span>
-                                        </div>
-                                        {formData.bookingDate ? (
-                                            <div>
-                                                <p className="text-sm font-bold">{formData.bookingDate.toLocaleDateString("ru-RU", { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-                                                <p className="text-xl font-black mt-1">{formData.bookingTime}</p>
-                                            </div>
-                                        ) : (
-                                            <p className="text-xs font-medium opacity-60 italic">Время еще не выбрано</p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 4 && (
-                                <div className="space-y-8 pb-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            1. Работа с возражениями по предоплате
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Почему нужно платить?", h: "Бронь времени врачей и кабинета" },
-                                                { t: "А если я не приду?", h: "Возврат при отмене за 24 часа" },
-                                                { t: "Это безопасно?", h: "Офиц. платеж через Kaspi" },
-                                            ].map((item, i) => (
-                                                <div key={i} className="group p-3 rounded-xl bg-background border border-border/50 hover:border-primary/30 transition-all">
-                                                    <div className="flex items-start gap-3">
-                                                        <div className="h-5 w-5 rounded-md border border-border flex items-center justify-center mt-0.5">
-                                                            <Check className="h-3 w-3 text-transparent group-hover:text-primary/20" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-xs font-bold leading-none mb-1">{item.t}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-medium">{item.h}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 rounded-2xl bg-[#00A2E8]/10 text-[#00A2E8] border border-[#00A2E8]/20 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <Smartphone className="h-3 w-3" />
-                                            <span className="text-[9px] font-black uppercase tracking-widest">Kaspi Tip</span>
-                                        </div>
-                                        <p className="text-[11px] font-medium leading-relaxed italic">
-                                            «Отправьте счет сразу. Пациент горячий и готов подтвердить визит действием.»
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {step === 5 && (
-                                <div className="space-y-8 pb-10">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-wider">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                            1. Финальная сверка
-                                        </div>
-                                        <div className="space-y-2">
-                                            {[
-                                                { t: "Подтвердить время", v: true },
-                                                { t: "Проверить оплату", v: formData.paymentStatus === "paid" },
-                                                { t: "Проверить ФИО", v: !!lead.name },
-                                                { t: "Напомнить про МРТ", v: formData.hasResults === "yes" },
-                                            ].map((item, i) => (
-                                                <div key={i} className={cn(
-                                                    "flex items-center justify-between p-3 rounded-xl border transition-all",
-                                                    item.v ? "bg-primary/5 border-primary/20 text-primary" : "bg-background border-border/50 text-muted-foreground"
-                                                )}>
-                                                    <span className="text-[11px] font-bold">{item.t}</span>
-                                                    {item.v ? <Check className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-muted" />}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    <div className="p-6 rounded-[32px] bg-primary text-primary-foreground space-y-4 shadow-xl shadow-primary/30">
-                                        <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-white/20 mx-auto">
-                                            <CheckCircle2 className="h-6 w-6" />
-                                        </div>
-                                        <div className="text-center space-y-1">
-                                            <p className="text-xs font-black uppercase tracking-[0.2em] opacity-80">Почти готово!</p>
-                                            <p className="text-sm font-medium leading-relaxed">
-                                                Нажмите «Завершить», чтобы сохранить все данные и отправить их в систему.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            </div>
                         </ScrollArea>
                     </aside>
                 </div>
