@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
     Dialog, DialogContent, DialogHeader, DialogTitle, 
     DialogDescription, DialogFooter 
@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
     Calendar as CalendarIcon, Clock, User, 
@@ -56,6 +58,23 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         date: appointment?.date || selectedDate || new Date(),
         time: appointment?.time || selectedTime || "09:00",
     });
+
+    // Reset state when modal opens
+    useEffect(() => {
+        if (open) {
+            setFormData({
+                patientName: appointment?.patient || "",
+                phone: appointment?.phone || "",
+                service: appointment?.service || "",
+                status: appointment?.status || "planned",
+                comment: appointment?.comment || "",
+                date: appointment?.date || selectedDate || new Date(),
+                time: appointment?.time || selectedTime || "09:00",
+            });
+            setShowResults(false);
+            setSearchResults([]);
+        }
+    }, [open, appointment, selectedDate, selectedTime]);
 
     const [searchResults, setSearchResults] = useState<typeof MOCK_PATIENTS>([]);
     const [showResults, setShowResults] = useState(false);
@@ -154,10 +173,22 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-3">
                             <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Дата визита</Label>
-                            <div className="h-12 flex items-center gap-3 px-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-semibold text-sm">
-                                <CalendarIcon className="h-5 w-5 text-blue-500" />
-                                <span className="text-slate-800 dark:text-zinc-200">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
-                            </div>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <div className="h-12 flex items-center gap-3 px-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-semibold text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">
+                                        <CalendarIcon className="h-5 w-5 text-blue-500" />
+                                        <span className="text-slate-800 dark:text-zinc-200">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
+                                    </div>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={formData.date}
+                                        onSelect={(date) => date && setFormData({ ...formData, date })}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
                         <div className="space-y-3">
                             <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Время приема</Label>

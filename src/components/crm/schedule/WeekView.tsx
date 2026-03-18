@@ -107,7 +107,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                             {weekDays.map((day, i) => {
                                 const hourStr = hour.toString().padStart(2, "0") + ":00";
                                 const appt = appointments.find(a => 
-                                    isSameDay(a.date, day) && a.time === hourStr
+                                    isSameDay(a.date, day) && a.time.startsWith(hour.toString().padStart(2, "0"))
                                 );
 
                                 return (

@@ -82,7 +82,7 @@ export const DayView: React.FC<DayViewProps> = ({
                     {HOURS.map((hour) => {
                         const hourStr = hour.toString().padStart(2, "0") + ":00";
                         const appt = appointments.find(a => 
-                            isSameDay(a.date, selectedDate) && a.time === hourStr
+                            isSameDay(a.date, selectedDate) && a.time.startsWith(hour.toString().padStart(2, "0"))
                         );
 
                         return (
