@@ -51,6 +51,7 @@ interface FormData {
     // Booking
     bookingDate?: Date;
     bookingTime?: string;
+    bookingDoctor?: string;
     adminComment: string;
 
     // Prepayment
@@ -100,6 +101,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
         presentationDone: false,
         bookingDate: undefined,
         bookingTime: "",
+        bookingDoctor: "",
         adminComment: "",
         kaspiLinked: "u", // yes, no, unknown
         paymentMethod: "Kaspi",
@@ -111,7 +113,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
         knowsAddress: "yes",
         confirmationComment: "",
     });
-    const totalSteps = 5;
+    const totalSteps = 4;
 
     const adminName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Администратор";
 
@@ -145,19 +147,19 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                     return false;
                 }
                 break;
+            case 2:
+                if (!formData.bookingDate || !formData.bookingTime || !formData.bookingDoctor) {
+                    toast({ title: "Внимание", description: "Для перехода укажите время и врача", variant: "destructive" });
+                    return false;
+                }
+                break;
             case 3:
-                if (!formData.bookingDate || !formData.bookingTime) {
-                    toast({ title: "Внимание", description: "Выберите дату и время записи", variant: "destructive" });
+                if (!formData.paymentStatus) {
+                    toast({ title: "Внимание", description: "Выберите статус оплаты", variant: "destructive" });
                     return false;
                 }
                 break;
             case 4:
-                if (!formData.paymentMethod) {
-                    toast({ title: "Внимание", description: "Выберите способ оплаты", variant: "destructive" });
-                    return false;
-                }
-                break;
-            case 5:
                 if (!formData.finalFio || !formData.finalPhone) {
                     toast({ title: "Внимание", description: "Заполните ФИО и телефон пациента", variant: "destructive" });
                     return false;
@@ -241,11 +243,10 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
     };
 
     const stages = [
-        { id: "primary_survey", title: "Первичный опрос", icon: ClipboardList },
-        { id: "presentation", title: "Презентация", icon: MessageCircle },
-        { id: "booking", title: "Запись", icon: Calendar },
-        { id: "prepayment", title: "Предоплата", icon: Receipt },
-        { id: "confirmation", title: "Подтверждение", icon: ShieldCheck },
+        { id: 1, title: "Опрос", icon: Stethoscope },
+        { id: 2, title: "Запись", icon: Calendar },
+        { id: 3, title: "Предоплата", icon: CreditCard },
+        { id: 4, title: "Завершение", icon: CheckCircle2 },
     ];
 
     return (
@@ -597,7 +598,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                 </div>
                         )}
 
-                        {/* Step 2: Презентация */}
+                        {/* Step 2: Презентация и Запись */}
                         {step === 2 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
                                 <div className="space-y-3">
@@ -606,98 +607,116 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                             <MessageCircle className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold tracking-tight">2. Презентация диагностики</h2>
-                                            <p className="text-muted-foreground">Объясните ценность диагностики и подведите пациента к записи.</p>
+                                            <h2 className="text-2xl font-bold tracking-tight">2. Презентация диагностики и запись</h2>
+                                            <p className="text-muted-foreground">Показать ценность и записать на удобное время.</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {[
-                                        { t: "Комплексная диагностика позвоночника", d: "Не просто консультация, а полноценное обследование", i: Stethoscope },
-                                        { t: "2 врача высшей категории", d: "Терапевт + реабилитолог", i: User },
-                                        { t: "Что входит", d: "Осмотр, тесты, рекомендации, план лечения", i: ClipboardList },
-                                        { t: "Главный бонус", d: "Первая лечебная процедура в день обращения", i: Star },
-                                        { t: "Стоимость", d: "9 990 ₸ за весь комплекс", i: Receipt },
-                                    ].map((card, i) => (
-                                        <div key={i} className="p-6 rounded-3xl bg-secondary/5 border border-border/50 hover:border-primary/20 transition-all flex gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center shrink-0 shadow-sm">
-                                                <card.i className="h-5 w-5 text-primary" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-8">
+                                        <div className="p-8 rounded-[32px] bg-primary/5 border border-primary/10 space-y-6">
+                                            <div className="flex items-center gap-3 text-primary">
+                                                <Star className="h-6 w-6 fill-primary/20" />
+                                                <h3 className="text-lg font-black uppercase tracking-tight">Ценность (Не просто консультация!)</h3>
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-sm mb-1">{card.t}</h4>
-                                                <p className="text-xs text-muted-foreground">{card.d}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="space-y-6 bg-primary/5 p-8 rounded-[32px] border border-primary/10">
-                                    <h3 className="font-bold flex items-center gap-2">
-                                        <CheckCheck className="h-5 w-5 text-primary" /> Ключевые тезисы
-                                    </h3>
-                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {[
-                                            "Это не разовая консультация",
-                                            "Важно определить причину боли",
-                                            "Пациент получает понятный план лечения",
-                                            "Уже в первый визит делается первый шаг к облегчению боли"
-                                        ].map((point, i) => (
-                                            <li key={i} className="flex items-start gap-3 text-sm font-medium">
-                                                <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-                                                    <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                            <p className="text-sm font-bold leading-relaxed italic text-foreground bg-white/50 p-6 rounded-2xl border border-primary/5 shadow-sm">
+                                                «Давайте расскажу, как мы поможем. У нас проводится комплексная диагностика, где вас смотрят сразу ДВА врача высшей категории (терапевт и реабилитолог).»
+                                            </p>
+                                            <div className="space-y-3">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-tight px-1">Что входит в стоимость:</span>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {[
+                                                        "Осмотр 2 врачей высшей категории",
+                                                        "Функциональные тесты и разбор МРТ/КТ",
+                                                        "Индивидуальный план лечения",
+                                                        "ПЕРВАЯ ЛЕЧЕБНАЯ ПРОЦЕДУРА"
+                                                    ].map((item, i) => (
+                                                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-background border border-border/40 shadow-sm">
+                                                            <div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                                                <Check className="h-3 w-3" />
+                                                            </div>
+                                                            <span className="text-xs font-bold leading-tight">{item}</span>
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                {point}
-                                            </li>
-                                        ))}
-                                    </ul>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 rounded-[32px] bg-amber-50 border border-amber-100 space-y-6">
+                                            <div className="flex items-center gap-3 text-amber-800">
+                                                <Receipt className="h-6 w-6" />
+                                                <h3 className="text-lg font-black uppercase tracking-tight">Цена + Дефицит + Выбор</h3>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="flex items-baseline gap-3">
+                                                    <span className="text-sm line-through text-muted-foreground font-bold">23 000 тг</span>
+                                                    <span className="text-3xl font-black text-amber-900 leading-none tracking-tight">9 990 тенге</span>
+                                                </div>
+                                                <p className="text-[11px] font-bold text-amber-800/80 leading-relaxed italic bg-white/40 p-4 rounded-xl border border-amber-200/50">
+                                                    «Отдельно это вышло бы в 2-3 раза дороже. Желающих много, врачи берут всего 3-4 человека в день.»
+                                                </p>
+                                                <div className="pt-2">
+                                                    <p className="text-sm font-bold text-amber-900 leading-tight">
+                                                        «Вам когда удобнее подойти — в первой половине дня или после обеда? Какое время закрепить за вами: 11:00 или 17:00?»
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 rounded-[32px] bg-sky-50 border border-sky-100 space-y-4 shadow-sm animate-in zoom-in-95 duration-500">
+                                            <div className="flex items-center gap-3 text-sky-800">
+                                                <CreditCard className="h-6 w-6" />
+                                                <h3 className="text-lg font-black uppercase tracking-tight">Бронирование (Предоплата)</h3>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <p className="text-sm font-bold text-sky-900 leading-relaxed italic">
+                                                    «Предоплата — 5 000 тенге (она полностью входит в стоимость, в клинике доплатите всего 4 990). Это гарантия, что врачи ждут именно вас.»
+                                                </p>
+                                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sky-600 bg-white/50 w-fit px-3 py-1 rounded-full border border-sky-200">
+                                                    <Smartphone className="h-3 w-3" /> «Номер привязан к Kaspi? Отправляю счет.»
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="bg-background p-8 rounded-[40px] border border-border/80 shadow-xl shadow-primary/5 space-y-8 sticky top-0">
+                                            <div className="space-y-2">
+                                                <h3 className="text-xl font-bold tracking-tight">Выбор свободного времени</h3>
+                                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Актуальное расписание врачей</p>
+                                            </div>
+                                            
+                                            <BookingWidget
+                                                selectedDate={formData.bookingDate}
+                                                selectedTime={formData.bookingTime}
+                                                selectedDoctor={formData.bookingDoctor}
+                                                onBookingChange={(booking) => setFormData({ 
+                                                    ...formData, 
+                                                    bookingDate: booking.date, 
+                                                    bookingTime: booking.time,
+                                                    bookingDoctor: booking.doctor
+                                                })}
+                                            />
+                                            
+                                            <div className="p-6 rounded-2xl bg-secondary/10 space-y-3">
+                                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Важный комментарий</Label>
+                                                <Textarea
+                                                    placeholder="Например: удобнее после 18:00, будет с МРТ..."
+                                                    className="bg-background border-none focus:ring-1 focus:ring-primary h-24 text-sm font-medium resize-none rounded-xl p-4"
+                                                    value={formData.adminComment}
+                                                    onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* Step 3: Запись */}
+
+                        {/* Step 3: Предоплата */}
                         {step === 3 && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                            <Calendar className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-bold tracking-tight">3. Выбор времени записи</h2>
-                                            <p className="text-muted-foreground">Предложите пациенту удобное время и зафиксируйте бронь.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-8">
-                                    <div className="bg-secondary/5 p-8 rounded-[32px] border border-border/50">
-                                        <BookingWidget
-                                            selectedDate={formData.bookingDate}
-                                            selectedTime={formData.bookingTime}
-                                            onBookingChange={(booking) => setFormData({ 
-                                                ...formData, 
-                                                bookingDate: booking.date, 
-                                                bookingTime: booking.time 
-                                            })}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Комментарий администратора</Label>
-                                        <Textarea
-                                            placeholder="Например: удобнее после 18:00, будет с МРТ, просил напомнить..."
-                                            className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4"
-                                            value={formData.adminComment}
-                                            onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 4: Предоплата */}
-                        {step === 4 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
@@ -705,7 +724,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                             <CreditCard className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold tracking-tight">4. Предоплата и гарантия визита</h2>
+                                            <h2 className="text-2xl font-bold tracking-tight">3. Предоплата и гарантия визита</h2>
                                             <p className="text-muted-foreground">Подтвердите серьезность намерений пациента через внесение задатка.</p>
                                         </div>
                                     </div>
@@ -783,8 +802,8 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                             </div>
                         )}
 
-                        {/* Step 5: Подтверждение */}
-                        {step === 5 && (
+                        {/* Step 4: Завершение */}
+                        {step === 4 && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 space-y-10">
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-3">
@@ -792,7 +811,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                             <Flag className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold tracking-tight">5. Финал и подтверждение</h2>
+                                            <h2 className="text-2xl font-bold tracking-tight">4. Финал и подтверждение</h2>
                                             <p className="text-muted-foreground">Проверьте данные и завершите оформление записи.</p>
                                         </div>
                                     </div>
