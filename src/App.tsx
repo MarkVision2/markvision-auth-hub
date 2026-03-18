@@ -32,6 +32,7 @@ const QualityControlPage = lazy(() => import("./pages/QualityControlPage"));
 const RetentionLtvPage = lazy(() => import("./pages/RetentionLtvPage"));
 const AiManagerPage = lazy(() => import("./pages/AiManagerPage"));
 const DoctorTerminal = lazy(() => import("./pages/DoctorTerminal"));
+const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -83,6 +84,7 @@ const App = () => (
                       <Route path="/quality" element={<ProtectedRoute><QualityControlPage /></ProtectedRoute>} />
                       <Route path="/retention" element={<ProtectedRoute><RetentionLtvPage /></ProtectedRoute>} />
                       <Route path="/admin/ai-manager" element={<ProtectedRoute><AiManagerPage /></ProtectedRoute>} />
+                      <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
                       <Route path="/doctor/terminal" element={<ProtectedRoute><DoctorTerminal /></ProtectedRoute>} />
                       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                       <Route path="*" element={<NotFound />} />

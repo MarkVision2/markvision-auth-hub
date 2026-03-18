@@ -60,7 +60,7 @@ interface AddAccountSheetProps {
 }
 
 export default function AddAccountSheet({ open, onOpenChange, onSaved, account }: AddAccountSheetProps) {
-  const { active, workspaces } = useWorkspace();
+  const { active, workspaces, createProject } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [showInMarkVision, setShowInMarkVision] = useState(false);
@@ -115,8 +115,16 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     if (!form.client_name.trim()) return;
 
     setSaving(true);
+    let projectId = isInHq ? null : active.id;
 
-    const projectId = isInHq ? null : active.id;
+    // Fix: If adding a NEW account from HQ (MarkVision AI) and it's an AGENCY cabinet, 
+    // we MUST create a dedicated project for it first.
+    if (!account?.id && isInHq && form.is_agency) {
+      const newProjectId = await createProject(form.client_name);
+      if (newProjectId) {
+        projectId = newProjectId;
+      }
+    }
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
