@@ -30,7 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
 import type { CallRecord, AITask } from "./types";
-import { DiagnosticMap } from "./DiagnosticMap";
+import { DiagnosticModule } from "../diagnostics/DiagnosticModule";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -961,7 +961,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         </div>
       </SheetContent>
 
-      <DiagnosticMap
+      <DiagnosticModule
         lead={lead}
         open={diagnosticOpen}
         onOpenChange={setDiagnosticOpen}

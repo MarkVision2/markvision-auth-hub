@@ -3,7 +3,7 @@ import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock, HeartHandshake, Repeat,
-  Bot, Plus,
+  Bot, Plus, Stethoscope
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -84,6 +84,7 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin", "doctor"],
     items: [
       { title: "Терминал Врача", path: "/doctor/terminal", icon: Activity },
+      { title: "Дашборд Диагностики", path: "/diagnostics", icon: Stethoscope },
     ],
   },
   {
