@@ -97,7 +97,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     {HOURS.map((hour) => (
                         <React.Fragment key={hour}>
                             {/* Hour Labels */}
-                            <div className="h-[120px] border-r border-slate-200 dark:border-zinc-800 flex items-start justify-center pt-3 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-20">
+                            <div className="h-[85px] border-r border-slate-200 dark:border-zinc-800 flex items-start justify-center pt-3 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-20">
                                 <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-500 tracking-wider">
                                     {hour.toString().padStart(2, "0")}:00
                                 </span>
@@ -114,7 +114,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                     <div 
                                         key={`${i}-${hour}`} 
                                         onClick={() => !appt && onAddAppointment(day, hourStr)}
-                                        className="h-[120px] border-r border-b border-slate-100 dark:border-zinc-800/50 relative group transition-colors hover:bg-slate-50 dark:hover:bg-zinc-900/50 cursor-pointer p-1"
+                                        className="h-[85px] border-r border-b border-slate-100 dark:border-zinc-800/50 relative group transition-colors hover:bg-slate-50 dark:hover:bg-zinc-900/50 cursor-pointer p-1"
                                     >
                                         {appt ? (
                                             <div 

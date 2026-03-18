@@ -92,11 +92,11 @@ export const DayView: React.FC<DayViewProps> = ({
                                     <span className="text-[13px] font-bold text-slate-400 dark:text-zinc-500 tracking-[0.05em] transition-colors">
                                         {hourStr}
                                     </span>
-                                    <div className="h-[120px] w-px bg-border/30 mt-4 mr-2" />
+                                    <div className="h-[85px] w-px bg-border/30 mt-4 mr-2" />
                                 </div>
 
                                 {/* Content Slot */}
-                                <div className="flex-1 min-h-[140px] pb-6 relative">
+                                <div className="flex-1 min-h-[100px] pb-4 relative">
                                     
                                     {/* Mock Current Time Indicator (Visual Demo) */}
                                     {hourStr === "10:00" && (
@@ -109,7 +109,7 @@ export const DayView: React.FC<DayViewProps> = ({
                                         <div 
                                             onClick={() => onEditAppointment(appt)}
                                             className={cn(
-                                                "w-full rounded-[24px] border p-6 transition-all duration-300 cursor-pointer group/appt hover:-translate-y-1 relative z-20",
+                                                "w-full rounded-[24px] border p-4 transition-all duration-300 cursor-pointer group/appt hover:-translate-y-1 relative z-20",
                                                 getStatusStyles(appt.status)
                                             )}
                                         >
@@ -162,7 +162,7 @@ export const DayView: React.FC<DayViewProps> = ({
                                     ) : (
                                         <div 
                                             onClick={() => onAddAppointment(hourStr)}
-                                            className="w-full h-full min-h-[60px] rounded-[24px] border-2 border-dashed border-slate-200 dark:border-zinc-800 flex items-center p-6 transition-all duration-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 group/empty cursor-pointer bg-white/50 dark:bg-[#0a0a0a]/50"
+                                            className="w-full h-full min-h-[60px] rounded-[24px] border-2 border-dashed border-slate-200 dark:border-zinc-800 flex items-center p-4 transition-all duration-300 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 group/empty cursor-pointer bg-white/50 dark:bg-[#0a0a0a]/50"
                                         >
                                             <div className="flex items-center gap-5 transition-transform duration-300 group-hover/empty:translate-x-3">
                                                 <div className="h-12 w-12 rounded-xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-zinc-800 group-hover/empty:bg-blue-100 group-hover/empty:border-blue-200 group-hover/empty:text-blue-500 dark:group-hover/empty:bg-blue-900/30 dark:group-hover/empty:border-blue-800/50 dark:group-hover/empty:text-blue-400 transition-colors shadow-sm">

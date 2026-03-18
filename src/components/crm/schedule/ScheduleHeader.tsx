@@ -24,6 +24,7 @@ interface ScheduleHeaderProps {
 }
 
 const MOCK_DOCTORS = [
+    { id: "all", name: "Все врачи", specialty: "Медицинский центр" },
     { id: "1", name: "Иванов Иван Иванович", specialty: "Терапевт" },
     { id: "2", name: "Петров Петр Петрович", specialty: "Реабилитолог" },
     { id: "3", name: "Сидорова Анна Сергеевна", specialty: "Невролог" },

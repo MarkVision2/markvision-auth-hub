@@ -8,7 +8,7 @@ import { AppointmentModal } from "@/components/crm/schedule/AppointmentModal";
 const SchedulePage = () => {
     const [view, setView] = useState<"day" | "week" | "month">("week");
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [selectedDoctorId, setSelectedDoctorId] = useState<string>("1"); // Default to first mock doctor
+    const [selectedDoctorId, setSelectedDoctorId] = useState<string>("all"); // Default to All doctors for admin view
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeAppointment, setActiveAppointment] = useState<any>(null);
     const [targetTime, setTargetTime] = useState<string | undefined>();
@@ -17,14 +17,18 @@ const SchedulePage = () => {
         { 
             id: "1", patient: "Алексей Павлов", time: "09:00", date: new Date(), 
             status: "planned", type: "Первичный", phone: "+7 777 123 45 67", 
-            service: "Консультация терапевта", comment: "Боли в спине"
+            service: "Консультация терапевта", comment: "Боли в спине", doctorId: "1"
         },
         { 
             id: "2", patient: "Мадина Сулейменова", time: "11:30", date: new Date(), 
             status: "completed", type: "Повторный", phone: "+7 701 987 65 43",
-            service: "Курс реабилитации", comment: "Плановый осмотр"
+            service: "Курс реабилитации", comment: "Плановый осмотр", doctorId: "2"
         },
     ]);
+
+    const filteredAppointments = selectedDoctorId === "all" 
+        ? appointments 
+        : appointments.filter(a => a.doctorId === selectedDoctorId);
 
     const handleSaveAppointment = (data: any) => {
         if (activeAppointment) {
@@ -41,7 +45,8 @@ const SchedulePage = () => {
                 type: "Первичный",
                 phone: data.phone,
                 service: data.service,
-                comment: data.comment
+                comment: data.comment,
+                doctorId: selectedDoctorId === "all" ? "1" : selectedDoctorId
             };
             setAppointments(prev => [...prev, newAppt]);
         }
@@ -62,7 +67,7 @@ const SchedulePage = () => {
                 {view === "day" && <DayView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
-                    appointments={appointments}
+                    appointments={filteredAppointments}
                     onAddAppointment={(time) => {
                         setTargetTime(time);
                         setActiveAppointment(null);
@@ -76,7 +81,7 @@ const SchedulePage = () => {
                 {view === "week" && <WeekView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
-                    appointments={appointments}
+                    appointments={filteredAppointments}
                     onDateSelect={setSelectedDate} 
                     onViewChange={setView} 
                     onAddAppointment={(date, time) => {
@@ -93,7 +98,7 @@ const SchedulePage = () => {
                 {view === "month" && <MonthView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
-                    appointments={appointments}
+                    appointments={filteredAppointments}
                     onDateSelect={(date) => {
                         setSelectedDate(date);
                         setView("week");
