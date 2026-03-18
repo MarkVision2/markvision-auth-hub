@@ -6,7 +6,7 @@ import {
     Stethoscope, ArrowRight, ArrowLeft, Check,
     Calendar, ClipboardList, Star, CheckCheck, Loader2,
     MessageCircle, ShieldCheck, Heart, Info, Send, Phone, User, Clock, MapPin, Receipt, X,
-    CreditCard, Smartphone, MessageSquare, Flag, CheckCircle2, ShieldAlert
+    CreditCard, Smartphone, MessageSquare, Flag, CheckCircle2, ShieldAlert, History as LucideHistory
 } from "lucide-react";
 import { Lead } from "./KanbanBoard";
 import { cn } from "@/lib/utils";
@@ -23,19 +23,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 interface FormData {
-    // Primary Survey
+    // Stage 1: Finding the problem
     complaints: string;
+    painLocation: string;
+    painLocationOther: string;
     painDuration: string;
     painType: string;
+
+    // Stage 2: Symptoms and condition
     painTriggers: string[];
-    previousTreatment: string[];
-    medicalHistory: string;
-    mriCtHistory: string;
-    hasResults: string;
+    painTriggersOther: string;
     painRadiation: string[];
-    painIntensity: number;
+    painRadiationOther: string;
     numbness: string;
+    painIntensity: string; // User requested input field for 1-10
     lifeImpact: string[];
+    lifeImpactOther: string;
+    previousTreatment: string;
+    treatmentMethods: string;
+    doctorsSeen: string; // yes/no
+    mriCtHistory: string; // yes/no
+    hasResults: string; // yes/no
     
     // Presentation
     presentationDone: boolean;
@@ -72,17 +80,23 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState<FormData>({
         complaints: "",
+        painLocation: "",
+        painLocationOther: "",
         painDuration: "",
-        painType: "periodic",
+        painType: "",
         painTriggers: [],
-        previousTreatment: [],
-        medicalHistory: "",
-        mriCtHistory: "",
-        hasResults: "no",
+        painTriggersOther: "",
         painRadiation: [],
-        painIntensity: 5,
-        numbness: "no",
+        painRadiationOther: "",
+        numbness: "",
+        painIntensity: "",
         lifeImpact: [],
+        lifeImpactOther: "",
+        previousTreatment: "",
+        treatmentMethods: "",
+        doctorsSeen: "no",
+        mriCtHistory: "no",
+        hasResults: "no",
         presentationDone: false,
         bookingDate: undefined,
         bookingTime: "",
@@ -126,7 +140,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
     const validateStage = (currentStep: number) => {
         switch (currentStep) {
             case 1:
-                if (!formData.complaints || !formData.painDuration || !formData.painType || !formData.painIntensity) {
+                if (!formData.complaints || !formData.painLocation || !formData.painDuration || !formData.painType) {
                     toast({ title: "Внимание", description: "Заполните обязательные поля первого этапа", variant: "destructive" });
                     return false;
                 }
@@ -172,21 +186,23 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 [ДИАГНОСТИЧЕСКАЯ КАРТА]
 1. ВЫЯВЛЕНИЕ ПРОБЛЕМЫ
 - Жалобы: ${formData.complaints}
+- Локализация: ${formData.painLocation === "other" ? formData.painLocationOther : formData.painLocation}
 - Длительность: ${formData.painDuration}
-- Характер: ${formData.painType === "constant" ? "Постоянная" : "Периодическая"}
-- Триггеры: ${formData.painTriggers.join(", ")}
+- Характер: ${formData.painType}
 
 2. УТОЧНЕНИЕ СОСТОЯНИЯ
-- Прошлые методы лечения: ${formData.previousTreatment.join(", ")}
-- История обращений/Диагноз: ${formData.medicalHistory}
-- МРТ/КТ: ${formData.mriCtHistory}
-- Результаты на руках: ${formData.hasResults === "yes" ? "Да" : "Нет"}
+- Триггеры: ${formData.painTriggers.join(", ")}${formData.painTriggersOther ? ` (+ ${formData.painTriggersOther})` : ""}
+- Куда отдает: ${formData.painRadiation.join(", ")}${formData.painRadiationOther ? ` (+ ${formData.painRadiationOther})` : ""}
+- Онемение/покалывание: ${formData.numbness}
+- Интенсивность: ${formData.painIntensity}/10
+- Влияние на жизнь: ${formData.lifeImpact.join(", ")}${formData.lifeImpactOther ? ` (+ ${formData.lifeImpactOther})` : ""}
 
 3. ДОПОЛНИТЕЛЬНО
-- Куда отдает: ${formData.painRadiation.join(", ")}
-- Интенсивность: ${formData.painIntensity}/10
-- Онемение/покалывание: ${formData.numbness === "yes" ? "Да" : "Нет"}
-- Влияние на жизнь: ${formData.lifeImpact.join(", ")}
+- Пробовали лечить: ${formData.previousTreatment}
+- Методы: ${formData.treatmentMethods}
+- Обращались к врачам: ${formData.doctorsSeen === "yes" ? "Да" : "Нет"}
+- МРТ/КТ/Рентген: ${formData.mriCtHistory === "yes" ? "Да" : "Нет"}
+- Результаты на руках: ${formData.hasResults === "yes" ? "Да" : "Нет"}
 
 ЗАПИСЬ И ОПЛАТА
 - Запись: ${formData.bookingDate ? `${formData.bookingDate.toLocaleDateString()} в ${formData.bookingTime}` : "Не назначена"}
@@ -287,326 +303,298 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                             <ClipboardList className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl font-bold tracking-tight">1. Первичный опрос</h2>
-                                            <p className="text-muted-foreground">Задайте вопросы клиенту и зафиксируйте ответы для врача.</p>
+                                            <h2 className="text-2xl font-bold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
+                                            <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-2">
+                                        <div className="flex items-center gap-2 text-amber-800">
+                                            <Info className="h-4 w-4" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Совет администратору</span>
+                                        </div>
+                                        <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                                            Не перебивайте. Слушайте внимательно. Ведите пациента мягко, без хаоса и допроса.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Что именно вас сейчас беспокоит? <span className="text-destructive">*</span></Label>
+                                        <Textarea
+                                            placeholder="Дайте пациенту выговориться..."
+                                            className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 italic"
+                                            value={formData.complaints}
+                                            onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Где именно ощущается боль? <span className="text-destructive">*</span></Label>
+                                        <RadioGroup
+                                            value={formData.painLocation}
+                                            onValueChange={(v) => setFormData({ ...formData, painLocation: v })}
+                                            className="grid grid-cols-2 gap-3"
+                                        >
+                                            {[
+                                                { id: "lumbar", label: "Поясница" },
+                                                { id: "neck", label: "Шея" },
+                                                { id: "scapula", label: "Между лопатками" },
+                                                { id: "joints", label: "Суставы" },
+                                                { id: "other", label: "Другое" },
+                                            ].map((opt) => (
+                                                <div 
+                                                    key={opt.id}
+                                                    className={cn(
+                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl cursor-pointer transition-all",
+                                                        formData.painLocation === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                                                    )}
+                                                    onClick={() => setFormData({ ...formData, painLocation: opt.id })}
+                                                >
+                                                    <RadioGroupItem value={opt.id} id={`loc-${opt.id}`} className="sr-only" />
+                                                    <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.painLocation === opt.id && "bg-primary")}>
+                                                        {formData.painLocation === opt.id && <Check className="h-3 w-3 text-white" />}
+                                                    </div>
+                                                    <Label htmlFor={`loc-${opt.id}`} className="text-sm font-semibold cursor-pointer">{opt.label}</Label>
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                        {formData.painLocation === "other" && (
+                                            <Input
+                                                placeholder="Введите место..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary animate-in zoom-in-95 duration-200"
+                                                value={formData.painLocationOther}
+                                                onChange={(e) => setFormData({ ...formData, painLocationOther: e.target.value })}
+                                            />
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-3">
+                                            <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Как давно появилась эта проблема? <span className="text-destructive">*</span></Label>
+                                            <Input
+                                                placeholder="Например: 2 недели..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                                value={formData.painDuration}
+                                                onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Боль постоянная или периодическая? <span className="text-destructive">*</span></Label>
+                                            <Input
+                                                placeholder="Введите ответ пациента..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                                value={formData.painType}
+                                                onChange={(e) => setFormData({ ...formData, painType: e.target.value })}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-12">
-                                    {/* Section 1: Выявление проблемы */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-lg shadow-primary/20">1</div>
-                                            <h3 className="text-lg font-bold">Выявление проблемы пациента</h3>
-                                        </div>
-                                        
-                                        <div className="grid gap-6 pl-10">
-                                          <div className="space-y-2">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
-                                                Что именно вас сейчас беспокоит? <span className="text-destructive">*</span>
-                                              </Label>
-                                              <Textarea
-                                                  placeholder="Боль в пояснице, шее, между лопатками, в суставах..."
-                                                  className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4"
-                                                  value={formData.complaints}
-                                                  onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
-                                              />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
-                                                Как давно появилась эта проблема? <span className="text-destructive">*</span>
-                                              </Label>
-                                              <Input
-                                                  placeholder="Укажите примерный срок: дни, недели, месяцы, годы..."
-                                                  className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                                  value={formData.painDuration}
-                                                  onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
-                                              />
-                                          </div>
-
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
-                                                Характер боли <span className="text-destructive">*</span>
-                                              </Label>
-                                              <RadioGroup
-                                                  value={formData.painType}
-                                                  onValueChange={(v) => setFormData({ ...formData, painType: v })}
-                                                  className="flex gap-4"
-                                              >
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl flex-1 cursor-pointer transition-all",
-                                                        formData.painType === "constant" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, painType: "constant" })}
-                                                  >
-                                                      <RadioGroupItem value="constant" id="type-constant" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.painType === "constant" && "bg-primary")}>
-                                                          {formData.painType === "constant" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="type-constant" className="text-sm font-semibold cursor-pointer">Постоянная</Label>
-                                                  </div>
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl flex-1 cursor-pointer transition-all",
-                                                        formData.painType === "periodic" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, painType: "periodic" })}
-                                                  >
-                                                      <RadioGroupItem value="periodic" id="type-periodic" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.painType === "periodic" && "bg-primary")}>
-                                                          {formData.painType === "periodic" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="type-periodic" className="text-sm font-semibold cursor-pointer">Периодическая</Label>
-                                                  </div>
-                                              </RadioGroup>
-                                          </div>
-
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">В какой момент боль усиливается?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
-                                                  {[
-                                                      { id: "walking", label: "При ходьбе" },
-                                                      { id: "sitting", label: "При сидении" },
-                                                      { id: "bending", label: "При наклонах" },
-                                                      { id: "morning", label: "Утром после сна" },
-                                                  ].map((t) => (
-                                                      <div 
+                                {/* Section 2: Уточнение симптомов и состояния */}
+                                <div className="space-y-10">
+                                    <div className="space-y-4">
+                                        <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">В какой момент боль усиливается?</Label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                                {[
+                                                    { id: "walking", label: "При ходьбе" },
+                                                    { id: "sitting", label: "При сидении" },
+                                                    { id: "bending", label: "При наклонах" },
+                                                    { id: "morning", label: "Утром после сна" },
+                                                ].map((t) => (
+                                                    <div 
                                                         key={t.id} 
                                                         className={cn(
                                                             "flex items-center space-x-3 bg-secondary/5 border p-4 rounded-xl transition-all cursor-pointer",
-                                                            formData.painTriggers.includes(t.id) ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/10"
+                                                            formData.painTriggers.includes(t.id) ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-secondary/10"
                                                         )}
                                                         onClick={() => toggleArrayItem("painTriggers", t.id)}
-                                                      >
-                                                          <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.painTriggers.includes(t.id) && "bg-primary")}>
-                                                              {formData.painTriggers.includes(t.id) && <Check className="h-3 w-3 text-white" />}
-                                                          </div>
-                                                          <span className="text-sm font-medium">{t.label}</span>
-                                                      </div>
-                                                  ))}
-                                              </div>
-                                          </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2: Уточнение состояния */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-lg shadow-primary/20">2</div>
-                                            <h3 className="text-lg font-bold">Уточнение состояния</h3>
+                                                    >
+                                                        <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.painTriggers.includes(t.id) && "bg-primary")}>
+                                                            {formData.painTriggers.includes(t.id) && <Check className="h-3 w-3 text-white" />}
+                                                        </div>
+                                                        <span className="text-sm font-medium">{t.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <Input
+                                                placeholder="Другое..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                value={formData.painTriggersOther}
+                                                onChange={(e) => setFormData({ ...formData, painTriggersOther: e.target.value })}
+                                            />
                                         </div>
 
-                                        <div className="grid gap-6 pl-10">
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Пробовали ли вы уже как-то лечить эту проблему?</Label>
-                                              <div className="grid grid-cols-2 gap-3">
-                                                  {[
-                                                      { id: "massage", label: "Массаж" },
-                                                      { id: "pills", label: "Таблетки" },
-                                                      { id: "injections", label: "Уколы" },
-                                                      { id: "physio", label: "Физиотерапия" },
-                                                  ].map((m) => (
-                                                      <div 
-                                                        key={m.id} 
-                                                        className={cn(
-                                                            "flex items-center space-x-3 bg-secondary/5 border p-4 rounded-xl transition-all cursor-pointer",
-                                                            formData.previousTreatment.includes(m.id) ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/10"
-                                                        )}
-                                                        onClick={() => toggleArrayItem("previousTreatment", m.id)}
-                                                      >
-                                                          <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.previousTreatment.includes(m.id) && "bg-primary")}>
-                                                              {formData.previousTreatment.includes(m.id) && <Check className="h-3 w-3 text-white" />}
-                                                          </div>
-                                                          <span className="text-sm font-medium">{m.label}</span>
-                                                      </div>
-                                                  ))}
-                                              </div>
-                                          </div>
-
-                                          <div className="space-y-2">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Обращались ли ранее к врачам? Какой диагноз ставили?</Label>
-                                              <Textarea
-                                                  placeholder="Диагнозы, рекомендации, клиники, специалисты..."
-                                                  className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-20 text-base resize-none rounded-xl p-4"
-                                                  value={formData.medicalHistory}
-                                                  onChange={(e) => setFormData({ ...formData, medicalHistory: e.target.value })}
-                                              />
-                                          </div>
-
-                                          <div className="space-y-2">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Делали ли вы МРТ или КТ? Когда проводилось?</Label>
-                                              <Input
-                                                  placeholder="Например: МРТ поясницы в октябре 2023..."
-                                                  className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                                  value={formData.mriCtHistory}
-                                                  onChange={(e) => setFormData({ ...formData, mriCtHistory: e.target.value })}
-                                              />
-                                          </div>
-
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли у вас результаты обследований на руках?</Label>
-                                              <RadioGroup
-                                                  value={formData.hasResults}
-                                                  onValueChange={(v) => setFormData({ ...formData, hasResults: v })}
-                                                  className="flex gap-4"
-                                              >
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-3 rounded-xl flex-1 cursor-pointer transition-all",
-                                                        formData.hasResults === "yes" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, hasResults: "yes" })}
-                                                  >
-                                                      <RadioGroupItem value="yes" id="results-yes" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.hasResults === "yes" && "bg-primary")}>
-                                                          {formData.hasResults === "yes" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="results-yes" className="text-sm font-semibold cursor-pointer">Да</Label>
-                                                  </div>
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-3 rounded-xl flex-1 cursor-pointer transition-all",
-                                                        formData.hasResults === "no" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, hasResults: "no" })}
-                                                  >
-                                                      <RadioGroupItem value="no" id="results-no" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.hasResults === "no" && "bg-primary")}>
-                                                          {formData.hasResults === "no" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="results-no" className="text-sm font-semibold cursor-pointer">Нет</Label>
-                                                  </div>
-                                              </RadioGroup>
-                                          </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 3: Дополнительные вопросы */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-lg shadow-primary/20">3</div>
-                                            <h3 className="text-lg font-bold">Дополнительные уточняющие вопросы</h3>
-                                        </div>
-
-                                        <div className="grid gap-8 pl-10">
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Боль отдает куда-то?</Label>
-                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                  {[
-                                                      { id: "leg", label: "В ногу" },
-                                                      { id: "arm", label: "В руку" },
-                                                      { id: "shoulder", label: "В плечо" },
-                                                  ].map((r) => (
-                                                      <div 
+                                        <div className="space-y-4">
+                                            <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Боль отдает куда-то?</Label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {[
+                                                    { id: "leg", label: "В ногу" },
+                                                    { id: "arm", label: "В руку" },
+                                                    { id: "shoulder", label: "В плечо" },
+                                                ].map((r) => (
+                                                    <div 
                                                         key={r.id} 
                                                         className={cn(
                                                             "flex items-center space-x-3 bg-secondary/5 border p-4 rounded-xl transition-all cursor-pointer",
-                                                            formData.painRadiation.includes(r.id) ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/10"
+                                                            formData.painRadiation.includes(r.id) ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-secondary/10"
                                                         )}
                                                         onClick={() => toggleArrayItem("painRadiation", r.id)}
-                                                      >
-                                                          <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.painRadiation.includes(r.id) && "bg-primary")}>
-                                                              {formData.painRadiation.includes(r.id) && <Check className="h-3 w-3 text-white" />}
-                                                          </div>
-                                                          <span className="text-sm font-medium">{r.label}</span>
-                                                      </div>
-                                                  ))}
-                                              </div>
-                                          </div>
+                                                    >
+                                                        <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.painRadiation.includes(r.id) && "bg-primary")}>
+                                                            {formData.painRadiation.includes(r.id) && <Check className="h-3 w-3 text-white" />}
+                                                        </div>
+                                                        <span className="text-sm font-medium">{r.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <Input
+                                                placeholder="Другое..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                value={formData.painRadiationOther}
+                                                onChange={(e) => setFormData({ ...formData, painRadiationOther: e.target.value })}
+                                            />
+                                        </div>
 
-                                          <div className="space-y-6">
-                                              <div className="flex items-center justify-between">
-                                                  <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground flex items-center gap-2">
-                                                    Насколько сильная боль (1-10)? <span className="text-destructive">*</span>
-                                                  </Label>
-                                                  <span className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-md">{formData.painIntensity}</span>
-                                              </div>
-                                              <div className="flex items-center justify-between gap-1">
-                                                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                                                      <button
-                                                          key={num}
-                                                          type="button"
-                                                          onClick={() => setFormData({ ...formData, painIntensity: num })}
-                                                          className={cn(
-                                                              "flex-1 h-10 rounded-lg flex items-center justify-center text-xs font-bold transition-all border shadow-sm",
-                                                              formData.painIntensity === num
-                                                                  ? "bg-primary text-primary-foreground border-primary shadow-[0_4px_12px_-4px_var(--primary)] scale-110 z-10"
-                                                                  : "bg-background text-muted-foreground border-border hover:border-primary/40"
-                                                          )}
-                                                      >
-                                                          {num}
-                                                      </button>
-                                                  ))}
-                                              </div>
-                                          </div>
+                                        <div className="grid grid-cols-2 gap-8">
+                                            <div className="space-y-3">
+                                                <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Онемение или покалывание?</Label>
+                                                <Input
+                                                    placeholder="Введите ответ..."
+                                                    className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                    value={formData.numbness}
+                                                    onChange={(e) => setFormData({ ...formData, numbness: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="space-y-3">
+                                                <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground italic">Сила боли (1-10)</Label>
+                                                <Input
+                                                    placeholder="Например: 7..."
+                                                    className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                                    value={formData.painIntensity}
+                                                    onChange={(e) => setFormData({ ...formData, painIntensity: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
 
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Есть ли онемение или покалывание в руках или ногах?</Label>
-                                              <RadioGroup
-                                                  value={formData.numbness}
-                                                  onValueChange={(v) => setFormData({ ...formData, numbness: v })}
-                                                  className="flex gap-4"
-                                              >
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-3 rounded-xl flex-1 cursor-pointer transition-all",
-                                                        formData.numbness === "yes" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, numbness: "yes" })}
-                                                  >
-                                                      <RadioGroupItem value="yes" id="numbness-yes" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.numbness === "yes" && "bg-primary")}>
-                                                          {formData.numbness === "yes" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="numbness-yes" className="text-sm font-semibold cursor-pointer">Да</Label>
-                                                  </div>
-                                                  <div 
-                                                    className={cn(
-                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-3 rounded-xl flex-1 cursor-pointer transition-all",
-                                                        formData.numbness === "no" ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
-                                                    )}
-                                                    onClick={() => setFormData({ ...formData, numbness: "no" })}
-                                                  >
-                                                      <RadioGroupItem value="no" id="numbness-no" className="sr-only" />
-                                                      <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.numbness === "no" && "bg-primary")}>
-                                                          {formData.numbness === "no" && <Check className="h-3 w-3 text-white" />}
-                                                      </div>
-                                                      <Label htmlFor="numbness-no" className="text-sm font-semibold cursor-pointer">Нет</Label>
-                                                  </div>
-                                              </RadioGroup>
-                                          </div>
-
-                                          <div className="space-y-3">
-                                              <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Мешает ли эта проблема в повседневной жизни?</Label>
-                                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                  {[
-                                                      { id: "sitting", label: "Трудно сидеть" },
-                                                      { id: "working", label: "Трудно работать" },
-                                                      { id: "sleeping", label: "Трудно спать" },
-                                                  ].map((l) => (
-                                                      <div 
+                                        <div className="space-y-4">
+                                            <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Мешает ли в повседневной жизни?</Label>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {[
+                                                    { id: "sitting", label: "Трудно сидеть" },
+                                                    { id: "working", label: "Трудно работать" },
+                                                    { id: "sleeping", label: "Трудно спать" },
+                                                ].map((l) => (
+                                                    <div 
                                                         key={l.id} 
                                                         className={cn(
                                                             "flex items-center space-x-3 bg-secondary/5 border p-4 rounded-xl transition-all cursor-pointer",
-                                                            formData.lifeImpact.includes(l.id) ? "border-primary bg-primary/5" : "border-border hover:bg-secondary/10"
+                                                            formData.lifeImpact.includes(l.id) ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:bg-secondary/10"
                                                         )}
                                                         onClick={() => toggleArrayItem("lifeImpact", l.id)}
-                                                      >
-                                                          <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.lifeImpact.includes(l.id) && "bg-primary")}>
-                                                              {formData.lifeImpact.includes(l.id) && <Check className="h-3 w-3 text-white" />}
-                                                          </div>
-                                                          <span className="text-sm font-medium">{l.label}</span>
-                                                      </div>
-                                                  ))}
-                                              </div>
-                                          </div>
+                                                    >
+                                                        <div className={cn("h-4 w-4 rounded border border-primary flex items-center justify-center", formData.lifeImpact.includes(l.id) && "bg-primary")}>
+                                                            {formData.lifeImpact.includes(l.id) && <Check className="h-3 w-3 text-white" />}
+                                                        </div>
+                                                        <span className="text-sm font-medium">{l.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <Input
+                                                placeholder="Другое..."
+                                                className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                value={formData.lifeImpactOther}
+                                                onChange={(e) => setFormData({ ...formData, lifeImpactOther: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-6 pt-4 border-t border-border/40">
+                                            <h3 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                                <LucideHistory className="h-4 w-4" /> Анамнез и доп. вопросы
+                                            </h3>
+                                            
+                                            <div className="grid grid-cols-2 gap-8">
+                                                <div className="space-y-3">
+                                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Пробовали лечить?</Label>
+                                                    <Input
+                                                        placeholder="Да / Нет / Что именно..."
+                                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                        value={formData.previousTreatment}
+                                                        onChange={(e) => setFormData({ ...formData, previousTreatment: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground italic">Что именно делали?</Label>
+                                                    <Input
+                                                        placeholder="Введите методы..."
+                                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
+                                                        value={formData.treatmentMethods}
+                                                        onChange={(e) => setFormData({ ...formData, treatmentMethods: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-6">
+                                                <div className="space-y-3">
+                                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Обращались к врачам?</Label>
+                                                    <RadioGroup
+                                                        value={formData.doctorsSeen}
+                                                        onValueChange={(v) => setFormData({ ...formData, doctorsSeen: v })}
+                                                        className="flex gap-2"
+                                                    >
+                                                        {["yes", "no"].map((v) => (
+                                                            <div key={v} onClick={() => setFormData({...formData, doctorsSeen: v})} className={cn("flex-1 h-10 border rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer", formData.doctorsSeen === v ? "bg-primary/10 border-primary text-primary" : "bg-white")}>
+                                                                {v === "yes" ? "Да" : "Нет"}
+                                                            </div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">МРТ, КТ или рентген?</Label>
+                                                    <RadioGroup
+                                                        value={formData.mriCtHistory}
+                                                        onValueChange={(v) => setFormData({ ...formData, mriCtHistory: v })}
+                                                        className="flex gap-2"
+                                                    >
+                                                        {["yes", "no"].map((v) => (
+                                                            <div key={v} onClick={() => setFormData({...formData, mriCtHistory: v})} className={cn("flex-1 h-10 border rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer", formData.mriCtHistory === v ? "bg-primary/10 border-primary text-primary" : "bg-white")}>
+                                                                {v === "yes" ? "Да" : "Нет"}
+                                                            </div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Результаты на руках?</Label>
+                                                    <RadioGroup
+                                                        value={formData.hasResults}
+                                                        onValueChange={(v) => setFormData({ ...formData, hasResults: v })}
+                                                        className="flex gap-2"
+                                                    >
+                                                        {["yes", "no"].map((v) => (
+                                                            <div key={v} onClick={() => setFormData({...formData, hasResults: v})} className={cn("flex-1 h-10 border rounded-lg flex items-center justify-center font-bold text-xs cursor-pointer", formData.hasResults === v ? "bg-primary/10 border-primary text-primary" : "bg-white")}>
+                                                                {v === "yes" ? "Да" : "Нет"}
+                                                            </div>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-8 rounded-[32px] bg-sky-50 border border-sky-100 space-y-4 shadow-sm animate-in zoom-in-95 duration-500">
+                                            <div className="flex items-center gap-3 text-sky-800">
+                                                <Heart className="h-6 w-6 fill-sky-800/20" />
+                                                <h3 className="text-lg font-black uppercase tracking-tight">Эмпатия (Сочувствие)</h3>
+                                            </div>
+                                            <p className="text-sm font-bold text-sky-900 leading-relaxed italic">
+                                                «Понимаю вас. Да, при таких симптомах это действительно сильно мешает. 
+                                                В такой ситуации важно не просто снимать боль, а понять её причину.»
+                                            </p>
+                                            <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-sky-600 bg-white/50 w-fit px-3 py-1 rounded-full border border-sky-200">
+                                                <CheckCircle2 className="h-3 w-3" /> Проявите участие перед записью
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                         )}
 
                         {/* Step 2: Презентация */}
