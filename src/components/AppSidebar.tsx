@@ -3,7 +3,7 @@ import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock, HeartHandshake, Repeat,
-  Bot, Plus, Stethoscope
+  Bot, Plus, Stethoscope, ChevronDown, ChevronRight
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -109,6 +109,22 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
   const [newProjectName, setNewProjectName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string | null; avatar_url: string | null }>({ full_name: null, avatar_url: null });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    // By default, expand first 3 groups
+    return {
+      "ГЛАВНОЕ": true,
+      "МАРКЕТИНГ": true,
+      "ПРОДАЖИ И СЕРВИС": true,
+      "АНАЛИТИКА": true
+    };
+  });
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -261,40 +277,62 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
       <Separator className="bg-border/50" />
 
       {/* ── Nav groups ── */}
-      <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
-        {visibleGroups.map((group) => (
-          <div key={group.label}>
-            <p className="px-3 mb-2 text-[11px] tracking-wider text-muted-foreground font-semibold uppercase select-none">
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const currentPath = location.pathname;
-                const isActive = item.end
-                  ? currentPath === item.path
-                  : currentPath === item.path || currentPath.startsWith(item.path + "/");
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2 custom-scrollbar">
+        {visibleGroups.map((group) => {
+          const isExpanded = expandedGroups[group.label] !== false;
+          
+          return (
+            <div key={group.label} className="space-y-1">
+              <button
+                onClick={() => toggleGroup(group.label)}
+                className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black tracking-[0.1em] text-muted-foreground/60 hover:text-foreground transition-colors uppercase select-none group/header"
+              >
+                <span>{group.label}</span>
+                <div className="opacity-0 group-hover/header:opacity-100 transition-opacity">
+                  {isExpanded ? <ChevronDown size={12} strokeWidth={3} /> : <ChevronRight size={12} strokeWidth={3} />}
+                </div>
+              </button>
+              
+              <div className={cn(
+                "space-y-0.5 overflow-hidden transition-all duration-300 ease-in-out",
+                isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+              )}>
+                {group.items.map((item) => {
+                  const currentPath = location.pathname;
+                  const isActive = item.end
+                    ? currentPath === item.path
+                    : currentPath === item.path || currentPath.startsWith(item.path + "/");
 
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.end}
-                    onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors duration-150 min-h-[44px]
-                      ${isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                      }`}
-                    activeClassName=""
-                  >
-                    <item.icon size={18} strokeWidth={1.8} />
-                    <span>{item.title}</span>
-                  </NavLink>
-                );
-              })}
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.end}
+                      onClick={onNavigate}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 group/link",
+                        isActive
+                          ? "bg-primary/5 text-primary shadow-[0_4px_12px_rgba(var(--primary-rgb),0.05)]"
+                          : "text-muted-foreground/80 hover:text-foreground hover:bg-accent/50"
+                      )}
+                      activeClassName=""
+                    >
+                      <item.icon 
+                        size={18} 
+                        strokeWidth={isActive ? 2.5 : 2} 
+                        className={cn(
+                          "transition-transform duration-200",
+                          isActive ? "scale-110" : "group-hover/link:scale-110"
+                        )} 
+                      />
+                      <span className="tracking-tight">{item.title}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── Footer ── */}
