@@ -89,59 +89,60 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border border-white/20 dark:border-white/10 rounded-[40px] bg-slate-50/80 dark:bg-[#0a0a0a]/80 backdrop-blur-3xl shadow-[0_24px_80px_rgba(0,0,0,0.1)]">
-                <div className="bg-white/50 dark:bg-zinc-900/40 px-10 py-8 border-b border-border/40 backdrop-blur-xl">
+            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[32px] bg-white dark:bg-[#0a0a0a] shadow-2xl">
+                {/* Header Section */}
+                <div className="bg-gradient-to-b from-slate-50 to-white dark:from-zinc-900 dark:to-[#0a0a0a] px-10 py-8 border-b border-slate-100 dark:border-zinc-800/50 relative">
                     <DialogHeader>
-                        <div className="flex items-center gap-5 mb-1">
-                            <div className="h-16 w-16 rounded-[20px] bg-gradient-to-br from-primary to-blue-600 text-white flex items-center justify-center shadow-[0_8px_24px_rgba(0,123,255,0.3)]">
-                                {isEditing ? <Briefcase className="h-7 w-7" /> : <Plus className="h-7 w-7" />}
+                        <div className="flex items-center gap-5">
+                            <div className="h-14 w-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm">
+                                {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6 cursor-pointer" />}
                             </div>
-                            <div className="flex flex-col gap-1">
-                                <DialogTitle className="text-2xl font-bold tracking-tight text-slate-800 dark:text-zinc-100 uppercase">
+                            <div className="flex flex-col">
+                                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-100">
                                     {isEditing ? "Изменить запись" : "Новая запись"}
                                 </DialogTitle>
-                                <DialogDescription className="text-slate-400 dark:text-zinc-500 font-bold tracking-[0.15em] text-[11px] uppercase">
-                                    {isEditing ? `ID записи: #${appointment.id.slice(0,8)}` : "Заполнение данных о визите"}
+                                <DialogDescription className="text-slate-500 dark:text-zinc-400 text-xs font-medium uppercase tracking-wider mt-1">
+                                    {isEditing ? `ID записи: #${appointment.id?.slice(0,8)}` : "Заполнение данных о визите"}
                                 </DialogDescription>
                             </div>
                         </div>
                     </DialogHeader>
                 </div>
 
-                <div className="px-10 py-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="px-10 py-6 space-y-7 max-h-[70vh] overflow-y-auto custom-scrollbar">
                     {/* Patient Search / Info */}
-                    <div className="space-y-4">
-                        <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Пациент</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Пациент</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="relative group">
-                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                 <Input 
                                     placeholder="Поиск по ФИО..." 
-                                    className="h-14 pl-14 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 font-bold focus:ring-2 focus:ring-primary/30 placeholder:text-slate-400 backdrop-blur-md shadow-sm transition-all"
+                                    className="h-12 pl-12 rounded-xl bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
                                     value={formData.patientName}
                                     onChange={(e) => handlePatientSearch(e.target.value)}
                                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 />
                                 {showResults && searchResults.length > 0 && (
-                                    <div className="absolute top-full left-0 right-0 mt-3 p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-border/40 rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute top-full left-0 right-0 mt-2 p-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-lg z-50 animate-in fade-in slide-in-from-top-2">
                                         {searchResults.map((p, i) => (
                                             <div 
                                                 key={i} 
                                                 onClick={() => handleSelectPatient(p)}
-                                                className="p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl cursor-pointer transition-colors group/item"
+                                                className="p-3 hover:bg-slate-50 dark:hover:bg-zinc-800/50 rounded-lg cursor-pointer transition-colors group/item"
                                             >
-                                                <p className="text-sm font-bold group-hover/item:text-primary">{p.name}</p>
-                                                <p className="text-[11px] text-muted-foreground font-medium">{p.phone}</p>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-zinc-200 group-hover/item:text-blue-600 dark:group-hover/item:text-blue-400">{p.name}</p>
+                                                <p className="text-xs text-slate-500 font-medium mt-0.5">{p.phone}</p>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                             <div className="relative group">
-                                <Phone className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                 <Input 
                                     placeholder="Номер телефона" 
-                                    className="h-14 pl-14 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 font-bold focus:ring-2 focus:ring-primary/30 placeholder:text-slate-400 backdrop-blur-md shadow-sm transition-all"
+                                    className="h-12 pl-12 rounded-xl bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                 />
@@ -150,29 +151,29 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     </div>
 
                     {/* Date and Time */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="space-y-4">
-                            <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Дата визита</Label>
-                            <div className="h-14 flex items-center gap-4 px-6 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 font-bold text-[13px] backdrop-blur-md shadow-sm">
-                                <CalendarIcon className="h-5 w-5 text-primary" />
-                                {format(formData.date, "d MMMM yyyy", { locale: ru })}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Дата визита</Label>
+                            <div className="h-12 flex items-center gap-3 px-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-semibold text-sm">
+                                <CalendarIcon className="h-5 w-5 text-blue-500" />
+                                <span className="text-slate-800 dark:text-zinc-200">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
                             </div>
                         </div>
-                        <div className="space-y-4">
-                            <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Время приема</Label>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Время приема</Label>
                             <Select value={formData.time} onValueChange={(val) => setFormData({...formData, time: val})}>
-                                <SelectTrigger className="h-14 px-6 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 font-bold transition-all focus:ring-2 focus:ring-primary/30 backdrop-blur-md shadow-sm">
-                                    <div className="flex items-center gap-4">
-                                        <Clock className="h-5 w-5 text-primary" />
+                                <SelectTrigger className="h-12 px-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-semibold transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                    <div className="flex items-center gap-3">
+                                        <Clock className="h-5 w-5 text-blue-500" />
                                         <SelectValue />
                                     </div>
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-none shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-2 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl max-h-[200px]">
+                                <SelectContent className="rounded-xl border border-slate-200 dark:border-zinc-800 shadow-xl p-1.5 bg-white dark:bg-zinc-950 max-h-[220px]">
                                     {Array.from({ length: 25 }, (_, i) => {
                                         const h = Math.floor(i / 2) + 8;
                                         const m = i % 2 === 0 ? "00" : "30";
                                         const t = `${h.toString().padStart(2, "0")}:${m}`;
-                                        return <SelectItem key={t} value={t} className="rounded-xl py-3 font-bold hover:bg-primary/5 cursor-pointer">{t}</SelectItem>;
+                                        return <SelectItem key={t} value={t} className="rounded-lg py-2.5 font-semibold cursor-pointer">{t}</SelectItem>;
                                     })}
                                 </SelectContent>
                             </Select>
@@ -181,39 +182,39 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
                     {/* Service & Status */}
                     <div className="space-y-6">
-                        <div className="space-y-4">
-                            <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Причина обращения / Услуга</Label>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Причина обращения / Услуга</Label>
                             <Input 
                                 placeholder="Напр. Первичная консультация" 
-                                className="h-14 pl-6 rounded-2xl bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 font-bold focus:ring-2 focus:ring-primary/30 placeholder:text-slate-400 backdrop-blur-md shadow-sm transition-all"
+                                className="h-12 px-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
                                 value={formData.service}
                                 onChange={(e) => setFormData({...formData, service: e.target.value})}
                             />
                         </div>
 
-                        <div className="space-y-4">
-                            <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Статус визита</Label>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Статус визита</Label>
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+                                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
                             >
                                 {STATUSES.map((item) => {
                                     const isActive = formData.status === item.id;
                                     let activeClasses = "";
-                                    let glowIndicator = "";
+                                    let dotColor = "";
+                                    
                                     if (item.id === "planned" && isActive) {
-                                        activeClasses = "bg-gradient-to-br from-amber-50 to-amber-100/30 dark:from-amber-950/40 dark:to-amber-950/10 border-amber-200/60 dark:border-amber-800/50 shadow-[0_8px_30px_rgba(245,158,11,0.08)] scale-[1.02]";
-                                        glowIndicator = "bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse";
+                                        activeClasses = "bg-amber-50 dark:bg-amber-500/10 border-amber-400 dark:border-amber-500/50 shadow-sm";
+                                        dotColor = "bg-amber-500";
                                     } else if (item.id === "completed" && isActive) {
-                                        activeClasses = "bg-gradient-to-br from-emerald-50 to-emerald-100/30 dark:from-emerald-950/40 dark:to-emerald-950/10 border-emerald-200/60 dark:border-emerald-800/50 shadow-[0_8px_30px_rgba(16,185,129,0.08)] scale-[1.02]";
-                                        glowIndicator = "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]";
+                                        activeClasses = "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-400 dark:border-emerald-500/50 shadow-sm";
+                                        dotColor = "bg-emerald-500";
                                     } else if (item.id === "no-show" && isActive) {
-                                        activeClasses = "bg-gradient-to-br from-rose-50 to-rose-100/30 dark:from-rose-950/40 dark:to-rose-950/10 border-rose-200/60 dark:border-rose-800/50 shadow-[0_8px_30px_rgba(244,63,94,0.08)] scale-[1.02]";
-                                        glowIndicator = "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]";
+                                        activeClasses = "bg-rose-50 dark:bg-rose-500/10 border-rose-400 dark:border-rose-500/50 shadow-sm";
+                                        dotColor = "bg-rose-500";
                                     } else {
-                                        activeClasses = "border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/10 hover:bg-white/60 dark:hover:bg-black/30 backdrop-blur-md opacity-70";
-                                        glowIndicator = "bg-slate-300 dark:bg-zinc-700";
+                                        activeClasses = "bg-white dark:bg-[#0a0a0a] border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900";
                                     }
 
                                     return (
@@ -221,22 +222,21 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "flex flex-col items-center justify-center gap-3 p-5 rounded-[24px] border cursor-pointer transition-all duration-300",
+                                                "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
                                                 activeClasses
                                             )}
                                         >
                                             <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
-                                            <div className="relative">
-                                                <div className={cn("h-10 w-10 rounded-[14px] flex items-center justify-center shrink-0", item.bg, item.color)}>
-                                                    <item.icon size={20} />
+                                            {isActive && (
+                                                <div className="absolute top-3 right-3 flex h-3 w-3">
+                                                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-40", dotColor)}></span>
+                                                    <span className={cn("relative inline-flex rounded-full h-3 w-3", dotColor)}></span>
                                                 </div>
-                                                {isActive && (
-                                                    <div className={cn("absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white dark:border-zinc-900", glowIndicator)} />
-                                                )}
-                                            </div>
+                                            )}
+                                            <item.icon className={cn("h-6 w-6 mb-2", isActive ? item.color : "text-slate-400 dark:text-zinc-600")} />
                                             <span className={cn(
-                                                "text-[10px] font-bold uppercase tracking-[0.1em] text-center transition-colors", 
-                                                isActive ? item.color : "text-slate-500"
+                                                "text-[11px] font-bold uppercase tracking-wider text-center", 
+                                                isActive ? item.color : "text-slate-500 dark:text-zinc-500"
                                             )}>
                                                 {item.label}
                                             </span>
@@ -248,34 +248,34 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     </div>
 
                     {/* Comment Area */}
-                    <div className="space-y-4">
-                        <Label className="text-[10px] uppercase font-bold tracking-[0.15em] text-slate-400 dark:text-zinc-500 px-1">Комментарий к записи</Label>
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Комментарий к записи</Label>
                         <Textarea 
                             placeholder="Важные детали (жалобы, наличие МРТ, особенности пациента)..." 
-                            className="bg-white/60 dark:bg-black/20 border border-black/5 dark:border-white/5 rounded-3xl p-6 min-h-[120px] font-medium resize-none focus:ring-2 focus:ring-primary/30 backdrop-blur-md shadow-sm transition-all"
+                            className="bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 rounded-xl p-4 min-h-[100px] font-medium resize-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
                             value={formData.comment}
                             onChange={(e) => setFormData({...formData, comment: e.target.value})}
                         />
                     </div>
                 </div>
 
-                <DialogFooter className="bg-white/50 dark:bg-zinc-900/40 px-10 py-6 border-t border-border/40 flex flex-col sm:flex-row gap-4 backdrop-blur-xl">
+                <DialogFooter className="bg-slate-50/50 dark:bg-zinc-900/50 px-10 py-5 border-t border-slate-100 dark:border-zinc-800/50 flex flex-col sm:flex-row gap-3 items-center">
                     {isEditing && (
-                        <Button variant="ghost" className="h-14 px-8 rounded-2xl font-bold uppercase tracking-[0.15em] text-[10px] text-slate-500 hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 flex items-center gap-3 transition-colors">
-                            <ExternalLink size={16} /> CRM Карточка
+                        <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] text-slate-500 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                            <ExternalLink className="h-4 w-4" /> В карточку
                         </Button>
                     )}
                     <div className="flex-1" />
                     <Button 
-                        variant="ghost" 
+                        variant="outline" 
                         onClick={() => onOpenChange(false)}
-                        className="h-14 px-8 rounded-2xl font-bold uppercase tracking-[0.15em] text-[10px] hover:bg-slate-200/50 dark:hover:bg-zinc-800/50 text-slate-600 dark:text-zinc-400 transition-colors"
+                        className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
                     >
                         Отмена
                     </Button>
                     <Button 
                         onClick={handleSave}
-                        className="h-14 px-10 rounded-2xl font-bold uppercase tracking-[0.15em] text-[10px] bg-gradient-to-r from-primary to-blue-600 text-white shadow-[0_8px_24px_rgba(0,123,255,0.3)] hover:shadow-[0_12px_32px_rgba(0,123,255,0.4)] hover:scale-[1.02] transition-all"
+                        className="h-12 px-8 rounded-xl font-bold uppercase tracking-wider text-[11px] bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all"
                     >
                         {isEditing ? "Сохранить изменения" : "Создать запись"}
                     </Button>

@@ -31,12 +31,12 @@ export const MonthView: React.FC<MonthViewProps> = ({
     }
 
     return (
-        <div className="flex flex-col h-full bg-background select-none animate-in fade-in duration-500">
+        <div className="flex flex-col h-full bg-white dark:bg-[#0a0a0a] select-none animate-in fade-in duration-500">
             {/* Month Grid Header */}
-            <div className="grid grid-cols-7 border-b border-border bg-muted/5">
+            <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
                 {DAYS.map((day) => (
-                    <div key={day} className="py-4 text-center">
-                        <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">
+                    <div key={day} className="py-4 text-center border-r border-slate-200 dark:border-zinc-800 last:border-r-0">
+                        <span className="text-[10px] uppercase font-bold tracking-[0.1em] text-slate-500 dark:text-zinc-500">
                             {day}
                         </span>
                     </div>
@@ -44,25 +44,24 @@ export const MonthView: React.FC<MonthViewProps> = ({
             </div>
 
             {/* Month Grid Body */}
-            <div className="flex-1 grid grid-cols-7 border-l border-border">
+            <div className="flex-1 grid grid-cols-7">
                 {calendarDays.map((day, i) => (
                     <div 
                         key={i} 
                         onClick={() => onDateSelect(day)}
                         className={cn(
-                            "min-h-[120px] p-4 border-r border-b border-border transition-all cursor-pointer relative group",
-                            !isSameMonth(day, monthStart) ? "bg-muted/10" : "hover:bg-primary/5",
-                            isSameDay(day, new Date()) ? "bg-primary/5" : ""
+                            "min-h-[120px] p-4 border-r border-b border-slate-200 dark:border-zinc-800 transition-all cursor-pointer relative group",
+                            !isSameMonth(day, monthStart) ? "bg-slate-50/50 dark:bg-zinc-900/30" : "bg-white dark:bg-[#0a0a0a] hover:bg-slate-50 dark:hover:bg-zinc-900"
                         )}
                     >
                         <div className="flex items-start justify-between">
                             <span className={cn(
-                                "h-8 w-8 rounded-xl flex items-center justify-center text-sm font-black transition-all",
+                                "h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold transition-all",
                                 isSameDay(day, new Date()) 
-                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
                                     : !isSameMonth(day, monthStart) 
-                                        ? "text-muted-foreground/40" 
-                                        : "text-foreground group-hover:bg-secondary/20"
+                                        ? "text-slate-400 dark:text-zinc-600" 
+                                        : "text-slate-800 dark:text-zinc-200 group-hover:bg-slate-200 dark:group-hover:bg-zinc-800"
                             )}>
                                 {format(day, "d")}
                             </span>
@@ -72,10 +71,10 @@ export const MonthView: React.FC<MonthViewProps> = ({
                                 <div className="flex flex-col items-end gap-1">
                                     <div className="flex -space-x-1.5">
                                         {[1, 2, 3].slice(0, (day.getDate() % 3) + 1).map(dot => (
-                                            <div key={dot} className="h-2 w-2 rounded-full bg-primary border-2 border-background shadow-sm" />
+                                            <div key={dot} className="h-2 w-2 rounded-full bg-blue-500 border-2 border-white dark:border-[#0a0a0a] shadow-sm" />
                                         ))}
                                     </div>
-                                    <span className="text-[9px] font-black tracking-widest text-primary/60 uppercase">
+                                    <span className="text-[9px] font-bold tracking-wider text-blue-500/80 uppercase">
                                         {(day.getDate() % 3) + 1} Записи
                                     </span>
                                 </div>
@@ -83,7 +82,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         </div>
 
                         {/* Hover Overlay */}
-                        <div className="absolute inset-x-2 bottom-2 h-1 bg-primary/20 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
+                        <div className="absolute inset-x-2 bottom-2 h-1 bg-blue-500/20 rounded-full scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
                     </div>
                 ))}
             </div>

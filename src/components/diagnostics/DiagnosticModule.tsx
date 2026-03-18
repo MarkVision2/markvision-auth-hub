@@ -106,7 +106,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 <div className="flex-1 flex overflow-hidden">
                     {/* Main Content Area */}
                     <div className="flex-1 flex flex-col overflow-hidden bg-muted/10">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-6 pt-4 pb-0 border-b border-border bg-background shrink-0">
                                 <TabsList className="bg-transparent border-none p-0 h-auto gap-6 mb-[-1px]">
                                     <TabsTrigger 
@@ -133,8 +133,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                 </TabsList>
                             </div>
 
-                            <ScrollArea className="flex-1">
-                                <div className="p-6">
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="p-6 min-h-full">
                                     <TabsContent value="admin" className="m-0 focus-visible:outline-none">
                                         <AdminDiagnosticTab lead={lead} data={adminData} onChange={setAdminData} onNext={() => setActiveTab("doctor")} />
                                     </TabsContent>
@@ -145,7 +145,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                         <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
                                     </TabsContent>
                                 </div>
-                            </ScrollArea>
+                            </div>
                         </Tabs>
                     </div>
 
@@ -155,7 +155,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                             <User className="h-4 w-4 text-primary" />
                             Сводка по пациенту
                         </div>
-                        <ScrollArea className="flex-1">
+                        <div className="flex-1 overflow-y-auto">
                             <div className="p-4 space-y-6">
                                 <div>
                                     <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">ФИО пациента</p>
@@ -185,7 +185,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                     </div>
                                 )}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
             </DialogContent>
