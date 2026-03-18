@@ -9,28 +9,15 @@ import { Button } from "@/components/ui/button";
 interface DayViewProps {
     selectedDate: Date;
     doctorId: string;
+    appointments: any[];
     onAddAppointment: (time: string) => void;
     onEditAppointment: (appt: any) => void;
 }
 
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
 
-// Mock appointments
-const MOCK_APPOINTMENTS = [
-    { 
-        id: "1", patient: "Алексей Павлов", time: "09:00", date: new Date(), 
-        status: "planned", type: "Первичный", phone: "+7 777 123 45 67", 
-        service: "Консультация терапевта", comment: "Боли в спине"
-    },
-    { 
-        id: "2", patient: "Мадина Сулейменова", time: "11:30", date: new Date(), 
-        status: "completed", type: "Повторный", phone: "+7 701 987 65 43",
-        service: "Курс реабилитации", comment: "Плановый осмотр"
-    },
-];
-
 export const DayView: React.FC<DayViewProps> = ({
-    selectedDate, doctorId, onAddAppointment, onEditAppointment
+    selectedDate, doctorId, appointments, onAddAppointment, onEditAppointment
 }) => {
     const getStatusStyles = (status: string) => {
         switch (status) {
@@ -94,7 +81,7 @@ export const DayView: React.FC<DayViewProps> = ({
                 <div className="p-8 max-w-5xl mx-auto space-y-4">
                     {HOURS.map((hour) => {
                         const hourStr = hour.toString().padStart(2, "0") + ":00";
-                        const appt = MOCK_APPOINTMENTS.find(a => 
+                        const appt = appointments.find(a => 
                             isSameDay(a.date, selectedDate) && a.time === hourStr
                         );
 

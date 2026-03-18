@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 interface WeekViewProps {
     selectedDate: Date;
     doctorId: string;
+    appointments: any[];
     onDateSelect: (date: Date) => void;
     onViewChange: (view: "day" | "week" | "month") => void;
     onAddAppointment: (date: Date, time: string) => void;
@@ -18,15 +19,8 @@ interface WeekViewProps {
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
-// Mock appointments
-const MOCK_APPOINTMENTS = [
-    { id: "1", patient: "Алексей Павлов", time: "09:00", date: new Date(), status: "planned", type: "Первичный" },
-    { id: "2", patient: "Мадина Сулейменова", time: "11:30", date: new Date(), status: "completed", type: "Повторный" },
-    { id: "3", patient: "Игорь Ким", time: "14:00", date: new Date(), status: "no-show", type: "Консультация" },
-];
-
 export const WeekView: React.FC<WeekViewProps> = ({
-    selectedDate, doctorId, onDateSelect, onViewChange,
+    selectedDate, doctorId, appointments, onDateSelect, onViewChange,
     onAddAppointment, onEditAppointment
 }) => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -113,7 +107,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                             {/* Day Slots */}
                             {weekDays.map((day, i) => {
                                 const hourStr = hour.toString().padStart(2, "0") + ":00";
-                                const appt = MOCK_APPOINTMENTS.find(a => 
+                                const appt = appointments.find(a => 
                                     isSameDay(a.date, day) && a.time === hourStr
                                 );
 

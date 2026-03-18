@@ -13,8 +13,42 @@ const SchedulePage = () => {
     const [activeAppointment, setActiveAppointment] = useState<any>(null);
     const [targetTime, setTargetTime] = useState<string | undefined>();
 
+    const [appointments, setAppointments] = useState<any[]>([
+        { 
+            id: "1", patient: "Алексей Павлов", time: "09:00", date: new Date(), 
+            status: "planned", type: "Первичный", phone: "+7 777 123 45 67", 
+            service: "Консультация терапевта", comment: "Боли в спине"
+        },
+        { 
+            id: "2", patient: "Мадина Сулейменова", time: "11:30", date: new Date(), 
+            status: "completed", type: "Повторный", phone: "+7 701 987 65 43",
+            service: "Курс реабилитации", comment: "Плановый осмотр"
+        },
+    ]);
+
+    const handleSaveAppointment = (data: any) => {
+        if (activeAppointment) {
+            // Update existing
+            setAppointments(prev => prev.map(a => a.id === activeAppointment.id ? { ...a, ...data } : a));
+        } else {
+            // Create new
+            const newAppt = {
+                id: Math.random().toString(36).substr(2, 9),
+                patient: data.patientName || "Новый пациент",
+                time: data.time,
+                date: data.date,
+                status: data.status,
+                type: "Первичный",
+                phone: data.phone,
+                service: data.service,
+                comment: data.comment
+            };
+            setAppointments(prev => [...prev, newAppt]);
+        }
+    };
+
     return (
-        <div className="flex flex-col h-screen bg-background overflow-hidden">
+        <div className="flex flex-col h-screen bg-slate-50 dark:bg-[#0a0a0a] overflow-hidden">
             <ScheduleHeader 
                 view={view} 
                 onViewChange={setView}
@@ -28,6 +62,7 @@ const SchedulePage = () => {
                 {view === "day" && <DayView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
+                    appointments={appointments}
                     onAddAppointment={(time) => {
                         setTargetTime(time);
                         setActiveAppointment(null);
@@ -41,6 +76,7 @@ const SchedulePage = () => {
                 {view === "week" && <WeekView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
+                    appointments={appointments}
                     onDateSelect={setSelectedDate} 
                     onViewChange={setView} 
                     onAddAppointment={(date, time) => {
@@ -57,6 +93,7 @@ const SchedulePage = () => {
                 {view === "month" && <MonthView 
                     selectedDate={selectedDate} 
                     doctorId={selectedDoctorId} 
+                    appointments={appointments}
                     onDateSelect={(date) => {
                         setSelectedDate(date);
                         setView("week");
@@ -70,8 +107,7 @@ const SchedulePage = () => {
                     selectedDate={selectedDate}
                     selectedTime={targetTime}
                     onSave={(data) => {
-                        console.log("Saving appointment:", data);
-                        // Here we would implement the logic to save to Supabase/state
+                        handleSaveAppointment(data);
                     }}
                 />
             </div>

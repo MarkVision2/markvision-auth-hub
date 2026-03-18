@@ -9,13 +9,14 @@ import { ru } from "date-fns/locale";
 interface MonthViewProps {
     selectedDate: Date;
     doctorId: string;
+    appointments: any[];
     onDateSelect: (date: Date) => void;
 }
 
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 export const MonthView: React.FC<MonthViewProps> = ({
-    selectedDate, doctorId, onDateSelect
+    selectedDate, doctorId, appointments, onDateSelect
 }) => {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(monthStart);
