@@ -292,7 +292,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* LEFT PANEL: MAIN CONTENT */}
-                    <ScrollArea className="flex-1 bg-background border-r border-border">
+                    <ScrollArea className="flex-1 bg-background">
                         <div className="max-w-4xl mx-auto p-12 pb-32">
                         {/* Step 1: Первичный опрос */}
                         {step === 1 && (
@@ -860,51 +860,6 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                         </div>
                     </ScrollArea>
 
-                    {/* RIGHT PANEL: ADMIN ASSISTANT */}
-                    <aside className="w-[380px] border-l border-border bg-muted/5 flex flex-col shrink-0 overflow-hidden">
-                        <div className="p-6 border-b border-border bg-background">
-                            <div className="flex items-center gap-2 mb-1">
-                                <ClipboardList className="h-4 w-4 text-primary" />
-                                <h3 className="text-sm font-bold uppercase tracking-widest">Структура разговора</h3>
-                            </div>
-                            <p className="text-[10px] text-muted-foreground uppercase font-semibold">Шпаргалка для администратора</p>
-                        </div>
-                        <ScrollArea className="flex-1 p-6">
-                            <div className="space-y-3 pb-10">
-                                {[
-                                    "1. Приветствие",
-                                    "2. Подтверждение заявки",
-                                    "3. Выявление проблемы",
-                                    "4. Уточнение симптомов",
-                                    "5. Эмпатия ( сочуствие )",
-                                    "6. Презентация диагностики",
-                                    "7. Озвучивание стоимости",
-                                    "8. Работа с возражениями",
-                                    "9. Закрытие на запись",
-                                    "10. Подведение к предоплате и Работа с возражениями",
-                                    "11. Подтверждение записи",
-                                    "12. Финальное завершение"
-                                ].map((stepText, i) => (
-                                    <div key={i} className="p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/30 transition-all flex items-center gap-3">
-                                        <div className="h-6 w-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-black">
-                                            {i + 1}
-                                        </div>
-                                        <span className="text-xs font-bold leading-tight">{stepText.split('. ')[1] || stepText}</span>
-                                    </div>
-                                ))}
-                                
-                                <div className="mt-8 p-6 rounded-[32px] bg-primary/5 border border-primary/10 space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <Info className="h-4 w-4 text-primary" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary">Важно помнить</span>
-                                    </div>
-                                    <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
-                                        Разговор всегда идет по этой схеме. Не перескакивайте через этапы, ведите пациента плавно от приветствия до подтверждения записи.
-                                    </p>
-                                </div>
-                            </div>
-                        </ScrollArea>
-                    </aside>
                 </div>
 
                 <div className="px-10 py-5 border-t border-border flex items-center justify-between bg-background shrink-0 z-10 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
