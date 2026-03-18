@@ -16,7 +16,7 @@ interface WeekViewProps {
     onEditAppointment: (appt: any) => void;
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
+const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 08:00 - 18:00
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -97,9 +97,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     {HOURS.map((hour) => (
                         <React.Fragment key={hour}>
                             {/* Hour Labels */}
-                            <div className="h-[85px] border-r border-slate-200 dark:border-zinc-800 flex items-start justify-center pt-3 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-20">
-                                <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-500 tracking-wider">
-                                    {hour.toString().padStart(2, "0")}:00
+                            <div className="h-[64px] border-r border-slate-200 dark:border-zinc-800 flex items-start justify-center pt-2 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-20">
+                                <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 tabular-nums">
+                                    {hour}:00
                                 </span>
                             </div>
 

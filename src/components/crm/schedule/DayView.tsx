@@ -14,7 +14,7 @@ interface DayViewProps {
     onEditAppointment: (appt: any) => void;
 }
 
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 08:00 - 20:00
+const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 08:00 - 18:00
 
 export const DayView: React.FC<DayViewProps> = ({
     selectedDate, doctorId, appointments, onAddAppointment, onEditAppointment
@@ -59,7 +59,7 @@ export const DayView: React.FC<DayViewProps> = ({
                             {format(selectedDate, "EEEE, d MMMM", { locale: ru })}
                         </h2>
                         <span className="text-[11px] uppercase font-bold tracking-[0.15em] text-slate-500 dark:text-zinc-500 flex items-center gap-2">
-                             <Clock className="h-3.5 w-3.5" /> Рабочий день: 08:00 – 20:00
+                             <Clock className="h-3.5 w-3.5" /> Рабочий день: 08:00 – 18:00
                         </span>
                     </div>
                 </div>
@@ -92,11 +92,11 @@ export const DayView: React.FC<DayViewProps> = ({
                                     <span className="text-[13px] font-bold text-slate-400 dark:text-zinc-500 tracking-[0.05em] transition-colors">
                                         {hourStr}
                                     </span>
-                                    <div className="h-[85px] w-px bg-border/30 mt-4 mr-2" />
+                                    <div className="h-[50px] w-px bg-border/30 mt-4 mr-2" />
                                 </div>
 
                                 {/* Content Slot */}
-                                <div className="flex-1 min-h-[100px] pb-4 relative">
+                                <div className="flex-1 min-h-[70px] pb-4 relative">
                                     
                                     {/* Mock Current Time Indicator (Visual Demo) */}
                                     {hourStr === "10:00" && (
