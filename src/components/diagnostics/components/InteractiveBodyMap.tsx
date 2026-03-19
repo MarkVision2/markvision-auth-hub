@@ -7,7 +7,7 @@ interface Zone {
     d: string; // SVG path
 }
 
-// Organic Anatomical SVG paths for the new high-res Gray 3D Muscle System
+// Organic Anatomical SVG paths for the high-res Gray 3D Muscle System
 const frontZones: Zone[] = [
     { id: "head_f", label: "Голова", d: "M 42 15 Q 50 2 58 15 L 62 30 Q 50 42 38 30 Z" },
     { id: "neck_f", label: "Шея (перед)", d: "M 46 32 Q 50 35 54 32 L 56 45 Q 50 48 44 45 Z" },
@@ -35,31 +35,31 @@ const backZones: Zone[] = [
 
 const buttonGroups = [
     {
-        title: "Группа 1: Голова и Шея",
+        title: "Голова/Шея",
         zones: [
             { id: "head_f", label: "Голова" },
-            { id: "neck_f", label: "Шея (перед)" },
-            { id: "neck_b", label: "Шея (сзади)" },
+            { id: "neck_f", label: "Шея(П)" },
+            { id: "neck_b", label: "Шея(С)" },
             { id: "head_b", label: "Затылок" },
         ]
     },
     {
-        title: "Группа 2: Туловище",
+        title: "Туловище",
         zones: [
             { id: "chest", label: "Грудь" },
             { id: "abdomen", label: "Пресс" },
             { id: "shoulder_r_f", label: "Плечо" },
             { id: "traps", label: "Лопатка" },
-            { id: "lower_back", label: "Спина (поясница)" },
+            { id: "lower_back", label: "Спина" },
             { id: "pelvis", label: "Таз" },
         ]
     },
     {
-        title: "Группа 3: Конечности",
+        title: "Конечности",
         zones: [
-            { id: "r_arm_f", label: "Рука (плечо)" },
-            { id: "r_leg_f", label: "Нога (спереди)" },
-            { id: "l_leg_b", label: "Нога (сзади)" },
+            { id: "r_arm_f", label: "Рука" },
+            { id: "r_leg_f", label: "Нога(П)" },
+            { id: "l_leg_b", label: "Нога(С)" },
         ]
     }
 ];
@@ -73,28 +73,22 @@ interface Props {
 export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onToggleZone, isPrint = false }) => {
     
     const renderFigure = (title: string, zones: Zone[], isBack: boolean) => (
-        <div className="flex flex-col items-start w-full max-w-[380px]">
+        <div className="flex flex-col items-center w-full max-w-[220px]">
             {!isPrint && (
-                <div className="mb-8 text-[14px] font-black uppercase tracking-[0.2em] text-slate-800">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     {title}
                 </div>
             )}
-            <div className={cn(
-                "relative w-full aspect-[1/2] bg-white transition-all duration-500 rounded-2xl overflow-hidden",
-                !isPrint && "hover:shadow-2xl hover:shadow-slate-200/50"
-            )}>
-                {/* Gray 3D Medical Model */}
+            <div className="relative w-full aspect-[1/2] bg-white rounded-xl overflow-hidden shadow-inner border border-slate-50">
                 <div 
                     className="absolute inset-0 bg-no-repeat transition-all duration-300"
                     style={{ 
                         backgroundImage: `url('/images/diagnostics/human_anatomy_gray.png')`,
-                        backgroundPosition: isBack ? '95% center' : '5% center',
+                        backgroundPosition: isBack ? '98% center' : '2% center',
                         backgroundSize: '210% auto'
                     }}
                 />
-                
-                {/* SVG Muscle Highlight Overlay */}
-                <svg viewBox="0 0 100 200" className="absolute inset-0 w-full h-full z-10 overflow-visible">
+                <svg viewBox="0 0 100 200" className="absolute inset-0 w-full h-full z-10">
                     <g className="cursor-pointer">
                         {zones.map(z => {
                             const active = selectedZones.includes(z.id) || 
@@ -114,17 +108,14 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                     key={z.id}
                                     d={z.d}
                                     className={cn(
-                                        "transition-all duration-300 ease-out",
-                                        active 
-                                            ? "fill-[#D92D20] opacity-75 stroke-[#B42318] stroke-[1px]" 
-                                            : "fill-transparent hover:fill-[#D92D20]/15"
+                                        "transition-all duration-300",
+                                        active ? "fill-[#D92D20] opacity-80" : "fill-transparent hover:fill-red-500/10"
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (z.id === "shoulder_r_f" || z.id === "shoulder_l_f") onToggleZone("shoulder_r_f");
-                                        else if (z.id === "r_arm_f" || z.id === "l_arm_f" || z.id === "r_arm_b" || z.id === "l_arm_b") onToggleZone("r_arm_f");
+                                        else if (z.id === "r_arm_f" || z.id === "l_arm_f") onToggleZone("r_arm_f");
                                         else if (z.id === "r_leg_f" || z.id === "l_leg_f") onToggleZone("r_leg_f");
-                                        else if (z.id === "r_leg_b" || z.id === "l_leg_b") onToggleZone("l_leg_b");
                                         else onToggleZone(z.id);
                                     }}
                                 />
@@ -138,37 +129,32 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
 
     if (isPrint) {
         return (
-            <div className="w-full bg-white px-12 py-16">
-                <h2 className="text-2xl font-black text-left mb-16 uppercase tracking-tight text-slate-900 border-b-4 border-slate-900 pb-6">
+            <div className="w-full bg-white font-sans border-t-2 border-slate-900 pt-8 mt-8">
+                <h2 className="text-xl font-bold mb-10 uppercase tracking-tight text-slate-900 text-center">
                     ЛИСТ НАЗНАЧЕНИЙ. ЗОНЫ БОЛИ ПАЦИЕНТА
                 </h2>
-                <div className="flex items-start justify-center gap-32">
-                    {renderFigure("Вид спереди", frontZones, false)}
-                    {renderFigure("Вид сзади", backZones, true)}
+                <div className="flex items-start justify-center gap-16">
+                    {renderFigure("Анфас", frontZones, false)}
+                    {renderFigure("Профиль", backZones, true)}
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full bg-white p-24 shadow-2xl rounded-[4rem] border border-slate-100 flex flex-col items-start overflow-hidden mx-auto">
-            {/* Main Header */}
-            <h2 className="text-4xl font-black text-slate-900 mb-20 tracking-tight">Лист назначений</h2>
-
-            {/* Sub Header for Visualization */}
-            <div className="flex items-start justify-start gap-32 mb-32 w-full">
-                {renderFigure("Анфас (Перед)", frontZones, false)}
-                {renderFigure("Профиль (Спина)", backZones, true)}
+        <div className="w-full bg-white flex flex-col items-center gap-8">
+            <div className="flex items-start justify-center gap-4 w-full">
+                {renderFigure("Анфас", frontZones, false)}
+                {renderFigure("Профиль", backZones, true)}
             </div>
 
-            {/* Professional Grid of Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-16 gap-y-24 w-full">
+            <div className="flex flex-col gap-6 w-full mt-4">
                 {buttonGroups.map((group, idx) => (
-                    <div key={idx} className="flex flex-col items-start w-full">
-                        <h5 className="text-[14px] font-black uppercase tracking-widest text-slate-900 mb-8 pb-3 border-b-2 border-slate-100 w-full text-left">
+                    <div key={idx} className="flex flex-col gap-2">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-800 border-l-2 border-slate-800 pl-2">
                             {group.title}
-                        </h5>
-                        <div className="flex flex-col gap-3.5 w-full">
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                             {group.zones.map(z => {
                                 const isSelected = selectedZones.includes(z.id) || (z.id === "shoulder_r_f" && selectedZones.includes("shoulder_r_f"));
                                 return (
@@ -176,11 +162,10 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                         key={z.id}
                                         onClick={() => onToggleZone(z.id)}
                                         className={cn(
-                                            "h-14 w-full px-8 flex items-center justify-center text-[11px] font-bold uppercase tracking-widest transition-all duration-300 border",
-                                            "rounded-lg", // Professional 8px radius
+                                            "h-9 px-2 flex items-center justify-center text-[10px] font-bold uppercase tracking-tight transition-all border rounded-md",
                                             isSelected 
-                                                ? "bg-[#D92D20] text-white border-[#D92D20] shadow-xl shadow-red-500/30 -translate-y-1" 
-                                                : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 hover:border-slate-200 hover:text-slate-800"
+                                                ? "bg-[#D92D20] text-white border-[#D92D20] shadow-sm" 
+                                                : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100 text-[9px]"
                                         )}
                                     >
                                         {z.label}
