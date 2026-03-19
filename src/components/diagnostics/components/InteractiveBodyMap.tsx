@@ -10,24 +10,24 @@ interface Zone {
 const frontZones: Zone[] = [
     { id: "head_f", label: "Голова", d: "M 42 12 Q 50 2 58 12 L 62 25 Q 50 35 38 25 Z" },
     { id: "neck_f", label: "Шея", d: "M 46 30 Q 50 28 54 30 L 58 42 Q 50 45 42 42 Z" },
-    { id: "chest", label: "Грудь (Пекторальные)", d: "M 22 45 Q 50 35 78 45 L 82 75 Q 50 82 18 75 Z" },
-    { id: "abdomen", label: "Живот (Пресс)", d: "M 28 78 Q 50 85 72 78 L 70 115 Q 50 125 30 115 Z" },
-    { id: "l_arm_f", label: "Лев. рука", d: "M 80 50 L 98 115 L 88 125 L 72 60 Z" },
-    { id: "r_arm_f", label: "Прав. рука", d: "M 20 50 L 2 115 L 12 125 L 28 60 Z" },
-    { id: "l_leg_f", label: "Лев. нога", d: "M 52 115 Q 60 112 68 120 L 78 198 L 52 198 L 50 120 Z" },
-    { id: "r_leg_f", label: "Прав. нога", d: "M 48 115 Q 40 112 32 120 L 22 198 L 48 198 L 50 120 Z" },
+    { id: "chest", label: "Грудь", d: "M 22 45 Q 50 35 78 45 L 82 75 Q 50 82 18 75 Z" },
+    { id: "abdomen", label: "Живот", d: "M 28 78 Q 50 85 72 78 L 70 115 Q 50 125 30 115 Z" },
+    { id: "l_arm_f", label: "Лев. рука", d: "M 80 50 L 98 125 L 82 135 L 70 60 Z" },
+    { id: "r_arm_f", label: "Прав. рука", d: "M 20 50 L 2 125 L 18 135 L 30 60 Z" },
+    { id: "l_leg_f", label: "Лев. нога", d: "M 52 118 L 65 198 L 45 198 L 48 118 Z" },
+    { id: "r_leg_f", label: "Прав. нога", d: "M 48 118 L 35 198 L 55 198 L 52 118 Z" },
 ];
 
 const backZones: Zone[] = [
     { id: "head_b", label: "Затылок", d: "M 42 12 Q 50 2 58 12 L 62 25 Q 50 35 38 25 Z" },
     { id: "neck_b", label: "Шея (сзади)", d: "M 46 30 Q 50 28 54 30 L 58 42 Q 50 45 42 42 Z" },
-    { id: "upper_back", label: "Трапеции/Лопатки", d: "M 20 42 Q 50 35 80 42 L 85 75 Q 50 85 15 75 Z" },
+    { id: "upper_back", label: "Лопатки", d: "M 20 42 Q 50 35 80 42 L 85 75 Q 50 85 15 75 Z" },
     { id: "lower_back", label: "Поясница", d: "M 28 78 Q 50 72 72 78 L 75 105 Q 50 115 25 105 Z" },
-    { id: "pelvis", label: "Таз/Ягодицы", d: "M 25 108 Q 50 125 75 108 L 72 145 Q 50 155 28 145 Z" },
-    { id: "l_arm_b", label: "Прав. рука (сзади)", d: "M 80 50 L 98 115 L 88 125 L 72 60 Z" },
-    { id: "r_arm_b", label: "Лев. рука (сзади)", d: "M 20 50 L 2 115 L 12 125 L 28 60 Z" },
-    { id: "l_leg_b", label: "Прав. нога (сзади)", d: "M 52 135 L 65 198 Q 50 205 35 198 L 48 140 Z" },
-    { id: "r_leg_b", label: "Лев. нога (сзади)", d: "M 48 135 L 35 198 Q 50 205 65 198 L 52 140 Z" },
+    { id: "pelvis", label: "Таз", d: "M 25 108 Q 50 125 75 108 L 72 145 Q 50 155 28 145 Z" },
+    { id: "l_arm_b", label: "Прав. рука (сзади)", d: "M 80 50 L 98 125 L 82 135 L 70 60 Z" },
+    { id: "r_arm_b", label: "Лев. рука (сзади)", d: "M 20 50 L 2 125 L 18 135 L 30 60 Z" },
+    { id: "l_leg_b", label: "Прав. нога (сзади)", d: "M 52 135 L 65 198 L 40 198 L 48 140 Z" },
+    { id: "r_leg_b", label: "Лев. нога (сзади)", d: "M 48 135 L 35 198 L 60 198 L 52 140 Z" },
 ];
 
 interface Props {
@@ -38,65 +38,54 @@ interface Props {
 
 export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onToggleZone, isPrint = false }) => {
     
-    const renderFigure = (title: string, zones: Zone[], imagePath: string) => (
+    const renderFigure = (title: string, zones: Zone[], isBack: boolean) => (
         <div className="flex flex-col items-center group flex-1">
             {!isPrint && (
-                <div className="flex items-center gap-2 mb-10 px-6 py-2 rounded-full bg-slate-100/40 border border-slate-200/40 backdrop-blur-lg shadow-sm transition-all group-hover:bg-white group-hover:border-red-500/30">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.6)]" />
-                    <h4 className="text-[11px] font-black uppercase tracking-[0.5em] text-slate-500">{title}</h4>
+                <div className="flex items-center gap-2 mb-6 px-4 py-1.5 rounded-xl bg-slate-900/80 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.1)] transition-all group-hover:border-red-500/50">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.4em] text-red-50/70">{title}</h4>
                 </div>
             )}
             <div className={cn(
-                "relative w-full max-w-[400px] aspect-[1/2] overflow-hidden rounded-[4.5rem] transition-all duration-1000",
-                !isPrint && "bg-white shadow-[0_50px_120px_rgba(0,0,0,0.1)] border border-white/80 ring-1 ring-slate-200/40 backdrop-blur-2xl hover:ring-red-500/30 hover:shadow-[0_60px_150px_rgba(239,68,68,0.1)] scale-100 hover:scale-[1.04]"
+                "relative w-full max-w-[280px] aspect-[1/2] overflow-hidden rounded-[2.5rem] transition-all duration-700",
+                !isPrint && "bg-slate-950 shadow-[0_30px_60px_rgba(0,0,0,0.3)] border border-slate-800/50 ring-1 ring-white/5 hover:ring-red-500/40 hover:shadow-[0_0_40px_rgba(239,68,68,0.15)] scale-100 hover:scale-[1.02]"
             )}>
-                {/* Anatomical Image */}
-                <img 
-                    src={imagePath}
-                    alt={title}
-                    className="absolute inset-0 w-full h-full object-contain transition-all duration-[3.5s] ease-in-out group-hover:scale-110 group-hover:rotate-1 filter brightness-[1.02] contrast-[1.05]"
+                {/* Background anatomical image - Using single image with stable split logic */}
+                <div 
+                    className="absolute inset-0 bg-no-repeat transition-all duration-[3s] ease-out filter brightness-[0.8] contrast-[1.1] group-hover:brightness-100"
+                    style={{ 
+                        backgroundImage: `url('/images/diagnostics/human_anatomy_v2.png')`,
+                        backgroundPosition: isBack ? '100% 0%' : '0% 0%',
+                        backgroundSize: '200% 100%'
+                    }}
                 />
 
-                {/* Cyber Scanner Grid Overlay */}
+                {/* Cyber Grid Overlay */}
                 {!isPrint && (
-                    <div className="absolute inset-0 pointer-events-none opacity-15 bg-[linear-gradient(rgba(239,68,68,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.06)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                    <div className="absolute inset-0 pointer-events-none opacity-20 bg-[linear-gradient(rgba(239,68,68,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.1)_1px,transparent_1px)] bg-[size:10px_10px]" />
                 )}
                 
                 {/* Interactive SVG Overlay */}
-                <svg viewBox="0 0 100 200" className="absolute inset-0 w-full h-full z-10 drop-shadow-3xl">
+                <svg viewBox="0 0 100 200" className="absolute inset-0 w-full h-full z-10">
                     <style>{`
-                        @keyframes scanner-pulse-enhanced {
-                            0%, 100% { opacity: 0.9; filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.5)); transform: scale(1); }
-                            50% { opacity: 0.7; filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.95)); transform: scale(1.02); }
+                        @keyframes scanner-scan {
+                            0% { transform: translateY(-100%); }
+                            100% { transform: translateY(200%); }
                         }
-                        .zone-pulse-enhanced {
-                            animation: scanner-pulse-enhanced 3s ease-in-out infinite;
-                            transform-origin: center;
-                        }
-                        .zone-path-awesome {
-                            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-                        }
-                        .zone-path-awesome:hover {
-                            stroke-width: 3px;
-                            stroke: rgba(239, 68, 68, 0.8);
-                        }
-                        @keyframes shimmer-ultra {
-                            0% { transform: translateX(-100%) skewX(-15deg); }
-                            100% { transform: translateX(200%) skewX(-15deg); }
-                        }
-                        .animate-shimmer-ultra {
-                            animation: shimmer-ultra 2.5s ease-in-out infinite;
+                        .scan-line {
+                            animation: scanner-scan 4s linear infinite;
+                            background: linear-gradient(to bottom, transparent, rgba(239,68,68,0.3), transparent);
                         }
                     `}</style>
                     <defs>
-                        <radialGradient id="heat-grad-awesome" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stopColor="rgba(239, 68, 68, 0.85)" />
-                            <stop offset="50%" stopColor="rgba(239, 68, 68, 0.45)" />
+                        <radialGradient id="neon-glow" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="rgba(239, 68, 68, 0.8)" />
+                            <stop offset="60%" stopColor="rgba(239, 68, 68, 0.4)" />
                             <stop offset="100%" stopColor="rgba(239, 68, 68, 0)" />
                         </radialGradient>
                     </defs>
                     
-                    {/* Interaction Zones */}
+                    {/* Zones */}
                     <g className="cursor-pointer">
                         {zones.map(z => {
                             const isSelected = selectedZones.includes(z.id);
@@ -105,8 +94,10 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                     key={z.id}
                                     d={z.d}
                                     className={cn(
-                                        "zone-path-awesome",
-                                        isSelected ? "fill-[url(#heat-grad-awesome)] stroke-red-500 stroke-[3px] opacity-100" : "fill-transparent hover:fill-red-500/15"
+                                        "transition-all duration-500 ease-in-out",
+                                        isSelected 
+                                            ? "fill-[url(#neon-glow)] stroke-red-500 stroke-[2px] opacity-100" 
+                                            : "fill-transparent hover:fill-red-500/10 hover:stroke-red-500/20 stroke-[0.5px]"
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -118,28 +109,16 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                             );
                         })}
                     </g>
-
-                    {/* Highly Pulsing Glow for selected areas */}
-                    <g className="pointer-events-none">
-                        {zones.filter(z => selectedZones.includes(z.id)).map(z => (
-                            <path 
-                                key={`glow-ultra-${z.id}`}
-                                d={z.d}
-                                className="fill-red-500/20 zone-pulse-enhanced"
-                                style={{ stroke: 'rgba(239, 68, 68, 1)', strokeWidth: '1px' }}
-                            />
-                        ))}
-                    </g>
                 </svg>
                 
-                {/* High-Tech Edge Rim Light */}
+                {/* Tech Rim Light */}
                 {!isPrint && (
-                    <div className="absolute inset-0 pointer-events-none rounded-[4.5rem] shadow-[inset_0_0_80px_rgba(255,255,255,1)] border border-white/20" />
+                    <div className="absolute inset-0 pointer-events-none rounded-[2.5rem] shadow-[inset_0_0_30px_rgba(239,68,68,0.1)] border border-white/5" />
                 )}
             </div>
 
             {!isPrint && (
-                <div className="mt-16 flex flex-wrap max-w-[420px] justify-center gap-3.5">
+                <div className="mt-8 flex flex-wrap max-w-[300px] justify-center gap-1.5">
                     {zones.map(z => {
                         const isSelected = selectedZones.includes(z.id);
                         return (
@@ -147,16 +126,13 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                 key={z.id}
                                 onClick={() => onToggleZone(z.id)}
                                 className={cn(
-                                    "text-[10px] px-7 py-3.5 rounded-2xl transition-all duration-700 border uppercase font-black tracking-[0.25em] relative overflow-hidden group/btn",
+                                    "text-[8px] px-3.5 py-1.5 rounded-lg transition-all duration-500 border uppercase font-black tracking-widest",
                                     isSelected 
-                                        ? "bg-red-500 text-white border-red-500 shadow-[0_20px_45px_rgba(239,68,68,0.5)] scale-110 active:scale-95 translate-y-[-4px]" 
-                                        : "bg-white text-slate-400 border-slate-100 hover:border-red-500/50 hover:text-red-500 hover:shadow-2xl hover:translate-y-[-2px] active:translate-y-[0px]"
+                                        ? "bg-red-500 text-white border-red-500 shadow-[0_5px_15px_rgba(239,68,68,0.5)] scale-110" 
+                                        : "bg-slate-900 text-slate-400 border-slate-800 hover:border-red-500/50 hover:text-red-400"
                                 )}
                             >
-                                <span className="relative z-10">{z.label}</span>
-                                {isSelected && (
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer-ultra" />
-                                )}
+                                {z.label}
                             </button>
                         );
                     })}
@@ -167,11 +143,11 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
 
     return (
         <div className={cn(
-            "flex items-center justify-center gap-16 transition-all duration-1000 w-full",
-            isPrint ? "p-0 bg-transparent" : "p-20 bg-slate-50/50 rounded-[6rem] border border-slate-200/50 backdrop-blur-md shadow-2xl"
+            "flex items-center justify-center gap-8 transition-all duration-1000 w-full",
+            isPrint ? "p-4 bg-white" : "p-12 bg-slate-950 rounded-[3.5rem] border border-slate-800/50 shadow-2xl"
         )}>
-            {renderFigure("Анфас (Перед)", frontZones, "/images/diagnostics/anatomy_front_v2.png")}
-            {renderFigure("Профиль (Спина)", backZones, "/images/diagnostics/anatomy_back_v2.png")}
+            {renderFigure("Анфас (Перед)", frontZones, false)}
+            {renderFigure("Профиль (Спина)", backZones, true)}
         </div>
     );
 };
