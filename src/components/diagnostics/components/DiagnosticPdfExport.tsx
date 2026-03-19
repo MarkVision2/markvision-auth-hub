@@ -151,7 +151,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
                         <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-4">Зоны лечения</h3>
                         {/* Interactive Body Map is rendered as static SVG here */}
                         <div className="scale-75 origin-top-left -mt-4">
-                            <InteractiveBodyMap selectedZones={prescriptionData?.selectedZones || []} onToggleZone={() => {}} />
+                            <InteractiveBodyMap selectedZones={prescriptionData?.selectedZones || []} onToggleZone={() => {}} isPrint={true} />
                         </div>
                     </div>
                     <div className="space-y-4">
