@@ -77,9 +77,9 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                             <Activity className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                            <DialogTitle className="text-lg font-bold tracking-tight">Рабочая форма пациента</DialogTitle>
+                            <DialogTitle className="text-lg font-semibold tracking-tight">Рабочая форма пациента</DialogTitle>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                <Badge variant="outline" className={cn("px-2 py-0 h-5 font-bold text-[10px] uppercase tracking-wider", statusColor)}>
+                                <Badge variant="outline" className={cn("px-2 py-0 h-5 font-semibold text-[10px] uppercase tracking-wider", statusColor)}>
                                     {lead.status || "Новая заявка"}
                                 </Badge>
                                 <span>·</span>
@@ -89,10 +89,10 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     </div>
                     
                     <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={handleGeneratePdf} className="h-8 gap-2 text-xs font-bold">
+                        <Button variant="outline" size="sm" onClick={handleGeneratePdf} className="h-8 gap-2 text-xs font-semibold">
                             <FileDown className="h-3.5 w-3.5" /> PDF
                         </Button>
-                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 gap-2 text-xs font-bold">
+                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 gap-2 text-xs font-semibold">
                             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                             Сохранить
                         </Button>
@@ -111,21 +111,21 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                 <TabsList className="bg-transparent border-none p-0 h-auto gap-6 mb-[-1px]">
                                     <TabsTrigger 
                                         value="admin" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-bold transition-all"
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
                                     >
                                         <ClipboardList className="h-4 w-4" />
                                         1. Диагностика (Админ)
                                     </TabsTrigger>
                                     <TabsTrigger 
                                         value="doctor" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-bold transition-all"
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
                                     >
                                         <Stethoscope className="h-4 w-4" />
                                         2. Осмотр (Врач)
                                     </TabsTrigger>
                                     <TabsTrigger 
                                         value="prescription" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-bold transition-all"
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
                                     >
                                         <FileText className="h-4 w-4" />
                                         3. Лист назначения
@@ -151,7 +151,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
                     {/* Right Sidebar: Patient Summary */}
                     <div className="w-[300px] border-l border-border bg-background shrink-0 flex flex-col">
-                        <div className="p-4 border-b border-border font-bold flex items-center gap-2">
+                        <div className="p-4 border-b border-border font-semibold flex items-center gap-2">
                             <User className="h-4 w-4 text-primary" />
                             Сводка по пациенту
                         </div>
@@ -159,17 +159,17 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                             <div className="p-4 space-y-6">
                                 <div>
                                     <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">ФИО пациента</p>
-                                    <p className="font-bold text-sm">{lead.name}</p>
+                                    <p className="font-semibold text-sm">{lead.name}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Телефон</p>
-                                    <p className="font-bold text-sm flex items-center gap-2">
+                                    <p className="font-semibold text-sm flex items-center gap-2">
                                         <Phone className="h-3 w-3" /> {lead.phone || "Не указан"}
                                     </p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Запись</p>
-                                    <div className="flex items-center gap-2 text-sm font-bold bg-secondary/50 p-2 rounded-lg border border-border">
+                                    <div className="flex items-center gap-2 text-sm font-semibold bg-secondary/50 p-2 rounded-lg border border-border">
                                         <Clock className="h-4 w-4 text-primary" />
                                         {lead.scheduled_at ? new Date(lead.scheduled_at).toLocaleString("ru-RU", { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' }) : "Нет записи"}
                                     </div>

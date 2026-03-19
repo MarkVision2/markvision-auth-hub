@@ -35,11 +35,11 @@ interface Props {
     onToggleZone: (zoneId: string) => void;
 }
 
-export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones, onToggleZone }) => {
+export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onToggleZone }) => {
     
     const renderFigure = (title: string, zones: Zone[]) => (
         <div className="flex flex-col items-center">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">{title}</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">{title}</h4>
             <svg viewBox="0 0 100 150" className="w-full max-w-[200px] drop-shadow-sm h-auto overflow-visible">
                 <g stroke="#cbd5e1" strokeWidth="1.5" strokeLinejoin="round">
                     {zones.map(z => {

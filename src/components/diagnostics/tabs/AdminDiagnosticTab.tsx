@@ -165,7 +165,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                 {stages.map((s, i) => (
                     <React.Fragment key={s.id}>
                         <div className={cn(
-                            "flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold border-2 transition-all",
+                            "flex items-center justify-center h-8 w-8 rounded-full text-xs font-semibold border-2 transition-all",
                             step === s.id ? "border-primary bg-primary/10 text-primary" :
                             step > s.id ? "bg-primary border-primary text-primary-foreground" : "border-border text-muted-foreground"
                         )}>
@@ -191,7 +191,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <ClipboardList className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
+                                    <h2 className="text-2xl font-semibold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
                                     <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
                                 </div>
                             </div>
@@ -208,17 +208,17 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
 
                         <div className="space-y-8">
                             <div className="space-y-3">
-                                <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Что именно вас сейчас беспокоит? <span className="text-destructive">*</span></Label>
+                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Что именно вас сейчас беспокоит? <span className="text-destructive">*</span></Label>
                                 <Textarea
                                     placeholder="Дайте пациенту выговориться..."
-                                    className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 italic"
+                                    className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4"
                                     value={formData.complaints}
                                     onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
                                 />
                             </div>
 
                             <div className="space-y-4">
-                                <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Где именно ощущается боль? <span className="text-destructive">*</span></Label>
+                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Где именно ощущается боль? <span className="text-destructive">*</span></Label>
                                 <RadioGroup
                                     value={formData.painLocation}
                                     onValueChange={(v) => setFormData({ ...formData, painLocation: v })}
@@ -259,19 +259,19 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
 
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-3">
-                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Как давно появилась эта проблема? <span className="text-destructive">*</span></Label>
+                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Как давно появилась эта проблема? <span className="text-destructive">*</span></Label>
                                     <Input
                                         placeholder="Например: 2 недели..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
                                         value={formData.painDuration}
                                         onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Боль постоянная или периодическая? <span className="text-destructive">*</span></Label>
+                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Боль постоянная или периодическая? <span className="text-destructive">*</span></Label>
                                     <Input
                                         placeholder="Введите ответ пациента..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
                                         value={formData.painType}
                                         onChange={(e) => setFormData({ ...formData, painType: e.target.value })}
                                     />
@@ -287,17 +287,17 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             </h3>
                             <div className="grid grid-cols-2 gap-8">
                                 <div className="space-y-3">
-                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground italic">Сила боли (1-10)</Label>
+                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground ">Сила боли (1-10)</Label>
                                     <Input
                                         type="number"
                                         placeholder="Например: 7..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary font-bold"
+                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
                                         value={formData.painIntensity}
                                         onChange={(e) => setFormData({ ...formData, painIntensity: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Пробовали лечить?</Label>
+                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Пробовали лечить?</Label>
                                     <Input
                                         placeholder="Да / Нет / Что именно..."
                                         className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
@@ -319,7 +319,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <MessageCircle className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold tracking-tight">2. Презентация диагностики и запись</h2>
+                                    <h2 className="text-2xl font-semibold tracking-tight">2. Презентация диагностики и запись</h2>
                                     <p className="text-muted-foreground">Показать ценность и записать на удобное время.</p>
                                 </div>
                             </div>
@@ -330,9 +330,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                 <div className="p-8 rounded-[32px] bg-primary/5 border border-primary/10 space-y-6">
                                     <div className="flex items-center gap-3 text-primary">
                                         <Star className="h-6 w-6 fill-primary/20" />
-                                        <h3 className="text-lg font-black uppercase tracking-tight">Ценность (Не просто консультация!)</h3>
+                                        <h3 className="text-lg font-semibold uppercase tracking-tight">Ценность (Не просто консультация!)</h3>
                                     </div>
-                                    <p className="text-sm font-bold leading-relaxed italic text-foreground bg-white/50 p-6 rounded-2xl border border-primary/5 shadow-sm">
+                                    <p className="text-sm font-medium leading-relaxed text-foreground bg-white/50 p-6 rounded-2xl border border-primary/5 shadow-sm">
                                         «Давайте расскажу, как мы поможем. У нас проводится комплексная диагностика, где вас смотрят сразу ДВА врача высшей категории.»
                                     </p>
                                 </div>
@@ -341,8 +341,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             <div className="space-y-6">
                                 <div className="bg-background p-8 rounded-[40px] border border-border/80 shadow-xl shadow-primary/5 space-y-8 sticky top-0">
                                     <div className="space-y-2">
-                                        <h3 className="text-xl font-bold tracking-tight">Выбор свободного времени</h3>
-                                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Актуальное расписание врачей</p>
+                                        <h3 className="text-xl font-semibold tracking-tight">Выбор свободного времени</h3>
+                                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Актуальное расписание врачей</p>
                                     </div>
                                     <BookingWidget
                                         selectedDate={formData.bookingDate}
@@ -356,7 +356,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         })}
                                     />
                                     <div className="p-6 rounded-2xl bg-secondary/10 space-y-3">
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground leading-tight">Важный комментарий</Label>
+                                        <Label className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground leading-tight">Важный комментарий</Label>
                                         <Textarea
                                             placeholder="Например: удобнее после 18:00, будет с МРТ..."
                                             className="bg-background border-none focus:ring-1 focus:ring-primary h-24 text-sm font-medium resize-none rounded-xl p-4"
@@ -379,7 +379,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <CreditCard className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold tracking-tight">3. Предоплата и гарантия визита</h2>
+                                    <h2 className="text-2xl font-semibold tracking-tight">3. Предоплата и гарантия визита</h2>
                                     <p className="text-muted-foreground">Подтвердите серьезность намерений пациента через внесение задатка.</p>
                                 </div>
                             </div>
@@ -392,14 +392,14 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center">
                                             <Smartphone className="h-5 w-5 text-[#00A2E8]" />
                                         </div>
-                                        <span className="font-bold">Kaspi.kz</span>
+                                        <span className="font-semibold">Kaspi.kz</span>
                                     </div>
                                     <p className="text-sm text-muted-foreground leading-relaxed">
                                         Отправьте ссылку на оплату через WhatsApp. Это стандартная процедура клиники для фиксации времени.
                                     </p>
                                     <Button 
                                         variant="outline" 
-                                        className="w-full h-12 rounded-2xl gap-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all font-bold"
+                                        className="w-full h-12 rounded-2xl gap-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all font-semibold"
                                         onClick={() => {
                                             toast({
                                                 title: "Ссылка отправлена",
@@ -414,7 +414,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
 
                             <div className="space-y-6">
                                 <div className="space-y-3">
-                                    <Label className="text-[11px] uppercase font-bold tracking-widest text-muted-foreground">Статус предоплаты</Label>
+                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Статус предоплаты</Label>
                                     <RadioGroup
                                         value={formData.paymentStatus}
                                         onValueChange={(val: "pending" | "paid" | "declined") => setFormData({ ...formData, paymentStatus: val })}
@@ -438,7 +438,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={cn("h-4 w-4 rounded-full flex items-center justify-center", item.bg, item.color)} />
-                                                        <span className="font-bold">{item.label}</span>
+                                                        <span className="font-semibold">{item.label}</span>
                                                     </div>
                                                 </Label>
                                             </div>
@@ -459,7 +459,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <Flag className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold tracking-tight">4. Финал и подтверждение</h2>
+                                    <h2 className="text-2xl font-semibold tracking-tight">4. Финал и подтверждение</h2>
                                     <p className="text-muted-foreground">Обязательно перепроверьте данные перед передачей врачу.</p>
                                 </div>
                             </div>
@@ -469,7 +469,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             {/* Блок 1. Данные пациента */}
                             <div className="p-6 rounded-[32px] bg-secondary/5 border border-border/50 space-y-4">
                                 <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                                    <h3 className="font-bold flex items-center gap-2">
+                                    <h3 className="font-semibold flex items-center gap-2">
                                         <User className="h-5 w-5 text-primary" /> Данные пациента
                                     </h3>
                                     <Button variant="ghost" size="sm" onClick={() => setEditPatientData(!editPatientData)} className="h-8 text-xs gap-1">
@@ -482,7 +482,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         {editPatientData ? (
                                             <Input value={formData.finalFio} onChange={e => setFormData({...formData, finalFio: e.target.value})} className="h-9"/>
                                         ) : (
-                                            <p className="font-bold">{formData.finalFio || "Не указано"}</p>
+                                            <p className="font-semibold">{formData.finalFio || "Не указано"}</p>
                                         )}
                                     </div>
                                     <div className="space-y-1">
@@ -490,7 +490,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         {editPatientData ? (
                                             <Input value={formData.finalPhone} onChange={e => setFormData({...formData, finalPhone: e.target.value})} className="h-9"/>
                                         ) : (
-                                            <p className="font-bold">{formData.finalPhone || "Не указан"}</p>
+                                            <p className="font-semibold">{formData.finalPhone || "Не указан"}</p>
                                         )}
                                     </div>
                                 </div>
@@ -499,7 +499,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             {/* Блок 2. Запись на диагностику */}
                             <div className="p-6 rounded-[32px] bg-secondary/5 border border-border/50 space-y-4">
                                 <div className="flex items-center justify-between border-b border-border/50 pb-4">
-                                    <h3 className="font-bold flex items-center gap-2">
+                                    <h3 className="font-semibold flex items-center gap-2">
                                         <Calendar className="h-5 w-5 text-primary" /> Запись
                                     </h3>
                                     <Button variant="ghost" size="sm" onClick={() => setEditBookingData(!editBookingData)} className="h-8 text-xs gap-1">
@@ -512,19 +512,19 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         {editBookingData ? (
                                             <Button variant="link" size="sm" onClick={() => setStep(2)}>Выбрать заново</Button>
                                         ) : (
-                                            <p className="font-bold text-right">{formData.bookingDate?.toLocaleDateString()} в {formData.bookingTime}</p>
+                                            <p className="font-semibold text-right">{formData.bookingDate?.toLocaleDateString()} в {formData.bookingTime}</p>
                                         )}
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <Label className="text-xs text-muted-foreground">Врач</Label>
-                                        <p className="font-bold text-right">{formData.bookingDoctor || "Не выбран"}</p>
+                                        <p className="font-semibold text-right">{formData.bookingDoctor || "Не выбран"}</p>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <Label className="text-xs text-muted-foreground">Предоплата</Label>
                                         {editBookingData ? (
                                             <Button variant="link" size="sm" onClick={() => setStep(3)}>Изменить</Button>
                                         ) : (
-                                            <p className={cn("font-bold text-right", formData.paymentStatus === "paid" ? "text-emerald-500" : "text-amber-500")}>
+                                            <p className={cn("font-semibold text-right", formData.paymentStatus === "paid" ? "text-emerald-500" : "text-amber-500")}>
                                                 {formData.paymentStatus === "paid" ? "Оплачено" : "Ожидается"}
                                             </p>
                                         )}
@@ -535,7 +535,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             {/* Блок 3. Выжимка анкеты */}
                             <div className="md:col-span-2 p-6 rounded-[32px] bg-primary/5 border border-primary/20 space-y-4">
                                 <div className="flex items-center justify-between border-b border-primary/10 pb-4">
-                                    <h3 className="font-bold flex items-center gap-2 text-primary">
+                                    <h3 className="font-semibold flex items-center gap-2 text-primary">
                                         <ClipboardList className="h-5 w-5" /> Краткая выжимка (Для врача)
                                     </h3>
                                     <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="h-8 text-xs gap-1 text-primary hover:bg-primary/10">
@@ -553,7 +553,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                         <div className="flex justify-end pt-4">
                             <Button 
                                 onClick={handleConfirm}
-                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase gap-3 shadow-xl shadow-primary/20"
+                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm uppercase gap-3 shadow-xl shadow-primary/20"
                             >
                                 <CheckCircle2 className="h-5 w-5" />
                                 Подтвердить запись
@@ -570,13 +570,13 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                         variant="ghost"
                         onClick={prevStep}
                         disabled={step === 1}
-                        className="gap-2 font-bold uppercase tracking-widest text-[10px] h-12 px-6 rounded-2xl"
+                        className="gap-2 font-semibold uppercase tracking-wider text-xs h-12 px-6 rounded-2xl"
                     >
                         <ArrowLeft className="h-4 w-4" /> Назад
                     </Button>
                     <Button
                         onClick={nextStep}
-                        className="gap-2 px-8 h-12 font-bold uppercase tracking-widest text-[10px] rounded-2xl shadow-lg shadow-primary/20 transition-all"
+                        className="gap-2 px-8 h-12 font-semibold uppercase tracking-wider text-xs rounded-2xl shadow-lg shadow-primary/20 transition-all"
                     >
                         Далее <ArrowRight className="h-4 w-4" />
                     </Button>

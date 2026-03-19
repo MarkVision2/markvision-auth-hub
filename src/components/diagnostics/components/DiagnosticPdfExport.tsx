@@ -51,7 +51,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
             <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
                 <div className="border-b-2 border-primary/20 pb-4 mb-6 flex justify-between items-end">
                     <div>
-                        <h1 className="text-2xl font-black uppercase tracking-widest text-[#0060cf]">Первичная Диагностика</h1>
+                        <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Первичная Диагностика</h1>
                         <p className="text-muted-foreground mt-1">Отделение приема и регистрации</p>
                     </div>
                     <div className="text-right">
@@ -102,7 +102,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
             {/* Страница 2: Анкета Врача */}
             <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
                 <div className="border-b-2 border-primary/20 pb-4 mb-6">
-                    <h1 className="text-2xl font-black uppercase tracking-widest text-[#0060cf]">Заключение Врача</h1>
+                    <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Заключение Врача</h1>
                     <p className="text-muted-foreground mt-1">Осмотр и предварительный диагноз</p>
                 </div>
 
@@ -118,7 +118,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
                         <p className="mt-2"><strong>Пальпация:</strong> {doctorData?.palpation || "—"}</p>
                     </div>
                     <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                        <h3 className="text-sm font-black uppercase text-[#0060cf] mb-1">Предварительный диагноз</h3>
+                        <h3 className="text-sm font-bold uppercase text-[#0060cf] mb-1">Предварительный диагноз</h3>
                         <p className="font-bold text-lg">{doctorData?.preliminaryDiagnosis || "Не установлен"}</p>
                     </div>
                     <div>
@@ -142,7 +142,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
             {/* Страница 3: Лист назначения */}
             <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
                 <div className="border-b-2 border-primary/20 pb-4 mb-6 text-center">
-                    <h1 className="text-2xl font-black uppercase tracking-widest text-[#0060cf]">Лист Назначения</h1>
+                    <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Лист Назначения</h1>
                     <p className="text-muted-foreground mt-1">План лечения пациента {lead.name}</p>
                 </div>
 
