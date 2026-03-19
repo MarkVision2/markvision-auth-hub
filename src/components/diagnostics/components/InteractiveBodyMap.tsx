@@ -8,50 +8,50 @@ interface Zone {
 }
 
 /**
- * PERCENTAGE-BASED PATHS (v8.0)
- * Using viewBox="0 0 100 100" for easier pixel-perfect alignment.
- * Shifted DOWN to account for image headers.
+ * ULTRA-CALIBRATED PATHS (v9.0)
+ * Using viewBox="0 0 100 100"
+ * Shifted UP to correct the v8.0 error (where neck hit abdomen).
  */
 const frontZones: Zone[] = [
-    { id: "neck", label: "Шея", d: "M 44 20 Q 50 23 56 20 L 58 28 Q 50 31 42 28 Z" },
-    { id: "shoulders", label: "Плечи", d: "M 18 20 Q 12 25 22 40 L 32 30 Z M 82 20 Q 88 25 78 40 L 68 30 Z" },
-    { id: "elbows_f", label: "Локти", d: "M 12 45 Q 8 50 18 58 L 25 50 Z M 88 45 Q 92 50 82 58 L 75 50 Z" },
-    { id: "wrists", label: "Запястье", d: "M 8 65 Q 5 70 15 75 L 22 68 Z M 92 65 Q 95 70 85 75 L 78 68 Z" },
-    { id: "abs", label: "Пресс", d: "M 32 35 Q 50 42 68 35 L 66 58 Q 50 65 34 58 Z" },
-    { id: "knees", label: "Колено", d: "M 32 78 Q 35 83 28 88 L 45 88 Q 42 83 42 78 Z M 68 78 Q 65 83 72 88 L 55 88 Q 58 83 58 78 Z" },
-    { id: "feet", label: "Стопа", d: "M 25 93 L 18 100 L 45 100 L 42 93 Z M 75 93 L 82 100 L 55 100 L 58 93 Z" },
+    { id: "neck", label: "Шея", d: "M 44 11 Q 50 14 56 11 L 58 18 Q 50 20 42 18 Z" },
+    { id: "shoulders", label: "Плечи", d: "M 15 15 Q 8 20 18 35 L 30 25 Z M 85 15 Q 92 20 82 35 L 70 25 Z" },
+    { id: "elbows_f", label: "Локти", d: "M 10 40 Q 5 45 15 50 L 22 45 Z M 90 40 Q 95 45 85 50 L 78 45 Z" },
+    { id: "wrists", label: "Запястье", d: "M 5 60 Q 3 65 12 68 L 18 62 Z M 95 60 Q 97 65 88 68 L 82 62 Z" },
+    { id: "abs", label: "Пресс", d: "M 32 28 Q 50 35 68 28 L 66 48 Q 50 55 34 48 Z" },
+    { id: "knees", label: "Колено", d: "M 32 72 Q 35 77 28 82 L 45 82 Q 42 77 42 72 Z M 68 72 Q 65 77 72 82 L 55 82 Q 58 77 58 72 Z" },
+    { id: "feet", label: "Стопа", d: "M 25 88 L 18 98 L 45 98 L 42 88 Z M 75 88 L 82 98 L 55 98 L 58 88 Z" },
 ];
 
 const backZones: Zone[] = [
-    { id: "neck_b", label: "Шея", d: "M 44 20 Q 50 23 56 20 L 58 28 Q 50 31 42 28 Z" },
-    { id: "thoracic", label: "Грудной отдел", d: "M 22 20 Q 50 15 78 20 L 82 45 Q 50 55 18 45 Z" },
-    { id: "lumbar", label: "Поясница", d: "M 28 48 Q 50 45 72 48 L 75 68 Q 50 78 25 68 Z" },
-    { id: "elbows_b", label: "Локти", d: "M 15 45 Q 10 50 20 58 L 28 50 Z M 85 45 Q 90 50 80 58 L 72 50 Z" },
+    { id: "neck_b", label: "Шея", d: "M 44 11 Q 50 14 56 11 L 58 18 Q 50 20 42 18 Z" },
+    { id: "thoracic", label: "Грудной отдел", d: "M 22 15 Q 50 10 78 15 L 82 35 Q 50 45 18 35 Z" },
+    { id: "lumbar", label: "Поясница", d: "M 28 38 Q 50 35 72 38 L 75 55 Q 50 62 25 55 Z" },
+    { id: "elbows_b", label: "Локти", d: "M 12 40 Q 8 45 18 50 L 25 45 Z M 88 40 Q 92 45 82 50 L 75 45 Z" },
 ];
 
 const buttonGroups = [
     {
-        title: "Верхняя зона",
+        title: "ВЕРХНЯЯ ЗОНА",
         zones: [
-            { id: "neck", label: "Шея" },
-            { id: "thoracic", label: "Грудной отдел" },
-            { id: "shoulders", label: "Плечи" },
-            { id: "elbows", label: "Локти" },
+            { id: "neck", label: "ШЕЯ" },
+            { id: "thoracic", label: "ГРУДНОЙ ОТДЕЛ" },
+            { id: "shoulders", label: "ПЛЕЧИ" },
+            { id: "elbows", label: "ЛОКТИ" },
         ]
     },
     {
-        title: "Спина и Центр",
+        title: "СПИНА И ЦЕНТР",
         zones: [
-            { id: "lumbar", label: "Поясница" },
-            { id: "abs", label: "Пресс" },
-            { id: "wrists", label: "Запястье" },
+            { id: "lumbar", label: "ПОЯСНИЦА" },
+            { id: "abs", label: "ПРЕСС" },
+            { id: "wrists", label: "ЗАПЯСТЬЕ" },
         ]
     },
     {
-        title: "Нижняя зона",
+        title: "НИЖНЯЯ ЗОНА",
         zones: [
-            { id: "knees", label: "Колено" },
-            { id: "feet", label: "Стопа" },
+            { id: "knees", label: "КОЛЕНО" },
+            { id: "feet", label: "СТОПА" },
         ]
     }
 ];
@@ -76,19 +76,18 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                     className="absolute inset-0 bg-no-repeat transition-all duration-300"
                     style={{ 
                         backgroundImage: `url('/images/diagnostics/human_anatomy_gray.png')`,
-                        backgroundPosition: isBack ? '98% 45%' : '2% 45%', // Centered figures
+                        backgroundPosition: isBack ? '98% center' : '2% center',
                         backgroundSize: '200% auto'
                     }}
                 />
-                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full z-10 transition-transform duration-500 hover:scale-[1.02]">
+                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full z-10">
                     <g className="cursor-pointer">
                         {zones.map(z => {
-                            const checkSelected = () => {
-                                if (z.id === "neck" || z.id === "neck_b") return selectedZones.includes("neck");
-                                if (z.id === "elbows_f" || z.id === "elbows_b") return selectedZones.includes("elbows");
-                                return selectedZones.includes(z.id);
-                            };
-                            const active = checkSelected();
+                            const active = selectedZones.includes(z.id) || 
+                                (z.id === "neck" && selectedZones.includes("neck_b")) ||
+                                (z.id === "neck_b" && selectedZones.includes("neck")) ||
+                                (z.id === "elbows_f" && selectedZones.includes("elbows")) ||
+                                (z.id === "elbows_b" && selectedZones.includes("elbows"));
 
                             return (
                                 <path 
@@ -96,11 +95,11 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                     d={z.d}
                                     className={cn(
                                         "transition-all duration-300",
-                                        active ? "fill-[#D92D20] opacity-80" : "fill-transparent hover:fill-red-500/20"
+                                        active ? "fill-[#D92D20] opacity-80" : "fill-transparent hover:fill-red-500/15"
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (z.id === "neck_b") onToggleZone("neck");
+                                        if (z.id === "neck" || z.id === "neck_b") onToggleZone("neck");
                                         else if (z.id === "elbows_f" || z.id === "elbows_b") onToggleZone("elbows");
                                         else onToggleZone(z.id);
                                     }}
@@ -120,21 +119,21 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                     ЛИСТ НАЗНАЧЕНИЙ. ЗОНЫ БОЛИ ПАЦИЕНТА
                 </h2>
                 <div className="flex items-start justify-center gap-16">
-                    {renderFigure("Анфас", frontZones, false)}
-                    {renderFigure("Профиль", backZones, true)}
+                    {renderFigure("ВИД СПЕРЕДИ", frontZones, false)}
+                    {renderFigure("ВИД СЗАДИ", backZones, true)}
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full bg-white flex flex-col items-center gap-6">
+        <div className="w-full bg-white flex flex-col items-center gap-4">
             <div className="flex items-start justify-center gap-4 w-full">
-                {renderFigure("Анфас", frontZones, false)}
-                {renderFigure("Профиль", backZones, true)}
+                {renderFigure("АНФАС", frontZones, false)}
+                {renderFigure("ВИД СЗАДИ", backZones, true)}
             </div>
 
-            <div className="flex flex-col gap-5 w-full mt-2 lg:px-2">
+            <div className="flex flex-col gap-4 w-full mt-2">
                 {buttonGroups.map((group, idx) => (
                     <div key={idx} className="flex flex-col gap-2">
                         <div className="text-[10px] font-bold uppercase tracking-widest text-slate-800 border-l-2 border-slate-800 pl-2">
@@ -142,13 +141,13 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {group.zones.map(z => {
-                                const isSelected = selectedZones.includes(z.id);
+                                const isSelected = selectedZones.includes(z.id) || (z.id === "neck" && selectedZones.includes("neck")) || (z.id === "elbows" && selectedZones.includes("elbows"));
                                 return (
                                     <button 
                                         key={z.id}
                                         onClick={() => onToggleZone(z.id)}
                                         className={cn(
-                                            "h-9 px-1 flex items-center justify-center text-[10px] font-bold uppercase tracking-tight transition-all border rounded-md text-center",
+                                            "h-10 px-1 flex items-center justify-center text-[10px] font-bold uppercase tracking-tight transition-all border rounded-lg",
                                             isSelected 
                                                 ? "bg-[#D92D20] text-white border-[#D92D20] shadow-sm" 
                                                 : "bg-slate-50 text-slate-500 border-slate-100 hover:bg-slate-100"
