@@ -160,7 +160,7 @@ export default function KanbanBoard() {
           record: {
             id: lead.id,
             status: capiKey,
-            project_id: (lead as unknown).project_id || null,
+            project_id: lead.project_id || null,
             deal_amount: lead.amount || 0,
           },
           old_record: { status: oldStatus },
@@ -186,7 +186,7 @@ export default function KanbanBoard() {
     const lead = leads.find(l => l.id === leadId);
     const oldStatus = lead?.status || "Новая заявка";
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
-    const { error } = await (supabase as unknown)
+    const { error } = await (supabase as any)
       .from("leads").update({ status: newStatus }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
@@ -252,8 +252,9 @@ export default function KanbanBoard() {
 
   return (
     <TooltipProvider>
-      {/* Summary bar */}
-      <div className="flex items-center gap-4 mb-4 px-1">
+      <div className="flex flex-col h-full min-h-0">
+        {/* Summary bar */}
+        <div className="flex items-center gap-4 mb-4 px-1 shrink-0">
         <div className="flex items-center gap-2 text-sm">
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -295,7 +296,7 @@ export default function KanbanBoard() {
 
       {/* Kanban with DnD */}
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-3 overflow-x-auto pb-4 -mx-6 px-6">
+        <div className="flex-1 min-h-0 flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter(l => (l.status || "Новая заявка") === stage.key);
             const stageAmount = stageLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
@@ -303,10 +304,10 @@ export default function KanbanBoard() {
             const Icon = stage.icon;
 
             return (
-              <div key={stage.key} className={`shrink-0 flex flex-col transition-all duration-300 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[290px] w-[290px]"}`}>
+              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-slate-50/80 dark:bg-zinc-900/40 rounded-2xl p-2.5 transition-all duration-300 border border-slate-100 dark:border-zinc-800/60 shadow-sm ${collapsed ? "min-w-[56px] w-[56px]" : "min-w-[320px] w-[320px]"}`}>
                 {/* Column header */}
                 <div
-                  className={`rounded-xl p-3 mb-2 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none`}
+                  className={`rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
                   onClick={() => collapsed && toggleCollapse(stage.key)}
                 >
                   {collapsed ? (
@@ -354,7 +355,7 @@ export default function KanbanBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-[80px] max-h-[calc(100vh-16rem)] overflow-y-auto space-y-2 p-1 rounded-xl transition-colors duration-200 ${snapshot.isDraggingOver
+                        className={`flex-1 min-h-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-zinc-700 ${snapshot.isDraggingOver
                           ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
                           : ""
                           }`}
@@ -372,9 +373,9 @@ export default function KanbanBoard() {
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  className={`group bg-card border rounded-xl p-3 cursor-grab active:cursor-grabbing ${dragSnapshot.isDragging
+                                  className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing ${dragSnapshot.isDragging
                                     ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
-                                    : "border-border hover:border-primary/30 hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
+                                    : "border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
                                     }`}
                                 >
                                   {/* Top row */}
@@ -488,6 +489,7 @@ export default function KanbanBoard() {
           })}
         </div>
       </DragDropContext>
+      </div>
 
       <LeadDetailSheet
         lead={selectedLead}

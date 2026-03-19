@@ -16,10 +16,17 @@ import {
   Kanban, Database, Cpu, MessageCircle, Plus,
   Users, TrendingUp, DollarSign, AlertCircle,
   ArrowUpRight, Zap, Clock, PhoneOutgoing, Timer,
-  AlertTriangle, Sparkles,
+  AlertTriangle, Sparkles, LayoutList,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 
 
@@ -124,9 +131,9 @@ export default function CrmSystem() {
 
   return (
     <DashboardLayout breadcrumb="CRM Система">
-      <div className="space-y-6">
+      <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)]">
         {/* ─── Header ─── */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between shrink-0 mb-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
               <Zap className="h-6 w-6 text-primary-foreground" />
@@ -145,7 +152,7 @@ export default function CrmSystem() {
         </div>
 
         {/* ─── KPI Cards ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 mb-6">
           {kpiCards.map((kpi, idx) => {
             const colors = colorMap[kpi.color];
             return (
@@ -192,7 +199,7 @@ export default function CrmSystem() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl bg-[hsl(var(--status-warning)/0.06)] border border-[hsl(var(--status-warning)/0.15)] p-3 flex items-center gap-3"
+            className="rounded-xl bg-[hsl(var(--status-warning)/0.06)] border border-[hsl(var(--status-warning)/0.15)] p-3 flex items-center gap-3 shrink-0 mb-4"
           >
             <div className="h-8 w-8 rounded-lg bg-[hsl(var(--status-warning)/0.15)] flex items-center justify-center shrink-0">
               <AlertCircle className="h-4 w-4 text-[hsl(var(--status-warning))]" />
@@ -210,9 +217,9 @@ export default function CrmSystem() {
         )}
 
         {/* ─── Main Content: Tabs + Tasks Sidebar ─── */}
-        <div className="flex gap-4">
-          <div className="flex-1 min-w-0">
-            <Tabs defaultValue="kanban" className="space-y-4">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between gap-4 mb-4 shrink-0">
               <TabsList className="h-11 bg-secondary/30 border border-border p-1 rounded-xl">
                 <TabsTrigger value="kanban" className="h-9 px-4 text-sm font-medium rounded-lg gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
                   <Kanban className="h-4 w-4" /> Воронка
@@ -227,21 +234,36 @@ export default function CrmSystem() {
                   <Cpu className="h-4 w-4" /> Автоматизации
                 </TabsTrigger>
               </TabsList>
+              
+              {/* Tasks Trigger */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="h-11 px-4 gap-2 rounded-xl border-border bg-card hover:bg-secondary/50 font-semibold shadow-sm">
+                    <LayoutList className="h-4 w-4 text-primary" />
+                    Задачи
+                    {tasks.filter(t => t.status !== "done").length > 0 && (
+                      <Badge variant="default" className="ml-1 h-5 px-1.5 text-[10px] rounded-sm">
+                        {tasks.filter(t => t.status !== "done").length}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col border-l border-border bg-background">
+                  <div className="h-full overflow-y-auto">
+                    <TodayTasksPanel
+                      tasks={tasks}
+                      onMarkDone={handleMarkDone}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
 
-              <TabsContent value="kanban"><KanbanBoard /></TabsContent>
-              <TabsContent value="chats"><ChatsView /></TabsContent>
-              <TabsContent value="clients"><ClientDatabase /></TabsContent>
-              <TabsContent value="automations"><Automations /></TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Tasks Sidebar */}
-          <div className="hidden xl:block w-[340px] shrink-0">
-            <TodayTasksPanel
-              tasks={tasks}
-              onMarkDone={handleMarkDone}
-            />
-          </div>
+            <TabsContent value="kanban" className="flex-1 min-h-0"><KanbanBoard /></TabsContent>
+            <TabsContent value="chats" className="flex-1 min-h-0"><ChatsView /></TabsContent>
+            <TabsContent value="clients" className="flex-1 min-h-0"><ClientDatabase /></TabsContent>
+            <TabsContent value="automations" className="flex-1 min-h-0"><Automations /></TabsContent>
+          </Tabs>
         </div>
 
         <AddLeadSheet open={addLeadOpen} onOpenChange={setAddLeadOpen} />
