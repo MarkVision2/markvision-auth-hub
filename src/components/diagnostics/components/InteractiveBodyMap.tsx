@@ -8,26 +8,26 @@ interface Zone {
 }
 
 const frontZones: Zone[] = [
-    { id: "head_f", label: "Голова", d: "M 42 12 Q 50 2 58 12 L 58 28 Q 50 35 42 28 Z" },
-    { id: "neck_f", label: "Шея", d: "M 46 32 L 54 32 L 55 42 L 45 42 Z" },
-    { id: "chest", label: "Грудь", d: "M 32 45 Q 50 40 68 45 L 70 75 Q 50 82 30 75 Z" },
-    { id: "abdomen", label: "Живот", d: "M 34 78 Q 50 85 66 78 L 64 110 Q 50 118 36 110 Z" },
-    { id: "l_arm_f", label: "Лев. рука", d: "M 72 48 L 88 110 L 80 115 L 68 55 Z" },
-    { id: "r_arm_f", label: "Прав. рука", d: "M 28 48 L 12 110 L 20 115 L 32 55 Z" },
-    { id: "l_leg_f", label: "Лев. нога", d: "M 52 112 L 62 190 L 45 190 L 48 115 Z" },
-    { id: "r_leg_f", label: "Прав. нога", d: "M 48 112 L 38 190 L 55 190 L 52 115 Z" },
+    { id: "head_f", label: "Голова", d: "M 40 8 Q 50 -2 60 8 L 60 22 Q 50 30 40 22 Z" },
+    { id: "neck_f", label: "Шея", d: "M 44 24 L 56 24 L 58 35 L 42 35 Z" },
+    { id: "chest", label: "Грудь", d: "M 28 38 Q 50 32 72 38 L 75 65 Q 50 72 25 65 Z" },
+    { id: "abdomen", label: "Живот", d: "M 32 68 Q 50 75 68 68 L 66 100 Q 50 108 34 100 Z" },
+    { id: "l_arm_f", label: "Лев. рука", d: "M 75 42 L 92 105 L 82 112 L 68 50 Z" },
+    { id: "r_arm_f", label: "Прав. рука", d: "M 25 42 L 8 105 L 18 112 L 32 50 Z" },
+    { id: "l_leg_f", label: "Лев. нога", d: "M 52 105 L 65 190 L 45 190 L 48 110 Z" },
+    { id: "r_leg_f", label: "Прав. нога", d: "M 48 105 L 35 190 L 55 190 L 52 110 Z" },
 ];
 
 const backZones: Zone[] = [
-    { id: "head_b", label: "Затылок", d: "M 42 12 Q 50 2 58 12 L 58 28 Q 50 35 42 28 Z" },
-    { id: "neck_b", label: "Шея (сзади)", d: "M 46 32 L 54 32 L 55 42 L 45 42 Z" },
-    { id: "upper_back", label: "Лопатки", d: "M 32 45 Q 50 40 68 45 L 72 75 Q 50 80 28 75 Z" },
-    { id: "lower_back", label: "Поясница", d: "M 34 78 Q 50 82 66 78 L 68 105 Q 50 110 32 105 Z" },
-    { id: "pelvis", label: "Таз", d: "M 34 108 Q 50 115 66 108 L 64 135 Q 50 145 36 135 Z" },
-    { id: "l_arm_b", label: "Прав. рука (сзади)", d: "M 72 48 L 88 110 L 80 115 L 68 55 Z" },
-    { id: "r_arm_b", label: "Лев. рука (сзади)", d: "M 28 48 L 12 110 L 20 115 L 32 55 Z" },
-    { id: "l_leg_b", label: "Прав. нога (сзади)", d: "M 52 138 L 62 195 L 45 195 L 48 140 Z" },
-    { id: "r_leg_b", label: "Лев. нога (сзади)", d: "M 48 138 L 38 195 L 55 195 L 52 140 Z" },
+    { id: "head_b", label: "Затылок", d: "M 40 8 Q 50 -2 60 8 L 60 22 Q 50 30 40 22 Z" },
+    { id: "neck_b", label: "Шея (сзади)", d: "M 44 24 L 56 24 L 58 35 L 42 35 Z" },
+    { id: "upper_back", label: "Лопатки", d: "M 25 38 Q 50 32 75 38 L 78 65 Q 50 72 22 65 Z" },
+    { id: "lower_back", label: "Поясница", d: "M 30 68 Q 50 75 70 68 L 72 95 Q 50 102 28 95 Z" },
+    { id: "pelvis", label: "Таз", d: "M 30 98 Q 50 108 70 98 L 68 135 Q 50 145 32 135 Z" },
+    { id: "l_arm_b", label: "Прав. рука (сзади)", d: "M 75 42 L 92 105 L 82 112 L 68 50 Z" },
+    { id: "r_arm_b", label: "Лев. рука (сзади)", d: "M 25 42 L 8 105 L 18 112 L 32 50 Z" },
+    { id: "l_leg_b", label: "Прав. нога (сзади)", d: "M 52 138 L 65 195 L 45 195 L 48 140 Z" },
+    { id: "r_leg_b", label: "Лев. нога (сзади)", d: "M 48 138 L 35 195 L 55 195 L 52 140 Z" },
 ];
 
 interface Props {
@@ -42,16 +42,16 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
         <div className="flex flex-col items-center">
             {!isPrint && <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">{title}</h4>}
             <div className={cn(
-                "relative w-full max-w-[200px] aspect-[100/150] overflow-hidden rounded-2xl bg-white",
-                !isPrint && "shadow-sm border border-border/50"
+                "relative w-full max-w-[260px] aspect-[100/150] overflow-hidden rounded-2xl bg-white",
+                !isPrint && "shadow-md border border-border/50"
             )}>
                 {/* Background anatomical image */}
                 <div 
-                    className="absolute inset-0 bg-no-repeat bg-contain transition-transform duration-500 hover:scale-105"
+                    className="absolute inset-0 bg-no-repeat bg-contain transition-transform duration-500"
                     style={{ 
                         backgroundImage: `url('/images/diagnostics/human_anatomy.png')`,
-                        backgroundPosition: isBack ? 'right center' : 'left center',
-                        backgroundSize: '200% auto'
+                        backgroundPosition: isBack ? '98% 20%' : '2% 20%',
+                        backgroundSize: '210% auto'
                     }}
                 />
                 
@@ -84,7 +84,7 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                             <path 
                                 key={`selected-${z.id}`}
                                 d={z.d}
-                                className="fill-primary/30 stroke-primary stroke-2 cursor-pointer pointer-events-auto"
+                                className="fill-primary/35 stroke-primary stroke-[1.5px] cursor-pointer pointer-events-auto"
                                 onClick={() => onToggleZone(z.id)}
                             />
                         ))}
@@ -92,22 +92,24 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                 </svg>
             </div>
 
-            <div className="mt-6 flex flex-wrap max-w-[220px] justify-center gap-1.5">
-                {zones.map(z => (
-                    <span 
-                        key={z.id}
-                        onClick={() => onToggleZone(z.id)}
-                        className={cn(
-                            "text-[10px] px-3 py-1 rounded-full cursor-pointer transition-all border font-medium",
-                            selectedZones.includes(z.id) 
-                                ? "bg-primary text-white border-primary shadow-sm scale-105" 
-                                : "bg-secondary/40 text-muted-foreground border-border/50 hover:border-primary/50 hover:bg-secondary/60"
-                        )}
-                    >
-                        {z.label}
-                    </span>
-                ))}
-            </div>
+            {!isPrint && (
+                <div className="mt-6 flex flex-wrap max-w-[280px] justify-center gap-1.5">
+                    {zones.map(z => (
+                        <span 
+                            key={z.id}
+                            onClick={() => onToggleZone(z.id)}
+                            className={cn(
+                                "text-[10px] px-3 py-1 rounded-full cursor-pointer transition-all border font-medium",
+                                selectedZones.includes(z.id) 
+                                    ? "bg-primary text-white border-primary shadow-sm scale-105" 
+                                    : "bg-secondary/40 text-muted-foreground border-border/50 hover:border-primary/50 hover:bg-secondary/60"
+                            )}
+                        >
+                            {z.label}
+                        </span>
+                    ))}
+                </div>
+            )}
         </div>
     );
 
