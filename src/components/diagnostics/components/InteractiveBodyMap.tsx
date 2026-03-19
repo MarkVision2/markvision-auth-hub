@@ -8,24 +8,25 @@ interface Zone {
 }
 
 /**
- * CALIBRATED PATHS for Gray 3D Medical Model (v7.0)
- * Note: Coordinates fixed to move UP and center correctly.
+ * PERCENTAGE-BASED PATHS (v8.0)
+ * Using viewBox="0 0 100 100" for easier pixel-perfect alignment.
+ * Shifted DOWN to account for image headers.
  */
 const frontZones: Zone[] = [
-    { id: "neck", label: "Шея", d: "M 46 22 Q 50 25 54 22 L 56 35 Q 50 38 44 35 Z" },
-    { id: "shoulders", label: "Плечи", d: "M 15 35 Q 5 45 18 65 L 28 45 Q 25 35 18 30 Z M 85 35 Q 95 45 82 65 L 72 45 Q 75 35 82 30 Z" },
-    { id: "elbows_f", label: "Локти", d: "M 10 95 Q 5 105 15 115 L 22 105 Z M 90 95 Q 95 105 85 115 L 78 105 Z" },
-    { id: "wrists", label: "Запястье", d: "M 8 135 Q 5 142 15 145 L 20 138 Z M 92 135 Q 95 142 85 145 L 80 138 Z" },
-    { id: "abs", label: "Пресс", d: "M 32 62 Q 50 70 68 62 L 66 98 Q 50 108 34 98 Z" }, // Shifted UP from v6.0
-    { id: "knees", label: "Колено", d: "M 32 155 Q 35 165 28 175 L 45 175 Q 42 165 42 155 Z M 68 155 Q 65 165 72 175 L 55 175 Q 58 165 58 155 Z" },
-    { id: "feet", label: "Стопа", d: "M 25 188 L 18 200 L 45 200 L 42 188 Z M 75 188 L 82 200 L 55 200 L 58 188 Z" },
+    { id: "neck", label: "Шея", d: "M 44 20 Q 50 23 56 20 L 58 28 Q 50 31 42 28 Z" },
+    { id: "shoulders", label: "Плечи", d: "M 18 20 Q 12 25 22 40 L 32 30 Z M 82 20 Q 88 25 78 40 L 68 30 Z" },
+    { id: "elbows_f", label: "Локти", d: "M 12 45 Q 8 50 18 58 L 25 50 Z M 88 45 Q 92 50 82 58 L 75 50 Z" },
+    { id: "wrists", label: "Запястье", d: "M 8 65 Q 5 70 15 75 L 22 68 Z M 92 65 Q 95 70 85 75 L 78 68 Z" },
+    { id: "abs", label: "Пресс", d: "M 32 35 Q 50 42 68 35 L 66 58 Q 50 65 34 58 Z" },
+    { id: "knees", label: "Колено", d: "M 32 78 Q 35 83 28 88 L 45 88 Q 42 83 42 78 Z M 68 78 Q 65 83 72 88 L 55 88 Q 58 83 58 78 Z" },
+    { id: "feet", label: "Стопа", d: "M 25 93 L 18 100 L 45 100 L 42 93 Z M 75 93 L 82 100 L 55 100 L 58 93 Z" },
 ];
 
 const backZones: Zone[] = [
-    { id: "neck_b", label: "Шея", d: "M 46 22 Q 50 25 54 22 L 56 35 Q 50 38 44 35 Z" },
-    { id: "thoracic", label: "Грудной отдел", d: "M 22 40 Q 50 32 78 40 L 82 65 Q 50 75 18 65 Z" },
-    { id: "lumbar", label: "Поясница", d: "M 32 72 Q 50 70 68 72 L 72 95 Q 50 105 28 95 Z" },
-    { id: "elbows_b", label: "Локти", d: "M 12 95 Q 8 105 18 115 L 25 105 Z M 88 95 Q 92 105 82 115 L 75 105 Z" },
+    { id: "neck_b", label: "Шея", d: "M 44 20 Q 50 23 56 20 L 58 28 Q 50 31 42 28 Z" },
+    { id: "thoracic", label: "Грудной отдел", d: "M 22 20 Q 50 15 78 20 L 82 45 Q 50 55 18 45 Z" },
+    { id: "lumbar", label: "Поясница", d: "M 28 48 Q 50 45 72 48 L 75 68 Q 50 78 25 68 Z" },
+    { id: "elbows_b", label: "Локти", d: "M 15 45 Q 10 50 20 58 L 28 50 Z M 85 45 Q 90 50 80 58 L 72 50 Z" },
 ];
 
 const buttonGroups = [
@@ -70,19 +71,18 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                     {title}
                 </div>
             )}
-            <div className="relative w-full aspect-[1/2] bg-white rounded-xl overflow-hidden border border-slate-100">
+            <div className="relative w-full aspect-[1/2] bg-white rounded-xl overflow-hidden border border-slate-100 group">
                 <div 
                     className="absolute inset-0 bg-no-repeat transition-all duration-300"
                     style={{ 
                         backgroundImage: `url('/images/diagnostics/human_anatomy_gray.png')`,
-                        backgroundPosition: isBack ? '95% 55%' : '5% 55%', // Calibrated centering
+                        backgroundPosition: isBack ? '98% 45%' : '2% 45%', // Centered figures
                         backgroundSize: '200% auto'
                     }}
                 />
-                <svg viewBox="0 0 100 200" className="absolute inset-0 w-full h-full z-10 bg-black/0">
+                <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full z-10 transition-transform duration-500 hover:scale-[1.02]">
                     <g className="cursor-pointer">
                         {zones.map(z => {
-                            // Symmetrical/Unified logic
                             const checkSelected = () => {
                                 if (z.id === "neck" || z.id === "neck_b") return selectedZones.includes("neck");
                                 if (z.id === "elbows_f" || z.id === "elbows_b") return selectedZones.includes("elbows");
@@ -96,7 +96,7 @@ export const InteractiveBodyMap: React.FC<Props> = ({ selectedZones = [], onTogg
                                     d={z.d}
                                     className={cn(
                                         "transition-all duration-300",
-                                        active ? "fill-[#D92D20] opacity-80" : "fill-transparent hover:fill-red-500/10"
+                                        active ? "fill-[#D92D20] opacity-80" : "fill-transparent hover:fill-red-500/20"
                                     )}
                                     onClick={(e) => {
                                         e.stopPropagation();
