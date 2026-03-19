@@ -195,12 +195,12 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
                                 </div>
                             </div>
-                            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 space-y-2">
-                                <div className="flex items-center gap-2 text-amber-800">
+                            <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50 space-y-2">
+                                <div className="flex items-center gap-2 text-muted-foreground">
                                     <Info className="h-4 w-4" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Совет администратору</span>
+                                    <span className="text-[10px] font-semibold uppercase tracking-wider">Совет администратору</span>
                                 </div>
-                                <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                                <p className="text-[11px] text-muted-foreground font-medium leading-relaxed">
                                     Не перебивайте. Слушайте внимательно. Ведите пациента мягко, без хаоса и допроса.
                                 </p>
                             </div>
@@ -282,7 +282,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                         {/* Additional questions (abbreviated for brevity in this step) */}
                         {/* They are similar to what was in DiagnosticMap we can omit some non-core ones if too long or keep them. Let's keep a few critical ones. */}
                         <div className="space-y-6 pt-4 border-t border-border/40">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                            <h3 className="text-sm font-semibold uppercase tracking-wider text-primary flex items-center gap-2">
                                 <LucideHistory className="h-4 w-4" /> Анамнез и доп. вопросы
                             </h3>
                             <div className="grid grid-cols-2 gap-8">

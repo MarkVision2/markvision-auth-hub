@@ -96,7 +96,7 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                 <div className="xl:col-span-1 space-y-8">
                     {/* Блок 1. Карта тела */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
                             <MapIcon className="h-4 w-4 text-primary" /> 1. Проблемные зоны
                         </h3>
                         <InteractiveBodyMap 
@@ -108,7 +108,7 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
 
                     {/* Блок 2. Пакет */}
                     <div className="space-y-4">
-                        <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                        <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
                             <Package className="h-4 w-4 text-primary" /> 2. Пакет лечения
                         </h3>
                         <div className="grid gap-3">
@@ -137,7 +137,7 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
 
                 {/* Right Column: Schedule */}
                 <div className="xl:col-span-2 space-y-6">
-                    <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
                         <CalendarDays className="h-4 w-4 text-primary" /> 3. Расписание визитов
                     </h3>
                     
@@ -157,11 +157,11 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                         <Table>
                             <TableHeader className="bg-secondary/20">
                                 <TableRow>
-                                    <TableHead className="w-12 text-center text-xs font-black uppercase tracking-widest">№</TableHead>
-                                    <TableHead className="text-xs font-black uppercase tracking-widest">Дата</TableHead>
-                                    <TableHead className="text-xs font-black uppercase tracking-widest">Время</TableHead>
-                                    <TableHead className="text-xs font-black uppercase tracking-widest">Процедура</TableHead>
-                                    <TableHead className="text-xs font-black uppercase tracking-widest">Каб.</TableHead>
+                                    <TableHead className="w-12 text-center text-xs font-semibold uppercase tracking-wider">№</TableHead>
+                                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Дата</TableHead>
+                                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Время</TableHead>
+                                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Процедура</TableHead>
+                                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Каб.</TableHead>
                                     <TableHead className="w-12"></TableHead>
                                 </TableRow>
                             </TableHeader>

@@ -174,7 +174,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
                             </tr>
                         </thead>
                         <tbody>
-                            {prescriptionData?.schedule?.map((row, i) => (
+                            {(prescriptionData?.schedule || []).map((row, i) => (
                                 <tr key={i}>
                                     <td className="border p-2 text-center text-gray-500">{i + 1}</td>
                                     <td className="border p-2">{row.date}</td>
