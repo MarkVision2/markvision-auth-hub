@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -109,8 +109,11 @@ export default function ClientDatabase() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchClients, active.id]);
 
-  const filtered = clients.filter(
-    (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
+  const filtered = useMemo(
+    () => clients.filter(
+      (c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
+    ),
+    [clients, search]
   );
 
   const handleExportCSV = () => {

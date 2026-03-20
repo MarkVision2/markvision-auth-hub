@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -87,6 +87,117 @@ function timeAgo(d: string | null) {
 function getInitials(name: string) {
   return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
 }
+
+interface LeadCardProps {
+  lead: Lead;
+  stage: typeof STAGES[number];
+  currentIdx: number;
+  isSuperadmin: boolean;
+  onCardClick: (lead: Lead) => void;
+  onMove: (leadId: string, status: string) => void;
+  onDelete: (leadId: string, leadName: string) => void;
+}
+
+const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin, onCardClick, onMove, onDelete }: LeadCardProps) {
+  const score = lead.ai_score ?? 0;
+  const badge = getScoreBadge(score);
+  const amount = Number(lead.amount) || 0;
+
+  return (
+    <div
+      className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-pointer border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
+    >
+      {/* Top row */}
+      <div className="flex items-start gap-2.5">
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
+            {getInitials(lead.name)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0" onClick={() => onCardClick(lead)}>
+          <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {lead.phone && (
+              <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
+                <Phone className="h-2.5 w-2.5" />{lead.phone}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span className="text-[10px] text-muted-foreground">{timeAgo(lead.created_at)}</span>
+          {isSuperadmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+              onClick={(e) => { e.stopPropagation(); onDelete(lead.id, lead.name); }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Tags row */}
+      <div className="flex items-center gap-1.5 mt-2.5 flex-wrap pl-6" onClick={() => onCardClick(lead)}>
+        {lead.source && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+            <Globe className="h-2.5 w-2.5" /> {lead.source}
+          </span>
+        )}
+        {lead.utm_campaign && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-[120px]">
+            {lead.utm_campaign}
+          </span>
+        )}
+      </div>
+
+      {/* Bottom row */}
+      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50 pl-6" onClick={() => onCardClick(lead)}>
+        <span className={`text-sm font-bold tabular-nums ${amount > 0 ? accentTextMap[stage.accent] : "text-muted-foreground"}`}>
+          {amount > 0 ? `${fmt(amount)} ₸` : "—"}
+        </span>
+        <div className="flex items-center gap-1.5">
+          {score > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.bg} ${badge.color}`}>
+                  {badge.emoji} {score}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">{badge.label} лид — {score}%</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* Quick move — shows on hover */}
+      <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 pl-6">
+        {currentIdx > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
+            onClick={(e) => { e.stopPropagation(); onMove(lead.id, STAGES[currentIdx - 1].key); }}
+          >
+            ← {STAGES[currentIdx - 1].label}
+          </Button>
+        )}
+        {currentIdx < STAGES.length - 1 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[STAGES[currentIdx + 1].accent]}`}
+            onClick={(e) => { e.stopPropagation(); onMove(lead.id, STAGES[currentIdx + 1].key); }}
+          >
+            {STAGES[currentIdx + 1].label} →
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export default function KanbanBoard() {
   const { isSuperadmin } = useRole();
@@ -242,6 +353,24 @@ export default function KanbanBoard() {
     return scored.length ? Math.round(scored.reduce((s, l) => s + (l.ai_score ?? 0), 0) / scored.length) : 0;
   }, [leads]);
 
+  const leadsByStatus = useMemo(() => {
+    const map: Record<string, Lead[]> = {};
+    for (const stage of STAGES) map[stage.key] = [];
+    for (const lead of leads) {
+      const key = lead.status || "Новая заявка";
+      (map[key] ?? map["Новая заявка"]).push(lead);
+    }
+    return map;
+  }, [leads]);
+
+  const amountByStatus = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const stage of STAGES) {
+      map[stage.key] = (leadsByStatus[stage.key] || []).reduce((s, l) => s + (Number(l.amount) || 0), 0);
+    }
+    return map;
+  }, [leadsByStatus]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -277,7 +406,7 @@ export default function KanbanBoard() {
         <div className="flex-1" />
         <div className="hidden lg:flex items-center gap-1">
           {STAGES.map(s => {
-            const count = leads.filter(l => (l.status || "Новая заявка") === s.key).length;
+            const count = (leadsByStatus[s.key] || []).length;
             const pct = leads.length ? (count / leads.length) * 100 : 0;
             return (
               <Tooltip key={s.key}>
@@ -298,8 +427,8 @@ export default function KanbanBoard() {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 min-h-0 flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
           {STAGES.map((stage) => {
-            const stageLeads = leads.filter(l => (l.status || "Новая заявка") === stage.key);
-            const stageAmount = stageLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+            const stageLeads = leadsByStatus[stage.key] || [];
+            const stageAmount = amountByStatus[stage.key] || 0;
             const collapsed = collapsedCols.has(stage.key);
             const Icon = stage.icon;
 
@@ -361,11 +490,7 @@ export default function KanbanBoard() {
                           }`}
                       >
                         {stageLeads.map((lead, index) => {
-                          const score = lead.ai_score ?? 0;
-                          const badge = getScoreBadge(score);
-                          const amount = Number(lead.amount) || 0;
                           const currentIdx = STAGES.findIndex(s => s.key === stage.key);
-
                           return (
                             <Draggable key={lead.id} draggableId={lead.id} index={index}>
                               {(dragProvided, dragSnapshot) => (
@@ -373,99 +498,17 @@ export default function KanbanBoard() {
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing ${dragSnapshot.isDragging
-                                    ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50"
-                                    : "border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200"
-                                    }`}
+                                  className={dragSnapshot.isDragging ? "border-primary shadow-lg shadow-primary/10 rotate-[1.5deg] scale-[1.02] z-50 rounded-xl" : ""}
                                 >
-                                  {/* Top row */}
-                                  <div className="flex items-start gap-2.5">
-                                    <Avatar className="h-8 w-8 shrink-0">
-                                      <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
-                                        {getInitials(lead.name)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0" onClick={() => handleCardClick(lead)}>
-                                      <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
-                                      <div className="flex items-center gap-1.5 mt-0.5">
-                                        {lead.phone && (
-                                          <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-                                            <Phone className="h-2.5 w-2.5" />{lead.phone}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                      <span className="text-[10px] text-muted-foreground">{timeAgo(lead.created_at)}</span>
-                                      {isSuperadmin && (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteLead(lead.id, lead.name); }}
-                                        >
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Tags row */}
-                                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap pl-6" onClick={() => handleCardClick(lead)}>
-                                    {lead.source && (
-                                      <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-                                        <Globe className="h-2.5 w-2.5" /> {lead.source}
-                                      </span>
-                                    )}
-                                    {lead.utm_campaign && (
-                                      <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-[120px]">
-                                        {lead.utm_campaign}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Bottom row */}
-                                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50 pl-6" onClick={() => handleCardClick(lead)}>
-                                    <span className={`text-sm font-bold tabular-nums ${amount > 0 ? accentTextMap[stage.accent] : "text-muted-foreground"}`}>
-                                      {amount > 0 ? `${fmt(amount)} ₸` : "—"}
-                                    </span>
-                                    <div className="flex items-center gap-1.5">
-                                      {score > 0 && (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.bg} ${badge.color}`}>
-                                              {badge.emoji} {score}
-                                            </span>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="top" className="text-xs">{badge.label} лид — {score}%</TooltipContent>
-                                        </Tooltip>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Quick move — shows on hover */}
-                                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 pl-6">
-                                    {currentIdx > 0 && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
-                                        onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx - 1].key); }}
-                                      >
-                                        ← {STAGES[currentIdx - 1].label}
-                                      </Button>
-                                    )}
-                                    {currentIdx < STAGES.length - 1 && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[STAGES[currentIdx + 1].accent]}`}
-                                        onClick={(e) => { e.stopPropagation(); handleMoveStage(lead.id, STAGES[currentIdx + 1].key); }}
-                                      >
-                                        {STAGES[currentIdx + 1].label} →
-                                      </Button>
-                                    )}
-                                  </div>
+                                  <LeadCard
+                                    lead={lead}
+                                    stage={stage}
+                                    currentIdx={currentIdx}
+                                    isSuperadmin={isSuperadmin}
+                                    onCardClick={handleCardClick}
+                                    onMove={handleMoveStage}
+                                    onDelete={handleDeleteLead}
+                                  />
                                 </div>
                               )}
                             </Draggable>

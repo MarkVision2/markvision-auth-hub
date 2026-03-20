@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -257,7 +257,7 @@ export function CompetitorAnalysis() {
     }, [toast]);
 
     // ─── Filter / Sort competitors ───
-    const filteredCompetitors = competitors
+    const filteredCompetitors = useMemo(() => competitors
         .filter((c) => {
             const q = compSearch.toLowerCase();
             const matchSearch = !q || c.username.toLowerCase().includes(q) || (c.display_name || "").toLowerCase().includes(q);
@@ -268,7 +268,7 @@ export function CompetitorAnalysis() {
             if (compSort === "followers_desc") return parseInt(b.followers || "0") - parseInt(a.followers || "0");
             if (compSort === "followers_asc") return parseInt(a.followers || "0") - parseInt(b.followers || "0");
             return new Date(b.created_at || "").getTime() - new Date(a.created_at || "").getTime();
-        });
+        }), [competitors, compSearch, compTrackFilter, compSort]);
 
     // ─── Handlers ───
     const handleAddCompetitor = useCallback(async () => {

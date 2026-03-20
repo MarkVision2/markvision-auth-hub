@@ -139,7 +139,11 @@ export default function ChatsView() {
       if (leadsData.length > 0) {
         const leadIds = leadsData.map(l => l.id);
         const { data: allMsgs } = await (supabase as any)
-          .from("crm_messages").select("*").in("lead_id", leadIds).order("created_at", { ascending: false });
+          .from("crm_messages")
+          .select("id, lead_id, sender_type, body, read, created_at, direction, channel")
+          .in("lead_id", leadIds)
+          .order("created_at", { ascending: false })
+          .limit(500);
 
         if (allMsgs) {
           const lastMap: Record<string, CrmMessage> = {};

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -104,19 +104,20 @@ function KpiCard({ icon: Icon, label, value, loading }: {
 /* ── Promo Analytics ── */
 function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: boolean }) {
   // Aggregate promo code usage from tasks
-  const promoMap = new Map<string, { total: number; sent: number; converted: number; pending: number }>();
-  tasks.forEach(t => {
-    if (!t.promo_code) return;
-    const code = t.promo_code;
-    const existing = promoMap.get(code) || { total: 0, sent: 0, converted: 0, pending: 0 };
-    existing.total++;
-    if (t.status === "sent") existing.sent++;
-    else if (t.status === "converted") existing.converted++;
-    else existing.pending++;
-    promoMap.set(code, existing);
-  });
-  const promos = Array.from(promoMap.entries())
-    .sort((a, b) => b[1].total - a[1].total);
+  const promos = useMemo(() => {
+    const promoMap = new Map<string, { total: number; sent: number; converted: number; pending: number }>();
+    tasks.forEach(t => {
+      if (!t.promo_code) return;
+      const code = t.promo_code;
+      const existing = promoMap.get(code) || { total: 0, sent: 0, converted: 0, pending: 0 };
+      existing.total++;
+      if (t.status === "sent") existing.sent++;
+      else if (t.status === "converted") existing.converted++;
+      else existing.pending++;
+      promoMap.set(code, existing);
+    });
+    return Array.from(promoMap.entries()).sort((a, b) => b[1].total - a[1].total);
+  }, [tasks]);
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">

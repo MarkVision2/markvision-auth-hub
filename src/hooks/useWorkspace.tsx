@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -67,7 +67,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("activeProjectId", activeId);
   }, [activeId]);
 
-  const createProject = async (name: string) => {
+  const createProject = useCallback(async (name: string) => {
     try {
       const { data, error } = await supabase
         .from("projects")
@@ -101,19 +101,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.error("Failed to create project:", err);
       return null;
     }
-  };
+  }, [user]);
 
-  const workspaces = [HQ, ...projects];
-  const active = workspaces.find(w => w.id === activeId) || HQ;
+  const workspaces = useMemo(() => [HQ, ...projects], [projects]);
+  const active = useMemo(() => workspaces.find(w => w.id === activeId) || HQ, [workspaces, activeId]);
+  const contextValue = useMemo(() => ({
+    workspaces,
+    active,
+    setActiveId,
+    createProject,
+    isAgency: active.type === "agency",
+  }), [workspaces, active, createProject]);
 
   return (
-    <WorkspaceContext.Provider value={{
-      workspaces,
-      active,
-      setActiveId,
-      createProject,
-      isAgency: active.type === "agency"
-    }}>
+    <WorkspaceContext.Provider value={contextValue}>
       {children}
     </WorkspaceContext.Provider>
   );

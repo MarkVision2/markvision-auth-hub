@@ -260,9 +260,9 @@ export default function AiManagerPage() {
         }
 
         // Sort descending by time
-        logs.sort((a, b) => b.timestamp - a.timestamp);
+        const sortedLogs = [...logs].sort((a, b) => b.timestamp - a.timestamp);
 
-        setSystemLogs(logs.slice(0, 30)); // Keep top 30
+        setSystemLogs(sortedLogs.slice(0, 30)); // Keep top 30
 
 
         // --- REPORT DATA FETCHING ---

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -157,44 +157,41 @@ export function useAnalyticsData() {
     fetchAll();
   }, [active.id]);
 
-  // Use daily_data as primary source, fall back to analytics_channels
-  const hasDaily = dailyAgg.spend > 0 || dailyAgg.leads > 0;
-  const totalSpend = hasDaily ? dailyAgg.spend : channels.reduce((s, c) => s + c.spend, 0);
-  const totalRevenue = hasDaily ? dailyAgg.revenue : channels.reduce((s, c) => s + c.revenue, 0);
-  const totalLeads = hasDaily ? dailyAgg.leads : channels.reduce((s, c) => s + c.leads, 0);
-  const totalClicks = hasDaily ? dailyAgg.clicks : channels.reduce((s, c) => s + c.clicks, 0);
-  const totalVisits = hasDaily ? dailyAgg.visits : channels.reduce((s, c) => s + c.visits, 0);
-  const totalSales = hasDaily ? dailyAgg.sales : channels.reduce((s, c) => s + c.sales, 0);
-  const totalImpressions = hasDaily ? dailyAgg.impressions : 0;
-  const globalRomi = totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0;
-  const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
-  const cpv = totalVisits > 0 ? totalSpend / totalVisits : 0;
-  const cac = totalSales > 0 ? totalSpend / totalSales : 0;
-
-  const topChannel = channels.length > 0
-    ? channels.reduce((best, c) => {
-      const r = c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : -Infinity;
-      const bestR = best.spend > 0 ? ((best.revenue - best.spend) / best.spend) * 100 : -Infinity;
-      return r > bestR ? c : best;
-    }, channels[0])
-    : null;
-
-  const funnelData = [
-    { stage: "Показы", value: totalImpressions, label: "" },
-    { stage: "Клики", value: totalClicks, label: "" },
-    { stage: "Лиды", value: totalLeads, label: "" },
-    { stage: "Визиты", value: totalVisits, label: "" },
-    { stage: "Продажи", value: totalSales, label: "" },
-  ].map((d) => ({ ...d, label: new Intl.NumberFormat("ru-RU").format(Math.round(d.value)) }));
-
-  const channelChartData = channels.map((ch) => ({
-    name: ch.name, spend: ch.spend, revenue: ch.revenue, color: ch.color,
-  }));
+  const derived = useMemo(() => {
+    const hasDaily = dailyAgg.spend > 0 || dailyAgg.leads > 0;
+    const totalSpend = hasDaily ? dailyAgg.spend : channels.reduce((s, c) => s + c.spend, 0);
+    const totalRevenue = hasDaily ? dailyAgg.revenue : channels.reduce((s, c) => s + c.revenue, 0);
+    const totalLeads = hasDaily ? dailyAgg.leads : channels.reduce((s, c) => s + c.leads, 0);
+    const totalClicks = hasDaily ? dailyAgg.clicks : channels.reduce((s, c) => s + c.clicks, 0);
+    const totalVisits = hasDaily ? dailyAgg.visits : channels.reduce((s, c) => s + c.visits, 0);
+    const totalSales = hasDaily ? dailyAgg.sales : channels.reduce((s, c) => s + c.sales, 0);
+    const totalImpressions = hasDaily ? dailyAgg.impressions : 0;
+    const globalRomi = totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0;
+    const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+    const cpv = totalVisits > 0 ? totalSpend / totalVisits : 0;
+    const cac = totalSales > 0 ? totalSpend / totalSales : 0;
+    const topChannel = channels.length > 0
+      ? channels.reduce((best, c) => {
+          const r = c.spend > 0 ? ((c.revenue - c.spend) / c.spend) * 100 : -Infinity;
+          const bestR = best.spend > 0 ? ((best.revenue - best.spend) / best.spend) * 100 : -Infinity;
+          return r > bestR ? c : best;
+        }, channels[0])
+      : null;
+    const funnelData = [
+      { stage: "Показы", value: totalImpressions, label: "" },
+      { stage: "Клики", value: totalClicks, label: "" },
+      { stage: "Лиды", value: totalLeads, label: "" },
+      { stage: "Визиты", value: totalVisits, label: "" },
+      { stage: "Продажи", value: totalSales, label: "" },
+    ].map((d) => ({ ...d, label: new Intl.NumberFormat("ru-RU").format(Math.round(d.value)) }));
+    const channelChartData = channels.map((ch) => ({
+      name: ch.name, spend: ch.spend, revenue: ch.revenue, color: ch.color,
+    }));
+    return { totalSpend, totalRevenue, totalSales, totalLeads, totalClicks, totalVisits, totalImpressions, globalRomi, cpl, cpv, cac, topChannel, funnelData, channelChartData };
+  }, [channels, dailyAgg]);
 
   return {
-    channels, organicPosts, loading,
-    totalSpend, totalRevenue, totalSales, totalLeads, totalClicks, totalVisits, totalImpressions,
-    globalRomi, cpl, cpv, cac,
-    topChannel, funnelData, channelChartData, totalLeadsFromCrm,
+    channels, organicPosts, loading, totalLeadsFromCrm,
+    ...derived,
   };
 }
