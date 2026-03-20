@@ -15,11 +15,28 @@ import {
     Copy,
     RotateCcw,
     Send,
+    Video,
+    Users,
+    Type,
+    Zap,
+    MessageSquare,
+    Target,
+    ArrowRight,
+    Play,
+    Link
 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN || "";
-const SPEECHMATICS_KEY = import.meta.env.VITE_SPEECHMATICS_KEY || ""; // Добавь ключ Speechmatics в .env
+const SPEECHMATICS_KEY = import.meta.env.VITE_SPEECHMATICS_KEY || ""; 
 const AIRTABLE_BASE = "appspFv4OyALMTk8K";
 const CONTENT_TABLE = "tblSppKHHKEDnyIoN";
 const BOOST_WEBHOOK_CREATE = import.meta.env.VITE_BOOST_WEBHOOK_CREATE || "";
@@ -40,39 +57,46 @@ interface ScenarioResult {
     [key: string]: string | undefined;
 }
 
-// ─── Reusable native select ──────────────────────────────────────────────────
-function NativeSelect({ label, value, onChange, options }: {
-    label: string; value: string; onChange: (v: string) => void; options: string[];
+// ─── Custom select ──────────────────────────────────────────────────────────
+function ModernSelect({ label, value, onChange, options, icon: Icon }: {
+    label: string; value: string; onChange: (v: string) => void; options: string[]; icon?: any;
 }) {
     return (
-        <div className="space-y-1.5">
-            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</Label>
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg bg-secondary/30 border border-border text-sm text-foreground outline-none focus:border-primary transition-colors"
-            >
-                {options.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+        <div className="space-y-2.5">
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                {Icon && <Icon className="h-3 w-3 opacity-40" />}
+                {label}
+            </Label>
+            <Select value={value} onValueChange={onChange}>
+                <SelectTrigger className="h-12 bg-background/50 border-border/40 rounded-2xl font-bold text-sm focus:ring-primary/20">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-border/40">
+                    {options.map((o) => <SelectItem key={o} value={o} className="rounded-xl font-medium">{o}</SelectItem>)}
+                </SelectContent>
+            </Select>
         </div>
     );
 }
 
 // ─── Result block ────────────────────────────────────────────────────────────
-function ResultBlock({ title, content }: { title: string; content?: string }) {
+function ResultBlock({ title, content, icon: Icon }: { title: string; content?: string; icon?: any }) {
     if (!content) return null;
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{title}</span>
+        <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                    {Icon && <Icon className="h-4 w-4 text-primary" />}
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{title}</span>
+                </div>
                 <button
                     onClick={() => { navigator.clipboard.writeText(content); toast({ title: "📋 Скопировано" }); }}
-                    className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
                 >
                     <Copy className="h-3 w-3" /> Копировать
                 </button>
             </div>
-            <div className="p-4 bg-secondary/20 border border-border rounded-xl text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar">
+            <div className="p-6 bg-background/40 border border-border/40 rounded-[2rem] text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto custom-scrollbar font-medium">
                 {content}
             </div>
         </div>
@@ -304,122 +328,166 @@ export default function ScenarioCreator() {
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6 max-w-4xl w-full pb-10">
+        <div className="space-y-10 max-w-4xl w-full pb-20">
             {/* Mode Selection */}
-            <div className="bg-secondary/20 p-1.5 rounded-2xl border border-border flex gap-2">
-                <button
-                    onClick={() => setCreationMode("link")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${creationMode === "link" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                    <Send className="h-3.5 w-3.5" /> Анализ по ссылке
-                </button>
-                <button
-                    onClick={() => setCreationMode("topic")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${creationMode === "topic" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                    <Sparkles className="h-3.5 w-3.5" /> Творческая тема
-                </button>
+            <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Выберите способ создания</Label>
+                <div className="flex bg-background/50 rounded-2xl p-1.5 border border-border/40 shadow-inner">
+                    <button
+                        onClick={() => setCreationMode("link")}
+                        className={cn(
+                            "flex-1 flex items-center justify-center gap-3 py-3.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                            creationMode === "link" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <Send className="h-4 w-4" /> Анализ по ссылке
+                    </button>
+                    <button
+                        onClick={() => setCreationMode("topic")}
+                        className={cn(
+                            "flex-1 flex items-center justify-center gap-3 py-3.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                            creationMode === "topic" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <Sparkles className="h-4 w-4" /> Творческая тема
+                    </button>
+                </div>
             </div>
 
-            <div className="space-y-5">
-                {creationMode === "link" ? (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ссылка на Reels / Shorts / TikTok</Label>
-                        <Input
-                            value={linkUrl}
-                            onChange={(e) => setLinkUrl(e.target.value)}
-                            placeholder="Вставь ссылку для анализа..."
-                            className="h-12 bg-secondary/30 border-border text-sm rounded-xl focus:ring-2 focus:ring-primary/20 transition-all"
-                        />
-                         <p className="text-[10px] text-muted-foreground/60 italic px-1">Система проанализирует видео и подготовит сценарий на его основе</p>
-                    </motion.div>
-                ) : (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Тема / Идея (текст или голос)</Label>
-                        <div className="relative">
-                            <Textarea
-                                value={topic}
-                                onChange={(e) => setTopic(e.target.value)}
-                                placeholder="О чём будет ролик? Опиши идею..."
-                                className="min-h-[140px] bg-secondary/30 border-border text-sm resize-none pr-14 rounded-2xl focus:ring-2 focus:ring-primary/20"
-                            />
-                            <button
-                                onClick={isRecording ? stopRecording : startRecording}
-                                className={`absolute bottom-4 right-4 h-12 w-12 rounded-full flex items-center justify-center transition-all ${isRecording
-                                    ? "bg-destructive shadow-[0_0_15px_hsl(var(--destructive)/0.6)] animate-pulse scale-110"
-                                    : "bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary"
-                                    }`}
-                            >
-                                {isRecording ? <MicOff className="h-5 w-5 text-white" /> : <Mic className="h-5 w-5" />}
-                            </button>
-                        </div>
-
-                        {audioUrl && (
-                            <div className="flex items-center gap-3 p-3 bg-secondary/10 border border-border rounded-xl">
-                                <audio src={audioUrl} controls className="h-8 flex-1" />
-                                <button onClick={clearAudio} className="text-muted-foreground hover:text-destructive transition-colors p-2">
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+            <div className="space-y-8">
+                <AnimatePresence mode="wait">
+                    {creationMode === "link" ? (
+                        <motion.div 
+                            key="link-mode"
+                            initial={{ opacity: 0, y: 10 }} 
+                            animate={{ opacity: 1, y: 0 }} 
+                            exit={{ opacity: 0, y: -10 }}
+                            className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6"
+                        >
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Ссылка на Reels / Shorts / TikTok</Label>
+                            <div className="relative group">
+                                <Input
+                                    value={linkUrl}
+                                    onChange={(e) => setLinkUrl(e.target.value)}
+                                    placeholder="Вставьте ссылку для анализа..."
+                                    className="h-14 bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20"
+                                />
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-focus-within:scale-110 transition-transform">
+                                    <Link className="h-4 w-4" />
+                                </div>
                             </div>
-                        )}
-                    </motion.div>
-                )}
+                            <p className="text-[10px] font-medium text-muted-foreground/40 italic px-2">AI разложит видео на сценарий, проанализирует структуру и предложит адаптацию под вашу нишу.</p>
+                        </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="topic-mode"
+                            initial={{ opacity: 0, y: 10 }} 
+                            animate={{ opacity: 1, y: 0 }} 
+                            exit={{ opacity: 0, y: -10 }}
+                            className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6"
+                        >
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Тема / Идея (текст или голос)</Label>
+                            <div className="relative">
+                                <Textarea
+                                    value={topic}
+                                    onChange={(e) => setTopic(e.target.value)}
+                                    placeholder="О чём будет ролик? Просто опишите идею своими словами..."
+                                    className="min-h-[160px] bg-background/50 border-border/40 text-sm font-bold rounded-[2rem] p-6 focus-visible:ring-primary/20 resize-none pr-20 shadow-inner"
+                                />
+                                <div className="absolute bottom-6 right-6 flex flex-col gap-3">
+                                    <button
+                                        onClick={isRecording ? stopRecording : startRecording}
+                                        className={cn(
+                                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg",
+                                            isRecording
+                                                ? "bg-destructive text-white shadow-destructive/40 animate-pulse scale-110"
+                                                : "bg-primary text-white shadow-primary/20 hover:scale-105 active:scale-95"
+                                        )}
+                                    >
+                                        {isRecording ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                                    </button>
+                                    {audioUrl && (
+                                        <button 
+                                            onClick={clearAudio}
+                                            className="h-10 w-10 rounded-xl bg-secondary border border-border/40 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {audioUrl && (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="flex items-center gap-4 p-4 bg-background/60 border border-border/40 rounded-2xl shadow-sm"
+                                >
+                                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                        <Play className="h-4 w-4 fill-primary" />
+                                    </div>
+                                    <audio src={audioUrl} controls className="h-8 flex-1 opacity-80" />
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 rounded-lg">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Голос записан</span>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* FORM GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <NativeSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} />
-                    <NativeSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} />
-                </div>
-
-                {/* ADVANCED SETTINGS COLLAPSIBLE (optional or just show) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <NativeSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} />
-                    <NativeSelect label="Съёмка или ИИ?" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <NativeSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} />
-                    <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Триггер-слово</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                    <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
+                    <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
+                    <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
+                    <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
+                    <ModernSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
+                    <div className="space-y-2.5">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                            <MessageSquare className="h-3 w-3 opacity-40" />
+                            Триггер-слово
+                        </Label>
                         <Input
                             value={trigger}
                             onChange={(e) => setTrigger(e.target.value)}
                             placeholder="Например: ГАЙД"
-                            className="h-10 bg-secondary/30 border-border text-sm rounded-lg"
+                            className="h-12 bg-background/50 border-border/40 rounded-2xl font-bold text-sm focus-visible:ring-primary/20"
                         />
                     </div>
                 </div>
 
-                <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Доп. пожелания / Референсы</Label>
+                <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Доп. пожелания / Референсы</Label>
                     <Textarea
                         value={refs}
                         onChange={(e) => setRefs(e.target.value)}
-                        placeholder="Особые пожелания или ссылки на примеры..."
-                        className="min-h-[80px] bg-secondary/30 border-border text-sm resize-none rounded-xl"
+                        placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
+                        className="min-h-[100px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl p-6 focus-visible:ring-primary/20 resize-none shadow-inner"
                     />
                 </div>
             </div>
 
             {/* CTA BUTTONS */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="flex-1 h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-base gap-3 rounded-2xl shadow-[0_8px_30px_rgb(var(--primary)/0.3)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    className="flex-1 h-16 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-sm gap-3 rounded-[2rem] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.01] active:scale-95 border-b-4 border-primary-foreground/20 active:border-b-0"
                 >
                     {isGenerating
-                        ? <><Loader2 className="h-5 w-5 animate-spin" /> Анализирую…</>
-                        : <><Sparkles className="h-5 w-5" /> Создать сценарий</>
+                        ? <><Loader2 className="h-6 w-6 animate-spin" /> Анализирую…</>
+                        : <><Sparkles className="h-6 w-6" /> Создать сценарий</>
                     }
                 </Button>
                 <Button
                     variant="outline"
                     onClick={handleReset}
                     disabled={isGenerating}
-                    className="h-14 px-8 border-border text-muted-foreground hover:text-foreground gap-2 rounded-2xl"
+                    className="h-16 px-10 border-border/60 text-muted-foreground hover:text-foreground gap-2 rounded-[2rem] hover:bg-accent transition-all active:scale-95"
                 >
-                    <RotateCcw className="h-4 w-4" />
+                    <RotateCcw className="h-5 w-5" />
                 </Button>
             </div>
 
@@ -430,36 +498,42 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-10 text-center space-y-6 shadow-2xl relative overflow-hidden"
+                        className="rounded-[3rem] border border-border/40 bg-card/50 backdrop-blur-2xl p-16 text-center space-y-10 shadow-2xl relative overflow-hidden"
                     >
-                         <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 overflow-hidden">
+                         <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                             <motion.div 
-                                className="h-full bg-primary" 
-                                initial={{ x: "-100%" }}
-                                animate={{ x: "0%" }}
-                                transition={{ duration: 10, ease: "linear" }}
-                            />
-                        </div>
-
-                        <div className="relative h-20 w-20 mx-auto">
-                            <div className="absolute inset-0 rounded-full border-4 border-primary/5" />
-                            <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
-                            <div className="absolute inset-0 m-auto h-10 w-10 flex items-center justify-center bg-primary/10 rounded-full">
-                                <Sparkles className="h-6 w-6 text-primary" />
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                             <p className="text-lg font-bold text-foreground">{loaderText}</p>
-                             <p className="text-sm text-muted-foreground/60 max-w-sm mx-auto">AI обрабатывает запрос. Обычно это занимает от 30 до 90 секунд.</p>
-                        </div>
-                        
-                        <div className="w-full h-2 bg-secondary/30 rounded-full overflow-hidden max-w-md mx-auto">
-                            <motion.div
-                                className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.5)]"
+                                className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
+                                initial={{ width: "0%" }}
                                 animate={{ width: `${loaderProgress}%` }}
                                 transition={{ duration: 0.5 }}
                             />
+                        </div>
+
+                        <div className="relative h-24 w-24 mx-auto">
+                            <div className="absolute inset-0 rounded-[2rem] border-4 border-primary/5" />
+                            <div className="absolute inset-0 rounded-[2rem] border-4 border-t-primary animate-spin" />
+                            <div className="absolute inset-0 m-auto h-12 w-12 flex items-center justify-center bg-primary/10 rounded-2xl">
+                                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                             <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">{loaderText}</h3>
+                             <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto leading-relaxed">Наш AI мозг формирует структуру ролика и пишет текст. Это займет около минуты.</p>
+                        </div>
+                        
+                        <div className="space-y-4 max-w-md mx-auto">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary/60 px-1">
+                                <span>Прогресс</span>
+                                <span>{loaderProgress}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-secondary/30 rounded-full overflow-hidden">
+                                <motion.div
+                                    className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.5)]"
+                                    animate={{ width: `${loaderProgress}%` }}
+                                    transition={{ duration: 0.5 }}
+                                />
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -469,50 +543,54 @@ export default function ScenarioCreator() {
             <AnimatePresence>
                 {result && !isGenerating && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-3xl border border-primary/30 bg-card/60 backdrop-blur-md overflow-hidden shadow-2xl"
+                        className="rounded-[3rem] border border-primary/30 bg-card/50 backdrop-blur-xl overflow-hidden shadow-2xl"
                     >
                         {/* Result header */}
-                        <div className="flex items-center justify-between px-8 py-5 border-b border-border bg-primary/5">
-                            <div className="flex items-center gap-2.5">
-                                <div className="h-8 w-8 rounded-full bg-[hsl(var(--status-good))]/10 flex items-center justify-center">
-                                    <CheckCircle2 className="h-5 w-5 text-[hsl(var(--status-good))]" />
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-10 py-8 border-b border-border/40 bg-primary/5 gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
+                                    <CheckCircle2 className="h-7 w-7 text-green-500" />
                                 </div>
-                                <span className="text-base font-bold text-foreground">Сценарий готов!</span>
+                                <div>
+                                    <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Сценарий готов!</h3>
+                                    <p className="text-xs font-medium text-muted-foreground">Используйте текст ниже для съемки и оформления.</p>
+                                </div>
                             </div>
                             <Button
                                 size="sm"
                                 onClick={handleReset}
                                 variant="outline"
-                                className="h-9 px-4 text-xs border-border/60 hover:bg-primary/5 rounded-xl gap-2 font-bold"
+                                className="h-11 px-6 text-xs border-border/60 hover:bg-accent rounded-xl gap-2 font-black uppercase tracking-widest"
                             >
-                                <RotateCcw className="h-3.5 w-3.5" /> Новый
+                                <RotateCcw className="h-4 w-4" /> Новый
                             </Button>
                         </div>
 
                         {/* Result blocks */}
-                        <div className="p-8 space-y-8">
-                            <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"] || result.teleprompter} />
-                            <ResultBlock title="Описание для Instagram" content={result["Текст Описание"] || result.description} />
-                            <ResultBlock title="Полный сценарий" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} />
+                        <div className="p-10 space-y-10">
+                            <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"] || result.teleprompter} icon={MessageSquare} />
+                            <ResultBlock title="Описание для Instagram" content={result["Текст Описание"] || result.description} icon={Type} />
+                            <ResultBlock title="Полный сценарий (AI)" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} icon={Sparkles} />
 
                             {/* Copy all */}
-                            <Button
-                                onClick={() => {
-                                    const all = [
-                                        (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
-                                        (result["Текст Описание"] || result.description) && `ОПИСАНИЕ:\n${result["Текст Описание"] || result.description}`,
-                                        (result["ТЕКСТ СЦЕНАРИИ"] || result.scenario) && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"] || result.scenario}`,
-                                    ].filter(Boolean).join("\n\n---\n\n");
-                                    navigator.clipboard.writeText(all);
-                                    toast({ title: "📋 Всё скопировано!" });
-                                }}
-                                variant="outline"
-                                className="w-full h-14 border-primary/20 hover:bg-primary/5 bg-primary/5 text-primary rounded-2xl gap-3 text-sm font-bold shadow-sm"
-                            >
-                                <Copy className="h-4 w-4" /> Скопировать всё в буфер
-                            </Button>
+                            <div className="pt-4">
+                                <Button
+                                    onClick={() => {
+                                        const all = [
+                                            (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
+                                            (result["Текст Описание"] || result.description) && `ОПИСАНИЕ:\n${result["Текст Описание"] || result.description}`,
+                                            (result["ТЕКСТ СЦЕНАРИИ"] || result.scenario) && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"] || result.scenario}`,
+                                        ].filter(Boolean).join("\n\n---\n\n");
+                                        navigator.clipboard.writeText(all);
+                                        toast({ title: "📋 Всё скопировано!" });
+                                    }}
+                                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-[2rem] gap-3 text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1 transition-all"
+                                >
+                                    <Copy className="h-5 w-5" /> Копировать всё в буфер
+                                </Button>
+                            </div>
                         </div>
                     </motion.div>
                 )}

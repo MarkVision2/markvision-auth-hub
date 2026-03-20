@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -27,7 +29,13 @@ import {
   Sparkles,
   Send,
   Clock,
-  Trash2
+  Trash2,
+  Layers,
+  Zap,
+  Layout,
+  Smartphone,
+  Plus,
+  Play
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +45,7 @@ import { format as dateFmt } from "date-fns";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
+import { cn } from "@/lib/utils";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
@@ -315,50 +324,75 @@ export default function ContentFactory() {
   if (task && task.status === "completed" && task.result_urls && task.result_urls.length > 0) {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
-        <div className="mx-auto max-w-4xl py-4">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
-          <p className="text-sm text-muted-foreground mb-8">Результат генерации</p>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-6 w-6 text-[hsl(var(--status-good))]" />
-                <h2 className="text-lg font-semibold text-foreground">Генерация завершена!</h2>
-              </div>
-              <Button onClick={handleReset} variant="outline" size="sm" className="gap-1.5 border-border">
-                <RotateCcw className="h-3.5 w-3.5" /> Назад
-              </Button>
+        <div className="mx-auto max-w-5xl py-8 px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                <CheckCircle2 className="h-8 w-8 text-primary" />
+                Контент готов!
+              </h1>
+              <p className="text-muted-foreground font-medium mt-1">Результат генерации AI системы</p>
             </div>
+            <Button onClick={handleReset} variant="outline" className="gap-2 border-border/60 rounded-2xl h-11 px-6 font-bold shadow-sm">
+              <RotateCcw className="h-4 w-4" /> Назад к созданию
+            </Button>
+          </div>
 
-            {task.content_type === "video" ? (
-              <div className="space-y-4">
-                {task.result_urls.map((url, i) => (
-                  <div key={i} className="rounded-lg overflow-hidden border border-border bg-secondary/20 max-w-sm mx-auto" style={{ aspectRatio: "9/16" }}>
-                    <video src={url} controls className="w-full h-full object-cover" />
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-[2.5rem] border border-border/40 bg-card/50 backdrop-blur-xl p-10 shadow-2xl overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-12 items-start">
+              <div className="space-y-8">
+                {task.content_type === "video" ? (
+                  <div className="space-y-4">
+                    {task.result_urls.map((url, i) => (
+                      <div key={i} className="rounded-[2rem] overflow-hidden border border-border/40 bg-secondary/20 shadow-xl max-w-sm mx-auto group relative aspect-[9/16]">
+                        <video src={url} controls className="w-full h-full object-cover" />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory custom-scrollbar">
+                    {task.result_urls.map((url, i) => (
+                      <motion.div key={i} className="flex-shrink-0 snap-center rounded-[2rem] overflow-hidden border border-border/40 shadow-xl bg-secondary/10">
+                        <img src={url} alt={`Слайд ${i + 1}`} className="max-h-[500px] w-auto object-contain" />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-                {task.result_urls.map((url, i) => (
-                  <motion.div key={i} className="flex-shrink-0 snap-center">
-                    <img src={url} alt={`Слайд ${i + 1}`} className="rounded-lg border border-border max-h-[400px] object-contain" />
-                  </motion.div>
-                ))}
-              </div>
-            )}
 
-            <div className="flex gap-3 pt-2">
-              <Button onClick={handleReset} variant="outline" className="gap-2 border-border">
-                <RotateCcw className="h-4 w-4" /> Создать ещё
-              </Button>
-              {task.result_urls.map((url, i) => (
-                <a key={i} href={url} target="_blank" rel="noreferrer">
-                  <Button className="gap-2 bg-[hsl(var(--status-good))] hover:bg-[hsl(var(--status-good))]/90 text-white">
-                    <Download className="h-4 w-4" /> Скачать {task.result_urls!.length > 1 ? `(${i + 1})` : ""}
-                  </Button>
-                </a>
-              ))}
+              <div className="space-y-6 pt-4">
+                 <div className="p-6 rounded-3xl bg-secondary/30 border border-border/40 space-y-4">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+                       <Zap className="h-4 w-4 text-primary" /> Действия
+                    </h3>
+                    <div className="grid grid-cols-1 gap-3">
+                       {task.result_urls.map((url, i) => (
+                         <a key={i} href={url} target="_blank" rel="noreferrer" className="w-full">
+                           <Button className="w-full gap-2.5 h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg shadow-primary/20">
+                             <Download className="h-5 w-5" /> Скачать {task.result_urls!.length > 1 ? `(Слайд ${i + 1})` : "Контент"}
+                           </Button>
+                         </a>
+                       ))}
+                       <Button onClick={handleReset} variant="outline" className="w-full gap-2.5 h-12 border-border/60 hover:bg-accent rounded-2xl font-bold">
+                         <RotateCcw className="h-5 w-5" /> Создать новый
+                       </Button>
+                    </div>
+                 </div>
+
+                 <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-3">
+                    <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Информация</p>
+                    <div className="flex items-center justify-between text-sm">
+                       <span className="text-muted-foreground">Тип:</span>
+                       <span className="font-bold text-foreground capitalize">{task.content_type}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                       <span className="text-muted-foreground">Дата:</span>
+                       <span className="font-bold text-foreground">{task.created_at ? dateFmt(new Date(task.created_at), "dd.MM.yyyy") : "—"}</span>
+                    </div>
+                 </div>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -370,27 +404,56 @@ export default function ContentFactory() {
   if (task && (task.status === "pending" || task.status === "processing")) {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
-        <div className="mx-auto max-w-3xl py-4">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground mb-1">Контент-Завод</h1>
-          <p className="text-sm text-muted-foreground mb-8">Генерация контента</p>
+        <div className="mx-auto max-w-4xl py-20 px-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[3rem] border border-border/40 bg-card/50 backdrop-blur-2xl p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
+               <motion.div 
+                 className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
+                 initial={{ width: "0%" }}
+                 animate={{ width: `${progressPercent}%` }}
+                 transition={{ duration: 1, ease: "easeInOut" }}
+               />
+            </div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-card p-8 space-y-8">
-            <div className="flex items-center justify-between px-4">
+            <div className="space-y-4">
+               <div className="h-24 w-24 rounded-[2rem] bg-primary/10 flex items-center justify-center mx-auto relative">
+                  <div className="absolute inset-0 rounded-[2rem] border-2 border-primary/20 border-t-primary animate-spin" />
+                  <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+               </div>
+               <h1 className="text-3xl font-black text-foreground tracking-tight uppercase">Магия в процессе...</h1>
+               <p className="text-muted-foreground font-medium max-w-sm mx-auto">AI завод генерирует ваш контент. Это занимает обычно от 30 до 60 секунд.</p>
+            </div>
+
+            <div className="flex items-center justify-center gap-10">
               {pipelineStages.map((stage, i) => (
-                <div key={i} className="flex flex-col items-center gap-1.5">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-base transition-colors ${stage.done ? "bg-primary/20 shadow-sm" : "bg-secondary/40"}`}>
-                    {stage.icon}
+                <div key={i} className="flex flex-col items-center gap-3 group">
+                  <div className={cn(
+                    "h-14 w-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-500",
+                    stage.done ? "bg-primary text-white shadow-xl shadow-primary/20 scale-110" : "bg-secondary/40 text-muted-foreground/40"
+                  )}>
+                    {stage.done ? <CheckCircle2 className="h-6 w-6" /> : stage.icon}
                   </div>
-                  <span className={`text-[10px] font-medium ${stage.done ? "text-foreground" : "text-muted-foreground/50"}`}>{stage.label}</span>
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
+                    stage.done ? "text-primary" : "text-muted-foreground/30"
+                  )}>{stage.label}</span>
                 </div>
               ))}
             </div>
-            <div className="space-y-3">
-              <Progress value={progressPercent} className="h-2.5 bg-secondary/40" />
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">{task.progress_text || "Запуск завода..."}</p>
-                <span className="text-xs text-muted-foreground tabular-nums">{progressPercent}%</span>
-              </div>
+
+            <div className="space-y-4 max-w-md mx-auto">
+               <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground/60">
+                  <span>{task.progress_text || "Подготовка..."}</span>
+                  <span className="text-primary">{progressPercent}%</span>
+               </div>
+               <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
+                  <motion.div 
+                    className="h-full bg-primary"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ duration: 0.8 }}
+                  />
+               </div>
             </div>
           </motion.div>
         </div>
@@ -401,242 +464,400 @@ export default function ContentFactory() {
   // 3. Main Interface
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
-      <div className="mx-auto max-w-6xl py-4 flex flex-col h-[calc(100vh-80px)]">
+      <div className="mx-auto max-w-7xl py-6 px-4 flex flex-col h-[calc(100vh-100px)]">
 
-        {/* Unified Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Premium Header */}
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 mb-10 pb-8 border-b border-border/40">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Контент-Завод</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Создание сценария и AI генерация</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                 <Layers className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Контент-Завод</h1>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] px-3 py-1 uppercase tracking-widest">AI Engine V2</Badge>
+            </div>
+            <p className="text-muted-foreground font-medium text-base">Универсальная система генерации сценариев и рекламного контента.</p>
           </div>
 
-          <div className="flex bg-secondary/20 rounded-xl p-1 border border-border">
+          <div className="flex bg-muted/50 p-1.5 rounded-2xl border border-border shadow-inner">
             <button
               onClick={() => setPageTab("scenario")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "scenario" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
+              className={cn(
+                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                pageTab === "scenario" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <Sparkles className="h-3.5 w-3.5" /> Сценарий
+              <Sparkles className="h-4 w-4" /> Сценарий
             </button>
             <button
               onClick={() => setPageTab("create")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "create" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
+              className={cn(
+                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                pageTab === "create" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <ImageIcon className="h-3.5 w-3.5" /> Создать контент
+              <Plus className="h-4 w-4" /> Создать
             </button>
             <button
               onClick={() => setPageTab("my-content")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${pageTab === "my-content" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
+              className={cn(
+                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                pageTab === "my-content" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <Clock className="h-3.5 w-3.5" /> Мой Контент
+              <Clock className="h-4 w-4" /> История
             </button>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
 
           {pageTab === "scenario" && (
-            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
+            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 flex justify-center">
               <ScenarioCreator />
             </div>
           )}
 
           {pageTab === "my-content" && (
-            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-4">
+            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-8">
               {loadingHistory ? (
-                <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary/40" /></div>
+                <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                   <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+                   <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Загрузка истории...</p>
+                </div>
               ) : history.length === 0 ? (
-                <div className="text-center py-20 text-muted-foreground">История пуста</div>
+                <div className="flex flex-col items-center justify-center py-32 text-center space-y-6">
+                   <div className="h-24 w-24 rounded-full bg-secondary/30 flex items-center justify-center border border-border/50 shadow-inner">
+                      <Clock className="h-10 w-10 text-muted-foreground/20" />
+                   </div>
+                   <div className="space-y-2">
+                      <h3 className="text-xl font-black text-foreground uppercase">История пуста</h3>
+                      <p className="text-muted-foreground text-sm font-medium">Вы еще не создали ни одного креатива.</p>
+                   </div>
+                   <Button onClick={() => setPageTab("create")} className="h-11 px-8 rounded-2xl bg-primary/10 text-primary border border-primary/20 font-bold hover:bg-primary/20">
+                      Создать первый контент
+                   </Button>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {history.map((task) => (
-                    <motion.div key={task.id} className="rounded-xl border border-border bg-card p-4 space-y-3 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => loadHistoryItem(task)}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {task.content_type === "video" ? <Video className="h-4 w-4 text-primary" /> : <ImageIcon className="h-4 w-4 text-primary" />}
-                          <span className="text-xs font-bold uppercase tracking-wider">{task.content_type === "video" ? "ВИДЕО" : "ФОТО"}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+                  <AnimatePresence mode="popLayout">
+                    {history.map((task, idx) => (
+                      <motion.div 
+                        layout
+                        key={task.id} 
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: idx * 0.05 }}
+                        className="group relative rounded-[2rem] border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4" 
+                        onClick={() => loadHistoryItem(task)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                               {task.content_type === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground">{task.content_type}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <Badge variant="outline" className={cn(
+                               "text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md border-none h-4",
+                               task.status === "completed" ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"
+                             )}>
+                               {task.status === "completed" ? "Готово" : "В процессе"}
+                             </Badge>
+                             <Button
+                               variant="ghost"
+                               size="icon"
+                               className="h-7 w-7 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors"
+                               onClick={(e) => handleDeleteTask(task.id, e)}
+                             >
+                               <Trash2 className="h-3.5 w-3.5" />
+                             </Button>
+                          </div>
                         </div>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${task.status === "completed" ? "bg-green-500/10 border-green-500/30 text-green-500" : "bg-primary/10 border-primary/30 text-primary"}`}>
-                          {task.status === "completed" ? "ГОТОВО" : "ОЖИДАНИЕ"}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10 -mr-1"
-                          onClick={(e) => handleDeleteTask(task.id, e)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                      {task.result_urls?.[0] && (
-                        <div className="aspect-video rounded-lg overflow-hidden bg-secondary/30 relative">
-                          {task.content_type === 'video' ? <video src={task.result_urls[0]} className="w-full h-full object-cover" muted /> : <img src={task.result_urls[0]} className="w-full h-full object-cover" />}
+
+                        <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-secondary/30 relative border border-border/40 group-hover:scale-[1.02] transition-transform duration-500">
+                           {task.result_urls?.[0] ? (
+                             task.content_type === 'video' ? (
+                               <div className="relative h-full w-full">
+                                  <video src={task.result_urls[0]} className="w-full h-full object-cover" muted />
+                                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <Play className="h-8 w-8 text-white fill-white" />
+                                  </div>
+                               </div>
+                             ) : (
+                               <img src={task.result_urls[0]} className="w-full h-full object-cover" />
+                             )
+                           ) : (
+                             <div className="h-full w-full flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/20" />
+                             </div>
+                           )}
                         </div>
-                      )}
-                      <p className="text-[10px] text-muted-foreground">{task.created_at ? dateFmt(new Date(task.created_at), "dd.MM.yyyy HH:mm") : ""}</p>
-                    </motion.div>
-                  ))}
+                        
+                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                           <span>{task.created_at ? dateFmt(new Date(task.created_at), "dd MMM, HH:mm") : ""}</span>
+                           <span className="group-hover:text-primary transition-colors">Смотреть →</span>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               )}
             </div>
           )}
 
           {pageTab === "create" && (
-            <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 min-h-0">
+            <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-12 min-h-0">
               {/* Form Section */}
-              <div className="overflow-y-auto pr-4 space-y-8 pb-10 custom-scrollbar">
+              <div className="overflow-y-auto pr-6 space-y-10 pb-16 custom-scrollbar">
 
                 {/* 1. Type and Source */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    {(["video", "photo"] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setMainType(t)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${mainType === t ? "bg-primary text-primary-foreground" : "bg-secondary/20 text-muted-foreground"}`}
-                      >
-                        {t === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
-                        {t === "video" ? "Креатив (Видео)" : "Креатив (Фото)"}
-                      </button>
-                    ))}
+                <div className="space-y-8">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                     <div className="flex items-center gap-3">
+                        <Zap className="h-5 w-5 text-primary" />
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Настройка формата</h3>
+                     </div>
+                     <div className="flex bg-muted/40 p-1 rounded-2xl border border-border/60 shadow-inner">
+                        {(["video", "photo"] as const).map((t) => (
+                          <button
+                            key={t}
+                            onClick={() => setMainType(t)}
+                            className={cn(
+                              "flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                              mainType === t ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {t === "video" ? <Video className="h-3.5 w-3.5" /> : <ImageIcon className="h-3.5 w-3.5" />}
+                            {t === "video" ? "Видео" : "Фото"}
+                          </button>
+                        ))}
+                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Источник контента</Label>
-                    <div className="flex bg-secondary/10 rounded-xl p-1 border border-border">
-                      <button onClick={() => mainType === "video" ? setVideoMode("link") : setPhotoMode("link")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all ${(mainType === "video" ? videoMode : photoMode) === "link" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                        <Link className="h-3.5 w-3.5" /> Ссылка на продукт
+                  <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6">
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Источник контента</Label>
+                    <div className="flex bg-background/50 rounded-2xl p-1.5 border border-border/40 shadow-inner">
+                      <button 
+                        onClick={() => mainType === "video" ? setVideoMode("link") : setPhotoMode("link")} 
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-3 py-3 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                          (mainType === "video" ? videoMode : photoMode) === "link" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Link className="h-4 w-4" /> Ссылка
                       </button>
-                      <button onClick={() => mainType === "video" ? setVideoMode("description") : setPhotoMode("description")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all ${(mainType === "video" ? videoMode : photoMode) === "description" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"}`}>
-                        <FileText className="h-3.5 w-3.5" /> Описание / Текст
+                      <button 
+                        onClick={() => mainType === "video" ? setVideoMode("description") : setPhotoMode("description")} 
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-3 py-3 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                          (mainType === "video" ? videoMode : photoMode) === "description" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <FileText className="h-4 w-4" /> Описание
                       </button>
                     </div>
                   </div>
                 </div>
 
                 {/* 2. Dynamic Inputs */}
-                <AnimatePresence mode="wait">
-                  {(mainType === "video" ? videoMode : photoMode) === "link" ? (
-                    <motion.div key="link" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-4">
-                      <Label className="text-sm font-medium">Ссылка на сайт или страницу</Label>
-                      <div className="flex gap-2">
-                        <Input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://..." className="h-11 bg-secondary/10 border-border" />
-                        <Button onClick={handleMagicAI} disabled={magicLoading || !sourceUrl} variant="outline" className="h-11 border-primary/20 text-primary">
-                          {magicLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />} Заполнить ТЗ
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div key="desc" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">Визуальный стиль</Label>
-                          <Button variant="ghost" size="sm" onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} className="h-7 text-[10px] text-primary">
-                            <Sparkles className="h-3 w-3 mr-1" /> AI Улучшить
+                <div className="space-y-8">
+                  <div className="flex items-center gap-3">
+                     <Layout className="h-5 w-5 text-primary" />
+                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Детали креатива</h3>
+                  </div>
+                  
+                  <AnimatePresence mode="wait">
+                    {(mainType === "video" ? videoMode : photoMode) === "link" ? (
+                      <motion.div key="link" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Ссылка на продукт или страницу</Label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <Input 
+                            value={sourceUrl} 
+                            onChange={e => setSourceUrl(e.target.value)} 
+                            placeholder="https://mysite.com/product" 
+                            className="h-14 bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20" 
+                          />
+                          <Button 
+                            onClick={handleMagicAI} 
+                            disabled={magicLoading || !sourceUrl} 
+                            variant="outline" 
+                            className="h-14 px-8 border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95"
+                          >
+                            {magicLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5 mr-2" />} 
+                            Заполнить ТЗ
                           </Button>
                         </div>
-                        <Textarea value={visualStyle} onChange={e => setVisualStyle(e.target.value)} placeholder="Опишите желаемый стиль..." className="min-h-[100px] bg-secondary/10 border-border" />
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium">{mainType === "video" ? "Сценарий / Текст диктора" : "Текст на слайдах"}</Label>
-                          <Button variant="ghost" size="sm" onClick={() => handleMagicExpand(mainType === "video" ? "speakerText" : "mainText", mainType === "video" ? speakerText : mainText, mainType === "video" ? setSpeakerText : setMainText)} className="h-7 text-[10px] text-primary">
-                            <Sparkles className="h-3 w-3 mr-1" /> AI Продумать
-                          </Button>
+                        <p className="text-[10px] font-medium text-muted-foreground/40 italic px-2">
+                           AI проанализирует содержимое страницы и автоматически заполнит параметры ниже.
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <motion.div key="desc" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} className="space-y-6">
+                        <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Визуальный стиль</Label>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleMagicExpand("visualStyle", visualStyle, setVisualStyle)} 
+                              className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 mr-2" /> AI Улучшить
+                            </Button>
+                          </div>
+                          <Textarea 
+                            value={visualStyle} 
+                            onChange={e => setVisualStyle(e.target.value)} 
+                            placeholder="Напр: Минимализм, Apple style, динамичные переходы..." 
+                            className="min-h-[100px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
+                          />
                         </div>
-                        <Textarea value={mainType === "video" ? speakerText : mainText} onChange={e => mainType === "video" ? setSpeakerText(e.target.value) : setMainText(e.target.value)} placeholder={mainType === "video" ? "О чем должен говорить диктор?" : "Текст для баннера или карусели..."} className="min-h-[120px] bg-secondary/10 border-border" />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        
+                        <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
+                               {mainType === "video" ? "Текст диктора" : "Текст на слайдах"}
+                            </Label>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleMagicExpand(mainType === "video" ? "speakerText" : "mainText", mainType === "video" ? speakerText : mainText, mainType === "video" ? setSpeakerText : setMainText)} 
+                              className="h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 mr-2" /> AI Продумать
+                            </Button>
+                          </div>
+                          <Textarea 
+                            value={mainType === "video" ? speakerText : mainText} 
+                            onChange={e => mainType === "video" ? setSpeakerText(e.target.value) : setMainText(e.target.value)} 
+                            placeholder={mainType === "video" ? "О чем должен говорить диктор?" : "Заголовок, оффер, призыв к действию..."} 
+                            className="min-h-[140px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 {/* 3. Settings Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{mainType === "video" ? "Формат видео" : "Формат фото"}</Label>
+                  <div className="space-y-8">
+                    <div className="space-y-4 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Формат</Label>
                       {mainType === "video" ? (
-                        <RadioGroup value={videoFormat} onValueChange={(v: any) => setVideoFormat(v)} className="grid grid-cols-2 gap-2">
+                        <RadioGroup value={videoFormat} onValueChange={(v: any) => setVideoFormat(v)} className="grid grid-cols-2 gap-3">
                           {["reels", "slideshow"].map(f => (
-                            <Label key={f} className={`flex flex-col items-center gap-1 rounded-xl border p-3 cursor-pointer transition-all ${videoFormat === f ? "border-primary bg-primary/5" : "border-border bg-secondary/5"}`}>
+                            <Label 
+                              key={f} 
+                              className={cn(
+                                "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300",
+                                videoFormat === f ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                              )}
+                            >
                               <RadioGroupItem value={f} className="sr-only" />
-                              <span className="text-xs font-bold capitalize">{f}</span>
+                              <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center mb-1">
+                                 {f === 'reels' ? <Smartphone className="h-5 w-5" /> : <Layout className="h-5 w-5" />}
+                              </div>
+                              <span className="text-[10px] font-black uppercase tracking-widest">{f}</span>
                             </Label>
                           ))}
                         </RadioGroup>
                       ) : (
                         <Select value={photoFormat} onValueChange={setPhotoFormat}>
-                          <SelectTrigger className="h-11 bg-secondary/10 border-border"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="banner">ADS Баннер</SelectItem>
-                            <SelectItem value="carousel-7">Карусель (7)</SelectItem>
-                            <SelectItem value="carousel-10">Карусель (10)</SelectItem>
+                          <SelectTrigger className="h-14 bg-background/50 border-border/40 rounded-2xl font-bold text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-2xl border-border/40">
+                            <SelectItem value="banner">ADS Баннер (Static)</SelectItem>
+                            <SelectItem value="carousel-7">Карусель (7 слайдов)</SelectItem>
+                            <SelectItem value="carousel-10">Карусель (10 слайдов)</SelectItem>
                           </SelectContent>
                         </Select>
                       )}
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Пропорции</Label>
+                    
+                    <div className="space-y-4 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Пропорции</Label>
                       <Tabs value={mainType === "video" ? videoAspect : aspectRatio} onValueChange={setAspectRatio} className="w-full">
-                        <TabsList className="grid grid-cols-3 bg-secondary/10 h-10 p-1">
-                          <TabsTrigger value="1:1" disabled={mainType === "video"} className="text-[10px]">1:1</TabsTrigger>
-                          <TabsTrigger value="4:5" disabled={mainType === "video"} className="text-[10px]">4:5</TabsTrigger>
-                          <TabsTrigger value="9:16" className="text-[10px]">9:16</TabsTrigger>
+                        <TabsList className="grid grid-cols-3 bg-background/50 h-14 p-1.5 rounded-2xl border border-border/40 shadow-inner">
+                          <TabsTrigger value="1:1" disabled={mainType === "video"} className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">1:1</TabsTrigger>
+                          <TabsTrigger value="4:5" disabled={mainType === "video"} className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">4:5</TabsTrigger>
+                          <TabsTrigger value="9:16" className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">9:16</TabsTrigger>
                         </TabsList>
                       </Tabs>
                     </div>
                   </div>
 
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Брендинг (Лого)</Label>
+                  <div className="space-y-8">
+                    <div className="space-y-4 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Брендинг (Лого)</Label>
                       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => setLogoFile(e.target.files?.[0] || null)} />
-                      <div onClick={() => fileInputRef.current?.click()} className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${logoFile ? "border-primary bg-primary/5" : "border-border bg-secondary/5"}`}>
-                        <Upload className="h-4 w-4 mr-2" /> <span className="text-xs">{logoFile ? logoFile.name : "Загрузить лого"}</span>
+                      <div 
+                        onClick={() => fileInputRef.current?.click()} 
+                        className={cn(
+                          "h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 gap-3 group",
+                          logoFile ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                        )}
+                      >
+                        <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                           <Upload className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground max-w-[150px] text-center truncate">
+                           {logoFile ? logoFile.name : "Нажми для загрузки"}
+                        </span>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Пример (Референс)</Label>
+                    
+                    <div className="space-y-4 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                      <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Пример (Референс)</Label>
                       <input ref={refFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleReferenceFile} />
-                      <div onClick={() => refFileInputRef.current?.click()} className={`h-11 rounded-xl border border-dashed flex items-center justify-center cursor-pointer transition-all ${referencePreview ? "border-primary bg-primary/5" : "border-border bg-secondary/5"}`}>
-                        <ImageIcon className="h-4 w-4 mr-2" /> <span className="text-xs">{referencePreview ? "Загружено" : "Пример стиля"}</span>
+                      <div 
+                        onClick={() => refFileInputRef.current?.click()} 
+                        className={cn(
+                          "h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 gap-3 group",
+                          referencePreview ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                        )}
+                      >
+                        <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                           <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                           {referencePreview ? "Стиль выбран" : "Пример визуала"}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="pt-6">
-                  <Button onClick={handleGenerate} disabled={submitting || uploading} className="w-full h-14 text-base font-bold bg-primary hover:bg-primary/90 shadow-xl rounded-2xl">
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Sparkles className="h-5 w-5 mr-2" />} Запустить генерацию
+                <div className="pt-10">
+                  <Button 
+                    onClick={handleGenerate} 
+                    disabled={submitting || uploading} 
+                    className="w-full h-16 text-sm font-black uppercase tracking-[0.2em] bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/30 rounded-[2rem] transition-all hover:scale-[1.01] active:scale-95 border-b-4 border-primary-foreground/20 active:border-b-0"
+                  >
+                    {submitting ? <Loader2 className="h-6 w-6 animate-spin mr-3" /> : <Sparkles className="h-6 w-6 mr-3" />} 
+                    Запустить AI генерацию
                   </Button>
                 </div>
-
-                {/* Quick History Strip */}
-                {history.filter(h => h.status === "completed" && h.content_type === mainType).length > 0 && (
-                  <div className="pt-8 border-t border-border">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Недавние результаты</p>
-                    <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
-                      {history.filter(h => h.status === "completed" && h.content_type === mainType).map(h => (
-                        <div key={h.id} onClick={() => loadHistoryItem(h)} className="w-16 h-16 rounded-lg border border-border bg-secondary/5 overflow-hidden flex-shrink-0 cursor-pointer grayscale hover:grayscale-0 transition-all">
-                          {h.content_type === 'video' ? <video src={h.result_urls![0]} className="w-full h-full object-cover" /> : <img src={h.result_urls![0]} className="w-full h-full object-cover" />}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Preview Section */}
-              <div className="hidden lg:block sticky top-0 h-fit">
-                <PhoneMockup
-                  contentMode={mainType}
-                  format={mainType === "video" ? videoFormat : photoFormat}
-                  aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
-                  designPrompt={visualStyle}
-                  exactText={mainType === "video" ? speakerText : mainText}
-                  referencePreview={referencePreview}
-                  logoFile={logoFile}
-                />
+              <div className="hidden lg:block sticky top-0 h-fit py-4">
+                 <div className="relative group">
+                    <div className="absolute -inset-4 bg-primary/5 rounded-[4rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                    <PhoneMockup
+                      contentMode={mainType}
+                      format={mainType === "video" ? videoFormat : photoFormat}
+                      aspectRatio={mainType === "video" ? videoAspect : aspectRatio}
+                      designPrompt={visualStyle}
+                      exactText={mainType === "video" ? speakerText : mainText}
+                      referencePreview={referencePreview}
+                      logoFile={logoFile}
+                    />
+                 </div>
               </div>
             </div>
           )}
@@ -645,3 +866,4 @@ export default function ContentFactory() {
     </DashboardLayout>
   );
 }
+

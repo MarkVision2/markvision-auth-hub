@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Wallet, Users, Target, BarChart3, TrendingUp, AlertCircle, CheckCircle2, PauseCircle, Eye, MousePointer2, CreditCard, UserPlus, Presentation } from "lucide-react";
+import { Plus, Loader2, Trash2, Search, ArrowUpDown, ArrowUp, ArrowDown, Pencil, Wallet, Users, Target, BarChart3, TrendingUp, AlertCircle, CheckCircle2, PauseCircle, Eye, MousePointer2, CreditCard, UserPlus, Presentation, Download, Filter, MoreVertical, LayoutGrid, List, Share2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -18,8 +18,19 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
 import PeriodPicker from "@/components/agency/PeriodPicker";
+import SparklineChart from "@/components/agency/SparklineChart";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { DateRange } from "react-day-picker";
@@ -60,7 +71,7 @@ function DeleteButton({ clientName, clientId, onDeleted }: { clientName: string;
 
   const handleDelete = async () => {
     setDeleting(true);
-    const { error } = await supabase.from("clients_config").delete().eq("id", clientId);
+    const { error } = await supabase.from("clients_config").delete().eq("id", clientId as any);
     setDeleting(false);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
@@ -115,10 +126,46 @@ export default function AgencyAccounts() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("spend");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [period, setPeriod] = useState<DateRange>({
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
+
+  const exportData = () => {
+    try {
+      const headers = ["Название", "Статус", "Проект", "Расходы", "Лиды", "Визиты", "Продажи", "Выручка", "Подписчики"];
+      const rows = filtered.map(c => [
+        c.client_name,
+        c.is_active ? "Активен" : "Остановлен",
+        c.project_name || "HQ",
+        c.spend || 0,
+        c.meta_leads || 0,
+        c.visits || 0,
+        c.sales || 0,
+        c.revenue || 0,
+        c.followers || 0
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `accounts_export_${format(new Date(), "yyyy-MM-dd")}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Экспорт завершен", description: "Данные выгружены в CSV" });
+    } catch (err) {
+      toast({ title: "Ошибка экспорта", variant: "destructive" });
+    }
+  };
 
   const fetchMetrics = useCallback(async () => {
     if (!period.from) return;
@@ -319,25 +366,175 @@ export default function AgencyAccounts() {
 
   const pageTitle = isSuperadmin ? "Рекламные кабинеты" : "Мои рекламные кабинеты";
 
+  const AccountCard = ({ c, idx }: { c: MetricsRow; idx: number }) => {
+    const isActiveCabinet = c.is_active !== false;
+    const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
+    const indicatorColor = getRowIndicator(c);
+    const romi = Number(c.romi) || 0;
+    
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.4, delay: idx * 0.02 }}
+        className="group relative"
+      >
+        <Card className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card hover:border-primary/30 transition-all duration-500 rounded-[2rem] shadow-sm hover:shadow-xl group">
+          <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: indicatorColor }} />
+          
+          <div className="p-6 space-y-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl flex items-center justify-center bg-secondary/30 border border-border group-hover:scale-110 transition-transform duration-500">
+                  <Target className={cn(
+                    "h-7 w-7",
+                    !isActiveCabinet ? "text-muted-foreground/20" : 
+                    needsAttention(c) ? "text-destructive" : "text-primary/70"
+                  )} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border-none",
+                      isActiveCabinet ? "bg-green-500/10 text-green-600" : "bg-muted/10 text-muted-foreground"
+                    )}>
+                      {s.label}
+                    </Badge>
+                    {needsAttention(c) && (
+                      <Badge variant="destructive" className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">
+                        Внимание
+                      </Badge>
+                    )}
+                    {c.project_name && (
+                       <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider ml-1">
+                         {c.project_name}
+                       </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 rounded-xl border-border">
+                  <DropdownMenuItem onClick={() => {
+                    setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
+                    setSheetOpen(true);
+                  }} className="gap-2 cursor-pointer font-medium">
+                    <Pencil className="h-4 w-4" /> Изменить
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 cursor-pointer font-medium">
+                    <ExternalLink className="h-4 w-4" /> В кабинет
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 cursor-pointer font-medium">
+                    <Share2 className="h-4 w-4" /> Поделиться
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="w-full text-left px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors flex items-center gap-2 font-medium">
+                        <Trash2 className="h-4 w-4" /> Удалить
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border-border bg-card">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить кабинет?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Кабинет «{c.client_name}» будет удалён навсегда.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={async () => {
+                          const { error } = await supabase.from("clients_config").delete().eq("id", c.client_id as any);
+                          if (!error) {
+                            toast({ title: "Удалено", description: c.client_name });
+                            fetchMetrics();
+                          }
+                        }} className="bg-destructive hover:bg-destructive/90">
+                          Удалить
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest block">Расходы</span>
+                <p className="text-xl font-black text-foreground tabular-nums tracking-tighter">
+                  {c.spend ? fmt(c.spend, " ₸") : "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest block">Выручка</span>
+                <p className="text-xl font-black text-green-600 dark:text-green-400 tabular-nums tracking-tighter">
+                  {c.revenue ? fmt(c.revenue, " ₸") : "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest block">Лиды</span>
+                <p className="text-xl font-black text-foreground tabular-nums tracking-tighter">{c.meta_leads || "—"}</p>
+                {c.cpl ? <span className="text-[9px] font-bold text-muted-foreground/30 uppercase">CPL: {fmt(c.cpl)}</span> : null}
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest block">ROMI</span>
+                <p className={cn(
+                  "text-xl font-black tabular-nums tracking-tighter",
+                  romi > 0 ? "text-primary" : romi < 0 ? "text-destructive" : "text-muted-foreground/40"
+                )}>
+                  {romi ? `${romi.toFixed(0)}%` : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/40">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.2em]">Тренд эффективности</span>
+                <TrendingUp className="h-3 w-3 text-primary/30" />
+              </div>
+              <SparklineChart data={[10, 20, 15, 25, 30, 22, 40]} color={indicatorColor} />
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+    );
+  };
+
   return (
     <DashboardLayout breadcrumb={pageTitle}>
-      <div className="relative min-h-[calc(100vh-10rem)]">
+      <div className="relative min-h-[calc(100vh-10rem)] space-y-10">
         <div className="absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-5 border-b border-border/40 gap-4">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 pb-8 border-b border-border/40">
           <div>
-            <h1 className="text-3xl font-extrabold text-foreground tracking-tight">{pageTitle}</h1>
-            <p className="text-muted-foreground text-sm mt-1 font-medium">Мониторинг эффективности в реальном времени</p>
+            <div className="flex items-center gap-3 mb-2">
+               <h1 className="text-4xl font-black text-foreground tracking-tight">{pageTitle}</h1>
+               <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] px-3 py-1 uppercase tracking-widest">Live</Badge>
+            </div>
+            <p className="text-muted-foreground text-base font-medium max-w-2xl">
+              Управляйте рекламными кабинетами, отслеживайте KPI и оптимизируйте бюджет в едином интерфейсе.
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="bg-muted/50 p-1.5 rounded-xl border border-border flex items-center">
+          
+          <div className="flex flex-wrap items-center gap-3">
+             <div className="bg-muted/50 p-1.5 rounded-2xl border border-border flex items-center shadow-inner">
                 <button
                   onClick={() => setMainTab("personal")}
                   className={cn(
-                    "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
+                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "personal" 
-                      ? "bg-primary/10 text-primary ring-1 ring-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Wallet className="h-4 w-4" />
@@ -346,20 +543,21 @@ export default function AgencyAccounts() {
                 <button
                   onClick={() => setMainTab("agency")}
                   className={cn(
-                    "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
+                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "agency" 
-                      ? "bg-primary/10 text-primary ring-1 ring-primary/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Users className="h-4 w-4" />
                   Агентские
                 </button>
              </div>
+             
              {isSuperadmin && (
                 <Button 
                   onClick={() => setSheetOpen(true)} 
-                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 transition-all font-bold text-white border border-primary/20"
+                  className="gap-2.5 h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 transition-all font-black text-[11px] uppercase tracking-[0.15em] text-white shadow-lg shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1"
                 >
                   <Plus className="h-5 w-5" />
                   Добавить
@@ -368,125 +566,162 @@ export default function AgencyAccounts() {
           </div>
         </div>
 
-        <div className="space-y-10">
-          <HqKpiCards metrics={summary} />
+        <HqKpiCards metrics={summary} />
 
-          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-card border border-border p-3 px-5 rounded-2xl">
-            <div className="relative w-full lg:w-[450px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск по названию..."
-                className="h-11 w-full pl-12 pr-4 text-sm bg-background border-border focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-semibold rounded-xl"
-              />
-            </div>
+        <div className="space-y-6">
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-card/40 backdrop-blur-md border border-border/60 p-4 rounded-[2rem] shadow-sm">
             <div className="flex items-center gap-4 w-full lg:w-auto">
-              <PeriodPicker value={period} onChange={setPeriod} />
-              <div className="h-8 w-[1px] bg-border/40 hidden lg:block" />
-              <div className="flex items-center gap-1 bg-muted/50 p-1.5 rounded-xl border border-border/50">
+              <div className="relative flex-1 lg:w-[400px]">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/30" />
+                <Input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Поиск по названию или ID..."
+                  className="h-12 w-full pl-12 pr-4 text-sm bg-background/50 border-border/40 focus-visible:ring-primary/20 placeholder:text-muted-foreground/30 font-bold rounded-2xl"
+                />
+              </div>
+              <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border/40">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setViewMode("table")}
+                  className={cn("h-10 w-10 rounded-lg", viewMode === "table" ? "bg-card shadow-sm text-primary" : "text-muted-foreground")}
+                >
+                  <List className="h-5 w-5" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setViewMode("grid")}
+                  className={cn("h-10 w-10 rounded-lg", viewMode === "grid" ? "bg-card shadow-sm text-primary" : "text-muted-foreground")}
+                >
+                  <LayoutGrid className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <div className="flex items-center gap-1.5 bg-muted/40 p-1.5 rounded-2xl border border-border/40 overflow-x-auto no-scrollbar">
                  {["all", "attention", "effective", "inactive"].map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
                       className={cn(
-                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                         filter === f
-                          ? "bg-primary/10 text-foreground ring-1 ring-primary/20"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                          ? "bg-card text-primary shadow-sm ring-1 ring-border"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       {f === "all" ? "Все" : f === "attention" ? "Внимание" : f === "effective" ? "Топ" : "Офлайн"}
                     </button>
                  ))}
               </div>
+              
+              <div className="h-8 w-[1px] bg-border/40 hidden lg:block mx-2" />
+              
+              <div className="flex items-center gap-2">
+                <PeriodPicker value={period} onChange={setPeriod} />
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={exportData}
+                  className="h-11 w-11 rounded-2xl border-border/40 bg-card hover:bg-accent text-muted-foreground hover:text-primary transition-all"
+                >
+                  <Download className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="overflow-x-auto pb-8">
-              <Table className="min-w-[1000px] border-separate border-spacing-y-3">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 w-[240px] px-8 py-2">Кабинет & Статус</TableHead>
-                    {active.id === "hq" && (
-                      <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 px-4 py-2 text-center">Проект</TableHead>
-                    )}
-                    <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
-                    <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
-                    <SortableHead label="Визиты" sortField="visits" icon={MousePointer2} />
-                    <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
-                    <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
-                    <SortableHead label="Подписчики" sortField="followers" icon={UserPlus} />
-                    <TableHead className="w-16 px-8 py-2"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
+          <div className="relative min-h-[400px]">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                 <div className="relative">
+                    <div className="h-16 w-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <Target className="h-6 w-6 text-primary/40 animate-pulse" />
+                    </div>
+                 </div>
+                 <p className="text-xs font-black text-muted-foreground/40 uppercase tracking-[0.3em] animate-pulse">Загрузка данных...</p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                className="flex flex-col items-center justify-center py-32 text-center"
+              >
+                <div className="h-24 w-24 rounded-full bg-secondary/30 flex items-center justify-center mb-6 border border-border/50 shadow-inner">
+                   <Search className="h-10 w-10 text-muted-foreground/20" />
+                </div>
+                <h3 className="text-xl font-black text-foreground mb-2">Ничего не найдено</h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto font-medium">Попробуйте изменить параметры поиска или фильтрации.</p>
+              </motion.div>
+            ) : viewMode === "grid" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
+                <AnimatePresence mode="popLayout">
+                  {filtered.map((c, idx) => (
+                    <AccountCard key={c.client_id} c={c} idx={idx} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <div className="overflow-x-auto pb-12 rounded-[2rem]">
+                <Table className="min-w-[1200px] border-separate border-spacing-y-3 px-1">
+                  <TableHeader>
                     <TableRow className="hover:bg-transparent border-none">
-                      <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-24 text-center">
-                        <div className="relative inline-block">
-                           <Loader2 className="h-12 w-12 animate-spin text-primary/40" />
-                        </div>
-                        <p className="text-xs text-muted-foreground/40 mt-6 font-black tracking-widest uppercase">Загрузка данных...</p>
-                      </TableCell>
+                      <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 w-[300px] px-8 py-4">Кабинет & Статус</TableHead>
+                      {active.id === "hq" && (
+                        <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 px-4 py-4 text-center">Проект</TableHead>
+                      )}
+                      <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
+                      <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
+                      <SortableHead label="Визиты" sortField="visits" icon={MousePointer2} />
+                      <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
+                      <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
+                      <SortableHead label="ROMI" sortField="revenue" icon={BarChart3} />
+                      <TableHead className="w-16 px-8 py-4"></TableHead>
                     </TableRow>
-                  ) : filtered.length === 0 ? (
-                    <TableRow className="hover:bg-transparent border-none">
-                      <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-32 text-center">
-                        <div className="bg-secondary/50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-6 border border-border shadow-inner">
-                           <Presentation className="h-7 w-7 text-muted-foreground/20" />
-                        </div>
-                        <p className="text-base font-black text-muted-foreground/40">Записей не найдено</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
+                  </TableHeader>
+                  <TableBody>
                     <AnimatePresence mode="popLayout">
                       {filtered.map((c, idx) => {
                         const isActiveCabinet = c.is_active !== false;
                         const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
-                        const spend = Number(c.spend) || 0;
-                        const leads = Number(c.meta_leads) || 0;
-                        const cpl = Number(c.cpl) || 0;
-                        const visits = Number(c.visits) || 0;
-                        const cpv = Number(c.cpv) || 0;
-                        const sales = Number(c.sales) || 0;
-                        const revenue = Number(c.revenue) || 0;
-                        const cac = Number(c.cac) || 0;
-                        const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
-                        const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
                         const indicatorColor = getRowIndicator(c);
+                        const romi = Number(c.romi) || 0;
 
                         return (
                           <motion.tr
                             layout
                             key={c.client_id}
-                            initial={{ opacity: 0, scale: 0.99, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.98 }}
-                            transition={{ duration: 0.4, delay: idx * 0.015, ease: [0.23, 1, 0.32, 1] }}
-                            className="group bg-card hover:bg-muted/30 transition-all duration-500 rounded-[1.85rem] border border-border hover:border-primary/20 relative shadow-sm"
+                            transition={{ duration: 0.4, delay: idx * 0.01 }}
+                            className="group bg-card/50 backdrop-blur-sm hover:bg-card transition-all duration-500 rounded-[2rem] border border-border/50 hover:border-primary/30 relative shadow-sm"
                           >
-                            <TableCell className="py-5 px-8 rounded-l-[1.85rem] relative">
-                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 rounded-r-full group-hover:h-14 transition-all duration-500 shadow-[0_0_15px_-2px_rgba(0,0,0,0.1)]" style={{ backgroundColor: indicatorColor }} />
-                              <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 border border-border group-hover:scale-110 transition-transform duration-500">
+                            <TableCell className="py-6 px-8 rounded-l-[2rem] relative">
+                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full group-hover:h-16 transition-all duration-500 shadow-lg" style={{ backgroundColor: indicatorColor }} />
+                              <div className="flex items-center gap-5">
+                                <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-secondary/30 border border-border group-hover:scale-110 transition-transform duration-500">
                                    <Target className={cn(
                                      "h-6 w-6",
-                                     c.is_active === false ? "text-muted-foreground/20" : 
+                                     !isActiveCabinet ? "text-muted-foreground/20" : 
                                      needsAttention(c) ? "text-destructive" : "text-primary/70"
                                    )} />
                                 </div>
-                                <div className="space-y-0.5">
-                                  <p className="text-[14px] font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</p>
-                                  <div className="flex items-center gap-1.5">
-                                     <span className={cn(
-                                       "h-1.5 w-1.5 rounded-full",
-                                       isActiveCabinet ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-muted-foreground/20"
-                                     )} />
-                                     <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">{s.label}</span>
+                                <div className="space-y-1">
+                                  <p className="text-[15px] font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</p>
+                                  <div className="flex items-center gap-2">
+                                     <Badge variant="outline" className={cn(
+                                       "text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md border-none h-4",
+                                       isActiveCabinet ? "bg-green-500/10 text-green-600" : "bg-muted/10 text-muted-foreground"
+                                     )}>
+                                       {s.label}
+                                     </Badge>
                                      {needsAttention(c) && (
-                                       <span className="text-[8px] font-black text-destructive/60 uppercase tracking-widest ml-1 px-1.5 py-0.5 bg-destructive/5 rounded-md">Critical</span>
+                                       <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md h-4">Critical</Badge>
                                      )}
                                   </div>
                                 </div>
@@ -495,55 +730,50 @@ export default function AgencyAccounts() {
 
                             {active.id === "hq" && (
                               <TableCell className="py-2 text-center">
-                                <span className="bg-secondary/40 px-2.5 py-1 rounded-lg text-[9px] font-black text-muted-foreground/60 tracking-wider">
+                                <span className="bg-secondary/40 px-3 py-1 rounded-xl text-[9px] font-black text-muted-foreground/60 tracking-wider uppercase">
                                   {c.project_name || "HQ"}
                                 </span>
                               </TableCell>
                             )}
 
                             <TableCell className="py-2">
-                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                              <p className="text-[18px] font-black text-foreground tabular-nums tracking-tighter">{c.spend ? fmt(c.spend, " ₸") : "—"}</p>
                             </TableCell>
 
                             <TableCell className="py-2">
-                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{leads || "—"}</p>
-                              {cpl > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase tabular-nums">CPL: {fmt(cpl)}</span>}
+                              <p className="text-[18px] font-black text-foreground tabular-nums tracking-tighter">{c.meta_leads || "—"}</p>
+                              {c.cpl ? <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tabular-nums">CPL: {fmt(c.cpl)}</span> : null}
                             </TableCell>
 
                             <TableCell className="py-2">
-                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{visits || "—"}</p>
-                              <div className="flex items-center gap-1.5">
-                                  {cpv > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase">CPV: {fmt(cpv)}</span>}
-                                  {leadToVisitCr > 0 && <span className="text-[9px] font-black text-primary/40 leading-none">{leadToVisitCr.toFixed(0)}% CR</span>}
-                              </div>
+                              <p className="text-[18px] font-black text-foreground tabular-nums tracking-tighter">{c.visits || "—"}</p>
+                              {c.cpv ? <span className="text-[9px] font-bold text-muted-foreground/30 uppercase">CPV: {fmt(c.cpv)}</span> : null}
                             </TableCell>
 
                             <TableCell className="py-2">
-                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{sales || "—"}</p>
-                              <div className="flex items-center gap-1.5">
-                                  {cac > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase">CAC: {fmt(cac)}</span>}
-                                  {visitToSaleCr > 0 && <span className="text-[9px] font-black text-primary/40 leading-none">{visitToSaleCr.toFixed(0)}% CR</span>}
-                              </div>
+                              <p className="text-[18px] font-black text-foreground tabular-nums tracking-tighter">{c.sales || "—"}</p>
+                              {c.cac ? <span className="text-[9px] font-bold text-muted-foreground/30 uppercase">CAC: {fmt(c.cac)}</span> : null}
                             </TableCell>
 
                             <TableCell className="py-2">
-                              <div className="space-y-0">
-                                <p className="text-[17px] font-black text-green-600 dark:text-green-400 tabular-nums tracking-tighter">
-                                  {revenue > 0 ? fmt(revenue, " ₸") : "—"}
+                                <p className="text-[18px] font-black text-green-600 dark:text-green-400 tabular-nums tracking-tighter">
+                                  {c.revenue ? fmt(c.revenue, " ₸") : "—"}
                                 </p>
-                                <span className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-widest block -mt-1">Yield</span>
-                              </div>
                             </TableCell>
 
                             <TableCell className="py-2">
-                               <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{fmt(c.followers ?? 0)}</p>
-                               <span className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-widest block -mt-1">Users</span>
+                               <p className={cn(
+                                 "text-[18px] font-black tabular-nums tracking-tighter",
+                                 romi > 0 ? "text-primary" : romi < 0 ? "text-destructive" : "text-muted-foreground/20"
+                               )}>
+                                 {romi ? `${romi.toFixed(0)}%` : "—"}
+                               </p>
                             </TableCell>
 
-                            <TableCell className="py-2 px-8 rounded-r-[1.85rem]">
+                            <TableCell className="py-2 px-8 rounded-r-[2rem]">
                               <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all border border-transparent hover:border-primary/10"
+                                  className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all border border-transparent hover:border-primary/10"
                                   onClick={() => {
                                     setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
                                     setSheetOpen(true);
@@ -558,10 +788,10 @@ export default function AgencyAccounts() {
                         );
                       })}
                     </AnimatePresence>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </div>
 

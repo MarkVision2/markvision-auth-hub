@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { Loader2 } from "lucide-react";
+import { Loader2, Target, Facebook, Link2, Settings2, ShieldCheck, Database, Info, Globe, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const emptyForm = {
   client_name: "",
@@ -38,16 +40,22 @@ const emptyForm = {
   is_agency: false,
 };
 
-function Field({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function Field({ label, value, onChange, placeholder, icon: Icon }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; icon?: any }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="glass border-border text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all"
-      />
+    <div className="space-y-2">
+      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
+        {Icon && <Icon className="h-3 w-3 opacity-40" />}
+        {label}
+      </Label>
+      <div className="relative group">
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="h-11 bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-primary/10 transition-all rounded-xl font-bold text-sm"
+        />
+        <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
+      </div>
     </div>
   );
 }
@@ -202,137 +210,211 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto border-border bg-card">
-        <SheetHeader>
-          <SheetTitle className="text-foreground">
-            {account ? "Настройки кабинета" : "Добавить кабинет"}
-          </SheetTitle>
-        </SheetHeader>
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto border-l border-border/40 bg-card/80 backdrop-blur-2xl p-0">
+        <div className="sticky top-0 z-20 bg-card/60 backdrop-blur-xl border-b border-border/40 px-8 py-6">
+          <SheetHeader>
+            <div className="flex items-center gap-4 mb-2">
+               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Target className="h-6 w-6" />
+               </div>
+               <div>
+                 <SheetTitle className="text-2xl font-black text-foreground tracking-tight leading-none">
+                   {account ? "Настройки кабинета" : "Добавить кабинет"}
+                 </SheetTitle>
+                 <SheetDescription className="mt-1 font-medium text-muted-foreground/60">
+                    {account ? `Редактирование параметров для ${form.client_name}` : "Создайте новый рекламный кабинет для мониторинга"}
+                 </SheetDescription>
+               </div>
+            </div>
+          </SheetHeader>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-2">
-          <Accordion type="multiple" defaultValue={["general", "meta", "tracking"]} className="space-y-2">
-            <AccordionItem value="general" className="border border-border rounded-xl px-4 bg-secondary/30">
-              <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
-                Основная информация
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
-                <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} />
-                <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
-                <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} />
-                <Field label="Ключ региона" value={form.region_key} onChange={(v) => updateField("region_key", v)} />
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Показы (База)" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
-                  <Field label="Клики (База)" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Расход (База)" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
-                  <Field label="Лиды (База)" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
-                  <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />
-                  <Field label="Выручка" value={form.revenue} onChange={(v) => updateField("revenue", v)} placeholder="0" />
-                </div>
-
-                {/* Cabinet type */}
-                <div className="space-y-2 pt-2">
-                  <Label className="text-xs text-muted-foreground">Тип кабинета</Label>
-                  <RadioGroup
-                    value={form.is_agency ? "agency" : "personal"}
-                    onValueChange={(v) => updateField("is_agency", v === "agency")}
-                    className="flex gap-4"
+        <form onSubmit={handleSubmit} className="px-8 py-10 space-y-8">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-1">
+               <Settings2 className="h-4 w-4 text-primary" />
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Основные настройки</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/20 p-6 rounded-[2rem] border border-border/40">
+              <div className="md:col-span-2">
+                 <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} placeholder="Напр: Kitarov Clinic" />
+              </div>
+              <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
+              <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} placeholder="Алматы" />
+              
+              <div className="md:col-span-2 space-y-4 pt-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Тип кабинета</Label>
+                <RadioGroup
+                  value={form.is_agency ? "agency" : "personal"}
+                  onValueChange={(v) => updateField("is_agency", v === "agency")}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <Label
+                    htmlFor="r-personal"
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl border border-border/50 cursor-pointer transition-all hover:bg-background/50",
+                      !form.is_agency ? "bg-background border-primary shadow-sm" : "bg-transparent"
+                    )}
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="personal" id="r-personal" />
-                      <Label htmlFor="r-personal" className="cursor-pointer text-sm font-medium">Личный</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="agency" id="r-agency" />
-                      <Label htmlFor="r-agency" className="cursor-pointer text-sm font-medium">Агентский</Label>
-                    </div>
-                  </RadioGroup>
-                  <p className="text-[10px] text-muted-foreground">
-                    {form.is_agency ? "Только общие показатели в разделе кабинетов" : "Полные данные в CRM и аналитике"}
-                  </p>
-                </div>
-
-
-
-
-                {/* Fixed visibility checkboxes */}
-                <div className="space-y-2.5 pt-3 border-t border-border mt-2">
-                  <Label className="text-xs font-semibold text-foreground uppercase tracking-wider">Также показать в</Label>
-
-                  {/* MarkVision AI — hide if currently in HQ */}
-                  {!isInHq && markVisionProject && (
-                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
-                      <Checkbox
-                        id="vis-markvision"
-                        checked={showInMarkVision}
-                        onCheckedChange={(c) => setShowInMarkVision(!!c)}
-                      />
-                      <div>
-                        <Label htmlFor="vis-markvision" className="text-sm font-medium cursor-pointer">MarkVision AI</Label>
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="personal" id="r-personal" className="sr-only" />
+                      <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center", !form.is_agency ? "border-primary" : "border-muted-foreground/30")}>
+                        {!form.is_agency && <div className="h-2 w-2 rounded-full bg-primary" />}
                       </div>
+                      <span className="font-bold text-sm">Личный</span>
                     </div>
-                  )}
-
-                  {/* CPR_KZ — hide if currently in CPR_KZ */}
-                  {!isInCPR && cprProject && (
-                    <div className="flex items-center space-x-3 bg-secondary/50 p-3 rounded-lg border border-border/50 transition-colors hover:border-primary/30">
-                      <Checkbox
-                        id="vis-cpr"
-                        checked={showInCPR}
-                        onCheckedChange={(c) => setShowInCPR(!!c)}
-                      />
-                      <div>
-                        <Label htmlFor="vis-cpr" className="text-sm font-medium cursor-pointer">{cprProject.name}</Label>
+                  </Label>
+                  <Label
+                    htmlFor="r-agency"
+                    className={cn(
+                      "flex items-center justify-between p-4 rounded-2xl border border-border/50 cursor-pointer transition-all hover:bg-background/50",
+                      form.is_agency ? "bg-background border-primary shadow-sm" : "bg-transparent"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <RadioGroupItem value="agency" id="r-agency" className="sr-only" />
+                      <div className={cn("h-4 w-4 rounded-full border-2 flex items-center justify-center", form.is_agency ? "border-primary" : "border-muted-foreground/30")}>
+                        {form.is_agency && <div className="h-2 w-2 rounded-full bg-primary" />}
                       </div>
+                      <span className="font-bold text-sm">Агентский</span>
                     </div>
-                  )}
-                </div>
+                  </Label>
+                </RadioGroup>
+              </div>
+            </div>
+          </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Информация о клиенте</Label>
-                  <Textarea
-                    value={form.brief}
-                    onChange={(e) => updateField("brief", e.target.value)}
-                    className="glass border-border text-foreground resize-none focus:border-primary focus:ring-1 focus:ring-primary/20"
-                    rows={3}
-                  />
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 px-1">
+               <Database className="h-4 w-4 text-primary" />
+               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Базовые показатели (History)</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-secondary/20 p-6 rounded-[2rem] border border-border/40">
+              <Field label="Показы" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
+              <Field label="Клики" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
+              <Field label="Расход" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
+              <Field label="Лиды" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
+              <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
+              <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />
+              <div className="md:col-span-3">
+                <Field label="Выручка" value={form.revenue} onChange={(v) => updateField("revenue", v)} placeholder="0" />
+              </div>
+            </div>
+          </div>
+
+          <Accordion type="multiple" className="space-y-6">
+            <AccordionItem value="meta" className="border border-border/40 rounded-[2rem] px-6 bg-secondary/20 overflow-hidden">
+              <AccordionTrigger className="text-xs font-black uppercase tracking-[0.2em] text-foreground hover:no-underline py-6">
+                <div className="flex items-center gap-3">
+                   <Facebook className="h-4 w-4 text-blue-600" />
+                   Интеграция Meta
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-6 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Field label="ID кабинета" value={form.ad_account_id} onChange={(v) => updateField("ad_account_id", v)} placeholder="act_..." icon={ShieldCheck} />
+                  <Field label="ID страницы" value={form.page_id} onChange={(v) => updateField("page_id", v)} icon={Link2} />
+                  <Field label="Название страницы" value={form.page_name} onChange={(v) => updateField("page_name", v)} icon={Globe} />
+                  <Field label="Instagram ID" value={form.instagram_user_id} onChange={(v) => updateField("instagram_user_id", v)} icon={MessageSquare} />
+                </div>
+                <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex gap-3">
+                   <Info className="h-5 w-5 text-blue-500 shrink-0" />
+                   <p className="text-[11px] font-medium text-blue-600/80 leading-relaxed">
+                     Данные Meta Ads будут автоматически синхронизироваться каждые 2 часа. Убедитесь, что ID кабинета указан верно.
+                   </p>
                 </div>
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="meta" className="border border-border rounded-xl px-4 bg-secondary/30">
-              <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
-                Интеграция Meta
+            <AccordionItem value="tracking" className="border border-border/40 rounded-[2rem] px-6 bg-secondary/20 overflow-hidden">
+              <AccordionTrigger className="text-xs font-black uppercase tracking-[0.2em] text-foreground hover:no-underline py-6">
+                <div className="flex items-center gap-3">
+                   <Link2 className="h-4 w-4 text-primary" />
+                   Трекинг и Связь
+                </div>
               </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
-                <Field label="ID кабинета" value={form.ad_account_id} onChange={(v) => updateField("ad_account_id", v)} placeholder="act_..." />
-                <Field label="ID страницы" value={form.page_id} onChange={(v) => updateField("page_id", v)} />
-                <Field label="Название страницы" value={form.page_name} onChange={(v) => updateField("page_name", v)} />
-                <Field label="Instagram ID" value={form.instagram_user_id} onChange={(v) => updateField("instagram_user_id", v)} />
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="tracking" className="border border-border rounded-xl px-4 bg-secondary/30">
-              <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
-                Трекинг и Связь
-              </AccordionTrigger>
-              <AccordionContent className="space-y-4 pb-4">
-                <Field label="Telegram Group ID" value={form.telegram_group_id} onChange={(v) => updateField("telegram_group_id", v)} />
-                <Field label="Номер WhatsApp" value={form.whatsapp_number} onChange={(v) => updateField("whatsapp_number", v)} />
-                <Field label="Facebook Pixel ID" value={form.fb_pixel_id} onChange={(v) => updateField("fb_pixel_id", v)} />
-                <Field label="Событие пикселя" value={form.pixel_event} onChange={(v) => updateField("pixel_event", v)} placeholder="Lead" />
-                <Field label="URL сайта" value={form.website_url} onChange={(v) => updateField("website_url", v)} placeholder="https://" />
+              <AccordionContent className="space-y-6 pb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Field label="Telegram Group ID" value={form.telegram_group_id} onChange={(v) => updateField("telegram_group_id", v)} />
+                  <Field label="Номер WhatsApp" value={form.whatsapp_number} onChange={(v) => updateField("whatsapp_number", v)} />
+                  <Field label="Facebook Pixel ID" value={form.fb_pixel_id} onChange={(v) => updateField("fb_pixel_id", v)} />
+                  <Field label="Событие пикселя" value={form.pixel_event} onChange={(v) => updateField("pixel_event", v)} placeholder="Lead" />
+                  <div className="md:col-span-2">
+                    <Field label="URL сайта" value={form.website_url} onChange={(v) => updateField("website_url", v)} placeholder="https://" icon={Globe} />
+                  </div>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
 
-          <div className="pt-4">
-            <Button type="submit" className="w-full" disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          <div className="space-y-6">
+             <div className="flex items-center gap-3 px-1">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Доступы и Видимость</h3>
+             </div>
+             
+             <div className="space-y-3">
+               {!isInHq && markVisionProject && (
+                 <div className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-secondary/20 transition-all hover:bg-secondary/30">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center text-primary shadow-sm">
+                         <Target className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <Label htmlFor="vis-markvision" className="font-bold text-sm cursor-pointer">MarkVision AI</Label>
+                        <p className="text-[10px] font-medium text-muted-foreground/60">Показать в главном проекте (HQ)</p>
+                      </div>
+                    </div>
+                    <Checkbox
+                      id="vis-markvision"
+                      checked={showInMarkVision}
+                      onCheckedChange={(c) => setShowInMarkVision(!!c)}
+                      className="h-6 w-6 rounded-lg border-border/50 data-[state=checked]:bg-primary"
+                    />
+                 </div>
+               )}
+
+               {!isInCPR && cprProject && (
+                 <div className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-secondary/20 transition-all hover:bg-secondary/30">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center text-primary shadow-sm">
+                         <Globe className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <Label htmlFor="vis-cpr" className="font-bold text-sm cursor-pointer">{cprProject.name}</Label>
+                        <p className="text-[10px] font-medium text-muted-foreground/60">Показать в партнерском проекте</p>
+                      </div>
+                    </div>
+                    <Checkbox
+                      id="vis-cpr"
+                      checked={showInCPR}
+                      onCheckedChange={(c) => setShowInCPR(!!c)}
+                      className="h-6 w-6 rounded-lg border-border/50 data-[state=checked]:bg-primary"
+                    />
+                 </div>
+               )}
+             </div>
+          </div>
+
+          <div className="space-y-4 pt-4">
+             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 px-1">Заметки / Бриф</Label>
+             <Textarea
+               value={form.brief}
+               onChange={(e) => updateField("brief", e.target.value)}
+               className="min-h-[120px] bg-secondary/20 border-border/40 rounded-[2rem] p-6 text-sm font-medium focus:ring-primary/20 transition-all resize-none"
+               placeholder="Дополнительная информация о клиенте..."
+             />
+          </div>
+
+          <div className="sticky bottom-0 pb-10 pt-4 bg-gradient-to-t from-card to-transparent z-10">
+            <Button 
+              type="submit" 
+              className="w-full h-14 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1 transition-all" 
+              disabled={saving}
+            >
+              {saving ? <Loader2 className="h-5 w-5 animate-spin mr-3" /> : <Target className="h-5 w-5 mr-3" />}
               {account ? "Сохранить изменения" : "Создать кабинет"}
             </Button>
           </div>
