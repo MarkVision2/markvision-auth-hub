@@ -321,26 +321,27 @@ export default function AgencyAccounts() {
 
   return (
     <DashboardLayout breadcrumb={pageTitle}>
-      <div className="relative isolate">
-        {/* Futuristic Background Blur Elements */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -z-10 animate-pulse" />
-        <div className="absolute top-1/2 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[100px] -z-10" />
+      <div className="relative isolate min-h-[calc(100vh-10rem)]">
+        {/* Subtle Background Accents for Glassmorphism to "pop" */}
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -z-10 animate-pulse" />
+        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[100px] -z-10" />
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-white/5 gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 pb-6 border-b border-border/40 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-foreground tracking-tight drop-shadow-sm">{pageTitle}</h1>
-            <p className="text-muted-foreground/60 text-sm mt-1 font-medium">Управление и аналитика рекламных кампаний</p>
+            <h1 className="text-3xl font-extrabold text-foreground tracking-tight">{pageTitle}</h1>
+            <p className="text-muted-foreground/60 text-[13px] mt-1 font-medium">Мониторинг эффективности в реальном времени</p>
           </div>
           <div className="flex items-center gap-3">
-             <div className="bg-[#0a0b10]/40 backdrop-blur-2xl p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
+             <div className="bg-secondary/40 backdrop-blur-xl p-1.5 rounded-2xl border border-border/40 flex items-center shadow-lg">
                 <button
                   onClick={() => setMainTab("personal")}
                   className={cn(
-                    "px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                    "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "personal" 
-                      ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] scale-[1.02]" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-white dark:bg-primary text-primary-foreground dark:text-primary-foreground shadow-xl scale-[1.05] ring-1 ring-black/[0.05]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/40"
                   )}
+                  style={{ backgroundColor: mainTab === "personal" ? 'hsl(var(--primary))' : undefined }}
                 >
                   <Wallet className="h-4 w-4" />
                   Личные
@@ -348,11 +349,12 @@ export default function AgencyAccounts() {
                 <button
                   onClick={() => setMainTab("agency")}
                   className={cn(
-                    "px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                    "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "agency" 
-                      ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] scale-[1.02]" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-white dark:bg-primary text-primary-foreground dark:text-primary-foreground shadow-xl scale-[1.05] ring-1 ring-black/[0.05]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/40"
                   )}
+                  style={{ backgroundColor: mainTab === "agency" ? 'hsl(var(--primary))' : undefined }}
                 >
                   <Users className="h-4 w-4" />
                   Агентские
@@ -361,7 +363,7 @@ export default function AgencyAccounts() {
              {isSuperadmin && (
                 <Button 
                   onClick={() => setSheetOpen(true)} 
-                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 shadow-[0_8px_24px_rgba(var(--primary),0.25)] border-t border-white/20 transition-all hover:translate-y-[-2px] active:translate-y-[0px] font-bold"
+                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 shadow-[0_10px_25px_-5px_rgba(var(--primary),0.3)] transition-all hover:translate-y-[-2px] active:translate-y-[0px] font-bold text-white border-t border-white/20"
                 >
                   <Plus className="h-5 w-5" />
                   Добавить
@@ -370,30 +372,30 @@ export default function AgencyAccounts() {
           </div>
         </div>
 
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-10">
           <HqKpiCards metrics={summary} />
 
-          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white/5 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-4 rounded-[2.5rem] border border-white/10 shadow-2xl">
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white/40 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-3 px-5 rounded-[2rem] border border-border/50 shadow-xl">
             <div className="relative w-full lg:w-[450px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск по названию кабинета..."
-                className="h-13 w-full pl-12 pr-4 text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-medium"
+                placeholder="Поиск по названию..."
+                className="h-11 w-full pl-12 pr-4 text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-semibold"
               />
             </div>
             <div className="flex items-center gap-4 w-full lg:w-auto">
               <PeriodPicker value={period} onChange={setPeriod} />
-              <div className="h-10 w-[1px] bg-white/10 hidden lg:block" />
-              <div className="flex items-center gap-1 bg-black/20 p-1.5 rounded-xl border border-white/5">
+              <div className="h-8 w-[1px] bg-border/40 hidden lg:block" />
+              <div className="flex items-center gap-1 bg-black/5 dark:bg-black/20 p-1.5 rounded-xl border border-border/20">
                  {["all", "attention", "effective", "inactive"].map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
-                        filter === f ? "bg-white/10 text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground"
+                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                        filter === f ? "bg-white dark:bg-white/10 text-foreground shadow-sm" : "text-muted-foreground/40 hover:text-muted-foreground/60"
                       )}
                     >
                       {f === "all" ? "Все" : f === "attention" ? "Внимание" : f === "effective" ? "Топ" : "Офлайн"}
@@ -404,11 +406,11 @@ export default function AgencyAccounts() {
           </div>
 
           <div className="relative">
-            <div className="overflow-x-auto pb-8 -mx-4 px-4">
-              <Table className="min-w-[1000px] border-separate border-spacing-y-4">
+            <div className="overflow-x-auto pb-8">
+              <Table className="min-w-[1000px] border-separate border-spacing-y-3">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-none">
-                    <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 w-[280px] px-8 py-2">Кабинет & Статус</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 w-[240px] px-8 py-2">Кабинет & Статус</TableHead>
                     {active.id === "hq" && (
                       <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 px-4 py-2 text-center">Проект</TableHead>
                     )}
@@ -427,19 +429,17 @@ export default function AgencyAccounts() {
                       <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-24 text-center">
                         <div className="relative inline-block">
                            <Loader2 className="h-12 w-12 animate-spin text-primary/40" />
-                           <div className="absolute inset-0 h-12 w-12 rounded-full border-t-2 border-primary blur-md animate-pulse" />
                         </div>
-                        <p className="text-sm text-muted-foreground/60 mt-6 font-bold tracking-widest uppercase">Синхронизация данных...</p>
+                        <p className="text-xs text-muted-foreground/40 mt-6 font-black tracking-widest uppercase">Загрузка данных...</p>
                       </TableCell>
                     </TableRow>
                   ) : filtered.length === 0 ? (
                     <TableRow className="hover:bg-transparent border-none">
                       <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-32 text-center">
-                        <div className="bg-white/5 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-2xl backdrop-blur-3xl">
-                           <Presentation className="h-8 w-8 text-muted-foreground/20" />
+                        <div className="bg-secondary/50 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-6 border border-border shadow-inner">
+                           <Presentation className="h-7 w-7 text-muted-foreground/20" />
                         </div>
-                        <p className="text-lg font-bold text-muted-foreground/40">Кабинеты не найдены</p>
-                        <p className="text-xs text-muted-foreground/20 mt-2">Попробуйте изменить параметры фильтрации или поиска</p>
+                        <p className="text-base font-black text-muted-foreground/40">Записей не найдено</p>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -463,35 +463,32 @@ export default function AgencyAccounts() {
                           <motion.tr
                             layout
                             key={c.client_id}
-                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                            initial={{ opacity: 0, scale: 0.99, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.3, delay: idx * 0.02, ease: "easeOut" }}
-                            className="group bg-white/5 dark:bg-[#0a0b10]/40 backdrop-blur-2xl hover:bg-white/[0.08] dark:hover:bg-[#0a0b10]/60 transition-all duration-500 rounded-[2rem] shadow-xl hover:shadow-2xl border border-white/10 hover:border-primary/40 relative h-32"
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            transition={{ duration: 0.4, delay: idx * 0.015, ease: [0.23, 1, 0.32, 1] }}
+                            className="group bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/[0.08] transition-all duration-500 rounded-[1.85rem] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] hover:shadow-2xl border border-white hover:border-primary/20 relative"
                           >
-                            <TableCell className="py-6 px-8 rounded-l-[2rem] relative">
-                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full transition-all duration-300" style={{ backgroundColor: indicatorColor }} />
-                              <div className="flex items-center gap-5">
-                                <div className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 bg-black/40 border border-white/5 shadow-inner transition-transform duration-500 group-hover:scale-110">
+                            <TableCell className="py-5 px-8 rounded-l-[1.85rem] relative">
+                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 rounded-r-full group-hover:h-14 transition-all duration-500 shadow-[0_0_15px_-2px_rgba(0,0,0,0.1)]" style={{ backgroundColor: indicatorColor }} />
+                              <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-secondary/30 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
                                    <Target className={cn(
-                                     "h-7 w-7 drop-shadow-[0_0_10px_rgba(var(--primary),0.3)]",
+                                     "h-6 w-6",
                                      c.is_active === false ? "text-muted-foreground/20" : 
-                                     needsAttention(c) ? "text-destructive" : "text-primary"
+                                     needsAttention(c) ? "text-destructive" : "text-primary/70"
                                    )} />
                                 </div>
-                                <div className="space-y-1">
-                                  <p className="text-[15px] font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</p>
-                                  <div className="flex items-center gap-2">
+                                <div className="space-y-0.5">
+                                  <p className="text-[14px] font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</p>
+                                  <div className="flex items-center gap-1.5">
                                      <span className={cn(
-                                       "h-1.5 w-1.5 rounded-full animate-pulse",
-                                       isActiveCabinet ? "bg-[hsl(var(--status-good))]" : "bg-muted-foreground/40"
+                                       "h-1.5 w-1.5 rounded-full",
+                                       isActiveCabinet ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-muted-foreground/20"
                                      )} />
-                                     <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{s.label}</span>
+                                     <span className="text-[9px] font-black text-muted-foreground/40 uppercase tracking-widest">{s.label}</span>
                                      {needsAttention(c) && (
-                                       <div className="flex items-center gap-1.5 bg-destructive/10 px-2 py-0.5 rounded-full">
-                                          <AlertCircle className="h-3 w-3 text-destructive" />
-                                          <span className="text-[9px] font-black text-destructive uppercase tracking-widest">Внимание</span>
-                                       </div>
+                                       <span className="text-[8px] font-black text-destructive/60 uppercase tracking-widest ml-1 px-1.5 py-0.5 bg-destructive/5 rounded-md">Critical</span>
                                      )}
                                   </div>
                                 </div>
@@ -499,77 +496,62 @@ export default function AgencyAccounts() {
                             </TableCell>
 
                             {active.id === "hq" && (
-                              <TableCell className="py-4 text-center">
-                                <span className="bg-white/5 px-3 py-1.5 rounded-xl text-[10px] font-bold text-muted-foreground border border-white/5">
-                                  {c.project_name || "МаркВижн HQ"}
+                              <TableCell className="py-2 text-center">
+                                <span className="bg-secondary/40 px-2.5 py-1 rounded-lg text-[9px] font-black text-muted-foreground/60 tracking-wider">
+                                  {c.project_name || "HQ"}
                                 </span>
                               </TableCell>
                             )}
 
-                            <TableCell className="py-4">
-                              <p className="text-lg font-black text-foreground tabular-nums drop-shadow-sm">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
-                              <div className="w-16 h-1 rounded-full bg-white/5 mt-2 overflow-hidden">
-                                 <div className="h-full bg-primary/40 rounded-full" style={{ width: '40%' }} />
+                            <TableCell className="py-2">
+                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                            </TableCell>
+
+                            <TableCell className="py-2">
+                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{leads || "—"}</p>
+                              {cpl > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase tabular-nums">CPL: {fmt(cpl)}</span>}
+                            </TableCell>
+
+                            <TableCell className="py-2">
+                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{visits || "—"}</p>
+                              <div className="flex items-center gap-1.5">
+                                  {cpv > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase">CPV: {fmt(cpv)}</span>}
+                                  {leadToVisitCr > 0 && <span className="text-[9px] font-black text-primary/40 leading-none">{leadToVisitCr.toFixed(0)}% CR</span>}
                               </div>
                             </TableCell>
 
-                            <TableCell className="py-4">
-                              <p className="text-lg font-black text-foreground tabular-nums">{leads || "—"}</p>
-                              {cpl > 0 && (
-                                <div className="flex items-center gap-1.5 mt-1">
-                                   <TrendingUp className="h-3 w-3 text-primary/40" />
-                                   <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums uppercase">CPL: {fmt(cpl, " ₸")}</span>
-                                </div>
-                              )}
-                            </TableCell>
-
-                            <TableCell className="py-4">
-                              <p className="text-lg font-black text-foreground tabular-nums">{visits || "—"}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                 {cpv > 0 && <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">CPV: {fmt(cpv, " ₸")}</span>}
-                                 {leadToVisitCr > 0 && <span className="text-[10px] font-black text-primary/60 tabular-nums">{leadToVisitCr.toFixed(1)}% CR</span>}
+                            <TableCell className="py-2">
+                              <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{sales || "—"}</p>
+                              <div className="flex items-center gap-1.5">
+                                  {cac > 0 && <span className="text-[9px] font-black text-muted-foreground/30 uppercase">CAC: {fmt(cac)}</span>}
+                                  {visitToSaleCr > 0 && <span className="text-[9px] font-black text-primary/40 leading-none">{visitToSaleCr.toFixed(0)}% CR</span>}
                               </div>
                             </TableCell>
 
-                            <TableCell className="py-4">
-                              <p className="text-lg font-black text-foreground tabular-nums">{sales || "—"}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                 {cac > 0 && <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">CAC: {fmt(cac, " ₸")}</span>}
-                                 {visitToSaleCr > 0 && <span className="text-[10px] font-black text-primary/60 tabular-nums">{visitToSaleCr.toFixed(1)}% CR</span>}
-                              </div>
-                            </TableCell>
-
-                            <TableCell className="py-4">
-                              <div className="space-y-1">
-                                <p className="text-lg font-black text-[hsl(var(--status-good))] tabular-nums drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
+                            <TableCell className="py-2">
+                              <div className="space-y-0">
+                                <p className="text-[17px] font-black text-green-600 dark:text-green-400 tabular-nums tracking-tighter">
                                   {revenue > 0 ? fmt(revenue, " ₸") : "—"}
                                 </p>
-                                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.15em]">Выручка</span>
+                                <span className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-widest block -mt-1">Yield</span>
                               </div>
                             </TableCell>
 
-                            <TableCell className="py-4">
-                              <div className="flex items-center gap-3">
-                                 <div className="h-10 w-10 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
-                                    <UserPlus className="h-5 w-5 text-primary/40" />
-                                 </div>
-                                 <div>
-                                   <p className="text-[14px] font-black text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
-                                   <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-0.5">Всего</p>
-                                 </div>
-                              </div>
+                            <TableCell className="py-2">
+                               <p className="text-[17px] font-black text-foreground tabular-nums tracking-tighter">{fmt(c.followers ?? 0)}</p>
+                               <span className="text-[8px] font-black text-muted-foreground/20 uppercase tracking-widest block -mt-1">Users</span>
                             </TableCell>
 
-                            <TableCell className="py-4 px-8 rounded-r-[2rem]">
-                              <div className="flex items-center gap-2 justify-end">
+                            <TableCell className="py-2 px-8 rounded-r-[1.85rem]">
+                              <div className="flex items-center gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground/20 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-3xl border border-transparent hover:border-primary/20"
+                                  className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all border border-transparent hover:border-primary/10"
                                   onClick={() => {
                                     setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
                                     setSheetOpen(true);
                                   }}
                                 >
-                                  <Pencil className="h-5 w-5" />
+                                  <Pencil className="h-4 w-4" />
                                 </button>
                                 <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
                               </div>

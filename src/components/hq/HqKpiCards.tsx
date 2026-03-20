@@ -43,25 +43,25 @@ interface KpiCardProps {
 
 function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-foreground", editing, targetValue, onTargetChange }: KpiCardProps) {
   return (
-    <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-7 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_20px_80px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
-      {/* Dynamic Glow Effect */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+    <div className="relative group overflow-hidden rounded-[2rem] border border-white dark:border-white/10 bg-white/70 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+      {/* Premium Glow Effect */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
-      <div className="flex items-center gap-4 mb-6">
-        <div className="h-14 w-14 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
-          <div className="drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
+      <div className="flex items-center gap-3.5 mb-5 relative z-10">
+        <div className="h-11 w-11 rounded-xl bg-secondary/40 dark:bg-black/40 border border-white/20 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
+          <div className="text-primary/70 dark:drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
             {icon}
           </div>
         </div>
-        <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/40 font-black">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-black">{label}</span>
       </div>
       
-      <div className="flex items-baseline gap-1">
-        <p className={`text-3xl font-black tabular-nums tracking-tighter drop-shadow-sm ${accentClass}`}>{value}</p>
+      <div className="flex items-baseline gap-1 relative z-10">
+        <p className={`text-2xl font-black tabular-nums tracking-tighter ${accentClass}`}>{value}</p>
       </div>
 
       {target && targetPct !== undefined && (
-        <div className="mt-7 space-y-3.5">
+        <div className="mt-6 space-y-3 relative z-10">
           <div className="flex items-center justify-between gap-2">
             {editing && onTargetChange ? (
               <div className="relative w-full">
@@ -69,36 +69,35 @@ function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-fo
                   type="number"
                   value={targetValue ?? 0}
                   onChange={e => onTargetChange(Number(e.target.value))}
-                  className="text-xs text-foreground bg-black/40 border border-white/10 rounded-xl px-4 py-2 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                  className="text-xs text-foreground bg-secondary/30 dark:bg-black/40 border border-border/40 rounded-xl px-4 py-2 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                 />
               </div>
             ) : (
-              <span className="text-[10px] font-black text-muted-foreground/30 flex items-center gap-2 uppercase tracking-widest">
-                <Target className="h-3.5 w-3.5 opacity-20" />
-                Цель: <span className="text-foreground/40">{target}</span>
+              <span className="text-[9px] font-black text-muted-foreground/30 flex items-center gap-1.5 uppercase tracking-widest">
+                <Target className="h-3 w-3 opacity-20" />
+                Target: <span className="text-foreground/40">{target}</span>
               </span>
             )}
             <span className={cn(
-               "text-[10px] font-black tabular-nums shrink-0 px-2.5 py-1 rounded-full uppercase tracking-widest border",
-               targetPct >= 80 ? "bg-primary/10 text-primary border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.2)]" : 
-               targetPct >= 50 ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : 
+               "text-[9px] font-black tabular-nums shrink-0 px-2.5 py-1 rounded-full uppercase tracking-widest border",
+               targetPct >= 80 ? "bg-green-500/10 text-green-600 border-green-500/20" : 
+               targetPct >= 50 ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : 
                "bg-destructive/10 text-destructive border-destructive/20"
             )}>
               {targetPct}%
             </span>
           </div>
-          <div className="relative h-2.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 p-[1px]">
+          <div className="relative h-1.5 w-full bg-secondary/30 dark:bg-black/40 rounded-full overflow-hidden p-[1px]">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${targetPct}%` }}
-              transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }} // Springy effect
+              transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
               className={cn(
                 "h-full rounded-full transition-all duration-500 relative",
-                targetPct >= 80 ? "bg-primary" : targetPct >= 50 ? "bg-amber-500" : "bg-destructive"
+                targetPct >= 80 ? "bg-green-500" : targetPct >= 50 ? "bg-amber-500" : "bg-destructive"
               )}
             >
-               {/* Inner glow for the progress bar */}
-               <div className="absolute inset-0 bg-white/20 blur-[1px] rounded-full opacity-50" />
+               <div className="absolute inset-0 bg-white/30 blur-[1px] rounded-full opacity-50" />
             </motion.div>
           </div>
         </div>
