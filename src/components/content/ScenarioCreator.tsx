@@ -79,8 +79,14 @@ function ResultBlock({ title, content }: { title: string; content?: string }) {
     );
 }
 
+const N8N_SCENARIO_WEBHOOK = "https://n8n.zapoinov.com/webhook/02671bf4-ab71-41b0-996a-c1667e0f389c";
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function ScenarioCreator() {
+    // Mode state
+    const [creationMode, setCreationMode] = useState<"link" | "topic">("topic");
+    const [linkUrl, setLinkUrl] = useState("");
+
     // Form state
     const [topic, setTopic] = useState("");
     const [format, setFormat] = useState(OPTIONS.formats[0]);
@@ -180,7 +186,11 @@ export default function ScenarioCreator() {
 
     // ── Main generate ────────────────────────────────────────────────────────
     const handleGenerate = useCallback(async () => {
-        if (!topic.trim() && !audioBlob) {
+        if (creationMode === "link" && !linkUrl.trim()) {
+            toast({ title: "Вставь ссылку на видео!", variant: "destructive" });
+            return;
+        }
+        if (creationMode === "topic" && !topic.trim() && !audioBlob) {
             toast({ title: "Введи тему или запиши голос!", variant: "destructive" });
             return;
         }
@@ -188,205 +198,228 @@ export default function ScenarioCreator() {
         setIsGenerating(true);
         setResult(null);
         setLoaderProgress(10);
-        setLoaderText("Обработка данных...");
+        setLoaderText("Инициализация...");
 
         try {
             let finalTopic = topic;
 
-            if (audioBlob) {
-                setLoaderText("Распознаю голос через Speechmatics...");
+            if (creationMode === "topic" && audioBlob) {
+                setLoaderText("Распознаю голос...");
                 setLoaderProgress(25);
                 const transcribed = await transcribeAudio(audioBlob);
                 if (transcribed) finalTopic += finalTopic ? `\n\n[Голос]: ${transcribed}` : transcribed;
             }
 
-            setLoaderText("Создаю запись в Airtable...");
+            setLoaderText("Отправка в n8n AI Pipeline...");
             setLoaderProgress(40);
 
-            const fields: Record<string, unknown> = {
-                "Тема - О чем?": finalTopic,
-                "Формат": [format],
-                "АУДИТОРИЯ": [audience],
-                "Тип контента": [contentType],
-                "СЬЕМКА ИЛИ ИИ?": shootType,
-                "Референсы": refs,
-                "Есть воронка?": funnel,
-                "СТАТУС СОЗДАНИЕ": "Идея ✨",
+            const payload = {
+                mode: creationMode,
+                source_url: creationMode === "link" ? linkUrl : null,
+                topic: creationMode === "topic" ? finalTopic : null,
+                format,
+                audience,
+                contentType,
+                shootType,
+                refs,
+                funnel,
+                trigger,
+                timestamp: new Date().toISOString()
             };
-            if (trigger.trim()) fields["ТРИГЕР СЛОВО"] = trigger;
 
-            const airtableRes = await fetch(
-                `https://api.airtable.com/v0/${AIRTABLE_BASE}/${CONTENT_TABLE}`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ records: [{ fields }], typecast: true }),
-                }
-            );
+            const n8nRes = await fetch(N8N_SCENARIO_WEBHOOK, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
 
-            if (!airtableRes.ok) {
-                const err = await airtableRes.json();
-                throw new Error(err?.error?.message || "Ошибка Airtable");
+            if (!n8nRes.ok) throw new Error("Ошибка связи с n8n");
+
+            // Try to parse result immediately if n8n returns it
+            const n8nData = await n8nRes.json().catch(() => null);
+            
+            if (n8nData && (n8nData["ТЕКСТ СЦЕНАРИИ"] || n8nData.scenario)) {
+                setResult(n8nData as ScenarioResult);
+                setLoaderProgress(100);
+                setIsGenerating(false);
+                toast({ title: "✅ Сценарий готов!" });
+                return;
             }
 
-            const { records } = await airtableRes.json();
-            const recordId = records[0].id;
+            // Fallback to Airtable polling if recordId is provided or assumed
+            const recordId = n8nData?.recordId || n8nData?.id;
+            
+            if (recordId) {
+                setLoaderText("AI анализирует контент… (30–60 сек)");
+                setLoaderProgress(60);
 
-            setLoaderText("Запускаю Boost.space AI Pipeline...");
-            setLoaderProgress(60);
+                let attempts = 0;
+                pollingRef.current = setInterval(async () => {
+                    attempts++;
+                    setLoaderProgress(Math.min(60 + attempts * 2, 95));
 
-            // Trigger Boost webhook
-            try {
-                await fetch(`${BOOST_WEBHOOK_CREATE}?recordID=${recordId}`, { method: "GET", mode: "no-cors" });
-            } catch {
-                // no-cors — expected
-            }
-
-            setLoaderText("AI пишет сценарий… (30–60 сек)");
-            setLoaderProgress(75);
-
-            // Polling for result
-            let attempts = 0;
-            pollingRef.current = setInterval(async () => {
-                attempts++;
-                setLoaderProgress(Math.min(75 + attempts * 2, 95));
-
-                if (attempts > 36) { // 3 min
-                    clearInterval(pollingRef.current!);
-                    setIsGenerating(false);
-                    toast({ title: "Timeout: AI не ответил", description: "Попробуй ещё раз", variant: "destructive" });
-                    return;
-                }
-
-                try {
-                    const pollRes = await fetch(
-                        `https://api.airtable.com/v0/${AIRTABLE_BASE}/${CONTENT_TABLE}/${recordId}`,
-                        { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
-                    );
-                    const data = await pollRes.json();
-
-                    if (data.fields?.["ТЕКСТ СЦЕНАРИИ"]) {
+                    if (attempts > 36) { 
                         clearInterval(pollingRef.current!);
-                        setResult(data.fields as ScenarioResult);
-                        setLoaderProgress(100);
                         setIsGenerating(false);
-                        toast({ title: "✅ Сценарий готов!" });
+                        toast({ title: "Timeout: AI не ответил", variant: "destructive" });
+                        return;
                     }
-                } catch {
-                    // retry next tick
-                }
-            }, 5000);
+
+                    try {
+                        const pollRes = await fetch(
+                            `https://api.airtable.com/v0/${AIRTABLE_BASE}/${CONTENT_TABLE}/${recordId}`,
+                            { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } }
+                        );
+                        const data = await pollRes.json();
+
+                        if (data.fields?.["ТЕКСТ СЦЕНАРИИ"]) {
+                            clearInterval(pollingRef.current!);
+                            setResult(data.fields as ScenarioResult);
+                            setLoaderProgress(100);
+                            setIsGenerating(false);
+                            toast({ title: "✅ Анализ завершен!" });
+                        }
+                    } catch { }
+                }, 5000);
+            } else {
+                // If no immediate result and no recordId, we wait a bit and hope
+                setLoaderText("Обработка в фоновом режиме...");
+                await new Promise(r => setTimeout(r, 5000));
+                setLoaderText("n8n запустил процесс. Проверь результат позже.");
+                setIsGenerating(false);
+            }
 
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Неизвестная ошибка";
-            toast({ title: "Ошибка генерации", description: message, variant: "destructive" });
+            const message = err instanceof Error ? err.message : "Ошибка";
+            toast({ title: "Ошибка", description: message, variant: "destructive" });
             setIsGenerating(false);
         }
-    }, [topic, audioBlob, format, audience, contentType, shootType, refs, funnel, trigger]);
+    }, [creationMode, linkUrl, topic, audioBlob, format, audience, contentType, shootType, refs, funnel, trigger]);
 
     const handleReset = () => {
-        setTopic(""); setAudioBlob(null); setAudioUrl(null); setResult(null);
+        setTopic(""); setLinkUrl(""); setAudioBlob(null); setAudioUrl(null); setResult(null);
         setIsGenerating(false); setLoaderProgress(0);
         if (pollingRef.current) clearInterval(pollingRef.current);
     };
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-5 max-w-4xl w-full">
-            {/* Boost info banner */}
-            <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/10 p-3">
-                <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                    <span className="text-primary font-semibold">AI Сценарист (Boost.space)</span> — заполни форму, нажми «Создать сценарий».
-                    AI напишет суфлёр, описание для Instagram и полный сценарий за 30–60 сек.
-                </p>
+        <div className="space-y-6 max-w-4xl w-full pb-10">
+            {/* Mode Selection */}
+            <div className="bg-secondary/20 p-1.5 rounded-2xl border border-border flex gap-2">
+                <button
+                    onClick={() => setCreationMode("link")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${creationMode === "link" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                    <Send className="h-3.5 w-3.5" /> Анализ по ссылке
+                </button>
+                <button
+                    onClick={() => setCreationMode("topic")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all ${creationMode === "topic" ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                    <Sparkles className="h-3.5 w-3.5" /> Творческая тема
+                </button>
             </div>
 
-            {/* TOPIC + VOICE */}
-            <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Тема / Идея (текст или голос)</Label>
-                <div className="relative">
-                    <Textarea
-                        value={topic}
-                        onChange={(e) => setTopic(e.target.value)}
-                        placeholder="О чём будет ролик? Опиши идею, тему, что хочешь показать..."
-                        className="min-h-[120px] bg-secondary/30 border-border text-sm resize-none pr-14"
-                    />
-                    <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`absolute bottom-3 right-3 h-10 w-10 rounded-full flex items-center justify-center transition-all ${isRecording
-                            ? "bg-destructive shadow-[0_0_12px_hsl(var(--destructive)/0.5)] animate-pulse"
-                            : "bg-primary/10 border border-primary/30 hover:bg-primary/20"
-                            }`}
-                    >
-                        {isRecording ? <MicOff className="h-4 w-4 text-white" /> : <Mic className="h-4 w-4 text-primary" />}
-                    </button>
+            <div className="space-y-5">
+                {creationMode === "link" ? (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ссылка на Reels / Shorts / TikTok</Label>
+                        <Input
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            placeholder="Вставь ссылку для анализа..."
+                            className="h-12 bg-secondary/30 border-border text-sm rounded-xl focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                         <p className="text-[10px] text-muted-foreground/60 italic px-1">Система проанализирует видео и подготовит сценарий на его основе</p>
+                    </motion.div>
+                ) : (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Тема / Идея (текст или голос)</Label>
+                        <div className="relative">
+                            <Textarea
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                                placeholder="О чём будет ролик? Опиши идею..."
+                                className="min-h-[140px] bg-secondary/30 border-border text-sm resize-none pr-14 rounded-2xl focus:ring-2 focus:ring-primary/20"
+                            />
+                            <button
+                                onClick={isRecording ? stopRecording : startRecording}
+                                className={`absolute bottom-4 right-4 h-12 w-12 rounded-full flex items-center justify-center transition-all ${isRecording
+                                    ? "bg-destructive shadow-[0_0_15px_hsl(var(--destructive)/0.6)] animate-pulse scale-110"
+                                    : "bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary"
+                                    }`}
+                            >
+                                {isRecording ? <MicOff className="h-5 w-5 text-white" /> : <Mic className="h-5 w-5" />}
+                            </button>
+                        </div>
+
+                        {audioUrl && (
+                            <div className="flex items-center gap-3 p-3 bg-secondary/10 border border-border rounded-xl">
+                                <audio src={audioUrl} controls className="h-8 flex-1" />
+                                <button onClick={clearAudio} className="text-muted-foreground hover:text-destructive transition-colors p-2">
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* FORM GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <NativeSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} />
+                    <NativeSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} />
                 </div>
 
-                {audioUrl && (
-                    <div className="flex items-center gap-3 p-2 bg-secondary/20 border border-border rounded-lg">
-                        <audio src={audioUrl} controls className="h-8 flex-1" />
-                        <button onClick={clearAudio} className="text-muted-foreground hover:text-destructive transition-colors">
-                            <Trash2 className="h-4 w-4" />
-                        </button>
+                {/* ADVANCED SETTINGS COLLAPSIBLE (optional or just show) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <NativeSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} />
+                    <NativeSelect label="Съёмка или ИИ?" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <NativeSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} />
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Триггер-слово</Label>
+                        <Input
+                            value={trigger}
+                            onChange={(e) => setTrigger(e.target.value)}
+                            placeholder="Например: ГАЙД"
+                            className="h-10 bg-secondary/30 border-border text-sm rounded-lg"
+                        />
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* FORM GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <NativeSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} />
-                <NativeSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} />
-                <NativeSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} />
-                <NativeSelect label="Съёмка или ИИ?" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} />
-            </div>
-
-            {/* REFS + FUNNEL + TRIGGER */}
-            <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Референсы / Ссылки</Label>
-                <Textarea
-                    value={refs}
-                    onChange={(e) => setRefs(e.target.value)}
-                    placeholder="Ссылки на примеры, референсы..."
-                    className="min-h-[80px] bg-secondary/30 border-border text-sm resize-none"
-                />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <NativeSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} />
                 <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Триггер-слово (опционально)</Label>
-                    <Input
-                        value={trigger}
-                        onChange={(e) => setTrigger(e.target.value)}
-                        placeholder="Например: ГАЙД"
-                        className="h-10 bg-secondary/30 border-border text-sm"
+                    <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Доп. пожелания / Референсы</Label>
+                    <Textarea
+                        value={refs}
+                        onChange={(e) => setRefs(e.target.value)}
+                        placeholder="Особые пожелания или ссылки на примеры..."
+                        className="min-h-[80px] bg-secondary/30 border-border text-sm resize-none rounded-xl"
                     />
                 </div>
             </div>
 
             {/* CTA BUTTONS */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-4 pt-4">
                 <Button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="flex-1 h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm gap-2"
+                    className="flex-1 h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-base gap-3 rounded-2xl shadow-[0_8px_30px_rgb(var(--primary)/0.3)] transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     {isGenerating
-                        ? <><Loader2 className="h-4 w-4 animate-spin" /> Генерирую…</>
-                        : <><Sparkles className="h-4 w-4" /> Создать сценарий</>
+                        ? <><Loader2 className="h-5 w-5 animate-spin" /> Анализирую…</>
+                        : <><Sparkles className="h-5 w-5" /> Создать сценарий</>
                     }
                 </Button>
                 <Button
                     variant="outline"
                     onClick={handleReset}
                     disabled={isGenerating}
-                    className="h-12 px-6 border-border text-muted-foreground hover:text-foreground gap-2"
+                    className="h-14 px-8 border-border text-muted-foreground hover:text-foreground gap-2 rounded-2xl"
                 >
-                    <RotateCcw className="h-3.5 w-3.5" /> Сброс
+                    <RotateCcw className="h-4 w-4" />
                 </Button>
             </div>
 
@@ -394,27 +427,40 @@ export default function ScenarioCreator() {
             <AnimatePresence>
                 {isGenerating && (
                     <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="rounded-xl border border-border bg-card p-8 text-center space-y-5"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-10 text-center space-y-6 shadow-2xl relative overflow-hidden"
                     >
-                        {/* Spinner */}
-                        <div className="relative h-14 w-14 mx-auto">
-                            <div className="absolute inset-0 rounded-full border-4 border-primary/10" />
-                            <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
-                            <Sparkles className="absolute inset-0 m-auto h-5 w-5 text-primary" />
+                         <div className="absolute top-0 left-0 w-full h-1 bg-primary/20 overflow-hidden">
+                            <motion.div 
+                                className="h-full bg-primary" 
+                                initial={{ x: "-100%" }}
+                                animate={{ x: "0%" }}
+                                transition={{ duration: 10, ease: "linear" }}
+                            />
                         </div>
-                        <p className="text-sm font-semibold text-primary">{loaderText}</p>
-                        {/* Progress bar */}
-                        <div className="w-full h-1.5 bg-secondary/50 rounded-full overflow-hidden">
+
+                        <div className="relative h-20 w-20 mx-auto">
+                            <div className="absolute inset-0 rounded-full border-4 border-primary/5" />
+                            <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
+                            <div className="absolute inset-0 m-auto h-10 w-10 flex items-center justify-center bg-primary/10 rounded-full">
+                                <Sparkles className="h-6 w-6 text-primary" />
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                             <p className="text-lg font-bold text-foreground">{loaderText}</p>
+                             <p className="text-sm text-muted-foreground/60 max-w-sm mx-auto">AI обрабатывает запрос. Обычно это занимает от 30 до 90 секунд.</p>
+                        </div>
+                        
+                        <div className="w-full h-2 bg-secondary/30 rounded-full overflow-hidden max-w-md mx-auto">
                             <motion.div
-                                className="h-full bg-primary rounded-full"
+                                className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.5)]"
                                 animate={{ width: `${loaderProgress}%` }}
                                 transition={{ duration: 0.5 }}
                             />
                         </div>
-                        <p className="text-xs text-muted-foreground/60">Не закрывай страницу — AI работает...</p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -423,47 +469,49 @@ export default function ScenarioCreator() {
             <AnimatePresence>
                 {result && !isGenerating && (
                     <motion.div
-                        initial={{ opacity: 0, y: 16 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-xl border border-primary/30 bg-card overflow-hidden"
+                        className="rounded-3xl border border-primary/30 bg-card/60 backdrop-blur-md overflow-hidden shadow-2xl"
                     >
                         {/* Result header */}
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-primary/5">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-[hsl(var(--status-good))]" />
-                                <span className="text-sm font-bold text-foreground">Сценарий готов!</span>
+                        <div className="flex items-center justify-between px-8 py-5 border-b border-border bg-primary/5">
+                            <div className="flex items-center gap-2.5">
+                                <div className="h-8 w-8 rounded-full bg-[hsl(var(--status-good))]/10 flex items-center justify-center">
+                                    <CheckCircle2 className="h-5 w-5 text-[hsl(var(--status-good))]" />
+                                </div>
+                                <span className="text-base font-bold text-foreground">Сценарий готов!</span>
                             </div>
                             <Button
                                 size="sm"
                                 onClick={handleReset}
                                 variant="outline"
-                                className="h-8 text-xs border-border gap-1.5"
+                                className="h-9 px-4 text-xs border-border/60 hover:bg-primary/5 rounded-xl gap-2 font-bold"
                             >
-                                <RotateCcw className="h-3 w-3" /> Новый
+                                <RotateCcw className="h-3.5 w-3.5" /> Новый
                             </Button>
                         </div>
 
                         {/* Result blocks */}
-                        <div className="p-5 space-y-5">
-                            <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"]} />
-                            <ResultBlock title="Описание для Instagram" content={result["Текст Описание"]} />
-                            <ResultBlock title="Полный сценарий" content={result["ТЕКСТ СЦЕНАРИИ"]} />
+                        <div className="p-8 space-y-8">
+                            <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"] || result.teleprompter} />
+                            <ResultBlock title="Описание для Instagram" content={result["Текст Описание"] || result.description} />
+                            <ResultBlock title="Полный сценарий" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} />
 
                             {/* Copy all */}
                             <Button
                                 onClick={() => {
                                     const all = [
-                                        result["Только текст видео"] && `СУФЛЁР:\n${result["Только текст видео"]}`,
-                                        result["Текст Описание"] && `ОПИСАНИЕ:\n${result["Текст Описание"]}`,
-                                        result["ТЕКСТ СЦЕНАРИИ"] && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"]}`,
+                                        (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
+                                        (result["Текст Описание"] || result.description) && `ОПИСАНИЕ:\n${result["Текст Описание"] || result.description}`,
+                                        (result["ТЕКСТ СЦЕНАРИИ"] || result.scenario) && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"] || result.scenario}`,
                                     ].filter(Boolean).join("\n\n---\n\n");
                                     navigator.clipboard.writeText(all);
                                     toast({ title: "📋 Всё скопировано!" });
                                 }}
                                 variant="outline"
-                                className="w-full h-10 border-border gap-2 text-sm"
+                                className="w-full h-14 border-primary/20 hover:bg-primary/5 bg-primary/5 text-primary rounded-2xl gap-3 text-sm font-bold shadow-sm"
                             >
-                                <Copy className="h-3.5 w-3.5" /> Скопировать всё
+                                <Copy className="h-4 w-4" /> Скопировать всё в буфер
                             </Button>
                         </div>
                     </motion.div>

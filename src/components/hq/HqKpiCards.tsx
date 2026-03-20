@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { DollarSign, TrendingUp, Briefcase, Users, Pencil, Check, X } from "lucide-react";
+import { DollarSign, TrendingUp, Briefcase, Users, Pencil, Check, X, Target } from "lucide-react";
+import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AgencyMetrics {
@@ -41,32 +43,58 @@ interface KpiCardProps {
 
 function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-foreground", editing, targetValue, onTargetChange }: KpiCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 hover:border-primary/20 transition-colors">
-      <div className="flex items-center gap-2 mb-3">
-        <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center">
+    <div className="relative group overflow-hidden rounded-3xl border border-white/10 bg-white/5 dark:bg-[#1a1b1e]/40 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
+      {/* Subtle light effect */}
+      <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
           {icon}
         </div>
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+        <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/70 font-bold">{label}</span>
       </div>
-      <p className={`text-xl font-semibold tabular-nums tracking-tight ${accentClass}`}>{value}</p>
+      
+      <div className="flex items-baseline gap-1">
+        <p className={`text-2xl font-bold tabular-nums tracking-tight ${accentClass}`}>{value}</p>
+      </div>
+
       {target && targetPct !== undefined && (
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-5 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             {editing && onTargetChange ? (
-              <input
-                type="number"
-                value={targetValue ?? 0}
-                onChange={e => onTargetChange(Number(e.target.value))}
-                className="text-[11px] text-muted-foreground bg-secondary/60 border border-primary/30 rounded-md px-2 py-0.5 w-full tabular-nums focus:outline-none focus:ring-1 focus:ring-primary/40"
-              />
+              <div className="relative w-full">
+                <input
+                  type="number"
+                  value={targetValue ?? 0}
+                  onChange={e => onTargetChange(Number(e.target.value))}
+                  className="text-[11px] text-foreground bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-medium"
+                />
+              </div>
             ) : (
-              <span className="text-[10px] text-muted-foreground">Цель: {target}</span>
+              <span className="text-[10px] font-medium text-muted-foreground/60 flex items-center gap-1.5">
+                <Target className="h-3 w-3 opacity-40" />
+                Цель: <span className="text-foreground/80">{target}</span>
+              </span>
             )}
-            <span className={`text-[10px] font-semibold tabular-nums shrink-0 ${targetPct >= 80 ? "text-primary" : targetPct >= 50 ? "text-amber-500" : "text-destructive"}`}>
+            <span className={`text-[10px] font-bold tabular-nums shrink-0 px-2 py-0.5 rounded-full ${
+              targetPct >= 80 ? "bg-primary/10 text-primary" : 
+              targetPct >= 50 ? "bg-amber-500/10 text-amber-500" : 
+              "bg-destructive/10 text-destructive"
+            }`}>
               {targetPct}%
             </span>
           </div>
-          <Progress value={targetPct} className="h-1.5 bg-secondary" />
+          <div className="relative h-1.5 w-full bg-white/5 dark:bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${targetPct}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={cn(
+                "h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(var(--primary),0.4)]",
+                targetPct >= 80 ? "bg-primary" : targetPct >= 50 ? "bg-amber-500" : "bg-destructive"
+              )}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -319,7 +319,10 @@ export default function AgencyAccounts() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
         <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
         {isSuperadmin && (
-          <Button onClick={() => setSheetOpen(true)} className="gap-2 h-11 min-h-[44px]">
+          <Button 
+            onClick={() => setSheetOpen(true)} 
+            className="gap-2 h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-[0_4px_12px_rgba(var(--primary),0.2)] transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
+          >
             <Plus className="h-4 w-4" />
             Добавить кабинет
           </Button>
@@ -330,54 +333,20 @@ export default function AgencyAccounts() {
         <HqKpiCards metrics={summary} />
 
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
-          <Tabs value={filter} onValueChange={setFilter} className="w-full md:w-auto">
-            <TabsList className="bg-secondary/40 border border-border p-1 h-auto flex-wrap sm:flex-nowrap">
-              <TabsTrigger 
-                value="all" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2"
-              >
-                Все
-                <span className="bg-secondary px-1.5 py-0.5 rounded text-[10px] font-bold opacity-70">{metrics.length}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="attention" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2 data-[state=active]:text-destructive"
-              >
-                <AlertCircle className="h-3 w-3" />
-                Внимание
-                <span className="bg-destructive/10 text-destructive px-1.5 py-0.5 rounded text-[10px] font-bold">{attentionCount}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="effective" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2 data-[state=active]:text-[hsl(var(--status-good))]"
-              >
-                <CheckCircle2 className="h-3 w-3" />
-                Эффективные
-                <span className="bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))] px-1.5 py-0.5 rounded text-[10px] font-bold">{effectiveCount}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="inactive" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-[11px] h-9 px-4 rounded-md gap-2"
-              >
-                <PauseCircle className="h-3 w-3" />
-                Отключенные
-                <span className="bg-secondary px-1.5 py-0.5 rounded text-[10px] font-bold opacity-70">{inactiveCount}</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Поиск по кабинетам..."
-                className="h-10 w-full pl-9 text-[13px] bg-secondary/30 border-border focus:bg-background transition-all"
+                className="h-11 w-full pl-10 text-[13px] bg-secondary/20 border-border/60 hover:border-primary/30 focus:border-primary/50 focus:bg-background transition-all rounded-xl"
               />
             </div>
             <PeriodPicker value={period} onChange={setPeriod} />
           </div>
+        </div>
         </div>
       </div>
 
@@ -387,9 +356,9 @@ export default function AgencyAccounts() {
           <Table className="min-w-[900px] border-separate border-spacing-y-2.5">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 w-[240px] px-6 py-4">Кабинет</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground/50 w-[240px] px-8 py-5">Кабинет</TableHead>
                 {active.id === "hq" && (
-                  <TableHead className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground/60 px-4 py-4">Проект</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground/50 px-4 py-5">Проект</TableHead>
                 )}
                 <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
                 <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
@@ -397,7 +366,7 @@ export default function AgencyAccounts() {
                 <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
                 <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
                 <SortableHead label="Подписчики" sortField="followers" icon={UserPlus} />
-                <TableHead className="w-10 px-6"></TableHead>
+                <TableHead className="w-10 px-8 py-5"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="before:block before:h-1">
@@ -442,9 +411,9 @@ export default function AgencyAccounts() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.2, delay: idx * 0.03 }}
-                        className="group/row bg-card hover:bg-card/80 border border-border/50 hover:border-primary/20 transition-all cursor-default shadow-sm hover:shadow-md h-24"
+                        className="group/row bg-card hover:bg-card/60 border border-border/40 hover:border-primary/30 transition-all cursor-default shadow-sm hover:shadow-lg rounded-3xl overflow-hidden mb-3 h-28"
                       >
-                        <TableCell className="py-4 px-6 rounded-l-2xl border-l border-t border-b border-border/50 group-hover/row:border-primary/20">
+                        <TableCell className="py-6 px-8 rounded-l-[1.5rem] border-l border-t border-b border-border/30 group-hover/row:border-primary/30">
                           <div className="flex items-center gap-4">
                             <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${indicatorClass}`}>
                                <Target className={cn(

@@ -184,36 +184,9 @@ export default function Dashboard() {
           clientsData = data || [];
         }
 
-        if (targetIds.length > 0) {
-          // Fetch base impressions and clicks from clients_config PER client
-          const { data: baseData } = await (supabase as any)
-            .from("clients_config")
-            .select("id, impressions, clicks, is_agency")
-            .in("id", targetIds);
-
-          // Fetch daily impressions, clicks and followers from daily_data PER client
-          const { data: dailyData } = await (supabase as any)
-            .from("daily_data")
-            .select("impressions, clicks, followers, client_config_id")
-            .in("client_config_id", targetIds);
-
-          const finalData = clientsData.map(c => {
-            const clientDaily = (dailyData || []).filter((d: any) => d.client_config_id === c.client_id);
-            const clientBase = (baseData || []).find((b: any) => b.id === c.client_id);
-
-            return {
-              ...c,
-              is_agency: clientBase?.is_agency,
-              impressions: clientDaily.reduce((s: number, d: any) => s + (d.impressions || 0), 0) + (clientBase?.impressions || 0),
-              clicks: clientDaily.reduce((s: number, d: any) => s + (d.clicks || 0), 0) + (clientBase?.clicks || 0),
-              followers: clientDaily.reduce((s: number, d: any) => s + (d.followers || 0), 0)
-            };
-          });
-
-          setClients(finalData);
-        } else {
-          setClients(clientsData);
-        }
+        // agency_metrics_view already returns all totals (spend, meta_leads, impressions, clicks, followers, is_agency, etc.)
+        // from clients_config which is kept in sync by recalculate_client_totals RPC
+        setClients(clientsData);
       } catch (e: any) {
         toast({ title: "Ошибка", description: e.message, variant: "destructive" });
       } finally {
