@@ -321,27 +321,24 @@ export default function AgencyAccounts() {
 
   return (
     <DashboardLayout breadcrumb={pageTitle}>
-      <div className="relative isolate min-h-[calc(100vh-10rem)]">
-        {/* Subtle Background Accents for Glassmorphism to "pop" */}
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] -z-10 animate-pulse" />
-        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] bg-blue-400/5 rounded-full blur-[100px] -z-10" />
+      <div className="relative min-h-[calc(100vh-10rem)]">
+        <div className="absolute inset-0 -z-10 pointer-events-none bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
 
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 pb-6 border-b border-border/40 gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-5 border-b border-border/40 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-foreground tracking-tight">{pageTitle}</h1>
-            <p className="text-muted-foreground/60 text-[13px] mt-1 font-medium">Мониторинг эффективности в реальном времени</p>
+            <p className="text-muted-foreground text-sm mt-1 font-medium">Мониторинг эффективности в реальном времени</p>
           </div>
           <div className="flex items-center gap-3">
-             <div className="bg-secondary/40 backdrop-blur-xl p-1.5 rounded-2xl border border-border/40 flex items-center shadow-lg">
+             <div className="bg-muted/50 p-1.5 rounded-xl border border-border flex items-center">
                 <button
                   onClick={() => setMainTab("personal")}
                   className={cn(
                     "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "personal" 
-                      ? "bg-white dark:bg-primary text-primary-foreground dark:text-primary-foreground shadow-xl scale-[1.05] ring-1 ring-black/[0.05]" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/40"
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                   )}
-                  style={{ backgroundColor: mainTab === "personal" ? 'hsl(var(--primary))' : undefined }}
                 >
                   <Wallet className="h-4 w-4" />
                   Личные
@@ -351,10 +348,9 @@ export default function AgencyAccounts() {
                   className={cn(
                     "px-7 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2.5",
                     mainTab === "agency" 
-                      ? "bg-white dark:bg-primary text-primary-foreground dark:text-primary-foreground shadow-xl scale-[1.05] ring-1 ring-black/[0.05]" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/40"
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                   )}
-                  style={{ backgroundColor: mainTab === "agency" ? 'hsl(var(--primary))' : undefined }}
                 >
                   <Users className="h-4 w-4" />
                   Агентские
@@ -363,7 +359,7 @@ export default function AgencyAccounts() {
              {isSuperadmin && (
                 <Button 
                   onClick={() => setSheetOpen(true)} 
-                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 shadow-[0_10px_25px_-5px_rgba(var(--primary),0.3)] transition-all hover:translate-y-[-2px] active:translate-y-[0px] font-bold text-white border-t border-white/20"
+                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 transition-all font-bold text-white border border-primary/20"
                 >
                   <Plus className="h-5 w-5" />
                   Добавить
@@ -375,27 +371,29 @@ export default function AgencyAccounts() {
         <div className="space-y-10">
           <HqKpiCards metrics={summary} />
 
-          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white/40 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-3 px-5 rounded-[2rem] border border-border/50 shadow-xl">
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-card border border-border p-3 px-5 rounded-2xl">
             <div className="relative w-full lg:w-[450px]">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Поиск по названию..."
-                className="h-11 w-full pl-12 pr-4 text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-semibold"
+                className="h-11 w-full pl-12 pr-4 text-sm bg-background border-border focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-semibold rounded-xl"
               />
             </div>
             <div className="flex items-center gap-4 w-full lg:w-auto">
               <PeriodPicker value={period} onChange={setPeriod} />
               <div className="h-8 w-[1px] bg-border/40 hidden lg:block" />
-              <div className="flex items-center gap-1 bg-black/5 dark:bg-black/20 p-1.5 rounded-xl border border-border/20">
+              <div className="flex items-center gap-1 bg-muted/50 p-1.5 rounded-xl border border-border/50">
                  {["all", "attention", "effective", "inactive"].map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
                       className={cn(
                         "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                        filter === f ? "bg-white dark:bg-white/10 text-foreground shadow-sm" : "text-muted-foreground/40 hover:text-muted-foreground/60"
+                        filter === f
+                          ? "bg-primary/10 text-foreground ring-1 ring-primary/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                       )}
                     >
                       {f === "all" ? "Все" : f === "attention" ? "Внимание" : f === "effective" ? "Топ" : "Офлайн"}
@@ -467,12 +465,12 @@ export default function AgencyAccounts() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.98 }}
                             transition={{ duration: 0.4, delay: idx * 0.015, ease: [0.23, 1, 0.32, 1] }}
-                            className="group bg-white/60 dark:bg-white/5 hover:bg-white dark:hover:bg-white/[0.08] transition-all duration-500 rounded-[1.85rem] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_4px_6px_-2px_rgba(0,0,0,0.05)] hover:shadow-2xl border border-white hover:border-primary/20 relative"
+                            className="group bg-card hover:bg-muted/30 transition-all duration-500 rounded-[1.85rem] border border-border hover:border-primary/20 relative shadow-sm"
                           >
                             <TableCell className="py-5 px-8 rounded-l-[1.85rem] relative">
                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-10 rounded-r-full group-hover:h-14 transition-all duration-500 shadow-[0_0_15px_-2px_rgba(0,0,0,0.1)]" style={{ backgroundColor: indicatorColor }} />
                               <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-secondary/30 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 bg-muted/30 border border-border group-hover:scale-110 transition-transform duration-500">
                                    <Target className={cn(
                                      "h-6 w-6",
                                      c.is_active === false ? "text-muted-foreground/20" : 
