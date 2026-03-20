@@ -260,11 +260,12 @@ export default function Dashboard() {
   const agencyMetrics: any = loading
     ? null
     : (() => {
-      // Only HQ's own personal cabinets (project_id null = HQ-owned, is_agency false = personal)
+      // Followers/личные метрики — только собственные кабинеты HQ (project_id=null, is_agency=false)
       const hqPersonalClients = clients.filter((c: any) =>
         c.project_id === null && c.is_agency === false
       );
-      const activeAccounts = hqPersonalClients.filter((c: any) => c.is_active).length;
+      // Активные кабинеты — все кабинеты во всех проектах (то что видно в разделе "Агентские кабинеты")
+      const activeAccounts = clients.filter((c: any) => c.is_active).length;
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
       const totalFollowers = hqPersonalClients
