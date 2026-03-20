@@ -43,23 +43,25 @@ interface KpiCardProps {
 
 function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-foreground", editing, targetValue, onTargetChange }: KpiCardProps) {
   return (
-    <div className="relative group overflow-hidden rounded-3xl border border-white/10 bg-white/5 dark:bg-[#1a1b1e]/40 backdrop-blur-xl p-6 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_8px_32px_rgba(0,0,0,0.12)]">
-      {/* Subtle light effect */}
-      <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="relative group overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-7 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_20px_80px_rgba(0,0,0,0.4)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+      {/* Dynamic Glow Effect */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 rounded-full blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
-      <div className="flex items-center gap-3 mb-4">
-        <div className="h-10 w-10 rounded-2xl bg-white/10 dark:bg-white/5 border border-white/10 flex items-center justify-center shadow-inner">
-          {icon}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="h-14 w-14 rounded-2xl bg-black/40 border border-white/5 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
+          <div className="drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
+            {icon}
+          </div>
         </div>
-        <span className="text-[10px] uppercase tracking-[0.1em] text-muted-foreground/70 font-bold">{label}</span>
+        <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/40 font-black">{label}</span>
       </div>
       
       <div className="flex items-baseline gap-1">
-        <p className={`text-2xl font-bold tabular-nums tracking-tight ${accentClass}`}>{value}</p>
+        <p className={`text-3xl font-black tabular-nums tracking-tighter drop-shadow-sm ${accentClass}`}>{value}</p>
       </div>
 
       {target && targetPct !== undefined && (
-        <div className="mt-5 space-y-2.5">
+        <div className="mt-7 space-y-3.5">
           <div className="flex items-center justify-between gap-2">
             {editing && onTargetChange ? (
               <div className="relative w-full">
@@ -67,33 +69,37 @@ function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-fo
                   type="number"
                   value={targetValue ?? 0}
                   onChange={e => onTargetChange(Number(e.target.value))}
-                  className="text-[11px] text-foreground bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all font-medium"
+                  className="text-xs text-foreground bg-black/40 border border-white/10 rounded-xl px-4 py-2 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                 />
               </div>
             ) : (
-              <span className="text-[10px] font-medium text-muted-foreground/60 flex items-center gap-1.5">
-                <Target className="h-3 w-3 opacity-40" />
-                Цель: <span className="text-foreground/80">{target}</span>
+              <span className="text-[10px] font-black text-muted-foreground/30 flex items-center gap-2 uppercase tracking-widest">
+                <Target className="h-3.5 w-3.5 opacity-20" />
+                Цель: <span className="text-foreground/40">{target}</span>
               </span>
             )}
-            <span className={`text-[10px] font-bold tabular-nums shrink-0 px-2 py-0.5 rounded-full ${
-              targetPct >= 80 ? "bg-primary/10 text-primary" : 
-              targetPct >= 50 ? "bg-amber-500/10 text-amber-500" : 
-              "bg-destructive/10 text-destructive"
-            }`}>
+            <span className={cn(
+               "text-[10px] font-black tabular-nums shrink-0 px-2.5 py-1 rounded-full uppercase tracking-widest border",
+               targetPct >= 80 ? "bg-primary/10 text-primary border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.2)]" : 
+               targetPct >= 50 ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : 
+               "bg-destructive/10 text-destructive border-destructive/20"
+            )}>
               {targetPct}%
             </span>
           </div>
-          <div className="relative h-1.5 w-full bg-white/5 dark:bg-white/5 rounded-full overflow-hidden">
+          <div className="relative h-2.5 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 p-[1px]">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${targetPct}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
+              transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }} // Springy effect
               className={cn(
-                "h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(var(--primary),0.4)]",
+                "h-full rounded-full transition-all duration-500 relative",
                 targetPct >= 80 ? "bg-primary" : targetPct >= 50 ? "bg-amber-500" : "bg-destructive"
               )}
-            />
+            >
+               {/* Inner glow for the progress bar */}
+               <div className="absolute inset-0 bg-white/20 blur-[1px] rounded-full opacity-50" />
+            </motion.div>
           </div>
         </div>
       )}

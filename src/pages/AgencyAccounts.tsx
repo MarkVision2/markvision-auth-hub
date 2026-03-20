@@ -110,6 +110,7 @@ export default function AgencyAccounts() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [mainTab, setMainTab] = useState<"personal" | "agency">("personal");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("spend");
@@ -191,6 +192,7 @@ export default function AgencyAccounts() {
           client_id: c.id,
           client_name: c.client_name,
           is_active: c.is_active,
+          is_agency: c.is_agency,
           spend: totalSpend,
           meta_leads: totalLeads,
           visits: totalVisits,
@@ -245,6 +247,9 @@ export default function AgencyAccounts() {
   const filtered = useMemo(() => {
     let list = metrics;
 
+    // Split by tab first
+    list = list.filter(m => mainTab === "agency" ? (m as any).is_agency : !(m as any).is_agency);
+
     // search
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -268,7 +273,7 @@ export default function AgencyAccounts() {
     });
 
     return list;
-  }, [metrics, search, filter, sortKey, sortDir, needsAttention]);
+  }, [metrics, search, filter, sortKey, sortDir, needsAttention, mainTab]);
 
   // Summary KPIs for filtered set
   const summary = useMemo(() => {
@@ -297,7 +302,7 @@ export default function AgencyAccounts() {
       onClick={() => toggleSort(sortField)}
     >
       <span className="flex items-center gap-1.5 whitespace-nowrap">
-        {Icon && <Icon className="h-3 w-3 opacity-60" />}
+        {Icon && <Icon className="h-4 w-4 opacity-60" />}
         {label}
         <SortIcon active={sortKey === sortField} dir={sortDir} />
       </span>
@@ -305,215 +310,291 @@ export default function AgencyAccounts() {
   );
 
   function getRowIndicator(c: MetricsRow) {
-    if (c.is_active === false) return "bg-muted-foreground/10";
+    if (c.is_active === false) return "rgba(148,163,184,0.1)";
     const romi = Number(c.romi) || 0;
-    if (romi > 0) return "bg-[hsl(var(--status-good))]/10";
-    if (needsAttention(c)) return "bg-destructive/10";
-    return "bg-primary/5";
+    if (romi > 0) return "rgba(34,197,94,0.15)";
+    if (needsAttention(c)) return "rgba(239,68,68,0.15)";
+    return "rgba(var(--primary),0.1)";
   }
 
-  const pageTitle = isSuperadmin ? "Агентские кабинеты" : "Мои рекламные кабинеты";
+  const pageTitle = isSuperadmin ? "Рекламные кабинеты" : "Мои рекламные кабинеты";
 
   return (
     <DashboardLayout breadcrumb={pageTitle}>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
-        <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">{pageTitle}</h1>
-        {isSuperadmin && (
-          <Button 
-            onClick={() => setSheetOpen(true)} 
-            className="gap-2 h-11 px-6 rounded-xl bg-primary hover:bg-primary/90 shadow-[0_4px_12px_rgba(var(--primary),0.2)] transition-all hover:translate-y-[-1px] active:translate-y-[0px]"
-          >
-            <Plus className="h-4 w-4" />
-            Добавить кабинет
-          </Button>
-        )}
-      </div>
+      <div className="relative isolate">
+        {/* Futuristic Background Blur Elements */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -z-10 animate-pulse" />
+        <div className="absolute top-1/2 -right-24 w-80 h-80 bg-blue-500/5 rounded-full blur-[100px] -z-10" />
 
-      <div className="space-y-6">
-        <HqKpiCards metrics={summary} />
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-white/5 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-foreground tracking-tight drop-shadow-sm">{pageTitle}</h1>
+            <p className="text-muted-foreground/60 text-sm mt-1 font-medium">Управление и аналитика рекламных кампаний</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="bg-[#0a0b10]/40 backdrop-blur-2xl p-1 rounded-2xl border border-white/10 flex items-center shadow-2xl">
+                <button
+                  onClick={() => setMainTab("personal")}
+                  className={cn(
+                    "px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                    mainTab === "personal" 
+                      ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] scale-[1.02]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  )}
+                >
+                  <Wallet className="h-4 w-4" />
+                  Личные
+                </button>
+                <button
+                  onClick={() => setMainTab("agency")}
+                  className={cn(
+                    "px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-2",
+                    mainTab === "agency" 
+                      ? "bg-primary text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] scale-[1.02]" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  )}
+                >
+                  <Users className="h-4 w-4" />
+                  Агентские
+                </button>
+             </div>
+             {isSuperadmin && (
+                <Button 
+                  onClick={() => setSheetOpen(true)} 
+                  className="gap-2 h-11 px-6 rounded-2xl bg-primary hover:bg-primary/90 shadow-[0_8px_24px_rgba(var(--primary),0.25)] border-t border-white/20 transition-all hover:translate-y-[-2px] active:translate-y-[0px] font-bold"
+                >
+                  <Plus className="h-5 w-5" />
+                  Добавить
+                </Button>
+             )}
+          </div>
+        </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <HqKpiCards metrics={summary} />
+
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-between bg-white/5 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-4 rounded-[2.5rem] border border-white/10 shadow-2xl">
+            <div className="relative w-full lg:w-[450px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
               <Input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск по кабинетам..."
-                className="h-11 w-full pl-10 text-[13px] bg-secondary/20 border-border/60 hover:border-primary/30 focus:border-primary/50 focus:bg-background transition-all rounded-xl"
+                placeholder="Поиск по названию кабинета..."
+                className="h-13 w-full pl-12 pr-4 text-sm bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/30 font-medium"
               />
             </div>
-            <PeriodPicker value={period} onChange={setPeriod} />
+            <div className="flex items-center gap-4 w-full lg:w-auto">
+              <PeriodPicker value={period} onChange={setPeriod} />
+              <div className="h-10 w-[1px] bg-white/10 hidden lg:block" />
+              <div className="flex items-center gap-1 bg-black/20 p-1.5 rounded-xl border border-white/5">
+                 {["all", "attention", "effective", "inactive"].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                        filter === f ? "bg-white/10 text-foreground" : "text-muted-foreground/40 hover:text-muted-foreground"
+                      )}
+                    >
+                      {f === "all" ? "Все" : f === "attention" ? "Внимание" : f === "effective" ? "Топ" : "Офлайн"}
+                    </button>
+                 ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="overflow-x-auto pb-8 -mx-4 px-4">
+              <Table className="min-w-[1000px] border-separate border-spacing-y-4">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent border-none">
+                    <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 w-[280px] px-8 py-2">Кабинет & Статус</TableHead>
+                    {active.id === "hq" && (
+                      <TableHead className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 px-4 py-2 text-center">Проект</TableHead>
+                    )}
+                    <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
+                    <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
+                    <SortableHead label="Визиты" sortField="visits" icon={MousePointer2} />
+                    <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
+                    <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
+                    <SortableHead label="Подписчики" sortField="followers" icon={UserPlus} />
+                    <TableHead className="w-16 px-8 py-2"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow className="hover:bg-transparent border-none">
+                      <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-24 text-center">
+                        <div className="relative inline-block">
+                           <Loader2 className="h-12 w-12 animate-spin text-primary/40" />
+                           <div className="absolute inset-0 h-12 w-12 rounded-full border-t-2 border-primary blur-md animate-pulse" />
+                        </div>
+                        <p className="text-sm text-muted-foreground/60 mt-6 font-bold tracking-widest uppercase">Синхронизация данных...</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : filtered.length === 0 ? (
+                    <TableRow className="hover:bg-transparent border-none">
+                      <TableCell colSpan={active.id === "hq" ? 9 : 8} className="py-32 text-center">
+                        <div className="bg-white/5 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-2xl backdrop-blur-3xl">
+                           <Presentation className="h-8 w-8 text-muted-foreground/20" />
+                        </div>
+                        <p className="text-lg font-bold text-muted-foreground/40">Кабинеты не найдены</p>
+                        <p className="text-xs text-muted-foreground/20 mt-2">Попробуйте изменить параметры фильтрации или поиска</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <AnimatePresence mode="popLayout">
+                      {filtered.map((c, idx) => {
+                        const isActiveCabinet = c.is_active !== false;
+                        const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
+                        const spend = Number(c.spend) || 0;
+                        const leads = Number(c.meta_leads) || 0;
+                        const cpl = Number(c.cpl) || 0;
+                        const visits = Number(c.visits) || 0;
+                        const cpv = Number(c.cpv) || 0;
+                        const sales = Number(c.sales) || 0;
+                        const revenue = Number(c.revenue) || 0;
+                        const cac = Number(c.cac) || 0;
+                        const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
+                        const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
+                        const indicatorColor = getRowIndicator(c);
+
+                        return (
+                          <motion.tr
+                            layout
+                            key={c.client_id}
+                            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.3, delay: idx * 0.02, ease: "easeOut" }}
+                            className="group bg-white/5 dark:bg-[#0a0b10]/40 backdrop-blur-2xl hover:bg-white/[0.08] dark:hover:bg-[#0a0b10]/60 transition-all duration-500 rounded-[2rem] shadow-xl hover:shadow-2xl border border-white/10 hover:border-primary/40 relative h-32"
+                          >
+                            <TableCell className="py-6 px-8 rounded-l-[2rem] relative">
+                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 rounded-r-full transition-all duration-300" style={{ backgroundColor: indicatorColor }} />
+                              <div className="flex items-center gap-5">
+                                <div className="h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 bg-black/40 border border-white/5 shadow-inner transition-transform duration-500 group-hover:scale-110">
+                                   <Target className={cn(
+                                     "h-7 w-7 drop-shadow-[0_0_10px_rgba(var(--primary),0.3)]",
+                                     c.is_active === false ? "text-muted-foreground/20" : 
+                                     needsAttention(c) ? "text-destructive" : "text-primary"
+                                   )} />
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[15px] font-black text-foreground tracking-tight line-clamp-1">{c.client_name}</p>
+                                  <div className="flex items-center gap-2">
+                                     <span className={cn(
+                                       "h-1.5 w-1.5 rounded-full animate-pulse",
+                                       isActiveCabinet ? "bg-[hsl(var(--status-good))]" : "bg-muted-foreground/40"
+                                     )} />
+                                     <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{s.label}</span>
+                                     {needsAttention(c) && (
+                                       <div className="flex items-center gap-1.5 bg-destructive/10 px-2 py-0.5 rounded-full">
+                                          <AlertCircle className="h-3 w-3 text-destructive" />
+                                          <span className="text-[9px] font-black text-destructive uppercase tracking-widest">Внимание</span>
+                                       </div>
+                                     )}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+
+                            {active.id === "hq" && (
+                              <TableCell className="py-4 text-center">
+                                <span className="bg-white/5 px-3 py-1.5 rounded-xl text-[10px] font-bold text-muted-foreground border border-white/5">
+                                  {c.project_name || "МаркВижн HQ"}
+                                </span>
+                              </TableCell>
+                            )}
+
+                            <TableCell className="py-4">
+                              <p className="text-lg font-black text-foreground tabular-nums drop-shadow-sm">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
+                              <div className="w-16 h-1 rounded-full bg-white/5 mt-2 overflow-hidden">
+                                 <div className="h-full bg-primary/40 rounded-full" style={{ width: '40%' }} />
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-4">
+                              <p className="text-lg font-black text-foreground tabular-nums">{leads || "—"}</p>
+                              {cpl > 0 && (
+                                <div className="flex items-center gap-1.5 mt-1">
+                                   <TrendingUp className="h-3 w-3 text-primary/40" />
+                                   <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums uppercase">CPL: {fmt(cpl, " ₸")}</span>
+                                </div>
+                              )}
+                            </TableCell>
+
+                            <TableCell className="py-4">
+                              <p className="text-lg font-black text-foreground tabular-nums">{visits || "—"}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                 {cpv > 0 && <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">CPV: {fmt(cpv, " ₸")}</span>}
+                                 {leadToVisitCr > 0 && <span className="text-[10px] font-black text-primary/60 tabular-nums">{leadToVisitCr.toFixed(1)}% CR</span>}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-4">
+                              <p className="text-lg font-black text-foreground tabular-nums">{sales || "—"}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                 {cac > 0 && <span className="text-[10px] font-black text-muted-foreground/40 tabular-nums">CAC: {fmt(cac, " ₸")}</span>}
+                                 {visitToSaleCr > 0 && <span className="text-[10px] font-black text-primary/60 tabular-nums">{visitToSaleCr.toFixed(1)}% CR</span>}
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-4">
+                              <div className="space-y-1">
+                                <p className="text-lg font-black text-[hsl(var(--status-good))] tabular-nums drop-shadow-[0_0_8px_rgba(34,197,94,0.3)]">
+                                  {revenue > 0 ? fmt(revenue, " ₸") : "—"}
+                                </p>
+                                <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-[0.15em]">Выручка</span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-4">
+                              <div className="flex items-center gap-3">
+                                 <div className="h-10 w-10 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center shrink-0">
+                                    <UserPlus className="h-5 w-5 text-primary/40" />
+                                 </div>
+                                 <div>
+                                   <p className="text-[14px] font-black text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
+                                   <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-0.5">Всего</p>
+                                 </div>
+                              </div>
+                            </TableCell>
+
+                            <TableCell className="py-4 px-8 rounded-r-[2rem]">
+                              <div className="flex items-center gap-2 justify-end">
+                                <button
+                                  className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground/20 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover:opacity-100 backdrop-blur-3xl border border-transparent hover:border-primary/20"
+                                  onClick={() => {
+                                    setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
+                                    setSheetOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-5 w-5" />
+                                </button>
+                                <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
+                              </div>
+                            </TableCell>
+                          </motion.tr>
+                        );
+                      })}
+                    </AnimatePresence>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
-        </div>
+
+        <AddAccountSheet
+          open={sheetOpen}
+          onOpenChange={(open) => {
+            setSheetOpen(open);
+            if (!open) setEditingAccount(null);
+          }}
+          onSaved={fetchMetrics}
+          account={editingAccount}
+        />
       </div>
-
-
-      <div className="mt-8">
-        <div className="overflow-x-auto pb-4">
-          <Table className="min-w-[900px] border-separate border-spacing-y-2.5">
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground/50 w-[240px] px-8 py-5">Кабинет</TableHead>
-                {active.id === "hq" && (
-                  <TableHead className="text-[10px] uppercase tracking-[0.15em] font-extrabold text-muted-foreground/50 px-4 py-5">Проект</TableHead>
-                )}
-                <SortableHead label="Расходы" sortField="spend" icon={Wallet} />
-                <SortableHead label="Лиды" sortField="meta_leads" icon={Users} />
-                <SortableHead label="Визиты" sortField="visits" icon={MousePointer2} />
-                <SortableHead label="Продажи" sortField="sales" icon={CreditCard} />
-                <SortableHead label="Выручка" sortField="revenue" icon={TrendingUp} />
-                <SortableHead label="Подписчики" sortField="followers" icon={UserPlus} />
-                <TableHead className="w-10 px-8 py-5"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="before:block before:h-1">
-              {loading ? (
-                <TableRow className="hover:bg-transparent border-none">
-                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-20 bg-card/30 rounded-2xl border border-dashed border-border/50">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary/40 mb-3" />
-                    <p className="text-sm text-muted-foreground font-medium">Обновляем показатели...</p>
-                  </TableCell>
-                </TableRow>
-              ) : filtered.length === 0 ? (
-                <TableRow className="hover:bg-transparent border-none">
-                  <TableCell colSpan={active.id === "hq" ? 9 : 8} className="text-center py-20 bg-card/30 rounded-2xl border border-dashed border-border/50">
-                    <Presentation className="h-10 w-10 mx-auto text-muted-foreground/30 mb-4" />
-                    <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto">
-                      {active.id === "hq" ? "Выберите или создайте проект в боковой панели, чтобы увидеть данные" : "В этом проекте пока нет рекламных кабинетов"}
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <AnimatePresence mode="popLayout">
-                  {filtered.map((c, idx) => {
-                    const isActiveCabinet = c.is_active !== false;
-                    const s = isActiveCabinet ? statusCfg.active : statusCfg.paused;
-                    const spend = Number(c.spend) || 0;
-                    const leads = Number(c.meta_leads) || 0;
-                    const cpl = Number(c.cpl) || 0;
-                    const visits = Number(c.visits) || 0;
-                    const cpv = Number(c.cpv) || 0;
-                    const sales = Number(c.sales) || 0;
-                    const revenue = Number(c.revenue) || 0;
-                    const cac = Number(c.cac) || 0;
-                    const leadToVisitCr = leads > 0 ? (visits / leads) * 100 : 0;
-                    const visitToSaleCr = visits > 0 ? (sales / visits) * 100 : 0;
-                    const indicatorClass = getRowIndicator(c);
-
-                    return (
-                      <motion.tr
-                        layout
-                        key={c.client_id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2, delay: idx * 0.03 }}
-                        className="group/row bg-card hover:bg-card/60 border border-border/40 hover:border-primary/30 transition-all cursor-default shadow-sm hover:shadow-lg rounded-3xl overflow-hidden mb-3 h-28"
-                      >
-                        <TableCell className="py-6 px-8 rounded-l-[1.5rem] border-l border-t border-b border-border/30 group-hover/row:border-primary/30">
-                          <div className="flex items-center gap-4">
-                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${indicatorClass}`}>
-                               <Target className={cn(
-                                 "h-5 w-5",
-                                 c.is_active === false ? "text-muted-foreground/40" : 
-                                 needsAttention(c) ? "text-destructive" : "text-primary"
-                               )} />
-                            </div>
-                            <div>
-                              <p className="text-[14px] font-bold text-foreground leading-tight">{c.client_name}</p>
-                              <div className="flex items-center gap-2 mt-1.5">
-                                <span className={cn(
-                                  "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase",
-                                  isActiveCabinet ? "bg-[hsl(var(--status-good))]/10 text-[hsl(var(--status-good))]" : "bg-muted text-muted-foreground"
-                                )}>
-                                  {s.label}
-                                </span>
-                                {needsAttention(c) && (
-                                  <span className="bg-destructive/10 text-destructive text-[10px] font-bold px-1.5 py-0.5 rounded tracking-wide uppercase">
-                                    Требует внимания
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        {active.id === "hq" && (
-                          <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                            <p className="text-[12px] text-muted-foreground font-medium">{c.project_name || "HQ / Admin"}</p>
-                          </TableCell>
-                        )}
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-foreground tabular-nums">{spend > 0 ? fmt(spend, " ₸") : "—"}</p>
-                        </TableCell>
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-foreground tabular-nums">{leads || "—"}</p>
-                          {cpl > 0 && <p className="text-[10px] font-bold text-muted-foreground/60 tabular-nums tracking-tighter uppercase mt-0.5">CPL: {fmt(cpl, " ₸")}</p>}
-                        </TableCell>
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-foreground tabular-nums">{visits || "—"}</p>
-                          <div className="flex flex-col gap-0.5 mt-0.5">
-                            {cpv > 0 && <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums uppercase">CPV: {fmt(cpv, " ₸")}</span>}
-                            {leadToVisitCr > 0 && <span className="text-[10px] font-bold text-primary/60 tabular-nums uppercase">CR: {leadToVisitCr.toFixed(1)}%</span>}
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-foreground tabular-nums">{sales || "—"}</p>
-                          <div className="flex flex-col gap-0.5 mt-0.5">
-                            {cac > 0 && <span className="text-[10px] font-bold text-muted-foreground/60 tabular-nums uppercase">CAC: {fmt(cac, " ₸")}</span>}
-                            {visitToSaleCr > 0 && <span className="text-[10px] font-bold text-primary/60 tabular-nums uppercase">CR: {visitToSaleCr.toFixed(1)}%</span>}
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-[hsl(var(--status-good))] tabular-nums">{revenue > 0 ? fmt(revenue, " ₸") : "—"}</p>
-                        </TableCell>
-
-                        <TableCell className="py-4 border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <p className="text-[15px] font-bold text-foreground tabular-nums">{fmt(c.followers ?? 0)}</p>
-                          <p className="text-[10px] font-bold text-muted-foreground/60 tabular-nums tracking-tighter uppercase mt-0.5">Всего</p>
-                        </TableCell>
-
-                        <TableCell className="py-4 px-6 rounded-r-2xl border-r border-t border-b border-border/50 group-hover/row:border-primary/20">
-                          <div className="flex items-center gap-2">
-                            <button
-                              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover/row:opacity-100"
-                              onClick={() => {
-                                setEditingAccount(rawConfigs.find(cfg => cfg.id === c.client_id));
-                                setSheetOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                            <DeleteButton clientName={c.client_name} clientId={c.client_id} onDeleted={fetchMetrics} />
-                          </div>
-                        </TableCell>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      <AddAccountSheet
-        open={sheetOpen}
-        onOpenChange={(open) => {
-          setSheetOpen(open);
-          if (!open) setEditingAccount(null);
-        }}
-        onSaved={fetchMetrics}
-        account={editingAccount}
-      />
     </DashboardLayout>
   );
 }
