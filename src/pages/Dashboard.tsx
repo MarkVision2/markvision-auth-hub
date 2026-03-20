@@ -228,10 +228,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isAgency) return;
     async function fetchAgencyFinance() {
-      const { data } = await (supabase as any).from("finance_client_services").select("price");
+      // Only HQ-owned cabinets (project_id IS NULL = belong to agency itself, not client projects)
+      const { data: hqCabs } = await (supabase as any)
+        .from("clients_config")
+        .select("id")
+        .is("project_id", null);
+      const hqCabIds = (hqCabs || []).map((c: any) => c.id);
+
+      if (hqCabIds.length === 0) {
+        setAgencyFinance({ mrr: 0, costs: 0 });
+        return;
+      }
+
+      const { data } = await (supabase as any)
+        .from("finance_client_services")
+        .select("price")
+        .in("client_config_id", hqCabIds);
       const mrr = (data || []).reduce((s: number, r: any) => s + (r.price ?? 0), 0);
-      const { data: billing } = await (supabase as any).from("finance_client_billing").select("expenses");
+
+      const { data: billing } = await (supabase as any)
+        .from("finance_client_billing")
+        .select("expenses")
+        .in("client_config_id", hqCabIds);
       const costs = (billing || []).reduce((s: number, r: any) => s + (r.expenses ?? 0), 0);
+
       setAgencyFinance({ mrr, costs });
     }
     fetchAgencyFinance();
@@ -240,12 +260,14 @@ export default function Dashboard() {
   const agencyMetrics: any = loading
     ? null
     : (() => {
-      const activeAccounts = clients.filter((c: any) => c.is_active).length;
+      // Only HQ's own personal cabinets (project_id null = HQ-owned, is_agency false = personal)
+      const hqPersonalClients = clients.filter((c: any) =>
+        c.project_id === null && c.is_agency === false
+      );
+      const activeAccounts = hqPersonalClients.filter((c: any) => c.is_active).length;
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
-      const profit = mrr - costs;
-      const totalFollowers = clients
-        .filter((c: any) => c.is_agency === false)
+      const totalFollowers = hqPersonalClients
         .reduce((s: number, c: any) => s + (c.followers ?? 0), 0);
       return { totalRevenue: mrr, totalSpend: costs, totalFollowers, activeProjects: activeAccounts };
     })();
