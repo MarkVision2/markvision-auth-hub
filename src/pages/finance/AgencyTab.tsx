@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -96,6 +97,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
 
 /* ── Main AgencyTab ── */
 export default function AgencyTab() {
+    const { active } = useWorkspace();
     const [clientsData, setClientsData] = useState<ClientFinance[]>([]);
     const [team, setTeam] = useState<FinanceTeamMember[]>([]);
     const [services, setServices] = useState<string[]>(defaultServices);
@@ -106,7 +108,11 @@ export default function AgencyTab() {
 
     const fetchData = useCallback(async () => {
         try {
-            const { data: clients } = await supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true);
+            let clientsQuery = supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true);
+            if (active.id !== "hq") {
+                clientsQuery = clientsQuery.eq("project_id", active.id);
+            }
+            const { data: clients } = await clientsQuery;
             const { data: allServices } = await supabase.from("finance_client_services").select("*");
             const { data: allBilling } = await supabase.from("finance_client_billing").select("*");
             const { data: teamData } = await supabase.from("finance_team").select("*").order("created_at");
@@ -132,7 +138,7 @@ export default function AgencyTab() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [active.id]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
