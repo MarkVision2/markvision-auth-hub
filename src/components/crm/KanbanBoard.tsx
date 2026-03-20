@@ -105,7 +105,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin,
 
   return (
     <div
-      className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-pointer border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
+      className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
     >
       {/* Top row */}
       <div className="flex items-start gap-2.5">
@@ -323,7 +323,7 @@ export default function KanbanBoard() {
     }).catch(() => { });
   };
 
-  const handleDeleteLead = async (leadId: string, leadName: string) => {
+  const handleDeleteLead = useCallback(async (leadId: string, leadName: string) => {
     if (!confirm(`Удалить следку ${leadName}?`)) return;
     const { error } = await (supabase as any).from("leads").delete().eq("id", leadId);
     if (error) {
@@ -332,12 +332,12 @@ export default function KanbanBoard() {
     }
     toast({ title: "Сделка удалена", description: leadName });
     fetchLeads();
-  };
+  }, [fetchLeads]);
 
-  const handleCardClick = (lead: Lead) => {
+  const handleCardClick = useCallback((lead: Lead) => {
     setSelectedLead(lead);
     setSheetOpen(true);
-  };
+  }, []);
 
   const toggleCollapse = (key: string) => {
     setCollapsedCols(prev => {
