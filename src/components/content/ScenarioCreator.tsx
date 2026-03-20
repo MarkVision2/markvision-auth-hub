@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +20,6 @@ import {
     Zap,
     MessageSquare,
     Target,
-    ArrowRight,
     Play,
     Link
 } from "lucide-react";
@@ -33,13 +31,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { CfButtonMd, CfH2, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 const AIRTABLE_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN || "";
 const SPEECHMATICS_KEY = import.meta.env.VITE_SPEECHMATICS_KEY || ""; 
 const AIRTABLE_BASE = "appspFv4OyALMTk8K";
 const CONTENT_TABLE = "tblSppKHHKEDnyIoN";
-const BOOST_WEBHOOK_CREATE = import.meta.env.VITE_BOOST_WEBHOOK_CREATE || "";
 
 // ─── Options ─────────────────────────────────────────────────────────────────
 const OPTIONS = {
@@ -211,11 +209,11 @@ export default function ScenarioCreator() {
     // ── Main generate ────────────────────────────────────────────────────────
     const handleGenerate = useCallback(async () => {
         if (creationMode === "link" && !linkUrl.trim()) {
-            toast({ title: "Вставь ссылку на видео!", variant: "destructive" });
+            toast({ title: "Добавьте ссылку на видео", variant: "destructive" });
             return;
         }
         if (creationMode === "topic" && !topic.trim() && !audioBlob) {
-            toast({ title: "Введи тему или запиши голос!", variant: "destructive" });
+            toast({ title: "Введите тему или запишите голос", variant: "destructive" });
             return;
         }
 
@@ -234,7 +232,7 @@ export default function ScenarioCreator() {
                 if (transcribed) finalTopic += finalTopic ? `\n\n[Голос]: ${transcribed}` : transcribed;
             }
 
-            setLoaderText("Отправка в n8n AI Pipeline...");
+            setLoaderText("Отправляем запрос...");
             setLoaderProgress(40);
 
             const payload = {
@@ -257,7 +255,7 @@ export default function ScenarioCreator() {
                 body: JSON.stringify(payload),
             });
 
-            if (!n8nRes.ok) throw new Error("Ошибка связи с n8n");
+            if (!n8nRes.ok) throw new Error("Ошибка связи с сервером");
 
             // Try to parse result immediately if n8n returns it
             const n8nData = await n8nRes.json().catch(() => null);
@@ -266,7 +264,7 @@ export default function ScenarioCreator() {
                 setResult(n8nData as ScenarioResult);
                 setLoaderProgress(100);
                 setIsGenerating(false);
-                toast({ title: "✅ Сценарий готов!" });
+                toast({ title: "Сценарий готов" });
                 return;
             }
 
@@ -274,7 +272,7 @@ export default function ScenarioCreator() {
             const recordId = n8nData?.recordId || n8nData?.id;
             
             if (recordId) {
-                setLoaderText("AI анализирует контент… (30–60 сек)");
+                setLoaderText("Анализируем материал...");
                 setLoaderProgress(60);
 
                 let attempts = 0;
@@ -285,7 +283,7 @@ export default function ScenarioCreator() {
                     if (attempts > 36) { 
                         clearInterval(pollingRef.current!);
                         setIsGenerating(false);
-                        toast({ title: "Timeout: AI не ответил", variant: "destructive" });
+                        toast({ title: "Превышено время ожидания", variant: "destructive" });
                         return;
                     }
 
@@ -301,15 +299,15 @@ export default function ScenarioCreator() {
                             setResult(data.fields as ScenarioResult);
                             setLoaderProgress(100);
                             setIsGenerating(false);
-                            toast({ title: "✅ Анализ завершен!" });
+                            toast({ title: "Готово" });
                         }
                     } catch { }
                 }, 5000);
             } else {
                 // If no immediate result and no recordId, we wait a bit and hope
-                setLoaderText("Обработка в фоновом режиме...");
+                setLoaderText("Обрабатываем запрос...");
                 await new Promise(r => setTimeout(r, 5000));
-                setLoaderText("n8n запустил процесс. Проверь результат позже.");
+                setLoaderText("Процесс запущен. Результат появится в истории.");
                 setIsGenerating(false);
             }
 
@@ -328,9 +326,9 @@ export default function ScenarioCreator() {
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="space-y-10 max-w-4xl w-full pb-20">
+        <div className={cn(cfStyles.grid, "max-w-4xl w-full pb-20")}>
             {/* Mode Selection */}
-            <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6">
+            <CfSection className="space-y-6">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Выберите способ создания</Label>
                 <div className="flex bg-background/50 rounded-2xl p-1.5 border border-border/40 shadow-inner">
                     <button
@@ -352,7 +350,7 @@ export default function ScenarioCreator() {
                         <Sparkles className="h-4 w-4" /> Творческая тема
                     </button>
                 </div>
-            </div>
+            </CfSection>
 
             <div className="space-y-8">
                 <AnimatePresence mode="wait">
@@ -458,7 +456,7 @@ export default function ScenarioCreator() {
                     </div>
                 </div>
 
-                <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-4">
+                <CfSection className="space-y-4">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Доп. пожелания / Референсы</Label>
                     <Textarea
                         value={refs}
@@ -466,29 +464,29 @@ export default function ScenarioCreator() {
                         placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
                         className="min-h-[100px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl p-6 focus-visible:ring-primary/20 resize-none shadow-inner"
                     />
-                </div>
+                </CfSection>
             </div>
 
             {/* CTA BUTTONS */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button
+                <CfButtonMd
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="flex-1 h-16 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-[0.2em] text-sm gap-3 rounded-[2rem] shadow-2xl shadow-primary/30 transition-all hover:scale-[1.01] active:scale-95 border-b-4 border-primary-foreground/20 active:border-b-0"
+                    className="flex-1 h-16 bg-primary hover:bg-primary/90 text-white text-sm gap-3 rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.01] border-b-4 border-primary-foreground/20 active:border-b-0"
                 >
                     {isGenerating
                         ? <><Loader2 className="h-6 w-6 animate-spin" /> Анализирую…</>
                         : <><Sparkles className="h-6 w-6" /> Создать сценарий</>
                     }
-                </Button>
-                <Button
+                </CfButtonMd>
+                <CfButtonMd
                     variant="outline"
                     onClick={handleReset}
                     disabled={isGenerating}
-                    className="h-16 px-10 border-border/60 text-muted-foreground hover:text-foreground gap-2 rounded-[2rem] hover:bg-accent transition-all active:scale-95"
+                    className="h-16 px-10 border-border/60 text-muted-foreground hover:text-foreground gap-2 rounded-[2rem] hover:bg-accent"
                 >
                     <RotateCcw className="h-5 w-5" />
-                </Button>
+                </CfButtonMd>
             </div>
 
             {/* LOADER */}
@@ -518,8 +516,8 @@ export default function ScenarioCreator() {
                         </div>
                         
                         <div className="space-y-3">
-                             <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">{loaderText}</h3>
-                             <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto leading-relaxed">Наш AI мозг формирует структуру ролика и пишет текст. Это займет около минуты.</p>
+                             <CfH2 className="uppercase">{loaderText}</CfH2>
+                             <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto leading-relaxed">Проверяем материал и готовим понятный сценарий.</p>
                         </div>
                         
                         <div className="space-y-4 max-w-md mx-auto">
@@ -554,29 +552,28 @@ export default function ScenarioCreator() {
                                     <CheckCircle2 className="h-7 w-7 text-green-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Сценарий готов!</h3>
-                                    <p className="text-xs font-medium text-muted-foreground">Используйте текст ниже для съемки и оформления.</p>
+                                    <CfH2 className="uppercase text-xl">Сценарий готов</CfH2>
+                                    <p className={cfStyles.hint}>Скопируйте текст и используйте в съемке.</p>
                                 </div>
                             </div>
-                            <Button
-                                size="sm"
+                            <CfButtonMd
                                 onClick={handleReset}
                                 variant="outline"
-                                className="h-11 px-6 text-xs border-border/60 hover:bg-accent rounded-xl gap-2 font-black uppercase tracking-widest"
+                                className="h-11 px-6 text-xs border-border/60 hover:bg-accent rounded-xl gap-2"
                             >
                                 <RotateCcw className="h-4 w-4" /> Новый
-                            </Button>
+                            </CfButtonMd>
                         </div>
 
                         {/* Result blocks */}
                         <div className="p-10 space-y-10">
                             <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"] || result.teleprompter} icon={MessageSquare} />
                             <ResultBlock title="Описание для Instagram" content={result["Текст Описание"] || result.description} icon={Type} />
-                            <ResultBlock title="Полный сценарий (AI)" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} icon={Sparkles} />
+                            <ResultBlock title="Полный сценарий" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} icon={Sparkles} />
 
                             {/* Copy all */}
                             <div className="pt-4">
-                                <Button
+                                <CfButtonMd
                                     onClick={() => {
                                         const all = [
                                             (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
@@ -586,10 +583,10 @@ export default function ScenarioCreator() {
                                         navigator.clipboard.writeText(all);
                                         toast({ title: "📋 Всё скопировано!" });
                                     }}
-                                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-[2rem] gap-3 text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1 transition-all"
+                                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-[2rem] gap-3 text-xs shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1"
                                 >
                                     <Copy className="h-5 w-5" /> Копировать всё в буфер
-                                </Button>
+                                </CfButtonMd>
                             </div>
                         </div>
                     </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -6,9 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -27,7 +25,6 @@ import {
   CheckCircle2,
   RotateCcw,
   Sparkles,
-  Send,
   Clock,
   Trash2,
   Layers,
@@ -46,6 +43,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
 import { cn } from "@/lib/utils";
+import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 
@@ -59,6 +57,17 @@ interface ContentTask {
 }
 
 const MAX_HISTORY = 12;
+const AB_STORAGE = "content_factory_ab_events_v1";
+const AB_VARIANT_STORAGE = "content_factory_ab_variant_v1";
+const AB_SESSION_STORAGE = "content_factory_ab_session_v1";
+
+type AbEvent = {
+  ts: string;
+  sessionId: string;
+  variant: "A" | "B";
+  event: string;
+  meta?: Record<string, string | number | boolean>;
+};
 
 export default function ContentFactory() {
   const { active } = useWorkspace();
@@ -93,12 +102,87 @@ export default function ContentFactory() {
   // History
   const [history, setHistory] = useState<ContentTask[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [abVariant, setAbVariant] = useState<"A" | "B">("A");
+  const [sessionId, setSessionId] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
 
   const [videoFormat, setVideoFormat] = useState<"reels" | "slideshow">("reels");
   const videoAspect = "9:16";
+
+  const saveAbEvent = useCallback((event: string, meta?: Record<string, string | number | boolean>) => {
+    if (!sessionId) return;
+    const payload: AbEvent = {
+      ts: new Date().toISOString(),
+      sessionId,
+      variant: abVariant,
+      event,
+      meta,
+    };
+    const raw = localStorage.getItem(AB_STORAGE);
+    const list: AbEvent[] = raw ? JSON.parse(raw) : [];
+    list.push(payload);
+    localStorage.setItem(AB_STORAGE, JSON.stringify(list.slice(-5000)));
+  }, [abVariant, sessionId]);
+
+  useEffect(() => {
+    const existingSession = localStorage.getItem(AB_SESSION_STORAGE);
+    if (existingSession) {
+      setSessionId(existingSession);
+    } else {
+      const next = crypto.randomUUID();
+      localStorage.setItem(AB_SESSION_STORAGE, next);
+      setSessionId(next);
+    }
+    const storedVariant = localStorage.getItem(AB_VARIANT_STORAGE) as "A" | "B" | null;
+    if (storedVariant === "A" || storedVariant === "B") {
+      setAbVariant(storedVariant);
+      return;
+    }
+    const randomVariant = Math.random() >= 0.5 ? "B" : "A";
+    localStorage.setItem(AB_VARIANT_STORAGE, randomVariant);
+    setAbVariant(randomVariant);
+  }, []);
+
+  useEffect(() => {
+    if (sessionId) saveAbEvent("page_open");
+  }, [sessionId, saveAbEvent]);
+
+  const abStats = useMemo(() => {
+    const raw = localStorage.getItem(AB_STORAGE);
+    const list: AbEvent[] = raw ? JSON.parse(raw) : [];
+    const bySession = new Map<string, AbEvent[]>();
+    list.forEach((item) => {
+      if (!bySession.has(item.sessionId)) bySession.set(item.sessionId, []);
+      bySession.get(item.sessionId)!.push(item);
+    });
+    const sessions = Array.from(bySession.values());
+    const totalSessions = sessions.length;
+    const started = sessions.filter((group) => group.some((e) => e.event === "generate_click")).length;
+    const completed = sessions.filter((group) => group.some((e) => e.event === "task_completed")).length;
+    const durations: number[] = [];
+    sessions.forEach((group) => {
+      const start = group.find((e) => e.event === "generate_click");
+      const finish = group.find((e) => e.event === "task_completed");
+      if (start && finish) {
+        const delta = (new Date(finish.ts).getTime() - new Date(start.ts).getTime()) / 1000;
+        if (delta > 0 && Number.isFinite(delta)) durations.push(delta);
+      }
+    });
+    const avgTaskSec = durations.length ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0;
+    const engagementRate = totalSessions ? Math.round((started / totalSessions) * 100) : 0;
+    const completionRate = started ? Math.round((completed / started) * 100) : 0;
+    return {
+      totalSessions,
+      started,
+      completed,
+      avgTaskSec,
+      engagementRate,
+      completionRate,
+      reachedGoal: totalSessions >= 50,
+    };
+  }, [history.length, task?.status]);
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
@@ -189,6 +273,7 @@ export default function ContentFactory() {
   };
 
   const handleGenerate = async () => {
+    saveAbEvent("generate_click", { mainType, sourceMode: mainType === "video" ? videoMode : photoMode });
     setSubmitting(true);
     try {
       let customLogoUrl: string | null = null;
@@ -262,8 +347,10 @@ export default function ContentFactory() {
       });
       if (!webhookRes.ok) {
         toast({ title: "Ошибка связи с сервером", description: `Статус: ${webhookRes.status}`, variant: "destructive" });
+        saveAbEvent("generate_error", { status: webhookRes.status });
       } else {
-        toast({ title: "🚀 Генерация запущена!" });
+        toast({ title: "Запуск выполнен", description: "Контент создается. Обычно это занимает до минуты." });
+        saveAbEvent("generate_started");
       }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
@@ -312,6 +399,15 @@ export default function ContentFactory() {
 
   const progressPercent = !task ? 0 : task.status === "pending" ? 10 : task.status === "processing" ? 60 : task.status === "completed" ? 100 : 0;
 
+  useEffect(() => {
+    saveAbEvent("tab_open", { tab: pageTab });
+  }, [pageTab, saveAbEvent]);
+
+  useEffect(() => {
+    if (task?.status === "completed") saveAbEvent("task_completed", { type: task.content_type });
+    if (task?.status === "error") saveAbEvent("task_failed", { type: task.content_type });
+  }, [task?.status, task?.content_type, saveAbEvent]);
+
   // Stage indicator logic for progress view
   const pipelineStages = [
     { label: "Анализ", icon: "📋", done: progressPercent >= 10 },
@@ -324,18 +420,18 @@ export default function ContentFactory() {
   if (task && task.status === "completed" && task.result_urls && task.result_urls.length > 0) {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
-        <div className="mx-auto max-w-5xl py-8 px-4">
+        <div className={cfStyles.page}>
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+              <CfH1 className="flex items-center gap-3">
                 <CheckCircle2 className="h-8 w-8 text-primary" />
                 Контент готов!
-              </h1>
-              <p className="text-muted-foreground font-medium mt-1">Результат генерации AI системы</p>
+              </CfH1>
+              <p className={cn(cfStyles.hint, "mt-1")}>Файлы созданы. Проверьте и скачайте результат.</p>
             </div>
-            <Button onClick={handleReset} variant="outline" className="gap-2 border-border/60 rounded-2xl h-11 px-6 font-bold shadow-sm">
+            <CfButtonMd onClick={handleReset} variant="outline" className="gap-2 border-border/60 shadow-sm">
               <RotateCcw className="h-4 w-4" /> Назад к созданию
-            </Button>
+            </CfButtonMd>
           </div>
 
           <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-[2.5rem] border border-border/40 bg-card/50 backdrop-blur-xl p-10 shadow-2xl overflow-hidden relative">
@@ -363,21 +459,21 @@ export default function ContentFactory() {
               </div>
 
               <div className="space-y-6 pt-4">
-                 <div className="p-6 rounded-3xl bg-secondary/30 border border-border/40 space-y-4">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+                  <div className="p-6 rounded-3xl bg-secondary/30 border border-border/40 space-y-4">
+                    <CfH3 className="uppercase tracking-widest flex items-center gap-2 text-sm">
                        <Zap className="h-4 w-4 text-primary" /> Действия
-                    </h3>
+                    </CfH3>
                     <div className="grid grid-cols-1 gap-3">
                        {task.result_urls.map((url, i) => (
                          <a key={i} href={url} target="_blank" rel="noreferrer" className="w-full">
-                           <Button className="w-full gap-2.5 h-12 bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl shadow-lg shadow-primary/20">
+                           <CfButtonMd className="w-full gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
                              <Download className="h-5 w-5" /> Скачать {task.result_urls!.length > 1 ? `(Слайд ${i + 1})` : "Контент"}
-                           </Button>
+                           </CfButtonMd>
                          </a>
                        ))}
-                       <Button onClick={handleReset} variant="outline" className="w-full gap-2.5 h-12 border-border/60 hover:bg-accent rounded-2xl font-bold">
+                       <CfButtonMd onClick={handleReset} variant="outline" className="w-full gap-2.5 border-border/60 hover:bg-accent">
                          <RotateCcw className="h-5 w-5" /> Создать новый
-                       </Button>
+                       </CfButtonMd>
                     </div>
                  </div>
 
@@ -420,8 +516,8 @@ export default function ContentFactory() {
                   <div className="absolute inset-0 rounded-[2rem] border-2 border-primary/20 border-t-primary animate-spin" />
                   <Sparkles className="h-10 w-10 text-primary animate-pulse" />
                </div>
-               <h1 className="text-3xl font-black text-foreground tracking-tight uppercase">Магия в процессе...</h1>
-               <p className="text-muted-foreground font-medium max-w-sm mx-auto">AI завод генерирует ваш контент. Это занимает обычно от 30 до 60 секунд.</p>
+               <CfH2 className="uppercase">Подождите, готовим ваш контент</CfH2>
+               <p className="text-muted-foreground font-medium max-w-sm mx-auto">Обычно это занимает до одной минуты.</p>
             </div>
 
             <div className="flex items-center justify-center gap-10">
@@ -443,7 +539,7 @@ export default function ContentFactory() {
 
             <div className="space-y-4 max-w-md mx-auto">
                <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground/60">
-                  <span>{task.progress_text || "Подготовка..."}</span>
+                  <span>{task.progress_text || "Готовим этапы..."}</span>
                   <span className="text-primary">{progressPercent}%</span>
                </div>
                <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
@@ -464,7 +560,7 @@ export default function ContentFactory() {
   // 3. Main Interface
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
-      <div className="mx-auto max-w-7xl py-6 px-4 flex flex-col h-[calc(100vh-100px)]">
+      <div className={cn(cfStyles.page, "flex flex-col h-[calc(100vh-100px)] min-h-[680px]")}>
 
         {/* Premium Header */}
         <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 mb-10 pb-8 border-b border-border/40">
@@ -473,17 +569,17 @@ export default function ContentFactory() {
               <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                  <Layers className="h-6 w-6 text-primary" />
               </div>
-              <h1 className="text-4xl font-black tracking-tighter text-foreground uppercase">Контент-Завод</h1>
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] px-3 py-1 uppercase tracking-widest">AI Engine V2</Badge>
+              <CfH1 className="uppercase">Контент-Завод</CfH1>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] px-3 py-1 uppercase tracking-widest">Новый интерфейс</Badge>
             </div>
-            <p className="text-muted-foreground font-medium text-base">Универсальная система генерации сценариев и рекламного контента.</p>
+            <p className={cfStyles.hint}>Создавайте сценарии и креативы в одном понятном рабочем пространстве.</p>
           </div>
 
-          <div className="flex bg-muted/50 p-1.5 rounded-2xl border border-border shadow-inner">
+          <div className="flex flex-wrap bg-muted/50 p-1.5 rounded-2xl border border-border shadow-inner">
             <button
               onClick={() => setPageTab("scenario")}
               className={cn(
-                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                cfStyles.tabButton,
                 pageTab === "scenario" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -492,7 +588,7 @@ export default function ContentFactory() {
             <button
               onClick={() => setPageTab("create")}
               className={cn(
-                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                cfStyles.tabButton,
                 pageTab === "create" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -501,7 +597,7 @@ export default function ContentFactory() {
             <button
               onClick={() => setPageTab("my-content")}
               className={cn(
-                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                cfStyles.tabButton,
                 pageTab === "my-content" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -521,6 +617,35 @@ export default function ContentFactory() {
 
           {pageTab === "my-content" && (
             <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-8">
+              <CfSection className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CfH2>Метрики A/B теста интерфейса</CfH2>
+                  <Badge variant="outline" className={cn("text-xs", abStats.reachedGoal ? "text-green-600 border-green-600/30 bg-green-500/10" : "text-primary border-primary/30 bg-primary/10")}>
+                    {abStats.totalSessions}/50 пользователей
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                    <p className={cfStyles.label}>Вовлеченность</p>
+                    <p className="text-2xl font-black mt-2">{abStats.engagementRate}%</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                    <p className={cfStyles.label}>Завершение задач</p>
+                    <p className="text-2xl font-black mt-2">{abStats.completionRate}%</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                    <p className={cfStyles.label}>Среднее время</p>
+                    <p className="text-2xl font-black mt-2">{abStats.avgTaskSec || 0}с</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                    <p className={cfStyles.label}>Вариант</p>
+                    <p className="text-2xl font-black mt-2">{abVariant}</p>
+                  </div>
+                </div>
+                <p className={cfStyles.hint}>
+                  Метрики считаются автоматически по событиям интерфейса. После 50 сессий можно фиксировать итог A/B теста.
+                </p>
+              </CfSection>
               {loadingHistory ? (
                 <div className="flex flex-col items-center justify-center py-32 space-y-4">
                    <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
@@ -866,4 +991,3 @@ export default function ContentFactory() {
     </DashboardLayout>
   );
 }
-
