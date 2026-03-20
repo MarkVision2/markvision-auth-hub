@@ -222,7 +222,8 @@ export default function ChatsView() {
 
   useEffect(() => {
     if (selectedLead && rightPanel === "chat") {
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      const t = setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      return () => clearTimeout(t);
     }
   }, [selectedLead, rightPanel, messages]);
 

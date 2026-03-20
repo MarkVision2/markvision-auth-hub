@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,11 +19,18 @@ export const PaymentBlock: React.FC<PaymentBlockProps> = ({
     const [amount, setAmount] = useState(defaultAmount.toString());
     const [isSending, setIsSending] = useState(false);
     const [isSent, setIsSent] = useState(false);
+    const sendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
+        };
+    }, []);
 
     const handleSendInvoice = () => {
         setIsSending(true);
         // Simulate API call to Kaspi
-        setTimeout(() => {
+        sendTimerRef.current = setTimeout(() => {
             setIsSending(false);
             setIsSent(true);
         }, 1500);

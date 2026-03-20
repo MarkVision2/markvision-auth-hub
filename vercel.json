@@ -1,4 +1,11 @@
 {
+    "redirects": [
+        {
+            "source": "https://markvision.kz/:path*",
+            "destination": "https://www.markvision.kz/:path*",
+            "permanent": true
+        }
+    ],
     "headers": [
         {
             "source": "/assets/(.*)",

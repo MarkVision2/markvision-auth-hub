@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, type AppNotification } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; dot: string }> = {
   error: { icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10", dot: "bg-destructive" },
@@ -65,11 +65,13 @@ function getTimeAgo(date: Date): string {
 export default function NotificationBell() {
   const { notifications, unreadCount, markAllRead, clearAll, dismissNotification } = useNotifications();
   const [open, setOpen] = useState(false);
+  const markReadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && unreadCount > 0) {
-      setTimeout(() => markAllRead(), 2000);
+      if (markReadTimerRef.current) clearTimeout(markReadTimerRef.current);
+      markReadTimerRef.current = setTimeout(() => markAllRead(), 2000);
     }
   };
 

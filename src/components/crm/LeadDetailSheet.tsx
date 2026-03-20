@@ -327,7 +327,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   useEffect(() => {
     if (open && rightTab === "chat") {
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      const t = setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      return () => clearTimeout(t);
     }
   }, [open, rightTab, chatMessages]);
 
