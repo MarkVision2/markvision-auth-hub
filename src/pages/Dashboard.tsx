@@ -152,13 +152,11 @@ export default function Dashboard() {
       setLoading(true);
       try {
         let clientsData: ClientMetric[] = [];
-        let targetIds: string[] = [];
 
         if (active.id === "hq") {
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
           if (error) throw error;
           clientsData = data || [];
-          targetIds = clientsData.map(c => c.client_id).filter(Boolean) as string[];
         } else {
           // Data Isolation Fix: Only get valid client_config_ids for this project
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
@@ -172,11 +170,9 @@ export default function Dashboard() {
           let query = (supabase as any).from("agency_metrics_view").select("*");
           if (validIds.length > 0) {
             query = query.in("client_id", validIds);
-            targetIds = validIds;
           } else {
             // Force empty if no ad cabinets exist
             query = query.eq("client_id", "00000000-0000-0000-0000-000000000000");
-            targetIds = [];
           }
 
           const { data, error } = await query;
