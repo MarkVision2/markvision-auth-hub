@@ -352,79 +352,67 @@ export default function DashboardTarget() {
   return (
     <DashboardLayout breadcrumb="Таргетолог">
       <StaggerContainer className="space-y-5">
-        {/* ✨ Modern Control Center Header ✨ */}
-        <FadeUpItem className="space-y-8">
-           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                 <div className="flex items-center gap-4 mb-2">
-                    <div className="h-14 w-14 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-                       <Megaphone className="h-7 w-7 stroke-[2.5px]" />
-                    </div>
-                    <div>
-                       <h1 className="text-3xl font-black text-foreground tracking-tight leading-tight uppercase">Управление рекламой</h1>
-                       <p className="text-sm font-bold text-muted-foreground/60">
-                          {clients.length} кабинетов · {totals.withData} активных · {MONTH_NAMES[selectedMonth]} {selectedYear}
-                       </p>
-                    </div>
-                 </div>
-              </div>
+        {/* ── Standard Clean Header ── */}
+        <FadeUpItem className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Управление рекламой</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {clients.length} кабинетов · {totals.withData} активных
+            </p>
+          </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                 <div className="flex items-center bg-card/60 backdrop-blur-xl border border-border/50 rounded-2xl p-1.5 shadow-sm">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-background transition-all" onClick={() => goMonth(-1)}>
-                       <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <div className="px-5 min-w-[140px] text-center">
-                       <span className="text-xs font-black uppercase tracking-[0.1em] text-foreground">{MONTH_NAMES[selectedMonth]} {selectedYear}</span>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-background transition-all" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
-                       <ChevronRight className="h-5 w-5" />
-                    </Button>
-                 </div>
-
-                 <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-12 w-12 rounded-2xl border-border/50 bg-card/40 hover:bg-accent transition-all duration-300" 
-                    onClick={() => { fetchData(); toast({ title: "Данные обновлены" }); }}
-                 >
-                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
-                 </Button>
-
-                 {isSuperadmin && (
-                    <Button 
-                       onClick={() => setSheetOpen(true)} 
-                       className="bg-indigo-600 hover:bg-indigo-700 text-white h-12 px-8 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_12px_24px_rgba(79,70,229,0.25)] border-b-4 border-indigo-900/30 active:border-b-0 active:translate-y-1 transition-all"
-                    >
-                       <Plus className="h-4 w-4 stroke-[4px]" />
-                       <span>Добавить кабинет</span>
-                    </Button>
-                 )}
-
-                 <Button 
-                    onClick={() => setBuilderOpen(true)} 
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 px-8 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] gap-3 shadow-[0_12px_24px_rgba(16,185,129,0.25)] border-b-4 border-emerald-900/30 active:border-b-0 active:translate-y-1 transition-all"
-                 >
-                    <Rocket className="h-4 w-4 stroke-[4px]" />
-                    <span>Создать кампанию</span>
-                 </Button>
-              </div>
-           </div>
-
-           <div className="flex flex-col sm:flex-row items-center gap-4 bg-card/40 backdrop-blur-xl border border-border/40 p-3 rounded-[2.5rem] shadow-inner">
-              <div className="relative flex-1 group">
-                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/30 group-focus-within:text-primary transition-colors" />
-                 <Input
-                    placeholder="Быстрый поиск по названию или ID..."
-                    className="pl-14 h-14 bg-background/40 border-none rounded-[2rem] text-sm font-bold placeholder:text-muted-foreground/30 focus:ring-primary/10 transition-all outline-none ring-0 focus-visible:ring-0"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                 />
-              </div>
-              <Button onClick={handleExport} variant="ghost" className="h-14 px-10 rounded-[2rem] text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:bg-background border border-border/20 gap-3">
-                 <Download className="h-5 w-5" />
-                 Экспорт CSV
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center bg-secondary/50 rounded-xl p-1 shrink-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => goMonth(-1)}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
+              <div className="px-3 min-w-[100px] text-center">
+                <span className="text-xs font-semibold">{MONTH_NAMES[selectedMonth]} {selectedYear}</span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-10 w-10 rounded-xl border-border bg-background hover:bg-accent transition-all duration-300" 
+                onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            </Button>
+
+            {isSuperadmin && (
+              <Button 
+                onClick={() => setSheetOpen(true)} 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-4 rounded-xl text-sm font-semibold gap-2 shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Добавить кабинет</span>
+              </Button>
+            )}
+
+            <Button 
+                onClick={() => setBuilderOpen(true)} 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 px-4 rounded-xl text-sm font-semibold gap-2 shadow-sm"
+            >
+              <Rocket className="h-4 w-4" />
+              <span>Создать кампанию</span>
+            </Button>
+          </div>
+        </FadeUpItem>
+
+        {/* ── Search Bar ── */}
+        <FadeUpItem className="mb-6">
+           <div className="relative group max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+              <Input
+                placeholder="Поиск по кабинетам..."
+                className="pl-10 h-10 bg-card border-border rounded-xl text-sm focus-visible:ring-primary/20"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
            </div>
         </FadeUpItem>
 
