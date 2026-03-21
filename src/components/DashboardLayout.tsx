@@ -33,7 +33,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
       </Sheet>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border/60 bg-card/50 backdrop-blur-sm">
+        <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border/60 bg-card">
           {/* Mobile hamburger */}
           {!isDoctor && (
             <Button
@@ -53,7 +53,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
           {/* AI Search — global */}
           <div className="flex-1 max-w-xl mx-auto">
             <div className="relative group">
-              <div className="flex items-center gap-2 bg-accent/50 border border-border/60 rounded-lg px-3 py-1.5 transition-all duration-150 focus-within:border-primary/30 focus-within:bg-card focus-within:shadow-glow-primary">
+              <div className="flex items-center gap-2 bg-accent/50 border border-border/60 rounded-lg px-3 py-1.5 transition-colors focus-within:border-primary/30 focus-within:bg-card">
                 <Sparkles className="h-3.5 w-3.5 text-primary/60 shrink-0" />
                 <input
                   type="text"
