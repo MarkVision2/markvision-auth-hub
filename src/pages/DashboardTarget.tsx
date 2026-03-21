@@ -428,6 +428,27 @@ export default function DashboardTarget() {
            </div>
         </FadeUpItem>
 
+        {alerts.length > 0 && (
+          <FadeUpItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+              {alerts.map((a, i) => (
+                <div key={i} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-lg hover:border-primary/20">
+                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${a.severity === "critical" ? "bg-destructive/10 group-hover:bg-destructive/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
+                    <a.icon className={`h-5 w-5 ${a.severity === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground truncate">{a.account}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{a.issue}</p>
+                  </div>
+                  <Badge variant="outline" className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 ${a.severity === "critical" ? "border-destructive/30 text-destructive bg-destructive/5" : "border-amber-500/30 text-amber-500 bg-amber-500/5"}`}>
+                    {a.severity === "critical" ? "Критично" : "Внимание"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </FadeUpItem>
+        )}
+
         <FadeUpItem>
           <div className="space-y-4">
             <div className="flex items-center justify-between px-6 mb-2">
