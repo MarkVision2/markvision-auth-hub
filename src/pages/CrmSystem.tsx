@@ -55,25 +55,7 @@ export default function CrmSystem() {
     const load = async () => {
       try {
         let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
-
-        if (active.id === "hq") {
-          // MarkVision AI sees all
-        } else {
-          // Client project: own + shared
-          const { data: shared } = await (supabase as any)
-            .from("client_config_visibility")
-            .select("client_config_id")
-            .eq("project_id", active.id);
-          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
-
-          if (sharedCabIds.length > 0) {
-            // This is slightly more complex because leads are linked to client_configs
-            // We need leads WHERE project_id = active.id OR client_config_id IN sharedCabIds
-            query = query.or(`project_id.eq.${active.id},client_config_id.in.(${sharedCabIds.join(",")})`);
-          } else {
-            query = query.eq("project_id", active.id);
-          }
-        }
+        query = query.eq("project_id", active.id);
 
         const { data, error } = await query.order("created_at", { ascending: false });
         if (error) throw error;

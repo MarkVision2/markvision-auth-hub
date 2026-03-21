@@ -212,23 +212,7 @@ export default function KanbanBoard() {
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("*");
-
-      if (active.id === "hq") {
-        // HQ sees everything
-      } else {
-        // Client project: own + shared
-        const { data: shared } = await (supabase as any)
-          .from("client_config_visibility")
-          .select("client_config_id")
-          .eq("project_id", active.id);
-        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
-
-        if (sharedCabIds.length > 0) {
-          query = query.or(`project_id.eq.${active.id},client_config_id.in.(${sharedCabIds.join(",")})`);
-        } else {
-          query = query.eq("project_id", active.id);
-        }
-      }
+      query = query.eq("project_id", active.id);
 
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;

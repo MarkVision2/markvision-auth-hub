@@ -29,9 +29,7 @@ export function useServiceAnalytics() {
                     .from("service_analytics_view")
                     .select("*");
 
-                if (active.id !== "hq") {
-                    query = query.eq("project_id", active.id);
-                }
+                query = query.eq("project_id", active.id);
 
                 const { data: resData, error } = await query;
 
