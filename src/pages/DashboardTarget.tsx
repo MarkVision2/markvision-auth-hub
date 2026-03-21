@@ -390,7 +390,7 @@ export default function DashboardTarget() {
             {isSuperadmin && (
               <Button 
                 onClick={() => setSheetOpen(true)} 
-                className="bg-primary/10 hover:bg-primary/20 text-primary border-none h-10 min-h-[44px] text-[13px] font-black uppercase tracking-widest gap-2.5 px-6 rounded-xl transition-all shadow-sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 min-h-[44px] text-[12px] font-black uppercase tracking-widest gap-2.5 px-6 rounded-xl shadow-lg shadow-indigo-500/10 border-b-2 border-black/10 active:border-b-0 active:translate-y-0.5 transition-all"
               >
                 <Plus className="h-4 w-4" />
                 <span>Добавить кабинет</span>
