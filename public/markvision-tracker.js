@@ -1,66 +1,104 @@
 /**
- * MarkVision CRM Lead Tracker & Analytics Script
+ * MarkVision Tracker & Lead Capture Script
  * Project ID: bf3a691d-2856-43b6-930c-eb346f287c25
+ * 
+ * This script captures UTM parameters and provides a window.mvSendLead() function.
+ * It sends leads directly to MarkVision CRM (Supabase) via the provided Webhook.
  */
 
 (function() {
-    window.MV_CONFIG = {
+    // Configuration - ADJUST THESE IF NEEDED
+    const CONFIG = {
         projectId: 'bf3a691d-2856-43b6-930c-eb346f287c25',
-        webhookUrl: 'https://n8n.markvision.kz/webhook/client-leads-XYZ', // Replace XYZ with your actual webhook path if different
+        // Default Webhook URL (n8n or Edge Function)
+        // If you have a real n8n webhook, paste it here.
+        // If not, we use the CRM Dispatcher.
+        webhookUrl: 'https://n8n.zapoinov.com/webhook/execute-any-flow-new',
+        supabaseUrl: 'https://iywmjdrghcbsicdwohmb.supabase.co',
+        // Note: For security, use an anonymized endpoint or n8n proxy for production
     };
 
-    const getUTM = () => {
+    // 1. UTM Capture logic
+    function getUTMs() {
         const params = new URLSearchParams(window.location.search);
-        const utm = {};
-        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(key => {
-            const val = params.get(key);
-            if (val) utm[key] = val;
+        const utms = {};
+        ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(key => {
+            if (params.get(key)) utms[key] = params.get(key);
         });
-        return utm;
-    };
-
-    // Store UTMs in session to persist across pages
-    const utms = getUTM();
-    if (Object.keys(utms).length > 0) {
-        sessionStorage.setItem('mv_utms', JSON.stringify({
-            ...JSON.parse(sessionStorage.getItem('mv_utms') || '{}'),
-            ...utms,
-            timestamp: new Date().toISOString()
-        }));
+        
+        // Persist UTMs in sessionStorage so they survive navigation
+        if (Object.keys(utms).length > 0) {
+            sessionStorage.setItem('mv_utms', JSON.stringify(utms));
+        }
+        
+        return utms;
     }
 
-    window.mvSendLead = async function(data) {
+    // 2. Metadata collection
+    function getMetadata() {
+        return {
+            url: window.location.href,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            resolution: `${window.screen.width}x${window.screen.height}`,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }
+
+    // 3. Lead Sending Function
+    window.mvSendLead = async function(formData) {
+        console.log('[MarkVision] Sending lead...', formData);
+        
         const storedUtms = JSON.parse(sessionStorage.getItem('mv_utms') || '{}');
+        const currentUtms = getUTMs();
+        const utmTags = { ...storedUtms, ...currentUtms };
+        
         const payload = {
-            ...data,
-            ...storedUtms,
-            project_id: window.MV_CONFIG.projectId,
+            name: formData.name || 'Site Lead',
+            phone: formData.phone || '',
+            source: formData.source || window.location.hostname,
+            project_id: CONFIG.projectId,
+            utm_campaign: utmTags.utm_campaign || null,
+            // Additional data to be processed by CRM
             metadata: {
-                url: window.location.href,
-                referrer: document.referrer,
-                userAgent: navigator.userAgent,
-                screenResolution: `${window.screen.width}x${window.screen.height}`,
-                language: navigator.language,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                ...getMetadata(),
+                utm_tags: utmTags,
+                additional_fields: formData
             }
         };
 
-        console.log('[MarkVision] Sending lead:', payload);
-
         try {
-            const response = await fetch(window.MV_CONFIG.webhookUrl, {
+            // We use the Dispatcher or a direct insert if configured
+            // Since n8n is preferred for analytics, we hit the dispatcher
+            const response = await fetch(CONFIG.webhookUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ 
+                    action: 'create_lead',
+                    ...payload 
+                })
             });
+
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
             
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            console.log('[MarkVision] Success:', await response.json());
+            console.log('[MarkVision] Lead sent successfully');
             return { success: true };
         } catch (error) {
-            console.error('[MarkVision] Error sending lead:', error);
+            console.error('[MarkVision] Failed to send lead:', error);
+            
+            // Backup: Try direct Supabase insert if Webhook fails (requires RLS to be open)
+            /*
+            try {
+                // ... backup logic ...
+            } catch (e) {}
+            */
+            
             return { success: false, error: error.message };
         }
     };
+
+    // Initialize
+    getUTMs();
+    console.log('[MarkVision] Tracker initialized for project:', CONFIG.projectId);
 })();

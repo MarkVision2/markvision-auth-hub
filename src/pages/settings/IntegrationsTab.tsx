@@ -177,7 +177,7 @@ function WhatsAppGreenApiCard() {
 
 /* ── Webhook Lead Card ── */
 function WebhookLeadCard() {
-    const webhookUrl = "https://n8n.markvision.kz/webhook/client-leads-XYZ";
+    const webhookUrl = "https://n8n.zapoinov.com/webhook/execute-any-flow-new";
     const handleCopy = () => {
         navigator.clipboard.writeText(webhookUrl);
         toast({ title: "📋 Скопировано", description: "Webhook URL в буфере обмена" });
