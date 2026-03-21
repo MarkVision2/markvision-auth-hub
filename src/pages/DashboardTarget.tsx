@@ -9,6 +9,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
 import { supabase } from "@/integrations/supabase/client";
+import { useRole } from "@/hooks/useRole";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +28,7 @@ import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
   ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
-  ExternalLink, TrendingUp,
+  ExternalLink, TrendingUp, Plus, Trash2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -116,6 +128,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: s
 export default function DashboardTarget() {
   const now = new Date();
   const { active } = useWorkspace();
+  const { isSuperadmin } = useRole();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [clients, setClients] = useState<ClientWithMetrics[]>([]);
@@ -369,7 +382,16 @@ export default function DashboardTarget() {
             <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px] border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5">
+            {isSuperadmin && (
+              <Button 
+                onClick={() => setSheetOpen(true)} 
+                className="bg-card hover:bg-accent border border-border h-10 min-h-[44px] text-sm font-semibold gap-1.5 px-4"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Добавить кабинет</span>
+              </Button>
+            )}
+            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5 px-4 shadow-lg shadow-primary/10">
               <Rocket className="h-4 w-4" />
               <span className="hidden sm:inline">Создать кампанию</span>
               <span className="sm:hidden">Создать</span>
@@ -475,6 +497,14 @@ export default function DashboardTarget() {
                                 Active
                               </Badge>
                             )}
+                            <Badge variant="outline" className={cn(
+                              "h-4 text-[8px] font-black uppercase tracking-widest px-1.5 py-0 rounded-md border",
+                              (rawClients.find(rc => rc.id === client.id) as any)?.is_agency 
+                                ? "border-purple-500/30 text-purple-600 bg-purple-500/5" 
+                                : "border-blue-500/30 text-blue-600 bg-blue-500/5"
+                            )}>
+                              {(rawClients.find(rc => rc.id === client.id) as any)?.is_agency ? "Агентский" : "Личный"}
+                            </Badge>
                           </div>
                         </div>
                       </div>
@@ -526,6 +556,45 @@ export default function DashboardTarget() {
                                <Copy className="h-4 w-4 text-muted-foreground" />
                                <span className="text-sm font-semibold">Дублировать</span>
                              </DropdownMenuItem>
+
+                             {isSuperadmin && (
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <DropdownMenuItem 
+                                     className="gap-3 p-2.5 rounded-xl cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"
+                                     onSelect={(e) => e.preventDefault()}
+                                   >
+                                     <Trash2 className="h-4 w-4" />
+                                     <span className="text-sm font-semibold">Удалить кабинет</span>
+                                   </DropdownMenuItem>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent className="rounded-[2rem] border-border bg-card/95 backdrop-blur-xl">
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle className="text-xl font-black">Удалить кабинет?</AlertDialogTitle>
+                                     <AlertDialogDescription className="font-medium">
+                                       Кабинет «{client.name}» будет удалён навсегда со всеми настройками.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter className="gap-2">
+                                     <AlertDialogCancel className="rounded-xl font-bold">Отмена</AlertDialogCancel>
+                                     <AlertDialogAction 
+                                       onClick={async () => {
+                                         const { error } = await supabase.from("clients_config").delete().eq("id", client.id);
+                                         if (!error) {
+                                           toast({ title: "Удалено", description: client.name });
+                                           fetchData();
+                                         } else {
+                                           toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+                                         }
+                                       }}
+                                       className="bg-destructive hover:bg-destructive/90 rounded-xl font-bold text-white shadow-lg shadow-destructive/20"
+                                     >
+                                       Удалить
+                                     </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
+                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <div className={cn("transition-transform duration-300", isOpen && "rotate-180")}>

@@ -16,7 +16,6 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DashboardTarget = lazy(() => import("./pages/DashboardTarget"));
 const DashboardSales = lazy(() => import("./pages/DashboardSales"));
 const DashboardPM = lazy(() => import("./pages/DashboardPM"));
-const AgencyAccounts = lazy(() => import("./pages/AgencyAccounts"));
 const ContentFactory = lazy(() => import("./pages/ContentFactory"));
 const CrmSystem = lazy(() => import("./pages/CrmSystem"));
 const AiRopPage = lazy(() => import("./pages/AiRopPage"));
@@ -71,7 +70,6 @@ const App = () => (
                       <Route path="/dashboard/target" element={<ProtectedRoute><DashboardTarget /></ProtectedRoute>} />
                       <Route path="/dashboard/sales" element={<ProtectedRoute><DashboardSales /></ProtectedRoute>} />
                       <Route path="/dashboard/pm" element={<ProtectedRoute><DashboardPM /></ProtectedRoute>} />
-                      <Route path="/accounts" element={<ProtectedRoute><AgencyAccounts /></ProtectedRoute>} />
                       <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
                       <Route path="/crm" element={<ProtectedRoute><CrmSystem /></ProtectedRoute>} />
                       <Route path="/ai-rop" element={<ProtectedRoute><AiRopPage /></ProtectedRoute>} />
