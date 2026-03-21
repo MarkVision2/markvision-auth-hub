@@ -154,7 +154,7 @@ export default function Dashboard() {
         let clientsData: ClientMetric[] = [];
 
         if (active.id === "hq") {
-          const { data, error } = await (supabase as any).from("agency_metrics_view").select("*");
+          const { data, error } = await (supabase as any).from("agency_metrics_view").select("*").neq("is_agency", true);
           if (error) throw error;
           clientsData = data || [];
         } else {
@@ -162,12 +162,12 @@ export default function Dashboard() {
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
           const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
-          const { data: configs } = await (supabase as any).from("clients_config").select("id").eq("project_id", active.id);
+          const { data: configs } = await (supabase as any).from("clients_config").select("id").eq("project_id", active.id).neq("is_agency", true);
           const projectIds = (configs || []).map((c: any) => c.id);
 
           const validIds = [...new Set([...sharedIds, ...projectIds])];
 
-          let query = (supabase as any).from("agency_metrics_view").select("*");
+          let query = (supabase as any).from("agency_metrics_view").select("*").neq("is_agency", true);
           if (validIds.length > 0) {
             query = query.in("client_id", validIds);
           } else {
@@ -201,7 +201,8 @@ export default function Dashboard() {
       const { data: hqCabs } = await (supabase as any)
         .from("clients_config")
         .select("id")
-        .is("project_id", null);
+        .is("project_id", null)
+        .neq("is_agency", true);
       const hqCabIds = (hqCabs || []).map((c: any) => c.id);
 
       if (hqCabIds.length === 0) {

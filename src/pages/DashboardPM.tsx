@@ -45,7 +45,7 @@ export default function DashboardPM() {
     setLoading(true);
     try {
       const [clientsRes, leadsRes] = await Promise.all([
-        (supabase as unknown).from("clients_config").select("id, client_name, is_active").eq("is_active", true),
+        (supabase as unknown).from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true),
         (supabase as unknown).from("leads").select("id, status, client_config_id"),
       ]);
       if (clientsRes.error) throw clientsRes.error;

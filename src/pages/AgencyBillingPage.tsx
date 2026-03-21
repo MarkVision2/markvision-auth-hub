@@ -62,6 +62,7 @@ export default function AgencyBillingPage() {
           .from("clients_config")
           .select("id, client_name")
           .eq("is_active", true)
+          .neq("is_agency", true)
           .order("client_name");
         if (clientsErr) throw clientsErr;
 

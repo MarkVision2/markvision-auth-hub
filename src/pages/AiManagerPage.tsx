@@ -176,7 +176,8 @@ export default function AiManagerPage() {
         const { count: clientsCount } = await supabase
           .from("clients_config")
           .select("*", { count: 'exact', head: true })
-          .eq("is_active", true);
+          .eq("is_active", true)
+          .neq("is_agency", true);
 
         setActiveClients(clientsCount || 0);
 

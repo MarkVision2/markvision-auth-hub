@@ -108,7 +108,7 @@ export default function AgencyTab() {
 
     const fetchData = useCallback(async () => {
         try {
-            let clientsQuery = supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true);
+            let clientsQuery = supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true);
             if (active.id !== "hq") {
                 clientsQuery = clientsQuery.eq("project_id", active.id);
             }

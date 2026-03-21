@@ -61,13 +61,19 @@ export function useAnalyticsData() {
           .eq("project_id", active.id);
         const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
-        const { data: configs } = await (supabase as any)
+        let query = (supabase as any)
           .from("clients_config")
           .select("id")
-          .eq("project_id", active.id);
+          .neq("is_agency", true);
 
-        const projectIds = (configs || []).map((c: any) => c.id);
-        const allClientIds = [...new Set([...sharedIds, ...projectIds])];
+        if (sharedIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
+        }
+
+        const { data: configs } = await query;
+        const allClientIds = (configs || []).map((c: any) => c.id);
 
         if (allClientIds.length > 0) {
           dailyQ = dailyQ.in("client_config_id", allClientIds);

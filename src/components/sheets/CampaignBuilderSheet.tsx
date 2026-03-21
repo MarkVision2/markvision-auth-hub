@@ -119,6 +119,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       .from("clients_config")
       .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, fb_token, city, region_key")
       .eq("is_active", true)
+      .neq("is_agency", true)
       .order("client_name")
       .then(({ data, error }: any) => {
         if (!error && data) setClients(data);

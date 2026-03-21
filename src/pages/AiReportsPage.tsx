@@ -49,7 +49,8 @@ export default function AiReportsPage() {
       let query = (supabase as any)
         .from("clients_config")
         .select("id, client_name")
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .neq("is_agency", true);
 
       if (active.id !== "hq") {
         // Client project: own + shared
@@ -107,7 +108,7 @@ export default function AiReportsPage() {
             .eq("project_id", active.id);
           const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
-          let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true);
+          let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true).neq("is_agency", true);
           if (sharedCabIds.length > 0) {
             cQuery = cQuery.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
           } else {

@@ -121,7 +121,6 @@ export default function AgencyAccounts() {
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
-  const [mainTab, setMainTab] = useState<"personal" | "agency">("personal");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("spend");
@@ -294,9 +293,6 @@ export default function AgencyAccounts() {
   const filtered = useMemo(() => {
     let list = metrics;
 
-    // Split by tab first
-    list = list.filter(m => mainTab === "agency" ? (m as any).is_agency : !(m as any).is_agency);
-
     // search
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -320,7 +316,7 @@ export default function AgencyAccounts() {
     });
 
     return list;
-  }, [metrics, search, filter, sortKey, sortDir, needsAttention, mainTab]);
+  }, [metrics, search, filter, sortKey, sortDir, needsAttention]);
 
   // Summary KPIs for filtered set
   const summary = useMemo(() => {
@@ -402,6 +398,12 @@ export default function AgencyAccounts() {
                       isActiveCabinet ? "bg-green-500/10 text-green-600" : "bg-muted/10 text-muted-foreground"
                     )}>
                       {s.label}
+                    </Badge>
+                    <Badge variant="outline" className={cn(
+                      "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border text-foreground",
+                      (c as any).is_agency ? "border-purple-500/30 text-purple-600 bg-purple-500/5" : "border-blue-500/30 text-blue-600 bg-blue-500/5"
+                    )}>
+                      {(c as any).is_agency ? "Агентский" : "Личный"}
                     </Badge>
                     {needsAttention(c) && (
                       <Badge variant="destructive" className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md">
@@ -527,33 +529,6 @@ export default function AgencyAccounts() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-             <div className="bg-muted/50 p-1.5 rounded-2xl border border-border flex items-center shadow-inner">
-                <button
-                  onClick={() => setMainTab("personal")}
-                  className={cn(
-                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2.5",
-                    mainTab === "personal" 
-                      ? "bg-card text-primary shadow-sm ring-1 ring-border"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Wallet className="h-4 w-4" />
-                  Личные
-                </button>
-                <button
-                  onClick={() => setMainTab("agency")}
-                  className={cn(
-                    "px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2.5",
-                    mainTab === "agency" 
-                      ? "bg-card text-primary shadow-sm ring-1 ring-border"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Users className="h-4 w-4" />
-                  Агентские
-                </button>
-             </div>
-             
              {isSuperadmin && (
                 <Button 
                   onClick={() => setSheetOpen(true)} 
@@ -719,6 +694,12 @@ export default function AgencyAccounts() {
                                        isActiveCabinet ? "bg-green-500/10 text-green-600" : "bg-muted/10 text-muted-foreground"
                                      )}>
                                        {s.label}
+                                     </Badge>
+                                     <Badge variant="outline" className={cn(
+                                       "text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md border h-4",
+                                       (c as any).is_agency ? "border-purple-500/30 text-purple-600 bg-purple-500/5" : "border-blue-500/30 text-blue-600 bg-blue-500/5"
+                                     )}>
+                                       {(c as any).is_agency ? "Агентский" : "Личный"}
                                      </Badge>
                                      {needsAttention(c) && (
                                        <Badge variant="destructive" className="text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md h-4">Critical</Badge>

@@ -342,7 +342,7 @@ export default function ContentFactory() {
         timestamp: new Date().toISOString(),
       };
 
-      const webhookRes = await fetch("https://n8n.zapoinov.com/webhook/content-factory-v2", {
+      const webhookRes = await fetch("https://n8n.zapoinov.com/webhook/content-factory-v3", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(n8nPayload),
       });
       if (!webhookRes.ok) {

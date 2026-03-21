@@ -49,7 +49,7 @@ export default function DynamicsTab() {
 
     const fetchAgencyData = useCallback(async () => {
         const [{ data: clients }, { data: services }, { data: billing }, { data: team }] = await Promise.all([
-            supabase.from("clients_config").select("id").eq("is_active", true),
+            supabase.from("clients_config").select("id").eq("is_active", true).neq("is_agency", true),
             supabase.from("finance_client_services").select("price, client_config_id"),
             supabase.from("finance_client_billing").select("expenses, client_config_id"),
             supabase.from("finance_team").select("salary"),
