@@ -60,7 +60,7 @@
             source: formData.source || window.location.hostname,
             project_id: CONFIG.projectId,
             utm_campaign: utmTags.utm_campaign || null,
-            // Additional data to be processed by CRM
+            // Additional data to be processed by CRM (leads_crm table)
             metadata: {
                 ...getMetadata(),
                 utm_tags: utmTags,

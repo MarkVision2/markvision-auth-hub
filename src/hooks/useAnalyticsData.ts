@@ -45,7 +45,7 @@ export function useAnalyticsData() {
         let campQ = (supabase as any).from("analytics_campaigns").select("*, analytics_channels!inner(*)").order("created_at");
         let crQ = (supabase as any).from("analytics_creatives").select("*, analytics_campaigns!inner(id, analytics_channels!inner(*))").order("created_at");
         let opQ = (supabase as any).from("analytics_organic_posts").select("*").order("created_at");
-        let leadsQ = (supabase as any).from("leads").select("id", { count: "exact", head: true });
+        let leadsQ = (supabase as any).from("leads_crm").select("id", { count: "exact", head: true });
         let dailyQ = (supabase as any).from("daily_data").select("spend, clicks, impressions, leads, visits, sales, revenue").gte("date", monthStart).lte("date", monthEnd);
 
         if (active.id !== "hq") {

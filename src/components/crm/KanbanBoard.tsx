@@ -211,7 +211,7 @@ export default function KanbanBoard() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      let query = (supabase as any).from("leads").select("*");
+      let query = (supabase as any).from("leads_crm").select("*");
 
       if (active.id === "hq") {
         // HQ sees everything
@@ -245,7 +245,7 @@ export default function KanbanBoard() {
   useEffect(() => {
     const ch = supabase
       .channel("kanban_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => fetchLeads())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchLeads]);
@@ -266,7 +266,7 @@ export default function KanbanBoard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          table: "leads",
+          table: "leads_crm",
           type: "UPDATE",
           record: {
             id: lead.id,
@@ -298,7 +298,7 @@ export default function KanbanBoard() {
     const oldStatus = lead?.status || "Новая заявка";
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     const { error } = await (supabase as any)
-      .from("leads").update({ status: newStatus }).eq("id", leadId);
+      .from("leads_crm").update({ status: newStatus }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       fetchLeads();
@@ -325,7 +325,7 @@ export default function KanbanBoard() {
 
   const handleDeleteLead = useCallback(async (leadId: string, leadName: string) => {
     if (!confirm(`Удалить следку ${leadName}?`)) return;
-    const { error } = await (supabase as any).from("leads").delete().eq("id", leadId);
+    const { error } = await (supabase as any).from("leads_crm").delete().eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;

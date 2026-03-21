@@ -40,7 +40,7 @@ export default function ClientDatabase() {
   const fetchClients = useCallback(async () => {
     setLoading(true);
     try {
-      let query = (supabase as any).from("leads").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
+      let query = (supabase as any).from("leads_crm").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
 
       if (active.id === "hq") {
         // HQ sees everything
@@ -104,7 +104,7 @@ export default function ClientDatabase() {
   useEffect(() => {
     const ch = supabase
       .channel("client_db_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchClients())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => fetchClients())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchClients, active.id]);

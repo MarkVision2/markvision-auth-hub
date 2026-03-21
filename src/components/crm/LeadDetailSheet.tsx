@@ -241,7 +241,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     try {
       const dateStr = date.toISOString().split("T")[0];
       const { data, error } = await (supabase as unknown)
-        .from("leads")
+        .from("leads_crm")
         .select("scheduled_at, doctor_name")
         .not("scheduled_at", "is", null)
         .filter("scheduled_at", "gte", `${dateStr}T00:00:00Z`)
@@ -353,7 +353,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          table: "leads", type: "UPDATE",
+          table: "leads_crm", type: "UPDATE",
           record: { id: lead.id, status: capiKey, project_id: (lead as unknown).project_id || null, deal_amount: Number(lead.amount) || 0 },
           old_record: { status: oldStatus },
         }),
@@ -372,7 +372,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as unknown).from("leads").update({ status: newStage }).eq("id", lead.id);
+    const { error } = await (supabase as unknown).from("leads_crm").update({ status: newStage }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -383,7 +383,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   };
 
   const handleDeleteLead = async () => {
-    const { error } = await (supabase as unknown).from("leads").delete().eq("id", lead.id);
+    const { error } = await (supabase as unknown).from("leads_crm").delete().eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;
@@ -423,7 +423,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     }
 
     const { error } = await (supabase as unknown)
-      .from("leads")
+      .from("leads_crm")
       .update({
         scheduled_at: fullDate.toISOString(),
         doctor_name: doctorName,

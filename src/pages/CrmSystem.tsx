@@ -54,7 +54,7 @@ export default function CrmSystem() {
   useEffect(() => {
     const load = async () => {
       try {
-        let query = (supabase as any).from("leads").select("id, status, amount, ai_score, created_at");
+        let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
 
         if (active.id === "hq") {
           // MarkVision AI sees all
@@ -88,7 +88,7 @@ export default function CrmSystem() {
     load();
     const ch = supabase
       .channel("crm_kpi_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => load())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [active.id]);

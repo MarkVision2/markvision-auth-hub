@@ -37,8 +37,8 @@ export function useRealtimeNotifications() {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "content_tasks" },
         (payload) => {
-          const row = payload.new as ContentTaskRow;
-          const old = payload.old as ContentTaskRow;
+          const row = payload.new as any;
+          const old = payload.old as any;
 
           // Only fire when status actually changed
           if (old.status === row.status) return;
@@ -67,9 +67,9 @@ export function useRealtimeNotifications() {
       .channel("notify_leads")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "leads" },
+        { event: "INSERT", schema: "public", table: "leads_crm" },
         (payload) => {
-          const lead = payload.new as LeadRow;
+          const lead = payload.new as any;
           pushNotification(
             "info",
             "Новый лид 🎯",
@@ -87,7 +87,7 @@ export function useRealtimeNotifications() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "competitor_ads" },
         (payload) => {
-          const ad = payload.new as CompetitorAdRow;
+          const ad = payload.new as any;
           if (ad.is_monitored) {
             pushNotification(
               "warning",
