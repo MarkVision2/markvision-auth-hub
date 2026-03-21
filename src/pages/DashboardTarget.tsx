@@ -379,19 +379,27 @@ export default function DashboardTarget() {
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px] border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
-              <RefreshCw className="h-3.5 w-3.5" />
+            <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-10 w-10 min-h-[44px] rounded-xl border-border bg-background hover:bg-accent transition-all duration-300" 
+                onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
             </Button>
             {isSuperadmin && (
               <Button 
                 onClick={() => setSheetOpen(true)} 
-                className="bg-card hover:bg-accent border border-border h-10 min-h-[44px] text-sm font-semibold gap-1.5 px-4"
+                className="bg-primary/10 hover:bg-primary/20 text-primary border-none h-10 min-h-[44px] text-[13px] font-black uppercase tracking-widest gap-2.5 px-6 rounded-xl transition-all shadow-sm"
               >
                 <Plus className="h-4 w-4" />
                 <span>Добавить кабинет</span>
               </Button>
             )}
-            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5 px-4 shadow-lg shadow-primary/10">
+            <Button 
+                onClick={() => setBuilderOpen(true)} 
+                className="bg-[#00A86B] hover:bg-[#008F5B] text-white h-10 min-h-[44px] text-[13px] font-black uppercase tracking-widest gap-2.5 px-6 rounded-xl shadow-[0_8px_16px_rgba(0,168,107,0.2)] border-b-2 border-black/10 active:border-b-0 active:translate-y-0.5 transition-all"
+            >
               <Rocket className="h-4 w-4" />
               <span className="hidden sm:inline">Создать кампанию</span>
               <span className="sm:hidden">Создать</span>
@@ -579,7 +587,7 @@ export default function DashboardTarget() {
                                      <AlertDialogCancel className="rounded-xl font-bold">Отмена</AlertDialogCancel>
                                      <AlertDialogAction 
                                        onClick={async () => {
-                                         const { error } = await supabase.from("clients_config").delete().eq("id", client.id);
+                                         const { error } = await (supabase as any).from("clients_config").delete().eq("id", client.id);
                                          if (!error) {
                                            toast({ title: "Удалено", description: client.name });
                                            fetchData();
