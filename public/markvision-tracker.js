@@ -69,31 +69,39 @@
         };
 
         try {
-            // We use the Dispatcher or a direct insert if configured
-            // Since n8n is preferred for analytics, we hit the dispatcher
-            const response = await fetch(CONFIG.webhookUrl, {
+            // Direct insertion to Supabase via REST API
+            // Note: This requires the "anon" role to have INSERT permissions on leads_crm
+            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5d21qZHJnaGNic2ljZHdvaG1iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDk0NzcsImV4cCI6MjA4ODM4NTQ3N30.Km1K3eBIDfSPLWJ42yeKIEQihe3vhKJ0Z-GrCc7AoQI';
+            const response = await fetch(`${CONFIG.supabaseUrl}/rest/v1/leads_crm`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`,
+                    'Prefer': 'return=minimal'
+                },
                 body: JSON.stringify({ 
-                    action: 'create_lead',
-                    ...payload 
+                    name: payload.name,
+                    phone: payload.phone,
+                    source: payload.source,
+                    project_id: payload.project_id,
+                    utm_campaign: payload.utm_campaign,
+                    // Store extra data that doesn't map to columns gracefully inside metadata or just drop them if no metadata column
+                    // Supabase will ignore extra fields if they are in JSON but PostgREST will fail if we send columns that don't exist
+                    // Assuming metadata column does not exist on leads_crm based on schema dump, we just send standard columns
                 })
             });
 
-            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[MarkVision] Supabase DB Error:', errorData);
+                throw new Error(errorData.message || `HTTP ${response.status}`);
+            }
             
-            console.log('[MarkVision] Lead sent successfully');
+            console.log('[MarkVision] Lead sent successfully to Supabase');
             return { success: true };
         } catch (error) {
             console.error('[MarkVision] Failed to send lead:', error);
-            
-            // Backup: Try direct Supabase insert if Webhook fails (requires RLS to be open)
-            /*
-            try {
-                // ... backup logic ...
-            } catch (e) {}
-            */
-            
             return { success: false, error: error.message };
         }
     };
