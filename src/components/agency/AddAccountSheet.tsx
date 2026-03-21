@@ -52,7 +52,7 @@ function Field({ label, value, onChange, placeholder, icon: Icon }: { label: str
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-12 bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/20 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all rounded-2xl font-bold text-sm shadow-inner"
+          className="h-12 bg-secondary/10 border-border/60 text-foreground placeholder:text-muted-foreground/30 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all rounded-2xl font-bold text-sm"
         />
       </div>
     </div>
@@ -207,8 +207,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto border-l border-border/40 bg-card/80 backdrop-blur-2xl p-0">
-        <div className="sticky top-0 z-20 bg-card/60 backdrop-blur-xl border-b border-border/40 px-8 py-6">
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto border-l border-border/40 bg-white p-0">
+        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-border/40 px-8 py-6">
           <SheetHeader>
             <div className="flex items-center gap-4 mb-2">
                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -233,7 +233,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70">Основные настройки</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/15 backdrop-blur-sm p-6 rounded-3xl border border-border/40 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-3xl border border-border/60 shadow-sm transition-all hover:shadow-md">
               <div className="md:col-span-2">
                  <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} placeholder="Напр: Kitarov Clinic" />
               </div>
@@ -250,8 +250,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                   <Label
                     htmlFor="r-personal"
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl border border-border/50 cursor-pointer transition-all hover:bg-background/50",
-                      !form.is_agency ? "bg-background border-primary shadow-sm" : "bg-transparent"
+                      "flex items-center justify-between p-4 rounded-2xl border border-border cursor-pointer transition-all hover:bg-emerald-500/5",
+                      !form.is_agency ? "bg-white border-emerald-500 shadow-sm" : "bg-secondary/20 border-transparent"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -265,8 +265,8 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                   <Label
                     htmlFor="r-agency"
                     className={cn(
-                      "flex items-center justify-between p-4 rounded-2xl border border-border/50 cursor-pointer transition-all hover:bg-background/50",
-                      form.is_agency ? "bg-background border-primary shadow-sm" : "bg-transparent"
+                      "flex items-center justify-between p-4 rounded-2xl border border-border cursor-pointer transition-all hover:bg-emerald-500/5",
+                      form.is_agency ? "bg-white border-emerald-500 shadow-sm" : "bg-secondary/20 border-transparent"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -288,7 +288,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70">Базовые показатели (History)</h3>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-secondary/15 backdrop-blur-sm p-6 rounded-3xl border border-border/40 shadow-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-white p-6 rounded-3xl border border-border/60 shadow-sm transition-all hover:shadow-md">
               <Field label="Показы" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
               <Field label="Клики" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
               <Field label="Расход" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
@@ -302,7 +302,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
           </div>
 
           <Accordion type="multiple" className="space-y-5">
-            <AccordionItem value="meta" className="border border-border/40 rounded-3xl px-6 bg-secondary/15 backdrop-blur-sm overflow-hidden shadow-sm transition-all hover:border-emerald-500/20">
+            <AccordionItem value="meta" className="border border-border/60 rounded-3xl px-6 bg-white overflow-hidden shadow-sm transition-all hover:shadow-md">
               <AccordionTrigger className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70 hover:no-underline py-6">
                 <div className="flex items-center gap-3">
                    <Facebook className="h-4 w-4 text-blue-600" />
@@ -325,7 +325,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="tracking" className="border border-border/40 rounded-3xl px-6 bg-secondary/15 backdrop-blur-sm overflow-hidden shadow-sm transition-all hover:border-emerald-500/20">
+            <AccordionItem value="tracking" className="border border-border/60 rounded-3xl px-6 bg-white overflow-hidden shadow-sm transition-all hover:shadow-md">
               <AccordionTrigger className="text-xs font-black uppercase tracking-[0.2em] text-foreground hover:no-underline py-6">
                 <div className="flex items-center gap-3">
                    <Link2 className="h-4 w-4 text-primary" />
@@ -357,10 +357,10 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                  <div 
                    key={ws.id}
                    className={cn(
-                     "flex items-center justify-between p-4 rounded-2xl border transition-all hover:bg-emerald-500/5 group",
+                     "flex items-center justify-between p-4 rounded-2xl border transition-all hover:bg-emerald-500/5 shadow-sm",
                      selectedVisibilities.includes(ws.id) 
-                      ? "bg-emerald-500/5 border-emerald-500/20" 
-                      : "bg-secondary/20 border-border/50"
+                      ? "bg-white border-emerald-500" 
+                      : "bg-white border-border/60"
                    )}
                  >
                     <div className="flex items-center gap-4">
