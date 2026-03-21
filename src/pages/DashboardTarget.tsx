@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { StaggerContainer, FadeUpItem } from "@/components/motion/MotionWrappers";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import AddAccountSheet from "@/components/agency/AddAccountSheet";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,50 +13,143 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import {
-  Rocket, MoreHorizontal, Pencil, Megaphone, Search,
-  Loader2, RefreshCw, ExternalLink, Activity, Wallet, Target
+  Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
+  AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
+  ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
+  ExternalLink, TrendingUp,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /* ── Types ── */
-interface ClientConfig {
+interface DailyMetric {
+  date: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  leads: number;
+  visits: number;
+  sales: number;
+  revenue: number;
+  followers?: number;
+}
+
+interface ClientWithMetrics {
   id: string;
   name: string;
   ad_account_id: string | null;
   daily_budget: number;
-  is_active: boolean;
+  totalSpend: number;
+  totalLeads: number;
+  totalVisits: number;
+  totalSales: number;
+  totalRevenue: number;
+  totalClicks: number;
+  totalImpressions: number;
+  cpl: number;
+  romi: number;
+  hasData: boolean;
+  dailyMetrics: DailyMetric[];
+}
+
+interface Alert {
+  account: string;
+  issue: string;
+  icon: typeof CreditCard;
+  severity: "critical" | "warning";
 }
 
 /* ── Helpers ── */
+function fmt(n: number) {
+  return new Intl.NumberFormat("ru-RU").format(Math.round(n));
+}
+
 function fmtCurrency(n: number) {
-  return `${new Intl.NumberFormat("ru-RU").format(Math.round(n))} ₸`;
+  return `${fmt(n)} ₸`;
+}
+
+const fmtDate = (iso: string) => {
+  const d = new Date(iso + "T00:00:00");
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"][d.getMonth()];
+  return `${day} ${month}`;
+};
+
+const MONTH_NAMES = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
+function getMonthRange(year: number, month: number) {
+  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const nextMonth = month === 11 ? 0 : month + 1;
+  const nextYear = month === 11 ? year + 1 : year;
+  const end = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-01`;
+  return { start, end };
+}
+
+type StatusFilter = "all" | "with-data" | "no-data";
+
+/* ── KPI Card component ── */
+function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string; sub?: string; color: string }) {
+  return (
+    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-lg overflow-hidden">
+      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={cn("h-9 w-9 rounded-xl border flex items-center justify-center transition-colors shadow-sm", color)}>
+            <Icon className="h-4 w-4" />
+          </div>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-bold">{label}</span>
+        </div>
+        <p className="text-2xl font-bold font-mono tabular-nums text-foreground tracking-tight">{value}</p>
+        {sub && <p className="text-[10px] text-muted-foreground mt-1.5 font-medium opacity-70">{sub}</p>}
+      </div>
+    </div>
+  );
 }
 
 export default function DashboardTarget() {
+  const now = new Date();
   const { active } = useWorkspace();
-  const [clients, setClients] = useState<ClientConfig[]>([]);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [clients, setClients] = useState<ClientWithMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
   const [rawClients, setRawClients] = useState<any[]>([]);
+  const [monthlyPlan, setMonthlyPlan] = useState<any>(null);
+
+  const goMonth = (dir: -1 | 1) => {
+    let m = selectedMonth + dir;
+    let y = selectedYear;
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    setSelectedMonth(m);
+    setSelectedYear(y);
+  };
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       let clientsQuery = (supabase as any)
         .from("clients_config")
-        .select("id, client_name, ad_account_id, daily_budget, is_active")
-        .eq("is_active", true)
-        .neq("is_agency", true)
+        .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
         .order("client_name");
 
-      if (active.id !== "hq") {
+      if (active.id === "hq") {
+        // MarkVision AI (HQ) sees everything
+      } else {
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
@@ -69,30 +164,167 @@ export default function DashboardTarget() {
         }
       }
 
-      const { data, error } = await (clientsQuery as any);
-      if (error) throw error;
-      setRawClients(data || []);
+      const { data: clientsData, error: cErr } = await (clientsQuery as any);
+      if (cErr) throw cErr;
+      setRawClients(clientsData || []);
 
-      const mapped: ClientConfig[] = (data || []).map((c: any) => ({
-        id: c.id,
-        name: c.client_name,
-        ad_account_id: c.ad_account_id,
-        daily_budget: Number(c.daily_budget) || 0,
-        is_active: c.is_active,
-      }));
+      const { start, end } = getMonthRange(selectedYear, selectedMonth);
+
+      let metricsQuery = (supabase as any)
+        .from("daily_data")
+        .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue, followers")
+        .gte("date", start)
+        .lt("date", end)
+        .order("date", { ascending: true });
+
+      const clientIds = (clientsData || []).map((c: any) => c.id);
+      if (clientIds.length > 0) {
+        metricsQuery = metricsQuery.in("client_config_id", clientIds);
+      } else {
+        metricsQuery = metricsQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+      }
+
+      const { data: metricsData, error: mErr } = await metricsQuery;
+      if (mErr) throw mErr;
+
+      const metricsMap = new Map<string, DailyMetric[]>();
+      (metricsData || []).forEach((m: any) => {
+        if (!m.client_config_id) return;
+        if (!metricsMap.has(m.client_config_id)) metricsMap.set(m.client_config_id, []);
+        metricsMap.get(m.client_config_id)!.push({
+          date: m.date,
+          spend: Number(m.spend) || 0,
+          impressions: Number(m.impressions) || 0,
+          clicks: Number(m.clicks) || 0,
+          leads: Number(m.leads) || 0,
+          visits: Number(m.visits) || 0,
+          sales: Number(m.sales) || 0,
+          revenue: Number(m.revenue) || 0,
+        });
+      });
+
+      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
+        const metrics = metricsMap.get(c.id) || [];
+        const totalSpend = metrics.reduce((s, m) => s + m.spend, 0) + (Number(c.spend) || 0);
+        const totalLeads = metrics.reduce((s, m) => s + m.leads, 0) + (Number(c.meta_leads) || 0);
+        const totalVisits = metrics.reduce((s, m) => s + m.visits, 0) + (Number(c.visits) || 0);
+        const totalSales = metrics.reduce((s, m) => s + m.sales, 0) + (Number(c.sales) || 0);
+        const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0) + (Number(c.revenue) || 0);
+        const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0) + (Number(c.clicks) || 0);
+        const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0) + (Number(c.impressions) || 0);
+
+        return {
+          id: c.id,
+          name: c.client_name,
+          ad_account_id: c.ad_account_id,
+          daily_budget: Number(c.daily_budget) || 0,
+          totalSpend,
+          totalLeads,
+          totalVisits,
+          totalSales,
+          totalRevenue,
+          totalClicks,
+          totalImpressions,
+          cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
+          romi: totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0,
+          hasData: metrics.length > 0,
+          dailyMetrics: metrics,
+        };
+      });
+
       setClients(mapped);
+      setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
+
+      // Fetch monthly plan for budget alerts
+      const { data: planData } = await (supabase as any)
+        .from("monthly_plans")
+        .select("plan_spend")
+        .eq("project_id", active.id)
+        .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
+        .maybeSingle();
+      setMonthlyPlan(planData);
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [active.id]);
+  }, [selectedYear, selectedMonth, active.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    const ch = supabase
+      .channel("target_metrics_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_data" }, () => fetchData())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchData]);
+
+  const alerts = useMemo<Alert[]>(() => {
+    const result: Alert[] = [];
+    const totalSpend = clients.reduce((s, c) => s + c.totalSpend, 0);
+    const planSpend = monthlyPlan?.plan_spend ?? 0;
+
+    if (planSpend > 0) {
+      const budgetPct = Math.round((totalSpend / planSpend) * 100);
+      if (budgetPct >= 90) {
+        result.push({
+          account: active.name,
+          issue: `Бюджет израсходован на ${budgetPct}% (${fmt(totalSpend)} / ${fmt(planSpend)})`,
+          icon: CreditCard,
+          severity: budgetPct >= 100 ? "critical" : "warning"
+        });
+      }
+    }
+
+    clients.forEach((c) => {
+      if (c.cpl > 10000 && c.totalLeads > 0) {
+        result.push({ account: c.name, issue: `CPL ${fmtCurrency(c.cpl)} — выше нормы`, icon: TrendingDown, severity: "warning" });
+      }
+    });
+    return result;
+  }, [clients, monthlyPlan, active.name]);
+
   const filteredClients = useMemo(() => {
-    return clients.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()));
+    return clients.filter((c) => {
+      return !search || c.name.toLowerCase().includes(search.toLowerCase());
+    });
   }, [clients, search]);
+
+  const totals = useMemo(() => {
+    const spend = clients.reduce((s, c) => s + c.totalSpend, 0);
+    const leads = clients.reduce((s, c) => s + c.totalLeads, 0);
+    const sales = clients.reduce((s, c) => s + c.totalSales, 0);
+    const revenue = clients.reduce((s, c) => s + c.totalRevenue, 0);
+    const withData = clients.filter(c => c.hasData).length;
+    const cpl = leads > 0 ? Math.round(spend / leads) : 0;
+    const romi = spend > 0 ? Math.round(((revenue - spend) / spend) * 100) : 0;
+    return { spend, leads, sales, revenue, withData, cpl, romi };
+  }, [clients]);
+
+  const toggleAccount = (name: string) => {
+    setExpandedAccounts((prev) => {
+      const next = new Set(prev);
+      next.has(name) ? next.delete(name) : next.add(name);
+      return next;
+    });
+  };
+
+  const handleExport = () => {
+    const headers = ["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI"];
+    const rows = filteredClients.map(c => [
+      c.name, c.totalSpend, c.cpl, c.totalLeads, c.totalVisits, c.totalSales, c.totalRevenue, `${c.romi}%`
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ads_report_${MONTH_NAMES[selectedMonth]}_${selectedYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV экспортирован" });
+  };
 
   if (loading) {
     return (
@@ -106,139 +338,279 @@ export default function DashboardTarget() {
 
   return (
     <DashboardLayout breadcrumb="Таргетолог">
-      <StaggerContainer className="space-y-6 max-w-7xl mx-auto">
-        {/* Header Section */}
-        <FadeUpItem className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6 border-b border-border/40">
+      <StaggerContainer className="space-y-5">
+        <FadeUpItem className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-inner mt-4">
-                 <Megaphone className="h-6 w-6 text-primary" />
-               </div>
-               <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight mt-4">Центр управления рекламой</h1>
-            </div>
-            <p className="text-muted-foreground text-sm sm:text-base font-medium max-w-xl">
-              Создание, настройка и запуск рекламных кампаний. Доступные кабинеты: {clients.length}.
+            <h1 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Megaphone className="h-4.5 w-4.5 text-primary" />
+              </div>
+              Центр управления рекламой
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {clients.length} кабинетов · {totals.withData} активных · {MONTH_NAMES[selectedMonth]} {selectedYear}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }} className="h-12 w-12 rounded-2xl border-border/60 bg-card hover:bg-accent/50 text-muted-foreground transition-all">
-              <RefreshCw className="h-5 w-5" />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 bg-secondary/30 border border-border rounded-lg px-1 h-10 min-h-[44px]">
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(-1)}>
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <div className="flex items-center gap-1.5 px-2 min-w-[120px] justify-center">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                  {MONTH_NAMES[selectedMonth]} {selectedYear}
+                </span>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px]" onClick={() => goMonth(1)} disabled={isCurrentMonth}>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <Button variant="outline" size="icon" className="h-10 w-10 min-h-[44px] border-border" onClick={() => { fetchData(); toast({ title: "Обновлено" }); }}>
+              <RefreshCw className="h-3.5 w-3.5" />
             </Button>
-            <Button onClick={() => setBuilderOpen(true)} className="gap-2.5 h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 transition-all font-black text-[12px] uppercase tracking-[0.1em] text-white shadow-xl shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <Rocket className="h-4.5 w-4.5 relative z-10" />
-              <span className="relative z-10">Создать кампанию</span>
+            <Button onClick={() => setBuilderOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 min-h-[44px] text-sm font-semibold gap-1.5">
+              <Rocket className="h-4 w-4" />
+              <span className="hidden sm:inline">Создать кампанию</span>
+              <span className="sm:hidden">Создать</span>
+            </Button>
+          </div>
+        </FadeUpItem>
+
+        {alerts.length > 0 && (
+          <FadeUpItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {alerts.map((a, i) => (
+                <div key={i} className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-lg hover:border-primary/20">
+                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${a.severity === "critical" ? "bg-destructive/10 group-hover:bg-destructive/20" : "bg-amber-500/10 group-hover:bg-amber-500/20"}`}>
+                    <a.icon className={`h-5 w-5 ${a.severity === "critical" ? "text-destructive" : "text-amber-500"}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-foreground truncate">{a.account}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{a.issue}</p>
+                  </div>
+                  <Badge variant="outline" className={`shrink-0 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 ${a.severity === "critical" ? "border-destructive/30 text-destructive bg-destructive/5" : "border-amber-500/30 text-amber-500 bg-amber-500/5"}`}>
+                    {a.severity === "critical" ? "Критично" : "Внимание"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </FadeUpItem>
+        )}
+
+        <FadeUpItem className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по кабинетам..." className="pl-9 h-10 text-sm bg-card border-border rounded-xl focus-visible:ring-primary/20" />
+          </div>
+          <div className="ml-auto">
+            <Button variant="outline" size="sm" className="h-8 text-xs border-border gap-1.5" onClick={handleExport}>
+              <Download className="h-3.5 w-3.5" /> Экспорт CSV
             </Button>
           </div>
         </FadeUpItem>
 
         <FadeUpItem>
-          <div className="flex items-center gap-4 bg-card/40 backdrop-blur-md border border-border/60 p-4 rounded-[1.5rem] shadow-sm mb-8">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/30" />
-              <Input 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)} 
-                placeholder="Поиск по рекламным кабинетам..." 
-                className="pl-12 h-12 text-sm bg-background border-border/50 rounded-xl focus-visible:ring-primary/20 placeholder:text-muted-foreground/40 font-semibold" 
-              />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-6 mb-2">
+              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/50">Список рекламных кабинетов</span>
+              <span className="text-[10px] uppercase font-black tracking-[0.2em] text-muted-foreground/50">{filteredClients.length} Кабинетов</span>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            <AnimatePresence mode="popLayout">
-              {filteredClients.length === 0 ? (
-                <div className="col-span-full py-20 text-center flex flex-col items-center">
-                  <div className="h-16 w-16 mb-4 rounded-full bg-secondary/50 flex items-center justify-center">
-                    <Search className="h-8 w-8 text-muted-foreground/30" />
-                  </div>
-                  <h3 className="text-lg font-bold text-foreground mb-1">Кабинеты не найдены</h3>
-                  <p className="text-sm text-muted-foreground">Попробуйте изменить параметры поиска или добавьте новый кабинет в разделе "Рекламные кабинеты".</p>
+            {filteredClients.length === 0 && (
+              <div className="rounded-3xl border border-border border-dashed bg-card/30 p-20 text-center">
+                <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
+                  <Megaphone className="h-8 w-8 text-muted-foreground/20" />
                 </div>
-              ) : (
-                filteredClients.map((client, idx) => (
+                <p className="text-sm font-bold text-foreground/60 tracking-tight">Кабинеты не найдены</p>
+                <p className="text-xs text-muted-foreground mt-1">Попробуйте изменить поисковый запрос</p>
+              </div>
+            )}
+
+            <AnimatePresence mode="popLayout">
+              {filteredClients.map((client, idx) => {
+                const isOpen = expandedAccounts.has(client.name);
+                const hasAlert = alerts.some(a => a.account === client.name);
+                const planSpend = monthlyPlan?.plan_spend ?? 0;
+                const budgetPct = planSpend > 0 ? Math.min(100, Math.round((client.totalSpend / planSpend) * 100)) : 0;
+
+                return (
                   <motion.div
                     layout
                     key={client.id}
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3, delay: idx * 0.03 }}
-                    className="group flex flex-col justify-between rounded-[2rem] border border-border/60 bg-card p-6 hover:shadow-xl hover:border-primary/30 transition-all duration-500 relative overflow-hidden"
+                    transition={{ duration: 0.3, delay: idx * 0.05 }}
+                    className={cn(
+                      "group rounded-3xl border border-border bg-card shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden",
+                      isOpen ? "border-primary/20 shadow-primary/5 ring-1 ring-primary/5" : "hover:border-primary/10"
+                    )}
                   >
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
-                      <Target className="w-32 h-32 -mr-10 -mt-10 text-primary" />
-                    </div>
-
-                    <div>
-                      <div className="flex items-start justify-between gap-4 mb-6">
-                        <div className="flex items-center gap-4">
-                          <div className="h-14 w-14 rounded-[1.25rem] bg-secondary/40 border border-border/50 flex flex-col items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                             <Activity className="h-6 w-6 text-primary/70" />
+                    {/* Header Strip */}
+                    <div 
+                      className={cn(
+                        "flex flex-col md:flex-row md:items-center gap-6 p-6 cursor-pointer",
+                        isOpen ? "bg-primary/[0.02]" : "hover:bg-accent/40"
+                      )}
+                      onClick={() => toggleAccount(client.name)}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className={cn(
+                          "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                          client.hasData ? "bg-primary/10 text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]" : "bg-muted text-muted-foreground/50"
+                        )}>
+                          <Megaphone className="h-6 w-6" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-[16px] font-bold text-foreground tracking-tight truncate">{client.name}</h3>
+                            {hasAlert && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
                           </div>
-                          <div>
-                            <h3 className="text-lg font-black text-foreground tracking-tight leading-tight mb-1">{client.name}</h3>
-                            <div className="flex items-center gap-2">
-                              {client.is_active ? (
-                                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-emerald-500/30 text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">Активен</Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-muted-foreground/30 text-muted-foreground bg-muted/10 px-2 py-0.5 rounded-md">Остановлен</Badge>
-                              )}
-                              <span className="text-[10px] font-mono text-muted-foreground/50 tracking-wider">ID: {client.ad_account_id || "—"}</span>
-                            </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] font-mono text-muted-foreground/60 tracking-wider">ID: {client.ad_account_id || "—"}</span>
+                            <div className="h-1 w-1 rounded-full bg-border" />
+                            {client.hasData && (
+                              <Badge variant="outline" className="h-4 text-[9px] font-bold uppercase tracking-widest border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))] px-1 bg-[hsl(var(--status-good))]/5">
+                                Active
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                        
+                      </div>
+
+                      {/* Main Metrics Overview */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 md:gap-12 shrink-0 md:border-l border-border/50 md:pl-12">
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Расход</p>
+                          <p className="text-[15px] font-bold tabular-nums text-foreground">{fmtCurrency(client.totalSpend)}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Лиды</p>
+                          <div className="flex items-center gap-2">
+                             <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalLeads}</p>
+                             {client.cpl > 0 && <span className="text-[10px] font-medium text-muted-foreground">({fmt(client.cpl)}₸)</span>}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Продажи</p>
+                          <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalSales}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Выручка</p>
+                          <p className="text-[15px] font-bold tabular-nums text-primary">{fmtCurrency(client.totalRevenue)}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 md:ml-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative z-20">
-                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-secondary" onClick={(e) => e.stopPropagation()}>
+                              <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border shadow-2xl relative z-50">
-                             {client.ad_account_id && (
-                               <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
-                                 <ExternalLink className="h-4 w-4 text-primary" />
-                                 <span className="text-sm font-semibold">Открыть в Meta Ads</span>
-                               </DropdownMenuItem>
-                             )}
-                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => {
+                          <DropdownMenuContent align="end" className="w-56 p-2 rounded-2xl border-border shadow-2xl">
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')}>
+                               <ExternalLink className="h-4 w-4 text-primary" />
+                               <span className="text-sm font-semibold">Открыть в Meta Ads</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={(e) => {
+                               e.stopPropagation();
                                setEditingAccount(rawClients.find(rc => rc.id === client.id));
                                setSheetOpen(true);
                              }}>
                                <Pencil className="h-4 w-4 text-muted-foreground" />
-                               <span className="text-sm font-semibold">Настройки кабинета</span>
+                               <span className="text-sm font-semibold">Редактировать</span>
+                             </DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 p-2.5 rounded-xl cursor-pointer" onClick={() => toast({ title: "Дублировано", description: client.name })}>
+                               <Copy className="h-4 w-4 text-muted-foreground" />
+                               <span className="text-sm font-semibold">Дублировать</span>
                              </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </div>
-
-                      <div className="bg-secondary/20 rounded-2xl p-4 border border-border/40 flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-background flex items-center justify-center">
-                            <Wallet className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60">Дневной бюджет</p>
-                            <p className="text-base font-bold text-foreground tabular-nums">{client.daily_budget ? fmtCurrency(client.daily_budget) : "Не задан"}</p>
-                          </div>
+                        <div className={cn("transition-transform duration-300", isOpen && "rotate-180")}>
+                           <ChevronDown className="h-5 w-5 text-muted-foreground/40" />
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="mt-6 pt-5 border-t border-border/40 flex gap-2 relative z-10">
-                      <Button className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary font-bold shadow-none tracking-[0.05em] uppercase text-[11px]" onClick={() => setBuilderOpen(true)}>
-                        Запустить рекламу
-                      </Button>
-                      {client.ad_account_id && (
-                        <Button variant="outline" size="icon" onClick={() => window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${client.ad_account_id}`, '_blank')} className="shrink-0 border-border/60 hover:bg-primary/5 hover:text-primary hover:border-primary/30 transition-all">
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+
+                    {/* Progress Bar in Strip */}
+                    {planSpend > 0 && (
+                      <div className="px-6 pb-4">
+                        <div className="h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                          <motion.div 
+                             initial={{ width: 0 }}
+                             animate={{ width: `${budgetPct}%` }}
+                             className={cn(
+                               "h-full rounded-full transition-colors",
+                               budgetPct >= 100 ? "bg-destructive" : budgetPct >= 80 ? "bg-amber-500" : "bg-[hsl(var(--status-good))]"
+                             )} 
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Content Section */}
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                        >
+                          <div className="px-6 pb-6 pt-2 border-t border-border/30 bg-secondary/10">
+                            {/* Detailed Metrics Grid */}
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                               {[
+                                 { label: "CPL", value: client.cpl > 0 ? fmtCurrency(client.cpl) : "—", color: "text-amber-500" },
+                                 { label: "CPM", value: client.totalImpressions > 0 ? fmtCurrency(Math.round(client.totalSpend / (client.totalImpressions / 1000))) : "—", color: "text-blue-500" },
+                                 { label: "CTR", value: client.totalImpressions > 0 ? `${((client.totalClicks / client.totalImpressions) * 100).toFixed(2)}%` : "—", color: "text-purple-500" },
+                                 { label: "CPC", value: client.totalClicks > 0 ? fmtCurrency(Math.round(client.totalSpend / client.totalClicks)) : "—", color: "text-pink-500" },
+                                 { label: "ROMI", value: `${client.romi}%`, color: client.romi > 0 ? "text-[hsl(var(--status-good))]" : "text-destructive" },
+                                 { label: "Подписчики", value: client.dailyMetrics.reduce((s, d) => s + (d.followers || 0), 0) || "—", color: "text-primary" },
+                               ].map(stat => (
+                                 <div key={stat.label} className="bg-card border border-border/50 rounded-2xl p-4 shadow-sm">
+                                   <p className="text-[10px] uppercase font-black tracking-widest text-muted-foreground/60 mb-1">{stat.label}</p>
+                                   <p className={cn("text-[16px] font-bold tabular-nums tracking-tight", stat.color)}>{stat.value}</p>
+                                 </div>
+                               ))}
+                            </div>
+
+                            {/* Daily Statistics Sub-table */}
+                            <div className="rounded-2xl border border-border/50 bg-card overflow-hidden shadow-inner">
+                              <div className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-2.5 bg-secondary/40 border-b border-border text-[9px] font-black uppercase tracking-widest text-muted-foreground/70">
+                                <span>Дата</span>
+                                <span className="text-right">Расход</span>
+                                <span className="text-right">Лиды</span>
+                                <span className="text-right">CPL</span>
+                                <span className="text-right">Визиты</span>
+                                <span className="text-right">Продажи</span>
+                              </div>
+                              <div className="max-h-[300px] overflow-y-auto divide-y divide-border/30">
+                                {client.dailyMetrics.length === 0 ? (
+                                  <div className="py-12 text-center text-xs text-muted-foreground font-medium italic">Дневная статистика отсутствует для этого периода</div>
+                                ) : (
+                                  client.dailyMetrics.slice().reverse().map(day => (
+                                    <div key={day.date} className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-3 hover:bg-accent/20 transition-colors">
+                                      <span className="text-[12px] font-medium text-muted-foreground/80">{fmtDate(day.date)}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{fmtCurrency(day.spend)}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.leads}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-muted-foreground/60">{day.leads > 0 ? fmtCurrency(Math.round(day.spend / day.leads)) : "—"}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.visits}</span>
+                                      <span className="text-right text-[13px] font-bold tabular-nums text-[hsl(var(--status-good))]">{day.sales > 0 ? day.sales : "—"}</span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
                       )}
-                    </div>
+                    </AnimatePresence>
                   </motion.div>
-                ))
-              )}
+                );
+              })}
             </AnimatePresence>
           </div>
         </FadeUpItem>
