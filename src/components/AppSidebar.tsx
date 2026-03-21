@@ -276,7 +276,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
       <Separator className="bg-border/50" />
 
       {/* ── Nav groups ── */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-2 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
         {visibleGroups.map((group) => {
           const isExpanded = expandedGroups[group.label] !== false;
           
@@ -309,22 +309,19 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                       end={item.end}
                       onClick={onNavigate}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 group/link",
+                        "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 group/link",
                         isActive
-                          ? "bg-primary/5 text-primary shadow-[0_4px_12px_rgba(var(--primary-rgb),0.05)]"
-                          : "text-muted-foreground/80 hover:text-foreground hover:bg-accent/50"
+                          ? "bg-primary/8 text-primary font-semibold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
                       )}
                       activeClassName=""
                     >
-                      <item.icon 
-                        size={18} 
-                        strokeWidth={isActive ? 2.5 : 2} 
-                        className={cn(
-                          "transition-transform duration-200",
-                          isActive ? "scale-110" : "group-hover/link:scale-110"
-                        )} 
+                      <item.icon
+                        size={17}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        className="transition-colors duration-150 shrink-0"
                       />
-                      <span className="tracking-tight">{item.title}</span>
+                      <span className="tracking-tight truncate">{item.title}</span>
                     </NavLink>
                   );
                 })}
@@ -366,7 +363,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
 
 export default function AppSidebar() {
   return (
-    <aside className="hidden md:flex w-64 shrink-0 h-screen flex-col border-r border-border bg-sidebar">
+    <aside className="hidden md:flex w-64 shrink-0 h-screen flex-col border-r border-border/60 bg-sidebar">
       <SidebarContentInner />
     </aside>
   );

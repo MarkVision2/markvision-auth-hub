@@ -33,7 +33,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
       </Sheet>
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border">
+        <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border/60 bg-card/50 backdrop-blur-sm">
           {/* Mobile hamburger */}
           {!isDoctor && (
             <Button
@@ -53,14 +53,14 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
           {/* AI Search — global */}
           <div className="flex-1 max-w-xl mx-auto">
             <div className="relative group">
-              <div className="flex items-center gap-2 bg-secondary/50 border border-border rounded-lg px-3 py-1.5 transition-colors focus-within:border-primary/30 focus-within:bg-card">
+              <div className="flex items-center gap-2 bg-accent/50 border border-border/60 rounded-lg px-3 py-1.5 transition-all duration-150 focus-within:border-primary/30 focus-within:bg-card focus-within:shadow-glow-primary">
                 <Sparkles className="h-3.5 w-3.5 text-primary/60 shrink-0" />
                 <input
                   type="text"
                   placeholder="Спросите ИИ..."
                   className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none min-w-0"
                 />
-                <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-border bg-background px-1.5 text-[9px] font-mono text-muted-foreground/60">
+                <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded-md border border-border/60 bg-background px-1.5 text-[9px] font-mono text-muted-foreground/50">
                   ⌘K
                 </kbd>
               </div>

@@ -14,7 +14,14 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+      },
+      fontSize: {
+        "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
+      },
+      letterSpacing: {
+        tighter: "-0.04em",
+        tight: "-0.02em",
       },
       colors: {
         border: "hsl(var(--border))",
@@ -72,6 +79,17 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        /* Layered shadows like Linear/Vercel */
+        "xs": "0 1px 2px 0 rgb(0 0 0 / 0.03)",
+        "soft": "0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+        "card": "0 1px 3px 0 rgb(0 0 0 / 0.03), 0 2px 8px -2px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.04)",
+        "elevated": "0 2px 4px -1px rgb(0 0 0 / 0.04), 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.03)",
+        "float": "0 8px 30px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.03)",
+        "glow-primary": "0 0 0 1px hsl(160 84% 36% / 0.3), 0 0 12px -2px hsl(160 84% 36% / 0.15)",
+        "glow-destructive": "0 0 0 1px hsl(0 84% 60% / 0.3), 0 0 12px -2px hsl(0 84% 60% / 0.15)",
+        "inner-highlight": "inset 0 1px 0 0 rgb(255 255 255 / 0.1)",
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -87,6 +105,14 @@ export default {
           "90%": { opacity: "1" },
           "100%": { left: "100%", opacity: "0" },
         },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          from: { opacity: "0", transform: "translateX(8px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -94,6 +120,8 @@ export default {
         "flow-1": "flow-particle 2s linear infinite",
         "flow-2": "flow-particle 2s linear 0.7s infinite",
         "flow-3": "flow-particle 2s linear 1.4s infinite",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-in-right": "slide-in-right 0.2s ease-out",
       },
     },
   },

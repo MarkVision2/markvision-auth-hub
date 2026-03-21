@@ -4,60 +4,62 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 8%;
+    /* ── Surface palette (warm neutrals like Linear/Vercel) ── */
+    --background: 210 11% 98%;
+    --foreground: 224 71% 4%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --popover-foreground: 224 71% 4%;
 
+    /* ── Brand primary (refined emerald) ── */
     --primary: 160 84% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 93%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 9% 30%;
 
-    --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 0 0% 94%;
-    --accent-foreground: 0 0% 12%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 9% 12%;
 
-    --destructive: 350 89% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;
-    --input: 0 0% 90%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 160 84% 36%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    /* Status tokens */
+    /* ── Status tokens ── */
     --status-good: 160 84% 36%;
     --status-warning: 38 92% 50%;
-    --status-critical: 350 89% 55%;
-    --status-ai: 25 95% 50%;
+    --status-critical: 0 84% 60%;
+    --status-ai: 25 95% 53%;
 
-    /* Glass tokens */
-    --glass-bg: 0 0% 100% / 0.04;
-    --glass-border: 0 0% 0% / 0.08;
-    --glass-blur: 16px;
+    /* ── Glass tokens ── */
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 220 13% 91% / 0.8;
+    --glass-blur: 20px;
 
-    /* Overlay */
-    --overlay: 0 0% 0% / 0.6;
+    /* ── Overlay ── */
+    --overlay: 224 71% 4% / 0.5;
 
-    --sidebar-background: 0 0% 97%;
-    --sidebar-foreground: 0 0% 25%;
+    /* ── Sidebar (subtle cool tint) ── */
+    --sidebar-background: 220 14% 97%;
+    --sidebar-foreground: 220 9% 30%;
     --sidebar-primary: 160 84% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 92%;
-    --sidebar-accent-foreground: 0 0% 12%;
-    --sidebar-border: 0 0% 88%;
+    --sidebar-accent: 220 14% 94%;
+    --sidebar-accent-foreground: 220 9% 12%;
+    --sidebar-border: 220 13% 91%;
     --sidebar-ring: 160 84% 36%;
   }
-
 }
 
 @layer base {
@@ -67,33 +69,40 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "cv11", "ss01";
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Better default heading styles */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
   }
 }
 
-/* Dot pattern for branding panel */
+/* ── Dot pattern for branding panel ── */
 .dot-pattern {
-  background-image: radial-gradient(circle, hsl(0 0% 50% / 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(circle, hsl(220 13% 50% / 0.07) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
-/* Custom scrollbar */
+/* ── Modern scrollbar ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.2);
-  border-radius: 3px;
+  background: hsl(var(--muted-foreground) / 0.15);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.35);
+  background: hsl(var(--muted-foreground) / 0.3);
 }
 
-/* Theme transition — only on key elements, not everything */
+/* ── Smooth theme transitions ── */
 body,
 .bg-card,
 .bg-background,
@@ -101,10 +110,10 @@ body,
 aside,
 header,
 main {
-  transition: background-color 0.3s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.15s ease;
 }
 
-/* Glass utility */
+/* ── Glass utility ── */
 .glass {
   background: hsl(var(--glass-bg));
   backdrop-filter: blur(var(--glass-blur));
@@ -112,7 +121,7 @@ main {
   border: 1px solid hsl(var(--glass-border));
 }
 
-/* Anomaly pulse */
+/* ── Anomaly pulse ── */
 @keyframes anomaly-pulse {
   0%, 100% { opacity: 0.75; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.5); }
@@ -121,7 +130,7 @@ main {
   animation: anomaly-pulse 2s ease-in-out infinite;
 }
 
-/* Hide number input spinners */
+/* ── Hide number input spinners ── */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -129,4 +138,11 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* ── Modern focus ring ── */
+@layer utilities {
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1;
+  }
 }
