@@ -42,9 +42,9 @@ const emptyForm = {
 
 function Field({ label, value, onChange, placeholder, icon: Icon }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; icon?: any }) {
   return (
-    <div className="space-y-2">
-      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
-        {Icon && <Icon className="h-3 w-3 opacity-40" />}
+    <div className="space-y-2.5">
+      <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 flex items-center gap-2 px-1">
+        {Icon && <Icon className="h-3.5 w-3.5 opacity-50" />}
         {label}
       </Label>
       <div className="relative group">
@@ -52,9 +52,8 @@ function Field({ label, value, onChange, placeholder, icon: Icon }: { label: str
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-11 bg-background/50 border-border/50 text-foreground placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-primary/10 transition-all rounded-xl font-bold text-sm"
+          className="h-12 bg-background/40 border-border/40 text-foreground placeholder:text-muted-foreground/20 focus:border-emerald-500/50 focus:ring-emerald-500/10 transition-all rounded-2xl font-bold text-sm shadow-inner"
         />
-        <div className="absolute inset-0 rounded-xl bg-primary/5 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity" />
       </div>
     </div>
   );
@@ -71,52 +70,57 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
   const { active, workspaces, createProject } = useWorkspace();
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [showInMarkVision, setShowInMarkVision] = useState(false);
-  const [showInCPR, setShowInCPR] = useState(false);
+  const [selectedVisibilities, setSelectedVisibilities] = useState<string[]>([]);
 
   useEffect(() => {
-    if (account) {
-      setForm({
-        client_name: account.client_name || "",
-        daily_budget: account.daily_budget ? String(account.daily_budget) : "",
-        city: account.city || "",
-        region_key: account.region_key || "",
-        brief: account.brief || "",
-        ad_account_id: account.ad_account_id || "",
-        page_id: account.page_id || "",
-        page_name: account.page_name || "",
-        instagram_user_id: account.instagram_user_id || "",
-        telegram_group_id: account.telegram_group_id || "",
-        whatsapp_number: account.whatsapp_number || "",
-        fb_pixel_id: account.fb_pixel_id || "",
-        pixel_event: account.pixel_event || "",
-        website_url: account.website_url || "",
-        project_id: account.project_id || "",
-        impressions: account.impressions ? String(account.impressions) : "",
-        clicks: account.clicks ? String(account.clicks) : "",
-        spend: account.spend ? String(account.spend) : "",
-        meta_leads: account.meta_leads ? String(account.meta_leads) : "",
-        visits: account.visits ? String(account.visits) : "",
-        sales: account.sales ? String(account.sales) : "",
-        revenue: account.revenue ? String(account.revenue) : "",
-        is_agency: !!account.is_agency,
-      });
-    } else {
-      setForm(emptyForm);
+    async function loadVisibilities() {
+      if (account?.id && open) {
+        setForm({
+          client_name: account.client_name || "",
+          daily_budget: account.daily_budget ? String(account.daily_budget) : "",
+          city: account.city || "",
+          region_key: account.region_key || "",
+          brief: account.brief || "",
+          ad_account_id: account.ad_account_id || "",
+          page_id: account.page_id || "",
+          page_name: account.page_name || "",
+          instagram_user_id: account.instagram_user_id || "",
+          telegram_group_id: account.telegram_group_id || "",
+          whatsapp_number: account.whatsapp_number || "",
+          fb_pixel_id: account.fb_pixel_id || "",
+          pixel_event: account.pixel_event || "",
+          website_url: account.website_url || "",
+          project_id: account.project_id || "",
+          impressions: account.impressions ? String(account.impressions) : "",
+          clicks: account.clicks ? String(account.clicks) : "",
+          spend: account.spend ? String(account.spend) : "",
+          meta_leads: account.meta_leads ? String(account.meta_leads) : "",
+          visits: account.visits ? String(account.visits) : "",
+          sales: account.sales ? String(account.sales) : "",
+          revenue: account.revenue ? String(account.revenue) : "",
+          is_agency: !!account.is_agency,
+        });
+
+        const { data } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("project_id, is_hq_sharing")
+          .eq("client_config_id", account.id);
+        
+        if (data) {
+          const ids = data.map((v: any) => v.is_hq_sharing ? "hq" : v.project_id).filter(Boolean);
+          setSelectedVisibilities(ids);
+        }
+      } else if (!account && open) {
+        setForm(emptyForm);
+        // Default visibility is the current active project
+        setSelectedVisibilities([active.id]);
+      }
     }
-  }, [account, open]);
+    loadVisibilities();
+  }, [account, open, active.id]);
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
 
-  // Find real project IDs by name
-  const markVisionProject = workspaces.find(w => w.id === "hq");
-  const cprProject = workspaces.find(w =>
-    w.name.toUpperCase() === "CPR_KZ" ||
-    w.name.toLowerCase() === "црп" ||
-    w.name.toLowerCase() === "crp"
-  );
-
   const isInHq = active.id === "hq";
-  const isInCPR = cprProject && active.id === cprProject.id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,32 +182,25 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     }
 
     // Create visibility records
-    const visRecords: { client_config_id: string; project_id?: string; is_hq_sharing?: boolean }[] = [];
+    const visRecords = selectedVisibilities.map(pid => {
+      if (pid === "hq") return { client_config_id: cab.id, is_hq_sharing: true };
+      return { client_config_id: cab.id, project_id: pid };
+    });
 
-    // MarkVision AI = HQ (virtual, no real project_id needed — it loads all)
-    // For CPR_KZ, we store by its real project_id
-    if (showInCPR && cprProject && active.id !== cprProject.id) {
-      visRecords.push({ client_config_id: cab.id, project_id: cprProject.id });
-    }
-    // MarkVision AI sees everything as HQ, but if user explicitly wants a record:
-    // We mark it by storing is_hq_sharing = true (for future use)
-    if (showInMarkVision && !isInHq) {
-      visRecords.push({ client_config_id: cab.id, is_hq_sharing: true });
+    if (account?.id) {
+      // Clear old visibilities first
+      await (supabase as any).from("client_config_visibility").delete().eq("client_config_id", account.id);
     }
 
     if (visRecords.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: visErr } = await (supabase as any).from("client_config_visibility").insert(visRecords);
-      if (visErr) {
-        console.error("Visibility error:", visErr.message);
-      }
+      if (visErr) console.error("Visibility error:", visErr.message);
     }
 
     setSaving(false);
-    toast({ title: "Кабинет добавлен!", description: form.client_name });
+    toast({ title: account ? "Изменения сохранены" : "Кабинет добавлен!", description: form.client_name });
     setForm(emptyForm);
-    setShowInMarkVision(false);
-    setShowInCPR(false);
+    setSelectedVisibilities([]);
     onOpenChange(false);
     onSaved();
   };
@@ -232,11 +229,11 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
         <form onSubmit={handleSubmit} className="px-8 py-10 space-y-8">
           <div className="space-y-6">
             <div className="flex items-center gap-3 px-1">
-               <Settings2 className="h-4 w-4 text-primary" />
-               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Основные настройки</h3>
+               <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70">Основные настройки</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/20 p-6 rounded-[2rem] border border-border/40">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-secondary/15 backdrop-blur-sm p-6 rounded-3xl border border-border/40 shadow-sm">
               <div className="md:col-span-2">
                  <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} placeholder="Напр: Kitarov Clinic" />
               </div>
@@ -287,11 +284,11 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
           <div className="space-y-6">
             <div className="flex items-center gap-3 px-1">
-               <Database className="h-4 w-4 text-primary" />
-               <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Базовые показатели (History)</h3>
+               <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70">Базовые показатели (History)</h3>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-secondary/20 p-6 rounded-[2rem] border border-border/40">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-secondary/15 backdrop-blur-sm p-6 rounded-3xl border border-border/40 shadow-sm">
               <Field label="Показы" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
               <Field label="Клики" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
               <Field label="Расход" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
@@ -304,9 +301,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
             </div>
           </div>
 
-          <Accordion type="multiple" className="space-y-6">
-            <AccordionItem value="meta" className="border border-border/40 rounded-[2rem] px-6 bg-secondary/20 overflow-hidden">
-              <AccordionTrigger className="text-xs font-black uppercase tracking-[0.2em] text-foreground hover:no-underline py-6">
+          <Accordion type="multiple" className="space-y-5">
+            <AccordionItem value="meta" className="border border-border/40 rounded-3xl px-6 bg-secondary/15 backdrop-blur-sm overflow-hidden shadow-sm transition-all hover:border-emerald-500/20">
+              <AccordionTrigger className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70 hover:no-underline py-6">
                 <div className="flex items-center gap-3">
                    <Facebook className="h-4 w-4 text-blue-600" />
                    Интеграция Meta
@@ -328,7 +325,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="tracking" className="border border-border/40 rounded-[2rem] px-6 bg-secondary/20 overflow-hidden">
+            <AccordionItem value="tracking" className="border border-border/40 rounded-3xl px-6 bg-secondary/15 backdrop-blur-sm overflow-hidden shadow-sm transition-all hover:border-emerald-500/20">
               <AccordionTrigger className="text-xs font-black uppercase tracking-[0.2em] text-foreground hover:no-underline py-6">
                 <div className="flex items-center gap-3">
                    <Link2 className="h-4 w-4 text-primary" />
@@ -351,50 +348,46 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
           <div className="space-y-6">
              <div className="flex items-center gap-3 px-1">
-                <ShieldCheck className="h-4 w-4 text-primary" />
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">Доступы и Видимость</h3>
              </div>
              
-             <div className="space-y-3">
-               {!isInHq && markVisionProject && (
-                 <div className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-secondary/20 transition-all hover:bg-secondary/30">
+             <div className="grid grid-cols-1 gap-3">
+               {workspaces.map((ws) => (
+                 <div 
+                   key={ws.id}
+                   className={cn(
+                     "flex items-center justify-between p-4 rounded-2xl border transition-all hover:bg-emerald-500/5 group",
+                     selectedVisibilities.includes(ws.id) 
+                      ? "bg-emerald-500/5 border-emerald-500/20" 
+                      : "bg-secondary/20 border-border/50"
+                   )}
+                 >
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center text-primary shadow-sm">
-                         <Target className="h-5 w-5" />
+                      <div className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center shadow-sm transition-colors",
+                        selectedVisibilities.includes(ws.id) ? "bg-emerald-500 text-white" : "bg-background text-muted-foreground group-hover:text-emerald-500"
+                      )}>
+                         {ws.id === "hq" ? <Target className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
                       </div>
                       <div>
-                        <Label htmlFor="vis-markvision" className="font-bold text-sm cursor-pointer">MarkVision AI</Label>
-                        <p className="text-[10px] font-medium text-muted-foreground/60">Показать в главном проекте (HQ)</p>
+                        <Label htmlFor={`vis-${ws.id}`} className="font-bold text-sm cursor-pointer block">{ws.name}</Label>
+                        <p className="text-[10px] font-medium text-muted-foreground/60">
+                           {ws.id === "hq" ? "Главный проект (HQ)" : "Клиентский проект"}
+                        </p>
                       </div>
                     </div>
                     <Checkbox
-                      id="vis-markvision"
-                      checked={showInMarkVision}
-                      onCheckedChange={(c) => setShowInMarkVision(!!c)}
-                      className="h-6 w-6 rounded-lg border-border/50 data-[state=checked]:bg-primary"
+                      id={`vis-${ws.id}`}
+                      checked={selectedVisibilities.includes(ws.id)}
+                      onCheckedChange={(c) => {
+                        if (c) setSelectedVisibilities(prev => [...prev, ws.id]);
+                        else setSelectedVisibilities(prev => prev.filter(id => id !== ws.id));
+                      }}
+                      className="h-6 w-6 rounded-lg border-border/50 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-none"
                     />
                  </div>
-               )}
-
-               {!isInCPR && cprProject && (
-                 <div className="flex items-center justify-between p-4 rounded-2xl border border-border/50 bg-secondary/20 transition-all hover:bg-secondary/30">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center text-primary shadow-sm">
-                         <Globe className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <Label htmlFor="vis-cpr" className="font-bold text-sm cursor-pointer">{cprProject.name}</Label>
-                        <p className="text-[10px] font-medium text-muted-foreground/60">Показать в партнерском проекте</p>
-                      </div>
-                    </div>
-                    <Checkbox
-                      id="vis-cpr"
-                      checked={showInCPR}
-                      onCheckedChange={(c) => setShowInCPR(!!c)}
-                      className="h-6 w-6 rounded-lg border-border/50 data-[state=checked]:bg-primary"
-                    />
-                 </div>
-               )}
+               ))}
              </div>
           </div>
 
@@ -408,13 +401,13 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
              />
           </div>
 
-          <div className="sticky bottom-0 pb-10 pt-4 bg-gradient-to-t from-card to-transparent z-10">
+          <div className="sticky bottom-0 pb-10 pt-4 bg-gradient-to-t from-card/90 to-transparent z-10">
             <Button 
               type="submit" 
-              className="w-full h-14 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1 transition-all" 
+              className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all gap-3" 
               disabled={saving}
             >
-              {saving ? <Loader2 className="h-5 w-5 animate-spin mr-3" /> : <Target className="h-5 w-5 mr-3" />}
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Target className="h-5 w-5" />}
               {account ? "Сохранить изменения" : "Создать кабинет"}
             </Button>
           </div>
