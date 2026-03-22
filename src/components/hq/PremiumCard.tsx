@@ -1,55 +1,50 @@
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface PremiumCardProps {
   children: React.ReactNode;
   className?: string;
-  glowColor?: string;
   icon?: React.ReactNode;
-  label?: string;
+  label: string;
   secondaryLabel?: string;
   headerRight?: React.ReactNode;
+  glowColor?: string; // Kept for interface compatibility but used subtly
 }
 
-export function PremiumCard({ 
-  children, 
-  className, 
-  glowColor = "bg-primary/10",
+export function PremiumCard({
+  children,
+  className,
   icon,
   label,
   secondaryLabel,
-  headerRight
+  headerRight,
 }: PremiumCardProps) {
   return (
     <div className={cn(
-      "relative group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]",
+      "rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/20",
       className
     )}>
-      {/* Premium Glow Effect */}
-      <div className={cn(
-        "absolute -top-20 -right-20 w-40 h-40 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none",
-        glowColor
-      )} />
-
-      <div className="relative z-10 flex flex-col h-full">
-        {(icon || label) && (
-          <div className="flex items-center gap-3.5 mb-5 shrink-0">
-            {icon && (
-              <div className="h-11 w-11 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-                <div className="text-primary/70 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
-                  {icon}
-                </div>
+      <div className="flex items-start justify-between mb-5">
+        <div className="flex items-center gap-3">
+          {icon && (
+            <div className="h-9 w-9 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0">
+              <div className="text-primary">
+                {icon}
               </div>
-            )}
-            <div>
-              {label && <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-black">{label}</h3>}
-              {secondaryLabel && <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest mt-0.5">{secondaryLabel}</p>}
             </div>
-            {headerRight && <div className="ml-auto">{headerRight}</div>}
+          )}
+          <div>
+            <h3 className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{label}</h3>
+            {secondaryLabel && (
+              <p className="text-[10px] text-muted-foreground/40 font-medium uppercase tracking-widest mt-0.5">{secondaryLabel}</p>
+            )}
           </div>
-        )}
-        <div className="flex-1">
-          {children}
         </div>
+        {headerRight && <div className="ml-auto">{headerRight}</div>}
+      </div>
+
+      <div className="relative">
+        {children}
       </div>
     </div>
   );
