@@ -335,18 +335,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isAgency && isSuperadmin ? (
           <Tabs defaultValue="global" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 bg-[#0a0b10]/60 border border-white/5 p-1 rounded-2xl shadow-2xl">
+            <TabsList className="mb-8 bg-secondary/50 border border-border p-1 rounded-xl">
               <TabsTrigger 
                 value="global" 
-                className="flex items-center gap-2.5 py-2.5 rounded-xl data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent transition-all font-black uppercase tracking-widest text-[10px]"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all text-xs font-medium"
               >
                 <LayoutDashboard size={14} className="opacity-70" /> Глобальная сводка
               </TabsTrigger>
               <TabsTrigger 
                 value="local" 
-                className="flex items-center gap-2.5 py-2.5 rounded-xl data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent transition-all font-black uppercase tracking-widest text-[10px]"
+                className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all text-xs font-medium"
               >
                 <BarChart3 size={14} className="opacity-70" /> Мои показатели
               </TabsTrigger>
