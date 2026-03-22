@@ -337,12 +337,18 @@ export default function Dashboard() {
 
         {isAgency && isSuperadmin ? (
           <Tabs defaultValue="global" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-6 shadow-sm border border-border/50">
-              <TabsTrigger value="global" className="flex items-center gap-2">
-                <LayoutDashboard size={14} /> Глобальная сводка
+            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8 bg-[#0a0b10]/60 border border-white/5 p-1 rounded-2xl shadow-2xl">
+              <TabsTrigger 
+                value="global" 
+                className="flex items-center gap-2.5 py-2.5 rounded-xl data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent transition-all font-black uppercase tracking-widest text-[10px]"
+              >
+                <LayoutDashboard size={14} className="opacity-70" /> Глобальная сводка
               </TabsTrigger>
-              <TabsTrigger value="local" className="flex items-center gap-2">
-                <BarChart3 size={14} /> Мои показатели
+              <TabsTrigger 
+                value="local" 
+                className="flex items-center gap-2.5 py-2.5 rounded-xl data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent transition-all font-black uppercase tracking-widest text-[10px]"
+              >
+                <BarChart3 size={14} className="opacity-70" /> Мои показатели
               </TabsTrigger>
             </TabsList>
             <TabsContent value="global" className="space-y-6 mt-0">

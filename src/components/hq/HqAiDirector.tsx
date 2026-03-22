@@ -58,58 +58,64 @@ export default function HqAiDirector() {
   }, []);
 
   return (
-    <div className="relative rounded-2xl border border-border bg-card p-5 h-full overflow-hidden">
-      <div className="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary opacity-[0.04] blur-3xl" />
+    <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] h-full">
+      {/* Premium Glow Effect */}
+      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Brain className="h-4 w-4 text-primary" />
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex items-center gap-3.5 mb-5">
+          <div className="h-11 w-11 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
+            <div className="text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
+              <Brain className="h-5 w-5" />
+            </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">AI-Директор</h3>
-            <p className="text-[10px] text-muted-foreground">Живая лента событий</p>
+            <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-black">AI-Директор</h3>
+            <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest mt-0.5">Живая лента событий</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
+          <div className="space-y-4 px-1">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl bg-white/5" />)}
           </div>
         ) : tasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <Inbox className="h-8 w-8 text-muted-foreground/40 mb-3" />
-            <p className="text-sm font-semibold text-foreground">Нет событий</p>
-            <p className="text-xs text-muted-foreground mt-1">Задачи AI-директора появятся здесь автоматически</p>
+          <div className="flex flex-col items-center justify-center py-12 text-center flex-1">
+            <div className="h-16 w-16 rounded-full bg-white/5 border border-white/5 flex items-center justify-center mb-4">
+              <Inbox className="h-8 w-8 text-muted-foreground/20" />
+            </div>
+            <p className="text-sm font-black text-foreground uppercase tracking-widest">Нет событий</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-2 font-medium">Задачи появятся автоматически</p>
           </div>
         ) : (
-          <div className="space-y-0 relative">
-            <div className="absolute left-[22px] top-2 bottom-2 w-px bg-border" />
+          <div className="space-y-1 relative flex-1">
+            <div className="absolute left-[54px] top-4 bottom-4 w-px bg-white/5" />
             {tasks.map((task) => (
-              <div key={task.id} className="flex items-start gap-3 py-2.5 relative">
-                <div className="relative z-10 shrink-0 flex flex-col items-center">
-                  <span className="text-[10px] font-mono text-muted-foreground tabular-nums w-[45px] text-right">{formatTime(task.created_at)}</span>
+              <div key={task.id} className="flex items-start gap-4 py-3 group/item transition-colors">
+                <div className="w-[45px] pt-1 text-right shrink-0">
+                  <span className="text-[10px] font-black font-mono text-muted-foreground/40 tabular-nums">{formatTime(task.created_at)}</span>
                 </div>
-                <div className="relative z-10 mt-1 shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-primary/60 ring-2 ring-card" />
+                <div className="relative z-10 mt-1.5 shrink-0">
+                  <div className="h-2 w-2 rounded-full bg-primary/40 ring-4 ring-black shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
                 </div>
-                <div className="flex-1 min-w-0 -mt-0.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
+                <div className="flex-1 min-w-0 -mt-0.5 bg-white/[0.02] border border-white/5 rounded-2xl p-3 hover:bg-white/[0.05] transition-colors">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xs">{sourceEmoji(task.source)}</span>
-                    <span className="text-[10px] font-semibold text-foreground uppercase tracking-wider">{sourceLabel(task.source)}</span>
+                    <span className="text-[9px] font-black text-foreground/70 uppercase tracking-widest">{sourceLabel(task.source)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed truncate">{task.prompt}</p>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 font-medium">{task.prompt}</p>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        <div className="mt-4 pt-3 border-t border-border">
+        <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] text-muted-foreground">AI-Директор активен</span>
+            <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
+            <span className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest">AI-Директор активен</span>
           </div>
+          <div className="h-1.5 w-1.5 rounded-full bg-white/10" />
         </div>
       </div>
     </div>
