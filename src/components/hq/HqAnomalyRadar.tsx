@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { PremiumCard } from "./PremiumCard";
 
 interface ClientMetric {
   client_id: string | null;
@@ -43,30 +44,21 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
   };
 
   return (
-    <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] h-full">
-      {/* Premium Glow Effect */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-      <div className="relative z-10">
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="h-11 w-11 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-            <div className="text-destructive drop-shadow-[0_0_8px_rgba(var(--destructive),0.5)]">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-black">Радар Аномалий</h3>
-            <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest mt-0.5">На основе реальных данных</p>
-          </div>
-          {visible.length > 0 && (
-            <span className="ml-auto text-[9px] font-black text-destructive bg-destructive/10 px-2.5 py-1 rounded-full uppercase tracking-widest border border-destructive/20 tabular-nums">
-              {visible.filter((a) => a.severity === "critical").length} крит.
-            </span>
-          )}
-        </div>
-
+    <PremiumCard
+      className="h-full"
+      icon={<AlertTriangle className="h-5 w-5 text-destructive" />}
+      label="Радар Аномалий"
+      secondaryLabel="На основе реальных данных"
+      glowColor="bg-destructive/10"
+      headerRight={visible.length > 0 && (
+        <span className="text-[9px] font-black text-destructive bg-destructive/10 px-2.5 py-1 rounded-full uppercase tracking-widest border border-destructive/20 tabular-nums">
+          {visible.filter((a) => a.severity === "critical").length} крит.
+        </span>
+      )}
+    >
+      <div className="h-full flex flex-col">
         {visible.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex flex-col items-center justify-center py-12 text-center flex-1">
             <div className="h-16 w-16 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center mb-4 relative">
               <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full opacity-20" />
               <PartyPopper className="h-8 w-8 text-primary relative z-10" />
@@ -87,7 +79,6 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
                     }`}
                 >
                   <div className="flex items-center gap-4">
-                    {/* Left: client + severity */}
                     <div className="min-w-0 flex-shrink-0">
                       <div className="flex items-center gap-2.5">
                         <p className="text-xs font-black text-foreground uppercase tracking-wider">{a.project}</p>
@@ -102,11 +93,7 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
                         </Badge>
                       </div>
                     </div>
-
-                    {/* Center: issue */}
                     <p className="flex-1 text-[11px] text-muted-foreground/80 font-medium truncate min-w-0">{a.issue}</p>
-
-                    {/* Right: actions */}
                     <div className="flex gap-2 shrink-0">
                       <Button
                         variant="outline"
@@ -128,9 +115,11 @@ export default function HqAnomalyRadar({ clients = [] }: Props) {
                     </div>
                   </div>
                 </div>
-          })}
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </PremiumCard>
   );
 }

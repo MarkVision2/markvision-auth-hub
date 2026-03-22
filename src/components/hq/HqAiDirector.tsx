@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Brain, Inbox } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { PremiumCard } from "./PremiumCard";
 
 interface BridgeTask {
   id: string;
@@ -58,23 +59,13 @@ export default function HqAiDirector() {
   }, []);
 
   return (
-    <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] h-full">
-      {/* Premium Glow Effect */}
-      <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="h-11 w-11 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-            <div className="text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
-              <Brain className="h-5 w-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/50 font-black">AI-Директор</h3>
-            <p className="text-[9px] text-muted-foreground/30 font-bold uppercase tracking-widest mt-0.5">Живая лента событий</p>
-          </div>
-        </div>
-
+    <PremiumCard
+      className="h-full"
+      icon={<Brain className="h-5 w-5" />}
+      label="AI-Директор"
+      secondaryLabel="Живая лента событий"
+    >
+      <div className="flex flex-col h-full">
         {loading ? (
           <div className="space-y-4 px-1">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-2xl bg-white/5" />)}
@@ -110,7 +101,7 @@ export default function HqAiDirector() {
           </div>
         )}
 
-        <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between">
+        <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.8)]" />
             <span className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest">AI-Директор активен</span>
@@ -118,6 +109,6 @@ export default function HqAiDirector() {
           <div className="h-1.5 w-1.5 rounded-full bg-white/10" />
         </div>
       </div>
-    </div>
+    </PremiumCard>
   );
 }
