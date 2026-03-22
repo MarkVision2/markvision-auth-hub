@@ -192,8 +192,8 @@ export default function DecompositionTab() {
                                 <span className={cn(
                                     "text-sm font-bold font-mono tabular-nums",
                                     row.isAccent ? "text-primary" : "text-foreground",
-                                    row.isRevenue ? "text-[#10b981]" : "",
-                                    row.isRomi ? "text-[#10b981] font-extrabold" : ""
+                                    row.isRevenue ? "text-primary" : "",
+                                    row.isRomi ? "text-primary font-extrabold" : ""
                                 )}>
                                     {row.value}
                                 </span>
@@ -210,7 +210,7 @@ export default function DecompositionTab() {
                 <KpiCard icon={DollarSign} label="CPL" value={`${fmt(cpl)} ₸`} sub="Стоимость лида" />
                 <KpiCard icon={Users} label="Визиты" value={String(calc.diagnostics)} sub={`CR ${crDiagToSale}% → продажа`} />
                 <KpiCard icon={Target} label="Оплаты" value={String(calc.sales)} sub="Стоимость CAC с учетом ЗП" />
-                <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-[#10b981]" sub="Прогноз по чеку и продажам" />
+                <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-primary" sub="Прогноз по чеку и продажам" />
             </div>
 
             {/* Save to Plan */}

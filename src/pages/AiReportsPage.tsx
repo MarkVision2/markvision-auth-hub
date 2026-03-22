@@ -253,7 +253,7 @@ export default function AiReportsPage() {
   return (
     <DashboardLayout breadcrumb="AI Отчётность">
       <div className="space-y-6">
-        <div className="sticky top-0 z-20 -mx-6 -mt-6 px-6 py-4 bg-background/80 backdrop-blur-xl border-b border-border/20">
+        <div className="sticky top-0 z-20 -mx-6 -mt-6 px-6 py-4 bg-background backdrop-blur-xl border-b border-border/20">
           <div className="flex items-center justify-between gap-4 max-w-4xl mx-auto">
             <Select value={selectedClient} onValueChange={setSelectedClient}>
               <SelectTrigger className="w-[220px] h-9 border-border/30 bg-card text-sm"><SelectValue /></SelectTrigger>

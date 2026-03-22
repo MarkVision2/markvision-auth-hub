@@ -434,7 +434,7 @@ export default function ContentFactory() {
             </CfButtonMd>
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-[2.5rem] border border-border/40 bg-card/50 backdrop-blur-xl p-10 shadow-2xl overflow-hidden relative">
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-[2.5rem] border border-border/40 bg-card p-10 shadow-2xl overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-12 items-start">
@@ -501,7 +501,7 @@ export default function ContentFactory() {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
         <div className="mx-auto max-w-4xl py-20 px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[3rem] border border-border/40 bg-card/50 backdrop-blur-2xl p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[3rem] border border-border/40 bg-card p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                <motion.div 
                  className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
@@ -625,19 +625,19 @@ export default function ContentFactory() {
                   </Badge>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                  <div className="rounded-2xl border border-border/40 bg-background p-4">
                     <p className={cfStyles.label}>Вовлеченность</p>
                     <p className="text-2xl font-black mt-2">{abStats.engagementRate}%</p>
                   </div>
-                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                  <div className="rounded-2xl border border-border/40 bg-background p-4">
                     <p className={cfStyles.label}>Завершение задач</p>
                     <p className="text-2xl font-black mt-2">{abStats.completionRate}%</p>
                   </div>
-                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                  <div className="rounded-2xl border border-border/40 bg-background p-4">
                     <p className={cfStyles.label}>Среднее время</p>
                     <p className="text-2xl font-black mt-2">{abStats.avgTaskSec || 0}с</p>
                   </div>
-                  <div className="rounded-2xl border border-border/40 bg-background/40 p-4">
+                  <div className="rounded-2xl border border-border/40 bg-background p-4">
                     <p className={cfStyles.label}>Вариант</p>
                     <p className="text-2xl font-black mt-2">{abVariant}</p>
                   </div>
@@ -674,7 +674,7 @@ export default function ContentFactory() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: idx * 0.05 }}
-                        className="group relative rounded-[2rem] border border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4" 
+                        className="group relative rounded-[2rem] border border-border/50 bg-card hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4" 
                         onClick={() => loadHistoryItem(task)}
                       >
                         <div className="flex items-center justify-between">
@@ -764,7 +764,7 @@ export default function ContentFactory() {
 
                   <div className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6">
                     <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Источник контента</Label>
-                    <div className="flex bg-background/50 rounded-2xl p-1.5 border border-border/40 shadow-inner">
+                    <div className="flex bg-background rounded-2xl p-1.5 border border-border/40 shadow-inner">
                       <button 
                         onClick={() => mainType === "video" ? setVideoMode("link") : setPhotoMode("link")} 
                         className={cn(
@@ -803,7 +803,7 @@ export default function ContentFactory() {
                             value={sourceUrl} 
                             onChange={e => setSourceUrl(e.target.value)} 
                             placeholder="https://mysite.com/product" 
-                            className="h-14 bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20" 
+                            className="h-14 bg-background border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20" 
                           />
                           <Button 
                             onClick={handleMagicAI} 
@@ -837,7 +837,7 @@ export default function ContentFactory() {
                             value={visualStyle} 
                             onChange={e => setVisualStyle(e.target.value)} 
                             placeholder="Напр: Минимализм, Apple style, динамичные переходы..." 
-                            className="min-h-[100px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
+                            className="min-h-[100px] bg-background border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
                           />
                         </div>
                         
@@ -859,7 +859,7 @@ export default function ContentFactory() {
                             value={mainType === "video" ? speakerText : mainText} 
                             onChange={e => mainType === "video" ? setSpeakerText(e.target.value) : setMainText(e.target.value)} 
                             placeholder={mainType === "video" ? "О чем должен говорить диктор?" : "Заголовок, оффер, призыв к действию..."} 
-                            className="min-h-[140px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
+                            className="min-h-[140px] bg-background border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20 resize-none" 
                           />
                         </div>
                       </motion.div>
@@ -879,7 +879,7 @@ export default function ContentFactory() {
                               key={f} 
                               className={cn(
                                 "flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300",
-                                videoFormat === f ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                                videoFormat === f ? "border-primary bg-primary/5" : "border-border/40 bg-background hover:bg-background"
                               )}
                             >
                               <RadioGroupItem value={f} className="sr-only" />
@@ -892,7 +892,7 @@ export default function ContentFactory() {
                         </RadioGroup>
                       ) : (
                         <Select value={photoFormat} onValueChange={setPhotoFormat}>
-                          <SelectTrigger className="h-14 bg-background/50 border-border/40 rounded-2xl font-bold text-sm">
+                          <SelectTrigger className="h-14 bg-background border-border/40 rounded-2xl font-bold text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="rounded-2xl border-border/40">
@@ -907,7 +907,7 @@ export default function ContentFactory() {
                     <div className="space-y-4 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
                       <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block">Пропорции</Label>
                       <Tabs value={mainType === "video" ? videoAspect : aspectRatio} onValueChange={setAspectRatio} className="w-full">
-                        <TabsList className="grid grid-cols-3 bg-background/50 h-14 p-1.5 rounded-2xl border border-border/40 shadow-inner">
+                        <TabsList className="grid grid-cols-3 bg-background h-14 p-1.5 rounded-2xl border border-border/40 shadow-inner">
                           <TabsTrigger value="1:1" disabled={mainType === "video"} className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">1:1</TabsTrigger>
                           <TabsTrigger value="4:5" disabled={mainType === "video"} className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">4:5</TabsTrigger>
                           <TabsTrigger value="9:16" className="rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-md">9:16</TabsTrigger>
@@ -924,7 +924,7 @@ export default function ContentFactory() {
                         onClick={() => fileInputRef.current?.click()} 
                         className={cn(
                           "h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 gap-3 group",
-                          logoFile ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                          logoFile ? "border-primary bg-primary/5" : "border-border/40 bg-background hover:bg-background"
                         )}
                       >
                         <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -943,7 +943,7 @@ export default function ContentFactory() {
                         onClick={() => refFileInputRef.current?.click()} 
                         className={cn(
                           "h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 gap-3 group",
-                          referencePreview ? "border-primary bg-primary/5" : "border-border/40 bg-background/40 hover:bg-background/60"
+                          referencePreview ? "border-primary bg-primary/5" : "border-border/40 bg-background hover:bg-background"
                         )}
                       >
                         <div className="h-10 w-10 rounded-xl bg-muted/40 flex items-center justify-center group-hover:scale-110 transition-transform">

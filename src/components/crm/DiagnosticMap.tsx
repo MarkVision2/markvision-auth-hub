@@ -455,7 +455,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                                     «Понимаю вас. Да, при таких симптомах это действительно сильно мешает. 
                                                     В такой ситуации важно не просто снимать боль, а понять её причину.»
                                                 </p>
-                                                <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-sky-600 bg-white/50 w-fit px-3 py-1 rounded-full border border-sky-200">
+                                                <div className="flex items-center gap-2 text-[10px] uppercase font-black tracking-widest text-sky-600 bg-card w-fit px-3 py-1 rounded-full border border-sky-200">
                                                     <CheckCircle2 className="h-3 w-3" /> Проявите участие перед записью
                                                 </div>
                                             </div>
@@ -486,7 +486,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                                         <Star className="h-6 w-6 fill-primary/20" />
                                                         <h3 className="text-lg font-black uppercase tracking-tight">Ценность</h3>
                                                     </div>
-                                                    <p className="text-sm font-bold leading-relaxed italic text-foreground bg-white/50 p-6 rounded-2xl border border-primary/5 shadow-sm">
+                                                    <p className="text-sm font-bold leading-relaxed italic text-foreground bg-card p-6 rounded-2xl border border-primary/5 shadow-sm">
                                                         «У нас проводится комплексная диагностика, где вас смотрят сразу ДВА врача высшей категории.»
                                                     </p>
                                                     <div className="space-y-3">
@@ -519,7 +519,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                                             <span className="text-sm line-through text-muted-foreground font-bold">23 000 тг</span>
                                                             <span className="text-3xl font-black text-amber-900 leading-none tracking-tight">9 990 тг</span>
                                                         </div>
-                                                        <p className="text-[11px] font-bold text-amber-800/80 leading-relaxed italic bg-white/40 p-4 rounded-xl border border-amber-200/50">
+                                                        <p className="text-[11px] font-bold text-amber-800/80 leading-relaxed italic bg-card p-4 rounded-xl border border-amber-200/50">
                                                             «Желающих много, врачи берут всего 3-4 человека в день.»
                                                         </p>
                                                     </div>
@@ -535,7 +535,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                                     <p className="text-sm font-bold text-sky-900 leading-relaxed italic">
                                                         «Предоплата — 5 000 тенге. Это гарантия, что врачи ждут именно вас.»
                                                     </p>
-                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sky-600 bg-white/50 w-fit px-3 py-1 rounded-full border border-sky-200">
+                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sky-600 bg-card w-fit px-3 py-1 rounded-full border border-sky-200">
                                                         <Smartphone className="h-3 w-3" /> «Номер привязан к Kaspi? Отправляю счет.»
                                                     </div>
                                                 </div>
@@ -638,7 +638,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                                                             </div>
                                                             {formData.paymentStatus === "paid" && item.id === "paid" && (
                                                                 <div className="px-4 pb-2 animate-in slide-in-from-top-2 duration-300">
-                                                                    <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-primary/20 shadow-sm">
+                                                                    <div className="flex items-center gap-3 bg-card p-3 rounded-2xl border border-primary/20 shadow-sm">
                                                                         <Label className="text-[10px] font-bold uppercase shrink-0">Сумма:</Label>
                                                                         <Input 
                                                                             type="number"

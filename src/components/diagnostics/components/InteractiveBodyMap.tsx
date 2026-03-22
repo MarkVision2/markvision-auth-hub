@@ -16,7 +16,7 @@ export const InteractiveBodyMap: React.FC<Props> = ({ isPrint = false }) => {
     
     const renderFigureTable = (title: string, isBack: boolean) => (
         <div className="flex flex-col items-center w-full max-w-[280px]">
-            <div className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <div className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                 {title}
             </div>
             <div className="relative w-full aspect-[1/2] bg-white rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm">
@@ -52,10 +52,10 @@ export const InteractiveBodyMap: React.FC<Props> = ({ isPrint = false }) => {
     }
 
     return (
-        <div className="w-full bg-white flex flex-col items-center p-8 rounded-[2rem] border border-slate-100 shadow-xl">
+        <div className="w-full bg-card flex flex-col items-center p-8 rounded-[2rem] border border-border shadow-xl">
             {/* Professional Medical Header */}
-            <div className="w-full mb-12 border-b-2 border-slate-900 pb-6">
-                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter">
+            <div className="w-full mb-12 border-b-2 border-foreground pb-6">
+                <h3 className="text-lg font-black text-foreground uppercase tracking-tighter">
                     АНАТОМИЧЕСКАЯ КАРТА ХАБ
                 </h3>
             </div>
@@ -66,11 +66,11 @@ export const InteractiveBodyMap: React.FC<Props> = ({ isPrint = false }) => {
                 {renderFigureTable("ВИД СЗАДИ", true)}
             </div>
 
-            <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-100 w-full text-center">
-                <p className="text-sm font-bold text-slate-700 uppercase tracking-tight mb-2">
+            <div className="mt-8 p-6 bg-secondary rounded-2xl border border-border w-full text-center">
+                <p className="text-sm font-bold text-foreground uppercase tracking-tight mb-2">
                     Режим ручной разметки
                 </p>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                     Используйте распечатанную версию Листа Назначений для точного указания зон боли вручную. 
                     <br/>Анатомическая 3D-модель представлена в высоком разрешении.
                 </p>

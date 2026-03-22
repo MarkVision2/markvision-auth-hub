@@ -57,7 +57,7 @@ const fmtDate = (iso: string) => {
 /* ── KPI Card ── */
 function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
   return (
-    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.05)] overflow-hidden">
+    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.05)] overflow-hidden">
       <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-500" />
       
       <div className="relative z-10">
@@ -509,7 +509,7 @@ export default function ScoreboardPage() {
         <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
           <div className="overflow-x-auto max-h-[700px] scrollbar-thin scrollbar-thumb-muted-foreground/20">
             <Table>
-              <TableHeader className="sticky top-0 z-20 bg-card/95 backdrop-blur-md">
+              <TableHeader className="sticky top-0 z-20 bg-card backdrop-blur-md">
                 <TableRow className="border-b border-border/50 hover:bg-transparent">
                   {columns.map(col => (
                     <TableHead

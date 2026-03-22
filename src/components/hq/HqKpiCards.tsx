@@ -43,13 +43,13 @@ interface KpiCardProps {
 
 function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-foreground", editing, targetValue, onTargetChange }: KpiCardProps) {
   return (
-    <div className="relative group overflow-hidden rounded-[2rem] border border-white dark:border-white/10 bg-white/70 dark:bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
+    <div className="relative group overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0b10]/40 backdrop-blur-3xl p-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.15)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]">
       {/* Premium Glow Effect */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-[70px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
       
       <div className="flex items-center gap-3.5 mb-5 relative z-10">
-        <div className="h-11 w-11 rounded-xl bg-secondary/40 dark:bg-black/40 border border-white/20 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
-          <div className="text-primary/70 dark:drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
+        <div className="h-11 w-11 rounded-xl bg-black/40 border border-white/5 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-500">
+          <div className="text-primary/70 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]">
             {icon}
           </div>
         </div>
@@ -69,7 +69,7 @@ function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-fo
                   type="number"
                   value={targetValue ?? 0}
                   onChange={e => onTargetChange(Number(e.target.value))}
-                  className="text-xs text-foreground bg-secondary/30 dark:bg-black/40 border border-border/40 rounded-xl px-4 py-2 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
+                  className="text-xs text-foreground bg-black/40 border border-border/40 rounded-xl px-4 py-2 w-full tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-bold"
                 />
               </div>
             ) : (
@@ -87,7 +87,7 @@ function KpiCard({ icon, label, value, target, targetPct, accentClass = "text-fo
               {targetPct}%
             </span>
           </div>
-          <div className="relative h-1.5 w-full bg-secondary/30 dark:bg-black/40 rounded-full overflow-hidden p-[1px]">
+          <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden p-[1px]">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${targetPct}%` }}

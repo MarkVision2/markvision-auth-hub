@@ -77,7 +77,7 @@ const DiagnosticsDashboardPage = () => {
                 </div>
                 <span className="font-bold">68%</span>
               </div>
-              <Progress value={68} className="h-2 bg-slate-100" />
+              <Progress value={68} className="h-2 bg-secondary" />
             </div>
             
             <div className="space-y-2">
@@ -88,7 +88,7 @@ const DiagnosticsDashboardPage = () => {
                 </div>
                 <span className="font-bold">91%</span>
               </div>
-              <Progress value={91} className="h-2 bg-slate-100" />
+              <Progress value={91} className="h-2 bg-secondary" />
             </div>
 
             <div className="space-y-2">
@@ -99,7 +99,7 @@ const DiagnosticsDashboardPage = () => {
                 </div>
                 <span className="font-bold">69%</span>
               </div>
-              <Progress value={69} className="h-2 bg-slate-100" />
+              <Progress value={69} className="h-2 bg-secondary" />
             </div>
 
             <div className="space-y-2">
@@ -110,7 +110,7 @@ const DiagnosticsDashboardPage = () => {
                 </div>
                 <span className="font-bold">75%</span>
               </div>
-              <Progress value={75} className="h-2 bg-slate-100" />
+              <Progress value={75} className="h-2 bg-secondary" />
             </div>
           </CardContent>
         </Card>
@@ -147,7 +147,7 @@ const DiagnosticsDashboardPage = () => {
               </div>
             </div>
             
-            <div className="mt-8 pt-6 border-t border-slate-100">
+            <div className="mt-8 pt-6 border-t border-border">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium leading-none">Средний чек диагностики</p>

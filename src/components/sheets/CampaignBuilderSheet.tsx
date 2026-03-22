@@ -561,7 +561,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         {/* Cropper Modal */}
         <AnimatePresence>
           {isCropping && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm p-4 md:p-10 flex flex-col">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-background p-4 md:p-10 flex flex-col">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-white text-lg font-bold">Адаптация креатива</h3>
                 <Button variant="ghost" className="text-white" onClick={() => setActiveCropType(null)}><X className="h-6 w-6" /></Button>

@@ -13,7 +13,7 @@ const alerts = [
 const severityConfig = {
   critical: { dot: "bg-[hsl(var(--status-critical))]", badgeCls: "border-[hsl(var(--status-critical)/0.3)] bg-[hsl(var(--status-critical)/0.1)] text-[hsl(var(--status-critical))]" },
   warning: { dot: "bg-[hsl(var(--status-warning))]", badgeCls: "border-[hsl(var(--status-warning)/0.3)] bg-[hsl(var(--status-warning)/0.1)] text-[hsl(var(--status-warning))]" },
-  info: { dot: "bg-blue-500", badgeCls: "border-blue-500/30 bg-blue-500/10 text-blue-400" },
+  info: { dot: "bg-primary", badgeCls: "border-primary/30 bg-primary/10 text-primary" },
 };
 
 export default function AlertsPanel() {

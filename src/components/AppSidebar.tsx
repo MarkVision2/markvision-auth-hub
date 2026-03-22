@@ -184,7 +184,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
           side="right"
           align="start"
           sideOffset={12}
-          className="w-64 p-2 bg-popover/95 backdrop-blur-xl border-border shadow-2xl rounded-xl"
+          className="w-64 p-2 bg-popover backdrop-blur-xl border-border shadow-2xl rounded-xl"
         >
           <div className="space-y-1 mb-2">
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold px-2 py-1.5">Проекты</p>

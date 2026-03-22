@@ -45,7 +45,7 @@ export default function TeamTab({
             </div>
 
             {/* Table */}
-            <div className="rounded-xl bg-card/30 overflow-hidden">
+            <div className="rounded-xl bg-card overflow-hidden">
                 <Table>
                     <TableHeader>
                         <TableRow className="border-border/20 hover:bg-transparent">

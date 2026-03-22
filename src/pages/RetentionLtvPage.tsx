@@ -72,11 +72,11 @@ function formatMoney(n: number): string {
 function statusBadge(status: string) {
   switch (status) {
     case "sent":
-      return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px]">Отправлено</Badge>;
+      return <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-[10px]">Отправлено</Badge>;
     case "converted":
-      return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px]">Вернулся</Badge>;
+      return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Вернулся</Badge>;
     default:
-      return <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px]">В ожидании</Badge>;
+      return <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20 text-[10px]">В ожидании</Badge>;
   }
 }
 
@@ -167,13 +167,13 @@ function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: b
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground font-mono tabular-nums text-right">{data.total}</TableCell>
                   <TableCell className="text-sm font-mono tabular-nums text-right">
-                    <span className="text-amber-600 dark:text-amber-400">{data.pending}</span>
+                    <span className="text-amber-400">{data.pending}</span>
                   </TableCell>
                   <TableCell className="text-sm font-mono tabular-nums text-right">
-                    <span className="text-blue-600 dark:text-blue-400">{data.sent}</span>
+                    <span className="text-blue-400">{data.sent}</span>
                   </TableCell>
                   <TableCell className="text-sm font-mono tabular-nums text-right">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{data.converted}</span>
+                    <span className="text-emerald-400 font-semibold">{data.converted}</span>
                   </TableCell>
                   <TableCell className="text-sm font-mono tabular-nums text-right">
                     <Badge
@@ -181,9 +181,9 @@ function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: b
                       className={cn(
                         "text-[10px] font-mono",
                         convRate >= 20
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                           : convRate > 0
-                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                             : "text-muted-foreground"
                       )}
                     >
@@ -569,7 +569,7 @@ export default function RetentionLtvPage() {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground font-mono tabular-nums text-right">{t.sent_count}</TableCell>
                           <TableCell className="text-sm font-mono tabular-nums text-right">
-                            <span className="text-emerald-600 dark:text-emerald-400">{t.return_count}</span>
+                            <span className="text-emerald-400">{t.return_count}</span>
                           </TableCell>
                           <TableCell className="text-sm font-mono tabular-nums text-right">
                             <Badge
@@ -577,9 +577,9 @@ export default function RetentionLtvPage() {
                               className={cn(
                                 "text-[10px] font-mono",
                                 conv >= 20
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                                   : conv > 0
-                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
                                     : "text-muted-foreground"
                               )}
                             >

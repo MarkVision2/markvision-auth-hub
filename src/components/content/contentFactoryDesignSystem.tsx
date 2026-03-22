@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 export const cfStyles = {
   page: "mx-auto w-full max-w-[1920px] px-3 sm:px-4 md:px-6 2xl:px-10 py-4 sm:py-6",
   grid: "grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8",
-  card: "rounded-3xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-sm",
+  card: "rounded-3xl border border-border/50 bg-card shadow-sm",
   cardSoft: "rounded-2xl border border-border/40 bg-secondary/20",
-  input: "h-11 sm:h-12 rounded-2xl border-border/40 bg-background/60 text-sm font-semibold focus-visible:ring-primary/20",
-  textarea: "rounded-2xl border-border/40 bg-background/60 text-sm font-semibold focus-visible:ring-primary/20 resize-none",
+  input: "h-11 sm:h-12 rounded-2xl border-border/40 bg-background text-sm font-semibold focus-visible:ring-primary/20",
+  textarea: "rounded-2xl border-border/40 bg-background text-sm font-semibold focus-visible:ring-primary/20 resize-none",
   label: "text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/70",
   h1: "text-2xl sm:text-3xl xl:text-4xl font-black tracking-tight text-foreground",
   h2: "text-lg sm:text-xl font-black tracking-tight text-foreground",

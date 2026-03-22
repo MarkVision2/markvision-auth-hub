@@ -4,61 +4,61 @@
 
 @layer base {
   :root {
-    /* ── Surface palette (warm neutrals like Linear/Vercel) ── */
-    --background: 210 11% 98%;
-    --foreground: 224 71% 4%;
+    /* ── Deep navy surface palette (#05386B base) ── */
+    --background: 210 91% 22%;
+    --foreground: 210 20% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card: 210 60% 28%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover: 210 60% 28%;
+    --popover-foreground: 210 20% 98%;
 
-    /* ── Brand primary (refined emerald) ── */
-    --primary: 160 84% 36%;
-    --primary-foreground: 0 0% 100%;
+    /* ── Brand primary (mint green #50C878) ── */
+    --primary: 145 43% 55%;
+    --primary-foreground: 210 91% 10%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 30%;
+    --secondary: 210 50% 32%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 50% 32%;
+    --muted-foreground: 210 25% 82%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 9% 12%;
+    --accent: 210 50% 32%;
+    --accent-foreground: 210 20% 98%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 160 84% 36%;
+    --border: 210 45% 38%;
+    --input: 210 70% 18%;
+    --ring: 145 43% 55%;
 
     --radius: 0.625rem;
 
     /* ── Status tokens ── */
-    --status-good: 160 84% 36%;
+    --status-good: 145 43% 55%;
     --status-warning: 38 92% 50%;
     --status-critical: 0 84% 60%;
     --status-ai: 25 95% 53%;
 
-    /* ── Glass tokens ── */
-    --glass-bg: 0 0% 100% / 0.7;
-    --glass-border: 220 13% 91% / 0.8;
+    /* ── Glass tokens (navy) ── */
+    --glass-bg: 210 60% 28% / 0.7;
+    --glass-border: 210 45% 38% / 0.6;
     --glass-blur: 20px;
 
     /* ── Overlay ── */
-    --overlay: 224 71% 4% / 0.5;
+    --overlay: 210 91% 10% / 0.7;
 
-    /* ── Sidebar (subtle cool tint) ── */
-    --sidebar-background: 220 14% 97%;
-    --sidebar-foreground: 220 9% 30%;
-    --sidebar-primary: 160 84% 36%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 94%;
-    --sidebar-accent-foreground: 220 9% 12%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 160 84% 36%;
+    /* ── Sidebar (darker navy) ── */
+    --sidebar-background: 210 80% 14%;
+    --sidebar-foreground: 210 25% 82%;
+    --sidebar-primary: 145 43% 55%;
+    --sidebar-primary-foreground: 210 91% 10%;
+    --sidebar-accent: 210 50% 26%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 210 45% 32%;
+    --sidebar-ring: 145 43% 55%;
   }
 }
 
@@ -82,7 +82,7 @@
 
 /* ── Dot pattern for branding panel ── */
 .dot-pattern {
-  background-image: radial-gradient(circle, hsl(220 13% 50% / 0.07) 1px, transparent 1px);
+  background-image: radial-gradient(circle, hsl(220 13% 50% / 0.15) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -95,29 +95,27 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.15);
+  background: hsl(var(--muted-foreground) / 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--muted-foreground) / 0.45);
 }
 
-/* ── Smooth theme transitions ── */
-body,
-.bg-card,
-.bg-background,
-.bg-secondary,
-aside,
-header,
-main {
-  transition: background-color 0.2s ease, color 0.15s ease;
+/* ── Performance: override transition-all globally ── */
+.transition-all {
+  transition-property: color, background-color, border-color, opacity, box-shadow !important;
 }
 
-/* ── Glass utility ── */
+/* ── Performance: disable backdrop-blur globally ── */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ── Glass utility (no blur for performance) ── */
 .glass {
   background: hsl(var(--glass-bg));
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid hsl(var(--glass-border));
 }
 

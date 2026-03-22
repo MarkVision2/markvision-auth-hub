@@ -94,7 +94,7 @@ export function PhoneMockup({ contentMode, format, designPrompt, exactText, refe
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
                         {contentMode === "video" && (
-                          <div className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center border border-border/50">
+                          <div className="h-10 w-10 rounded-full bg-background backdrop-blur-sm flex items-center justify-center border border-border/50">
                             <Play className="h-4 w-4 text-foreground/70 ml-0.5" />
                           </div>
                         )}
@@ -119,7 +119,7 @@ export function PhoneMockup({ contentMode, format, designPrompt, exactText, refe
                     )}
 
                     {/* Format badge */}
-                    <div className="absolute top-2 right-2 bg-background/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 border border-border/30">
+                    <div className="absolute top-2 right-2 bg-background backdrop-blur-sm rounded-md px-1.5 py-0.5 border border-border/30">
                       <span className="text-[7px] font-mono font-medium text-foreground/60">9:16</span>
                     </div>
                   </div>

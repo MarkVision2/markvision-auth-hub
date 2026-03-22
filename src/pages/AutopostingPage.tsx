@@ -262,7 +262,7 @@ export default function AutopostingPage() {
                       ) : (
                         <img src={mediaPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-cover" />
                       )}
-                      <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <div className="absolute inset-0 bg-background opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                         <p className="text-xs font-medium text-foreground">Заменить файл</p>
                       </div>
                     </div>
@@ -439,7 +439,7 @@ export default function AutopostingPage() {
                         {item.media_type === "video" ? (
                           <>
                             <video src={item.media_url} className="w-full h-full object-cover" muted />
-                            <div className="absolute inset-0 flex items-center justify-center bg-background/20">
+                            <div className="absolute inset-0 flex items-center justify-center bg-background">
                               <Play className="h-6 w-6 text-primary-foreground drop-shadow-lg" fill="currentColor" />
                             </div>
                           </>

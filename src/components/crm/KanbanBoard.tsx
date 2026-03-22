@@ -105,7 +105,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin,
 
   return (
     <div
-      className={`group bg-white dark:bg-[#0f0f11] border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
+      className={`group bg-card border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
     >
       {/* Top row */}
       <div className="flex items-start gap-2.5">
@@ -417,7 +417,7 @@ export default function KanbanBoard() {
             const Icon = stage.icon;
 
             return (
-              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-slate-50/80 dark:bg-zinc-900/40 rounded-2xl p-2.5 transition-all duration-300 border border-slate-100 dark:border-zinc-800/60 shadow-sm ${collapsed ? "min-w-[56px] w-[56px]" : "min-w-[320px] w-[320px]"}`}>
+              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-secondary/40 rounded-2xl p-2.5 transition-all duration-300 border border-border/60 shadow-sm ${collapsed ? "min-w-[56px] w-[56px]" : "min-w-[320px] w-[320px]"}`}>
                 {/* Column header */}
                 <div
                   className={`rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
@@ -441,7 +441,7 @@ export default function KanbanBoard() {
                             <Icon className={`h-3.5 w-3.5 ${accentTextMap[stage.accent]}`} />
                           </div>
                           <span className="text-sm font-semibold text-foreground">{stage.label}</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background/50">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background">
                             {stageLeads.length}
                           </Badge>
                         </div>
@@ -468,7 +468,7 @@ export default function KanbanBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-zinc-700 ${snapshot.isDraggingOver
+                        className={`flex-1 min-h-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-muted-foreground/20 ${snapshot.isDraggingOver
                           ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
                           : ""
                           }`}

@@ -40,21 +40,21 @@ const colorMap = {
   emerald: {
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/20",
-    text: "text-emerald-600 dark:text-emerald-400",
+    text: "text-emerald-400",
     bar: "bg-emerald-500",
     dot: "bg-emerald-500",
   },
   amber: {
     bg: "bg-amber-500/10",
     border: "border-amber-500/20",
-    text: "text-amber-600 dark:text-amber-400",
+    text: "text-amber-400",
     bar: "bg-amber-500",
     dot: "bg-amber-500",
   },
   rose: {
     bg: "bg-rose-500/10",
     border: "border-rose-500/20",
-    text: "text-rose-600 dark:text-rose-400",
+    text: "text-rose-400",
     bar: "bg-rose-500",
     dot: "bg-rose-500",
   },
@@ -321,7 +321,7 @@ export default function QualityControlPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-xs border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 gap-1.5 h-8"
+                          className="text-xs border-rose-500/30 text-rose-400 hover:bg-rose-500/10 gap-1.5 h-8"
                           onClick={() => handleResolve(item.id)}
                         >
                           <AlertTriangle size={12} />

@@ -118,7 +118,7 @@ const AuthPage = () => {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/40 p-4 backdrop-blur-sm"
+                className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-4 backdrop-blur-sm"
               >
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                   <f.icon className="h-4 w-4 text-primary" />

@@ -90,7 +90,7 @@ export const SalesPresentation: React.FC<SalesPresentationProps> = ({ patient })
                                 </Select>
                             </div>
 
-                            <Card className="bg-card/50 border-border overflow-hidden shadow-sm transition-all duration-500 hover:border-primary/10">
+                            <Card className="bg-card border-border overflow-hidden shadow-sm transition-all duration-500 hover:border-primary/10">
                                 <CardContent className="p-0">
                                     <div className="bg-muted/30 px-4 py-2 border-b border-border flex justify-between items-center">
                                         <span className="text-[8px] text-muted-foreground/60 font-black uppercase tracking-[0.15em]">Proposal Summary</span>

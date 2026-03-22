@@ -40,7 +40,7 @@ const DoctorTerminal = () => {
     return (
         <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden font-sans antialiased selection:bg-primary/20">
             {/* TOP NAVIGATION BAR - Slimmer & More Precise */}
-            <header className="h-12 border-b border-border bg-card/30 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-30 shadow-sm">
+            <header className="h-12 border-b border-border bg-card backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-30 shadow-sm">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
@@ -85,7 +85,7 @@ const DoctorTerminal = () => {
             {/* MAIN CONTENT SPLIT SCREEN */}
             <main className="flex flex-1 overflow-hidden">
                 {/* LEFT COLUMN (Patient Queue) - Fixed width, high density */}
-                <aside className="w-[280px] lg:w-[300px] border-r border-border flex flex-col bg-card/30 backdrop-blur-xl z-20">
+                <aside className="w-[280px] lg:w-[300px] border-r border-border flex flex-col bg-card backdrop-blur-xl z-20">
                     <div className="p-4 border-b border-border flex items-center justify-between bg-muted/10">
                         <h2 className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.25em]">Workflow Queue</h2>
                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">

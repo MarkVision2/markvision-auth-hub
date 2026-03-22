@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 
-type Theme = "light";
+type Theme = "dark";
 
 export function useTheme() {
-  const theme: Theme = "light";
+  const theme: Theme = "dark";
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove("dark");
-    localStorage.removeItem("mv-theme");
+    root.classList.add("dark");
   }, []);
 
   const toggle = useCallback(() => { }, []);

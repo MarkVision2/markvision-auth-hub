@@ -445,7 +445,7 @@ export default function DashboardTarget() {
             </div>
 
             {filteredClients.length === 0 && (
-              <div className="rounded-3xl border border-border border-dashed bg-card/30 p-20 text-center">
+              <div className="rounded-3xl border border-border border-dashed bg-card p-20 text-center">
                 <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-4">
                   <Megaphone className="h-8 w-8 text-muted-foreground/20" />
                 </div>
@@ -573,7 +573,7 @@ export default function DashboardTarget() {
                                      <span className="text-sm font-semibold">Удалить кабинет</span>
                                    </DropdownMenuItem>
                                  </AlertDialogTrigger>
-                                 <AlertDialogContent className="rounded-[2rem] border-border bg-card/95 backdrop-blur-xl">
+                                 <AlertDialogContent className="rounded-[2rem] border-border bg-card backdrop-blur-xl">
                                    <AlertDialogHeader>
                                      <AlertDialogTitle className="text-xl font-black">Удалить кабинет?</AlertDialogTitle>
                                      <AlertDialogDescription className="font-medium">

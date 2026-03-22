@@ -332,7 +332,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         <Star className="h-6 w-6 fill-primary/20" />
                                         <h3 className="text-lg font-semibold uppercase tracking-tight">Ценность (Не просто консультация!)</h3>
                                     </div>
-                                    <p className="text-sm font-medium leading-relaxed text-foreground bg-white/50 p-6 rounded-2xl border border-primary/5 shadow-sm">
+                                    <p className="text-sm font-medium leading-relaxed text-foreground bg-card p-6 rounded-2xl border border-primary/5 shadow-sm">
                                         «Давайте расскажу, как мы поможем. У нас проводится комплексная диагностика, где вас смотрят сразу ДВА врача высшей категории.»
                                     </p>
                                 </div>

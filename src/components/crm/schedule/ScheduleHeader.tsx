@@ -65,7 +65,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
     };
 
     return (
-        <div className="px-6 md:px-10 py-4 border-b border-border/40 bg-background/80 backdrop-blur-3xl sticky top-0 z-40 shadow-sm">
+        <div className="px-6 md:px-10 py-4 border-b border-border/40 bg-background backdrop-blur-3xl sticky top-0 z-40 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 
                 {/* Left Side: Doctor Selector & View Controls */}
@@ -74,7 +74,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                     {/* Doctor Selector */}
                     <div className="w-full sm:w-[320px]">
                         <Select value={selectedDoctorId} onValueChange={onDoctorChange}>
-                            <SelectTrigger className="h-12 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_2px_10px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-primary/20 font-medium transition-all hover:bg-slate-50 dark:hover:bg-zinc-800/80">
+                            <SelectTrigger className="h-12 w-full rounded-2xl bg-card border border-border shadow-[0_2px_10px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-primary/20 font-medium transition-all hover:bg-secondary">
                                 <div className="flex items-center gap-3 w-full">
                                     <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-inner">
                                         <User className="h-4 w-4 text-white" />
@@ -82,7 +82,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                                     <SelectValue placeholder="Выберите врача" />
                                 </div>
                             </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-border/50 shadow-2xl p-1 bg-background/95 backdrop-blur-xl">
+                            <SelectContent className="rounded-2xl border-border/50 shadow-2xl p-1 bg-background backdrop-blur-xl">
                                 {MOCK_DOCTORS.map(doc => {
                                     const isSelected = doc.id === selectedDoctorId;
                                     return (
@@ -97,7 +97,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                                             <div className="flex items-center gap-3">
                                                 <div className={cn(
                                                     "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0",
-                                                    isSelected ? "bg-primary" : "bg-slate-300 dark:bg-zinc-700"
+                                                    isSelected ? "bg-primary" : "bg-muted-foreground/40"
                                                 )}>
                                                     {doc.name.split(" ").map(n => n[0]).join("").substring(0,2)}
                                                 </div>
@@ -114,7 +114,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                     </div>
 
                     {/* View Controls (iOS Segmented Style) */}
-                    <div className="flex items-center bg-slate-100/80 dark:bg-zinc-900/80 p-1.5 rounded-2xl relative shadow-inner border border-black/5 dark:border-white/5">
+                    <div className="flex items-center bg-secondary/80 p-1.5 rounded-2xl relative shadow-inner border border-white/5">
                         {[
                             { id: "day", label: "День", icon: LayoutList },
                             { id: "week", label: "Неделя", icon: LayoutGrid },
@@ -131,7 +131,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                                     )}
                                 >
                                     {isActive && (
-                                        <div className="absolute inset-0 bg-white dark:bg-zinc-800 rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] -z-10" />
+                                        <div className="absolute inset-0 bg-card rounded-[12px] shadow-[0_2px_8px_rgba(0,0,0,0.06)] -z-10" />
                                     )}
                                     <v.icon className={cn("h-3.5 w-3.5", isActive ? "text-primary" : "text-muted-foreground/60")} />
                                     {v.label}
@@ -145,12 +145,12 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                 <div className="flex items-center gap-4">
                     
                     {/* Date Navigator */}
-                    <div className="flex items-center bg-white dark:bg-zinc-900 rounded-2xl p-1.5 shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-slate-200 dark:border-zinc-800">
+                    <div className="flex items-center bg-card rounded-2xl p-1.5 shrink-0 shadow-[0_2px_10px_rgba(0,0,0,0.03)] border border-border">
                         <Button 
                             variant="ghost" 
                             size="icon" 
                             onClick={handlePrev} 
-                            className="h-9 w-9 rounded-[12px] hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400"
+                            className="h-9 w-9 rounded-[12px] hover:bg-secondary text-muted-foreground"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </Button>
@@ -159,13 +159,13 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                             <PopoverTrigger asChild>
                                 <Button 
                                     variant="ghost" 
-                                    className="h-9 px-4 rounded-[12px] hover:bg-slate-100 dark:hover:bg-zinc-800 gap-2.5 text-sm font-semibold text-foreground/90 capitalize mx-1 transition-colors"
+                                    className="h-9 px-4 rounded-[12px] hover:bg-secondary gap-2.5 text-sm font-semibold text-foreground/90 capitalize mx-1 transition-colors"
                                 >
                                     <CalendarIcon className="h-4 w-4 text-primary" />
                                     {dateLabel()}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 rounded-2xl border-border/40 shadow-[0_10px_40px_rgba(0,0,0,0.12)] bg-background/95 backdrop-blur-2xl" align="end">
+                            <PopoverContent className="w-auto p-0 rounded-2xl border-border/40 shadow-[0_10px_40px_rgba(0,0,0,0.12)] bg-background backdrop-blur-2xl" align="end">
                                 <CalendarUI
                                     mode="single"
                                     selected={selectedDate}
@@ -181,7 +181,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                             variant="ghost" 
                             size="icon" 
                             onClick={handleNext} 
-                            className="h-9 w-9 rounded-[12px] hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400"
+                            className="h-9 w-9 rounded-[12px] hover:bg-secondary text-muted-foreground"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </Button>
@@ -191,7 +191,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                     <Button 
                         onClick={() => onDateChange(new Date())}
                         variant="outline" 
-                        className="h-12 px-6 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary transition-all shrink-0"
+                        className="h-12 px-6 rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] border-border bg-card shadow-[0_2px_10px_rgba(0,0,0,0.03)] hover:bg-secondary hover:text-primary transition-all shrink-0"
                     >
                         Сегодня
                     </Button>

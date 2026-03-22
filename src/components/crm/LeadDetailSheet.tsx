@@ -119,7 +119,7 @@ function ActiveCallOverlay({ leadName, onEndCall }: { leadName: string; onEndCal
   }, []);
 
   return (
-    <div className="absolute inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+    <div className="absolute inset-0 z-50 bg-background backdrop-blur-md flex flex-col items-center justify-center gap-6">
       <div className="h-20 w-20 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center animate-pulse">
         <PhoneCall className="h-8 w-8 text-primary" />
       </div>
@@ -853,7 +853,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   <div ref={chatEndRef} />
                 </div>
 
-                <div className="px-4 py-3 border-t border-border bg-background/80 backdrop-blur-sm">
+                <div className="px-4 py-3 border-t border-border bg-background backdrop-blur-sm">
                   {aiMode ? (
                     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-secondary/60 border border-border/30">
                       <Bot className="h-4 w-4 text-primary shrink-0" />

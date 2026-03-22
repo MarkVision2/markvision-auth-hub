@@ -80,15 +80,15 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        /* Layered shadows like Linear/Vercel */
-        "xs": "0 1px 2px 0 rgb(0 0 0 / 0.03)",
-        "soft": "0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
-        "card": "0 1px 3px 0 rgb(0 0 0 / 0.03), 0 2px 8px -2px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.04)",
-        "elevated": "0 2px 4px -1px rgb(0 0 0 / 0.04), 0 4px 16px -4px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.03)",
-        "float": "0 8px 30px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.03)",
-        "glow-primary": "0 0 0 1px hsl(160 84% 36% / 0.3), 0 0 12px -2px hsl(160 84% 36% / 0.15)",
+        /* Dark theme shadows */
+        "xs": "0 1px 2px 0 rgb(0 0 0 / 0.2)",
+        "soft": "0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2)",
+        "card": "0 1px 3px 0 rgb(0 0 0 / 0.2), 0 2px 8px -2px rgb(0 0 0 / 0.3), 0 0 0 1px rgb(255 255 255 / 0.05)",
+        "elevated": "0 2px 4px -1px rgb(0 0 0 / 0.3), 0 4px 16px -4px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(255 255 255 / 0.05)",
+        "float": "0 8px 30px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(255 255 255 / 0.05)",
+        "glow-primary": "0 0 0 1px hsl(145 43% 55% / 0.35), 0 0 14px -2px hsl(145 43% 55% / 0.2)",
         "glow-destructive": "0 0 0 1px hsl(0 84% 60% / 0.3), 0 0 12px -2px hsl(0 84% 60% / 0.15)",
-        "inner-highlight": "inset 0 1px 0 0 rgb(255 255 255 / 0.1)",
+        "inner-highlight": "inset 0 1px 0 0 rgb(255 255 255 / 0.05)",
       },
       keyframes: {
         "accordion-down": {

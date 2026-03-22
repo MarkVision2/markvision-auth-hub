@@ -24,7 +24,7 @@ export default function NotificationsTab() {
             </div>
 
             {/* Sound */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
+            <div className="rounded-xl border border-border/50 bg-card p-5 space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                         {preferences.soundEnabled ? <Volume2 size={16} className="text-primary" /> : <VolumeX size={16} className="text-muted-foreground" />}
@@ -45,7 +45,7 @@ export default function NotificationsTab() {
             </div>
 
             {/* Browser Push */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-4">
+            <div className="rounded-xl border border-border/50 bg-card p-5 space-y-4">
                 <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Bell size={16} className={preferences.browserPushEnabled ? "text-primary" : "text-muted-foreground"} />
@@ -89,7 +89,7 @@ export default function NotificationsTab() {
             </div>
 
             {/* Type filters */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-3">
+            <div className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
                 <p className="text-sm font-semibold text-foreground mb-2">Типы уведомлений</p>
                 {([
                     { key: "errorEnabled" as const, label: "🔴 Ошибки", desc: "Критические сбои системы и API" },
@@ -111,7 +111,7 @@ export default function NotificationsTab() {
             </div>
 
             {/* Module filters */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-5 space-y-3">
+            <div className="rounded-xl border border-border/50 bg-card p-5 space-y-3">
                 <p className="text-sm font-semibold text-foreground mb-2">Фильтр по модулям</p>
                 <p className="text-xs text-muted-foreground mb-3">Отключите уведомления из ненужных модулей</p>
                 {KNOWN_MODULES.map(mod => {

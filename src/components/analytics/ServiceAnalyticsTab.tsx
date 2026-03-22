@@ -21,7 +21,7 @@ export const ServiceAnalyticsTab = () => {
 
     if (data.length === 0) {
         return (
-            <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground shadow-sm">
+            <div className="rounded-2xl border border-border bg-card backdrop-blur-sm flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground shadow-sm">
                 <div className="h-12 w-12 rounded-2xl bg-secondary border border-border flex items-center justify-center">
                     <Inbox className="h-5 w-5 opacity-40 text-primary" />
                 </div>

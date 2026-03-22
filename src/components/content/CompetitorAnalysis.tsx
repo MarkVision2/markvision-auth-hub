@@ -551,8 +551,8 @@ export function CompetitorAnalysis() {
                 ].map((kpi) => (
                     <motion.div key={kpi.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl border border-border/40 bg-gradient-to-br ${kpi.gradient} backdrop-blur-sm p-4 text-left hover:border-border/60 transition-all`}>
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] text-muted-foreground font-medium">{kpi.label}</span>
-                            <div className={`h-7 w-7 rounded-lg bg-card/60 border border-border/30 flex items-center justify-center`}>
+                            <span className="text-[11px] text-foreground/70 font-medium">{kpi.label}</span>
+                            <div className={`h-7 w-7 rounded-lg bg-card border border-border/30 flex items-center justify-center`}>
                                 <kpi.icon className={`h-3.5 w-3.5 ${kpi.iconColor}`} />
                             </div>
                         </div>
@@ -859,12 +859,12 @@ export function CompetitorAnalysis() {
                                             )}
                                             <div className="flex flex-wrap gap-2 mt-4">
                                                 {profileResult.account_overview?.target_audience_guess && (
-                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card/80 border border-violet-500/20 text-foreground">
+                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card border border-violet-500/20 text-foreground">
                                                         <Users className="h-3.5 w-3.5 text-violet-400" /> {profileResult.account_overview.target_audience_guess}
                                                     </span>
                                                 )}
                                                 {profileResult.account_overview?.main_offer_guess && (
-                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card/80 border border-amber-500/20 text-foreground">
+                                                    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg bg-card border border-amber-500/20 text-foreground">
                                                         <Zap className="h-3.5 w-3.5 text-amber-400" /> {profileResult.account_overview.main_offer_guess}
                                                     </span>
                                                 )}
@@ -970,7 +970,7 @@ export function CompetitorAnalysis() {
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             {profileResult.bio_rewrite.version_1_short && (
-                                                <div className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2 group">
+                                                <div className="rounded-xl bg-card border border-border/40 p-4 space-y-2 group">
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[11px] text-blue-400 font-black tracking-wider uppercase">Вариант 1 · Короткий</span>
                                                         <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_1_short); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/50 p-1 rounded">
@@ -981,7 +981,7 @@ export function CompetitorAnalysis() {
                                                 </div>
                                             )}
                                             {profileResult.bio_rewrite.version_2_with_offer && (
-                                                <div className="rounded-xl bg-card/80 border border-border/40 p-4 space-y-2 group">
+                                                <div className="rounded-xl bg-card border border-border/40 p-4 space-y-2 group">
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-[10px] text-blue-400 font-bold tracking-wide uppercase">Вариант 2 · С оффером</span>
                                                         <button onClick={() => { navigator.clipboard.writeText(profileResult.bio_rewrite.version_2_with_offer); toast({ title: "📋 Скопировано" }); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1007,7 +1007,7 @@ export function CompetitorAnalysis() {
                                         </h3>
                                         <div className="space-y-3">
                                             {profileResult.content_plan_5_reels.map((r: any, i: number) => (
-                                                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-card/80 border border-border/40 overflow-hidden">
+                                                <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-card border border-border/40 overflow-hidden">
                                                     <div className="flex">
                                                         <div className="w-12 shrink-0 bg-violet-500/10 flex items-center justify-center border-r border-border/30">
                                                             <span className="text-lg font-black text-violet-400/60 font-mono">{i + 1}</span>
@@ -1280,7 +1280,7 @@ export function CompetitorAnalysis() {
                                         <div className="space-y-2">
                                             {displayAnalyses.map((analysis, idx) => (
                                                 <motion.div key={analysis.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}
-                                                    className="rounded-xl border border-border/50 bg-card hover:border-border hover:bg-card/80 transition-all group cursor-pointer"
+                                                    className="rounded-xl border border-border/50 bg-card hover:border-border hover:bg-card transition-all group cursor-pointer"
                                                     onClick={() => { setSelectedAnalysis(analysis); setAdaptedScript(null); }}
                                                 >
                                                     <div className="flex items-center gap-4 p-3.5">

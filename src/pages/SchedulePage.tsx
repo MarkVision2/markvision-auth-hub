@@ -86,7 +86,7 @@ const SchedulePage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-slate-50 dark:bg-[#0a0a0a] overflow-hidden">
+        <div className="flex flex-col h-screen bg-background overflow-hidden">
             <ScheduleHeader 
                 view={view} 
                 onViewChange={setView}
@@ -98,7 +98,7 @@ const SchedulePage = () => {
             
             <div className="flex-1 overflow-hidden relative">
                 {isLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-50">
+                    <div className="absolute inset-0 flex items-center justify-center bg-background z-50">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 ) : (
