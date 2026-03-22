@@ -7,7 +7,7 @@ interface ClientMetric {
   client_name: string | null;
   revenue: number | null;
   spend: number | null;
-  day: string;
+  day?: string; // Made optional to match Dashboard's ClientMetric
 }
 
 interface Props {
@@ -26,18 +26,18 @@ export default function HqRevenueChart({ clients = [] }: Props) {
 
   return (
     <PremiumCard
-      icon={<TrendingUp className="h-5 w-5" />}
+      icon={<TrendingUp size={18} />}
       label="Динамика за неделю"
       secondaryLabel="Выручка vs расходы по дням"
       headerRight={
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]" />
-            <span className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest">Выручка</span>
+            <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]" />
+            <span className="text-[10px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Выручка</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-white/10" />
-            <span className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-widest">Расходы</span>
+            <div className="h-2 w-2 rounded-full bg-secondary border border-border" />
+            <span className="text-[10px] text-muted-foreground/50 font-semibold uppercase tracking-wider">Расходы</span>
           </div>
         </div>
       }
@@ -47,24 +47,24 @@ export default function HqRevenueChart({ clients = [] }: Props) {
           <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.1)" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="rgba(255,255,255,0.1)" stopOpacity={0} />
+                <stop offset="0%" stopColor="hsl(var(--secondary))" stopOpacity={0.1} />
+                <stop offset="100%" stopColor="hsl(var(--secondary))" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.1)" vertical={false} />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)", fontWeight: 700 }}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
               dy={10}
             />
             <YAxis
-              tick={{ fontSize: 9, fill: "rgba(255,255,255,0.2)", fontWeight: 700 }}
+              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))", fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v: any) => (Number(v) >= 1000 ? `${(Number(v) / 1000).toFixed(0)}K` : String(v))}
@@ -72,15 +72,15 @@ export default function HqRevenueChart({ clients = [] }: Props) {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#0a0b10",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "1rem",
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "0.75rem",
                 fontSize: 11,
                 padding: "12px",
-                boxShadow: "0 20px 40px -15px rgba(0,0,0,0.4)"
+                boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
               }}
-              itemStyle={{ fontWeight: 700, padding: "2px 0" }}
-              labelStyle={{ color: "rgba(255,255,255,0.4)", marginBottom: "8px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", fontSize: "9px" }}
+              itemStyle={{ fontWeight: 600, padding: "2px 0" }}
+              labelStyle={{ color: "hsl(var(--muted-foreground))", marginBottom: "8px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", fontSize: "9px" }}
               formatter={(value: number, name: string) => [
                 `${value.toLocaleString("ru-RU")} ₸`,
                 name === "revenue" ? "Выручка" : "Расходы",
@@ -92,18 +92,18 @@ export default function HqRevenueChart({ clients = [] }: Props) {
               dataKey="revenue"
               name="revenue"
               stroke="hsl(var(--primary))"
-              strokeWidth={3}
+              strokeWidth={2.5}
               fill="url(#revGrad)"
-              dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "#0a0b10" }}
-              activeDot={{ r: 6, fill: "hsl(var(--primary))", strokeWidth: 3, stroke: "#fff" }}
+              dot={{ r: 3, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "hsl(var(--card))" }}
+              activeDot={{ r: 5, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "#fff" }}
             />
             <Area
               type="monotone"
               dataKey="spend"
               name="spend"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth={2}
-              strokeDasharray="6 4"
+              stroke="hsl(var(--muted-foreground) / 0.3)"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
               fill="url(#spendGrad)"
               dot={false}
             />

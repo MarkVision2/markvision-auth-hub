@@ -335,6 +335,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        {isAgency && isSuperadmin ? (
           <Tabs defaultValue="global" className="w-full">
             <TabsList className="mb-8 bg-secondary/50 border border-border p-1 rounded-xl">
               <TabsTrigger 
