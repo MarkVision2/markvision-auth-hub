@@ -107,94 +107,64 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
 
   return (
     <div
-      className={`group bg-card border rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing border-border/60 hover:border-primary/40 hover:shadow-[0_4px_16px_-4px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5 transition-all duration-200`}
+      className="group bg-card border rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing border-border/50 hover:border-primary/40 hover:bg-card/80 transition-all duration-150"
+      onClick={() => onCardClick(lead)}
     >
-      {/* Top row */}
-      <div className="flex items-start gap-2.5">
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className={`${accentBgMap[stage.accent]} ${accentTextMap[stage.accent]} text-[10px] font-bold`}>
+      {/* Row 1: Avatar + Name + Time */}
+      <div className="flex items-center gap-2">
+        <div className={`h-7 w-7 rounded-full ${accentBgMap[stage.accent]} flex items-center justify-center shrink-0`}>
+          <span className={`text-[9px] font-bold ${accentTextMap[stage.accent]}`}>
             {getInitials(lead.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0" onClick={() => onCardClick(lead)}>
-          <p className="text-sm font-medium text-foreground truncate">{lead.name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {lead.phone && (
-              <span className="text-[11px] text-muted-foreground flex items-center gap-0.5">
-                <Phone className="h-2.5 w-2.5" />{lead.phone}
-              </span>
-            )}
-          </div>
+          </span>
         </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className="text-[10px] text-muted-foreground">{timeAgo(lead.created_at)}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{lead.name}</p>
+          {lead.phone && (
+            <p className="text-[10px] text-muted-foreground/70 flex items-center gap-0.5 mt-0.5 leading-none">
+              <Phone className="h-2.5 w-2.5 shrink-0" />{lead.phone}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[9px] text-muted-foreground/50 font-medium">{timeAgo(lead.created_at)}</span>
           {isSuperadmin && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+            <button
+              className="h-5 w-5 flex items-center justify-center rounded text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
               onClick={(e) => { e.stopPropagation(); onDelete(lead.id, lead.name); }}
             >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+              <Trash2 className="h-3 w-3" />
+            </button>
           )}
         </div>
       </div>
 
-      {/* Tags row */}
-      <div className="flex items-center gap-1.5 mt-2.5 flex-wrap pl-6" onClick={() => onCardClick(lead)}>
+      {/* Row 2: Tags + Amount + Score */}
+      <div className="flex items-center gap-1.5 mt-1.5 pl-9">
         {lead.source && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-            <Globe className="h-2.5 w-2.5" /> {lead.source}
+          <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-[1px] rounded bg-secondary/80 text-muted-foreground/70 max-w-[80px] truncate">
+            <Globe className="h-2 w-2 shrink-0" /> {lead.source}
           </span>
         )}
         {lead.utm_campaign && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground truncate max-w-[120px]">
+          <span className="text-[9px] px-1.5 py-[1px] rounded bg-secondary/80 text-muted-foreground/70 truncate max-w-[80px]">
             {lead.utm_campaign}
           </span>
         )}
-      </div>
-
-      {/* Bottom row */}
-      <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/50 pl-6" onClick={() => onCardClick(lead)}>
-        <span className={`text-sm font-bold tabular-nums ${amount > 0 ? accentTextMap[stage.accent] : "text-muted-foreground"}`}>
-          {amount > 0 ? `${fmt(amount)} ₸` : "—"}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {score > 0 && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${badge.bg} ${badge.color}`}>
-                  {badge.emoji} {score}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">{badge.label} лид — {score}%</TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      </div>
-
-      {/* Quick move — shows on hover */}
-      <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1 pl-6">
-        {currentIdx > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
-            onClick={(e) => { e.stopPropagation(); onMove(lead.id, stages[currentIdx - 1].key); }}
-          >
-            ← {stages[currentIdx - 1].label}
-          </Button>
+        <div className="flex-1" />
+        {amount > 0 && (
+          <span className={`text-[11px] font-bold tabular-nums ${accentTextMap[stage.accent]}`}>
+            {fmt(amount)} ₸
+          </span>
         )}
-        {currentIdx < stages.length - 1 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[stages[currentIdx + 1].accent]}`}
-            onClick={(e) => { e.stopPropagation(); onMove(lead.id, stages[currentIdx + 1].key); }}
-          >
-            {stages[currentIdx + 1].label} →
-          </Button>
+        {score > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={`text-[9px] font-bold px-1 py-[1px] rounded ${badge.bg} ${badge.color}`}>
+                {badge.emoji}{score}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">{badge.label} — {score}%</TooltipContent>
+          </Tooltip>
         )}
       </div>
     </div>
@@ -496,7 +466,7 @@ export default function KanbanBoard() {
             const isEditing = editingStage === stage.key;
 
             return (
-              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-secondary/40 rounded-2xl p-2.5 transition-all duration-300 border border-border/60 shadow-sm ${collapsed ? "min-w-[56px] w-[56px]" : "min-w-[320px] w-[320px]"}`}>
+              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-secondary/30 rounded-xl p-2 transition-all duration-300 border border-border/50 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[270px] w-[270px]"}`}>
                 {/* Column header */}
                 <div
                   className={`group/header rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
@@ -570,7 +540,7 @@ export default function KanbanBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-y-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-muted-foreground/20 ${snapshot.isDraggingOver
+                        className={`flex-1 min-y-0 overflow-y-auto space-y-1.5 p-0.5 rounded-lg transition-colors duration-200 scrollbar-thin scrollbar-thumb-muted-foreground/20 ${snapshot.isDraggingOver
                           ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
                           : ""
                           }`}
