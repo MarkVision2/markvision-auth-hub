@@ -1,51 +1,314 @@
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Activity, Users } from "lucide-react";
+import { 
+  Activity, Users, UserPlus, Phone, Building, Briefcase, 
+  Calendar, Clock, Trash2, Check, X, Search 
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+import { 
+  loadTeam, saveTeam, type TeamMember, ROLE_PRESETS 
+} from "@/pages/settings/types";
+import { cn } from "@/lib/utils";
 
 const DoctorTerminal = () => {
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [search, setSearch] = useState("");
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    office: "",
+    specialty: "",
+    workingDays: [] as string[],
+    workingHours: "",
+  });
+
+  const daysOfWeek = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+  useEffect(() => {
+    setTeam(loadTeam());
+  }, []);
+
+  const handleToggleDay = (day: string) => {
+    setFormData(prev => ({
+      ...prev,
+      workingDays: prev.workingDays.includes(day)
+        ? prev.workingDays.filter(d => d !== day)
+        : [...prev.workingDays, day]
+    }));
+  };
+
+  const handleAddDoctor = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.specialty) {
+      toast({ title: "Ошибка", description: "Пожалуйста, заполните основные поля", variant: "destructive" });
+      return;
+    }
+
+    const newDoctor: TeamMember = {
+      id: crypto.randomUUID(),
+      name: formData.name,
+      email: formData.email || `${crypto.randomUUID().slice(0, 8)}@clinic.io`,
+      role: "doctor",
+      status: "active",
+      lastLogin: null,
+      permissions: ROLE_PRESETS.doctor,
+      phone: formData.phone,
+      office: formData.office,
+      specialty: formData.specialty,
+      workingDays: formData.workingDays,
+      workingHours: formData.workingHours,
+    };
+
+    const updatedTeam = [...team, newDoctor];
+    setTeam(updatedTeam);
+    saveTeam(updatedTeam);
+    
+    setShowAddForm(false);
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      office: "",
+      specialty: "",
+      workingDays: [],
+      workingHours: "",
+    });
+
+    toast({ title: "Врач добавлен", description: `${formData.name} теперь в списке` });
+  };
+
+  const handleDeleteDoctor = (id: string) => {
+    const updatedTeam = team.filter(m => m.id !== id);
+    setTeam(updatedTeam);
+    saveTeam(updatedTeam);
+    toast({ title: "Удалено", description: "Врач удален из системы" });
+  };
+
+  const doctors = team.filter(m => 
+    m.role === "doctor" && 
+    (m.name.toLowerCase().includes(search.toLowerCase()) || 
+     m.specialty?.toLowerCase().includes(search.toLowerCase()))
+  );
+
   return (
     <DashboardLayout breadcrumb="Терминал Врача">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Терминал Врача</h2>
-          <p className="text-sm text-muted-foreground mt-1">Рабочее пространство для диагностики и ведения пациентов</p>
+      <div className="space-y-6 max-w-6xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">Терминал Врача</h2>
+            <p className="text-sm text-muted-foreground mt-1">Управление медицинским персоналом и графиком работы</p>
+          </div>
+          <Button onClick={() => setShowAddForm(!showAddForm)} className="gap-2 rounded-xl h-11 px-6 shadow-lg shadow-primary/20">
+            {showAddForm ? <X className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+            {showAddForm ? "Отмена" : "Добавить врача"}
+          </Button>
         </div>
 
-        {/* Empty state */}
-        <div className="rounded-2xl border border-border bg-card p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
-            <Activity className="h-8 w-8 text-primary" />
+        {showAddForm && (
+          <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+            <form onSubmit={handleAddDoctor} className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-semibold ml-1">ФИО Врача *</Label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="name"
+                      placeholder="Иванов Иван Иванович"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-semibold ml-1">Номер телефона</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="phone"
+                      placeholder="+7 (999) 000-00-00"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="office" className="text-sm font-semibold ml-1">Номер кабинета</Label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="office"
+                      placeholder="№ 204"
+                      value={formData.office}
+                      onChange={e => setFormData({...formData, office: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="specialty" className="text-sm font-semibold ml-1">Направление *</Label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="specialty"
+                      placeholder="Терапевт, Хирург..."
+                      value={formData.specialty}
+                      onChange={e => setFormData({...formData, specialty: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-sm font-semibold ml-1">Дни приема</Label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {daysOfWeek.map(day => (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => handleToggleDay(day)}
+                        className={cn(
+                          "h-10 w-11 rounded-xl text-xs font-bold border transition-all duration-200",
+                          formData.workingDays.includes(day)
+                            ? "bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105"
+                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                        )}
+                      >
+                        {day}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hours" className="text-sm font-semibold ml-1">Время приема</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="hours"
+                      placeholder="09:00 - 18:00"
+                      value={formData.workingHours}
+                      onChange={e => setFormData({...formData, workingHours: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button type="submit" className="h-11 px-8 rounded-xl shadow-lg shadow-primary/20 font-bold uppercase tracking-wider text-xs">
+                  Сохранить врача
+                </Button>
+              </div>
+            </form>
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-2">Раздел в разработке</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Терминал врача станет доступен после подключения модуля записи пациентов.
-            Здесь будет очередь пациентов, диагностика и оформление планов лечения.
-          </p>
+        )}
+
+        {/* Search and Stats */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+            <Input 
+              placeholder="Поиск по ФИО или направлению..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-10 rounded-xl bg-card border-border/50 h-11"
+            />
+          </div>
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl border border-border/40">
+            <Users className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold">{doctors.length}</span>
+            <span className="text-xs text-muted-foreground">Врачей</span>
+          </div>
         </div>
 
-        {/* Info cards */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Users className="h-5 w-5 text-primary" />
+        {/* Doctors List */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {doctors.map(doc => (
+            <div key={doc.id} className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 shadow-sm overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => handleDeleteDoctor(doc.id)}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">Очередь пациентов</p>
-                <p className="text-xs text-muted-foreground">Нет пациентов в очереди</p>
+
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-lg font-bold text-primary">
+                    {doc.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-foreground leading-tight truncate">{doc.name}</h4>
+                  <Badge variant="secondary" className="mt-1.5 bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-wider">
+                    {doc.specialty}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-3 pt-4 border-t border-border/40">
+                {doc.phone && (
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <Phone className="h-3.5 w-3.5 text-primary/60" />
+                    <span>{doc.phone}</span>
+                  </div>
+                )}
+                {doc.office && (
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <Building className="h-3.5 w-3.5 text-primary/60" />
+                    <span>Кабинет {doc.office}</span>
+                  </div>
+                )}
+                <div className="flex items-start gap-3 text-xs text-muted-foreground">
+                  <Calendar className="h-3.5 w-3.5 mt-0.5 text-primary/60" />
+                  <div>
+                    <div className="flex flex-wrap gap-1">
+                      {doc.workingDays?.map(d => (
+                        <span key={d} className="inline-block px-1.5 py-0.5 rounded bg-secondary/50 font-bold text-[9px] uppercase">{d}</span>
+                      ))}
+                    </div>
+                    {doc.workingHours && <p className="mt-1 opacity-70 italic">{doc.workingHours}</p>}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Activity className="h-5 w-5 text-primary" />
+          ))}
+
+          {doctors.length === 0 && !showAddForm && (
+            <div className="col-span-full py-16 text-center border-2 border-dashed border-border/50 rounded-3xl bg-secondary/5">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted border border-border">
+                <Users className="h-7 w-7 text-muted-foreground" />
               </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">Сессии сегодня</p>
-                <p className="text-xs text-muted-foreground">—</p>
-              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">Врачи не найдены</h3>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Добавьте первого специалиста, чтобы начать работу с расписанием
+              </p>
+              <Button onClick={() => setShowAddForm(true)} variant="link" className="mt-2 text-primary">
+                Добавить врача прямо сейчас
+              </Button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

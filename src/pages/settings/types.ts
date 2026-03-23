@@ -93,6 +93,11 @@ export interface TeamMember {
     status: "active" | "invited";
     lastLogin: string | null;
     permissions: string[];
+    phone?: string;
+    office?: string;
+    specialty?: string;
+    workingDays?: string[];
+    workingHours?: string;
 }
 
 export const INITIAL_TEAM: TeamMember[] = [

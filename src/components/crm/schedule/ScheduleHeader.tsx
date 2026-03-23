@@ -13,6 +13,7 @@ import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
+import { loadTeam } from "@/pages/settings/types";
 
 interface ScheduleHeaderProps {
     view: "day" | "week" | "month";
@@ -23,18 +24,24 @@ interface ScheduleHeaderProps {
     onDoctorChange: (id: string) => void;
 }
 
-const MOCK_DOCTORS = [
-    { id: "all", name: "Все врачи", specialty: "Медицинский центр" },
-    { id: "1", name: "Иванов Иван Иванович", specialty: "Терапевт" },
-    { id: "2", name: "Петров Петр Петрович", specialty: "Реабилитолог" },
-    { id: "3", name: "Сидорова Анна Сергеевна", specialty: "Невролог" },
-];
+
 
 export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
     view, onViewChange,
     selectedDate, onDateChange,
     selectedDoctorId, onDoctorChange
 }) => {
+    const team = loadTeam();
+    const doctors = [
+        { id: "all", name: "Все врачи", specialty: "Медицинский центр" },
+        ...team
+            .filter(m => m.role === "doctor")
+            .map(m => ({
+                id: m.id,
+                name: m.name,
+                specialty: m.specialty || "Врач"
+            }))
+    ];
     const handlePrev = () => {
         const newDate = new Date(selectedDate);
         if (view === "day") newDate.setDate(selectedDate.getDate() - 1);
@@ -83,7 +90,7 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
                                 </div>
                             </SelectTrigger>
                             <SelectContent className="rounded-2xl border-border/50 shadow-2xl p-1 bg-background backdrop-blur-xl">
-                                {MOCK_DOCTORS.map(doc => {
+                                {doctors.map(doc => {
                                     const isSelected = doc.id === selectedDoctorId;
                                     return (
                                         <SelectItem 
