@@ -520,7 +520,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pr-10">
               {score > 0 && (
                 <Badge variant="outline" className={`text-xs font-medium ${scoreBadge.className}`}>
                   {scoreBadge.emoji} {scoreBadge.label} {score}%
