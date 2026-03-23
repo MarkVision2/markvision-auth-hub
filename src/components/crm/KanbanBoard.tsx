@@ -345,11 +345,18 @@ export default function KanbanBoard() {
     });
   };
 
-  const totalAmount = useMemo(() => leads.reduce((s, l) => s + (Number(l.amount) || 0), 0), [leads]);
+  const filteredSummarizedLeads = useMemo(() => {
+    return leads.filter(l => (l.pipeline || "main") === activePipeline);
+  }, [leads, activePipeline]);
+
+  const totalAmount = useMemo(() => {
+    return filteredSummarizedLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  }, [filteredSummarizedLeads]);
+
   const avgScore = useMemo(() => {
-    const scored = leads.filter(l => (l.ai_score ?? 0) > 0);
+    const scored = filteredSummarizedLeads.filter(l => (l.ai_score ?? 0) > 0);
     return scored.length ? Math.round(scored.reduce((s, l) => s + (l.ai_score ?? 0), 0) / scored.length) : 0;
-  }, [leads]);
+  }, [filteredSummarizedLeads]);
 
   const leadsByStatus = useMemo(() => {
     const map: Record<string, Lead[]> = {};
@@ -398,7 +405,7 @@ export default function KanbanBoard() {
               </div>
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Лидов</p>
-                <p className="text-sm font-bold text-foreground">{leads.length}</p>
+                <p className="text-sm font-bold text-foreground">{filteredSummarizedLeads.length}</p>
               </div>
             </div>
             <div className="h-8 w-px bg-border hidden md:block" />
