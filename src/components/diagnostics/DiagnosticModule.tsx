@@ -201,6 +201,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                             onChange={setAdminData} 
                                             onNext={() => mode === "doctor" && setActiveTab("doctor")}
                                             readOnly={mode === "doctor"}
+                                            onSave={handleSave}
                                         />
                                     </TabsContent>
                                     {mode === "doctor" && (

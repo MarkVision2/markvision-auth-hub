@@ -56,9 +56,10 @@ interface Props {
     onChange: (data: AdminFormData) => void;
     onNext: () => void;
     readOnly?: boolean;
+    onSave?: () => void;
 }
 
-export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNext, readOnly = false }) => {
+export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNext, readOnly = false, onSave }) => {
     const [step, setStep] = useState(1);
     const totalSteps = 4;
 
@@ -149,6 +150,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
             } else {
                 toast({ title: "Подтверждено", description: "Запись подтверждена. Передача врачу." });
             }
+            if (onSave) onSave();
             onNext();
         }
     };
