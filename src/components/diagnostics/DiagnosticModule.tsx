@@ -14,6 +14,8 @@ import { DiagnosticPdfExport, DiagnosticPdfExportRef } from "./components/Diagno
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface DiagnosticModuleProps {
     lead: Lead;
@@ -36,14 +38,66 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
 
     const handleSave = async () => {
+        if (!adminData) return;
         setIsSaving(true);
         try {
-            // Эмуляция сохранения
-            await new Promise(r => setTimeout(r, 1000));
-            toast({ title: "Успешно", description: "Данные сохранены" });
+            // Mapping statuses to CRM stages
+            let newStatus = lead.status;
+            if (adminData.paymentStatus === "pending") newStatus = "Счет выставлен";
+            if (adminData.paymentStatus === "paid") newStatus = "Записан";
+            if (adminData.paymentStatus === "declined") newStatus = "Отказ";
+
+            const updateData: any = {
+                status: newStatus,
+                amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
+                doctor_name: adminData.bookingDoctor || lead.doctor_name,
+            };
+
+            if (adminData.bookingDate && adminData.bookingTime) {
+                // Combine date and time
+                const timeStr = adminData.bookingTime; // e.g. "10:00"
+                const [h, m] = timeStr.split(":").map(Number);
+                const scheduledAt = new Date(adminData.bookingDate);
+                scheduledAt.setHours(h, m, 0, 0);
+                updateData.scheduled_at = scheduledAt.toISOString();
+            }
+
+            if (adminData.paymentStatus === "declined" && adminData.refusalReason) {
+                updateData.ai_summary = (lead.ai_summary || "") + `\n[Отказ от предоплаты: ${adminData.refusalReason}]`;
+            }
+
+            const { error } = await (supabase as any)
+                .from("leads_crm")
+                .update(updateData)
+                .eq("id", lead.id);
+
+            if (error) throw error;
+
+            // Trigger analytics webhook (n8n)
+            try {
+                await fetch("https://n8n.zapoinov.com/webhook/lead-status-changed", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        table: "leads_crm",
+                        type: "UPDATE",
+                        record: {
+                            id: lead.id,
+                            status: newStatus,
+                            project_id: lead.project_id,
+                            deal_amount: updateData.amount || 0,
+                        },
+                        old_record: { status: lead.status },
+                    }),
+                });
+            } catch (e) {
+                console.error("Webhook failed", e);
+            }
+
+            toast({ title: "Успешно", description: "Данные карточки обновлены и синхронизированы" });
             if (onComplete) onComplete({ adminData, doctorData, prescriptionData });
-        } catch (error) {
-            toast({ title: "Ошибка", description: "Не удалось сохранить", variant: "destructive" });
+        } catch (error: any) {
+            toast({ title: "Ошибка", description: error.message || "Не удалось сохранить", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }

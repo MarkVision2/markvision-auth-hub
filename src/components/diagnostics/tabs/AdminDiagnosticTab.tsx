@@ -14,6 +14,7 @@ import { Lead } from "../../crm/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { BookingWidget } from "../../crm/BookingWidget";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface AdminFormData {
     complaints: string;
@@ -40,6 +41,8 @@ export interface AdminFormData {
     adminComment: string;
     paymentMethod: string;
     paymentStatus: "pending" | "paid" | "declined";
+    prepaymentAmount: string;
+    refusalReason: string;
     confirmed: boolean;
     finalFio: string;
     finalPhone: string;
@@ -82,6 +85,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
         adminComment: "",
         paymentMethod: "Kaspi",
         paymentStatus: "pending",
+        prepaymentAmount: "",
+        refusalReason: "",
         confirmed: false,
         finalFio: lead.name || "",
         finalPhone: lead.phone || "",
@@ -93,7 +98,12 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
 
     const nextStep = () => {
         if (validateStage(step)) {
-            setStep((s) => Math.min(s + 1, totalSteps));
+            if (step === 3 && formData.paymentStatus === "declined") {
+                // Skip step 4 if declined
+                handleConfirm();
+            } else {
+                setStep((s) => Math.min(s + 1, totalSteps));
+            }
         }
     };
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -128,6 +138,19 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
         return true;
     };
 
+    const handleConfirm = () => {
+        const stageToValidate = (step === 3 && formData.paymentStatus === "declined") ? 3 : 4;
+        if (validateStage(stageToValidate)) {
+            setFormData(prev => ({ ...prev, confirmed: true }));
+            if (formData.paymentStatus === "declined") {
+                toast({ title: "Отказ зафиксирован", description: "Сделка будет переведена в архив/отказ." });
+            } else {
+                toast({ title: "Подтверждено", description: "Запись подтверждена. Передача врачу." });
+            }
+            onNext();
+        }
+    };
+
     const toggleArrayItem = (field: keyof AdminFormData, item: string) => {
         setFormData(prev => {
             const current = (prev[field] as string[]) || [];
@@ -151,13 +174,6 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
     const [editPatientData, setEditPatientData] = useState(false);
     const [editBookingData, setEditBookingData] = useState(false);
 
-    const handleConfirm = () => {
-        if (validateStage(4)) {
-            setFormData({ ...formData, confirmed: true });
-            toast({ title: "Подтверждено", description: "Запись подтверждена. Передача врачу." });
-            onNext();
-        }
-    };
 
     return (
         <div className="flex flex-col h-full space-y-8 animate-in fade-in pb-10">
@@ -430,26 +446,71 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     >
                                         {[
                                             { id: "pending", label: "Ожидается оплата", color: "text-amber-500", bg: "bg-amber-500/10" },
-                                            { id: "paid", label: "Оплачено (9 990 ₸)", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+                                            { id: "paid", label: "Оплачено", color: "text-emerald-500", bg: "bg-emerald-500/10" },
                                             { id: "declined", label: "Отказ от предоплаты", color: "text-rose-500", bg: "bg-rose-500/10" },
                                         ].map((item) => (
-                                            <div key={item.id} className="flex items-center">
-                                                <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
-                                                <Label
-                                                    htmlFor={item.id}
-                                                    className={cn(
-                                                        "flex-1 flex items-center justify-between p-5 rounded-3xl border-2 transition-all",
-                                                        formData.paymentStatus === item.id 
-                                                            ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
-                                                            : "border-transparent bg-secondary/5 hover:bg-secondary/10",
-                                                        !readOnly && "cursor-pointer"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={cn("h-4 w-4 rounded-full flex items-center justify-center", item.bg, item.color)} />
-                                                        <span className="font-semibold">{item.label}</span>
+                                            <div key={item.id} className="space-y-3">
+                                                <div className="flex items-center">
+                                                    <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
+                                                    <Label
+                                                        htmlFor={item.id}
+                                                        className={cn(
+                                                            "flex-1 flex items-center justify-between p-5 rounded-3xl border-2 transition-all",
+                                                            formData.paymentStatus === item.id 
+                                                                ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
+                                                                : "border-transparent bg-secondary/5 hover:bg-secondary/10",
+                                                            !readOnly && "cursor-pointer"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={cn("h-4 w-4 rounded-full flex items-center justify-center", item.bg, item.color)} />
+                                                            <span className="font-semibold">{item.label}</span>
+                                                        </div>
+                                                        {formData.paymentStatus === item.id && (
+                                                            <Check className="h-4 w-4 text-primary animate-in zoom-in" />
+                                                        )}
+                                                    </Label>
+                                                </div>
+
+                                                {/* Conditional Inputs */}
+                                                {formData.paymentStatus === "paid" && item.id === "paid" && (
+                                                    <div className="px-2 animate-in slide-in-from-top-2 duration-300">
+                                                        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-3">
+                                                            <Label className="text-[10px] uppercase font-bold tracking-widest text-emerald-600">Сумма предоплаты (₸)</Label>
+                                                            <Input 
+                                                                type="number"
+                                                                placeholder="Введите сумму, например: 9990"
+                                                                value={formData.prepaymentAmount}
+                                                                onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
+                                                                className="h-10 bg-background border-emerald-500/20 focus:ring-emerald-500 font-bold"
+                                                                disabled={readOnly}
+                                                            />
+                                                        </div>
                                                     </div>
-                                                </Label>
+                                                )}
+
+                                                {formData.paymentStatus === "declined" && item.id === "declined" && (
+                                                    <div className="px-2 animate-in slide-in-from-top-2 duration-300">
+                                                        <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 space-y-3">
+                                                            <Label className="text-[10px] uppercase font-bold tracking-widest text-rose-600">Причина отказа</Label>
+                                                            <Select 
+                                                                value={formData.refusalReason} 
+                                                                onValueChange={val => setFormData({ ...formData, refusalReason: val })}
+                                                                disabled={readOnly}
+                                                            >
+                                                                <SelectTrigger className="h-10 bg-background border-rose-500/20 focus:ring-rose-500 font-medium">
+                                                                    <SelectValue placeholder="Выберите причину" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="rounded-xl">
+                                                                    <SelectItem value="expensive">Дорого</SelectItem>
+                                                                    <SelectItem value="thinking">Подумает</SelectItem>
+                                                                    <SelectItem value="not_now">Не сейчас</SelectItem>
+                                                                    <SelectItem value="other">Другое</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </RadioGroup>

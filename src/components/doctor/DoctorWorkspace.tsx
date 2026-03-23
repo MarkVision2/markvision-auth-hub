@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 import { 
   Calendar, Settings, Clock, User, Phone, Building, 
   Briefcase, Save, Loader2, Activity 
@@ -14,6 +15,7 @@ import { MonthView } from "../crm/schedule/MonthView";
 import { AppointmentModal } from "../crm/schedule/AppointmentModal";
 import { TeamMember, saveTeam, loadTeam } from "@/pages/settings/types";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DoctorWorkspaceProps {
     doctor: TeamMember;
@@ -26,12 +28,59 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isSaving, setIsSaving] = useState(false);
     
-    // Mock appointments for now, filtered by doctor. 
-    // In a real app, this would come from a database query for this doctor.
-    const [appointments, setAppointments] = useState([
-        { id: "1", patient: "Алексей Иванов", time: "10:00", date: new Date(), type: "Диагностика", status: "planned", doctor: doctor.name },
-        { id: "2", patient: "Мария Петрова", time: "14:00", date: new Date(), type: "Осмотр", status: "completed", doctor: doctor.name },
-    ]);
+    const [appointments, setAppointments] = useState<any[]>([]);
+    const [loadingAppts, setLoadingAppts] = useState(true);
+
+    useEffect(() => {
+        const fetchAppointments = async () => {
+            setLoadingAppts(true);
+            try {
+                const { data, error } = await (supabase as any)
+                    .from("leads_crm")
+                    .select("*")
+                    .eq("doctor_name", doctor.name)
+                    .not("scheduled_at", "is", null);
+
+                if (error) throw error;
+
+                const mapped = (data || []).map((lead: any) => {
+                    const date = new Date(lead.scheduled_at);
+                    return {
+                        id: lead.id,
+                        patient: lead.name,
+                        date: date,
+                        time: format(date, "HH:mm"),
+                        type: lead.status === "Записан" ? "Диагностика" : "Приём",
+                        status: lead.status === "Визит совершен" ? "completed" : "planned",
+                        doctor: lead.doctor_name,
+                        lead: lead // Keep original for modal
+                    };
+                });
+                setAppointments(mapped);
+            } catch (err) {
+                console.error("Error fetching doctor appointments:", err);
+            } finally {
+                setLoadingAppts(false);
+            }
+        };
+
+        fetchAppointments();
+
+        // Real-time subscription
+        const channel = supabase
+            .channel(`doctor_appts_${doctor.id}`)
+            .on("postgres_changes", { 
+                event: "*", 
+                schema: "public", 
+                table: "leads_crm",
+                filter: `doctor_name=eq.${doctor.name}`
+            }, () => fetchAppointments())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [doctor.name]);
 
     const [isApptModalOpen, setIsApptModalOpen] = useState(false);
     const [selectedAppt, setSelectedAppt] = useState<any>(null);
@@ -139,7 +188,12 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                             </div>
                         </div>
 
-                        <div className="border border-border rounded-[32px] overflow-hidden shadow-xl shadow-primary/5 bg-background h-[calc(100vh-320px)] min-h-[500px]">
+                        <div className="border border-border rounded-[32px] overflow-hidden shadow-xl shadow-primary/5 bg-background h-[calc(100vh-320px)] min-h-[500px] relative">
+                            {loadingAppts && (
+                                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-30 flex items-center justify-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            )}
                             {view === "week" ? (
                                 <WeekView 
                                     selectedDate={selectedDate}
