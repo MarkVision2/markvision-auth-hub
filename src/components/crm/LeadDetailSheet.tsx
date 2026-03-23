@@ -217,6 +217,10 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [amountValue, setAmountValue] = useState(0);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [tempAmount, setTempAmount] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState("");
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [tempPhone, setTempPhone] = useState("");
 
   const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
   const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
@@ -469,6 +473,32 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     }
   };
 
+  const handleNameSave = async () => {
+    if (!tempName.trim()) return;
+    setIsEditingName(false);
+    if (!lead) return;
+    const { error } = await (supabase as any).from("leads_crm").update({ name: tempName.trim() }).eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Имя обновлено", description: tempName.trim() });
+      onLeadUpdated?.();
+    }
+  };
+
+  const handlePhoneSave = async () => {
+    if (!tempPhone.trim()) return;
+    setIsEditingPhone(false);
+    if (!lead) return;
+    const { error } = await (supabase as any).from("leads_crm").update({ phone: tempPhone.trim() }).eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Телефон обновлен", description: tempPhone.trim() });
+      onLeadUpdated?.();
+    }
+  };
+
   const handleEndCall = (duration: number) => {
     setIsCallActive(false);
     setRightTab("calls");
@@ -535,10 +565,69 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 <AvatarFallback className="bg-primary/15 text-primary text-sm font-bold">{initials}</AvatarFallback>
               </Avatar>
               <div>
-                <SheetTitle className="text-base font-semibold text-foreground">{lead.name}</SheetTitle>
+                {isEditingName ? (
+                  <div className="flex items-center gap-1 mb-1">
+                    <Input
+                      value={tempName}
+                      onChange={(e) => setTempName(e.target.value)}
+                      className="h-8 w-64 text-sm font-semibold bg-secondary/50 border-primary/30"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleNameSave();
+                        if (e.key === "Escape") setIsEditingName(false);
+                      }}
+                    />
+                    <button onClick={handleNameSave} className="text-emerald-500 hover:text-emerald-600 p-1">
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => setIsEditingName(false)} className="text-muted-foreground hover:text-foreground p-1">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    className="flex items-center gap-2 group/name cursor-pointer"
+                    onClick={() => {
+                      setTempName(lead.name);
+                      setIsEditingName(true);
+                    }}
+                  >
+                    <SheetTitle className="text-base font-semibold text-foreground">{lead.name}</SheetTitle>
+                    <Edit2 className="h-3 w-3 opacity-0 group-hover/name:opacity-100 transition-opacity text-muted-foreground" />
+                  </div>
+                )}
+                
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">{lead.phone || "Нет телефона"}</span>
-                  {lead.phone && (
+                  {isEditingPhone ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={tempPhone}
+                        onChange={(e) => setTempPhone(e.target.value)}
+                        className="h-7 w-48 text-xs bg-secondary/50 border-primary/30"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handlePhoneSave();
+                          if (e.key === "Escape") setIsEditingPhone(false);
+                        }}
+                      />
+                      <button onClick={handlePhoneSave} className="text-emerald-500 hover:text-emerald-600 p-1">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="flex items-center gap-2 group/phone cursor-pointer"
+                      onClick={() => {
+                        setTempPhone(lead.phone || "");
+                        setIsEditingPhone(true);
+                      }}
+                    >
+                      <span className="text-xs text-muted-foreground">{lead.phone || "Нет телефона"}</span>
+                      <Edit2 className="h-2.5 w-2.5 opacity-0 group-hover/phone:opacity-100 transition-opacity text-muted-foreground" />
+                    </div>
+                  )}
+                  
+                  {!isEditingPhone && lead.phone && (
                     <button onClick={handleCopyPhone} className="text-muted-foreground/50 hover:text-muted-foreground">
                       <Copy className="h-3 w-3" />
                     </button>
