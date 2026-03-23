@@ -117,14 +117,18 @@ interface Props {
 const QuestionEditor = ({ 
     question, 
     onUpdate, 
-    onDelete 
+    onDelete,
+    readOnly = false
 }: { 
     question: Question; 
     onUpdate: (q: Question) => void; 
     onDelete: () => void;
+    readOnly?: boolean;
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editLabel, setEditLabel] = useState(question.label);
+
+    if (readOnly) return null;
 
     const handleSave = () => {
         onUpdate({ ...question, label: editLabel });
@@ -132,24 +136,42 @@ const QuestionEditor = ({
     };
 
     return (
-        <div className="group relative">
-            <div className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
-                <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full shadow-sm" onClick={() => setIsEditing(true)}>
-                    <Edit2 className="h-3 w-3" />
-                </Button>
-                <Button size="icon" variant="destructive" className="h-6 w-6 rounded-full shadow-sm" onClick={onDelete}>
-                    <X className="h-3 w-3" />
-                </Button>
-            </div>
-            {isEditing ? (
-                <div className="p-3 bg-secondary/20 rounded-xl space-y-2 border border-primary/20">
-                    <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-8 text-sm" />
+        <div className="flex flex-col gap-2 min-w-[100px]">
+            {!isEditing ? (
+                <div className="flex items-center gap-1 bg-secondary/20 p-1.5 rounded-xl border border-border/40">
+                    <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                        onClick={() => setIsEditing(true)}
+                        title="Редактировать вопрос"
+                    >
+                        <Edit2 className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors" 
+                        onClick={onDelete}
+                        title="Удалить вопрос"
+                    >
+                        <X className="h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            ) : (
+                <div className="p-2 bg-background border border-primary/30 rounded-xl shadow-lg animate-in zoom-in-95 duration-200 z-20">
+                    <Input 
+                        value={editLabel} 
+                        onChange={e => setEditLabel(e.target.value)} 
+                        className="h-8 text-[11px] font-bold mb-2 bg-secondary/10" 
+                        autoFocus
+                    />
                     <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setIsEditing(false)}>Отмена</Button>
-                        <Button size="sm" className="h-7 text-[10px]" onClick={handleSave}>Ок</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider" onClick={() => setIsEditing(false)}>Отмена</Button>
+                        <Button size="sm" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider bg-primary hover:bg-primary/90" onClick={handleSave}>Сохранить</Button>
                     </div>
                 </div>
-            ) : null}
+            )}
         </div>
     );
 };
