@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { 
   Calendar, Settings, Clock, User, Phone, Building, 
-  Briefcase, Save, Loader2, Activity 
+  Briefcase, Save, Loader2, Activity, CheckCircle2,
+  ExternalLink, MessageCircle, ShieldAlert
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,136 +118,283 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
         }));
     };
 
+    const todayAppointments = useMemo(() => {
+        const todayStr = format(new Date(), "yyyy-MM-dd");
+        return appointments.filter(a => format(a.date, "yyyy-MM-dd") === todayStr)
+            .sort((a, b) => a.time.localeCompare(b.time));
+    }, [appointments]);
+
+    const stats = useMemo(() => {
+        const total = todayAppointments.length;
+        const completed = todayAppointments.filter(a => a.status === "completed").length;
+        const remaining = total - completed;
+        return { total, completed, remaining };
+    }, [todayAppointments]);
+
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-3xl border border-border shadow-sm">
-                <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
-                        <span className="text-2xl font-bold text-primary">
+        <div className="flex flex-col gap-6 h-full">
+            {/* Top Stats & Profile Bar */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 shrink-0">
+                <div className="lg:col-span-2 flex items-center gap-4 bg-card p-5 rounded-[32px] border border-border shadow-sm">
+                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner">
+                        <span className="text-xl font-black text-primary">
                             {doctor.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                         </span>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">{doctor.name}</h2>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold uppercase tracking-wider">
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-black tracking-tight text-foreground truncate">{doctor.name}</h2>
+                        <div className="flex flex-wrap gap-2 mt-0.5">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
                                 {doctor.specialty}
                             </Badge>
-                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider border-border">
+                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-border/50 px-2 py-0.5">
                                 Кабинет {doctor.office || "—"}
                             </Badge>
                         </div>
                     </div>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden sm:block">
+                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-10">
+                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Calendar className="h-3.5 w-3.5" /> График
+                            </TabsTrigger>
+                            <TabsTrigger value="settings" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Settings className="h-3.5 w-3.5" /> Опции
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
-                    <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-xl h-11">
-                        <TabsTrigger value="schedule" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                            <Calendar className="h-4 w-4" /> Расписание
-                        </TabsTrigger>
-                        <TabsTrigger value="settings" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                            <Settings className="h-4 w-4" /> Настройки
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                <div className="bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all">
+                    <div>
+                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1">Всего сегодня</p>
+                        <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.total}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                        <Activity className="h-5 w-5" />
+                    </div>
+                </div>
+
+                <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all">
+                    <div>
+                        <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-1">Принято</p>
+                        <p className="text-2xl font-black text-emerald-600 tabular-nums tracking-tighter">{stats.completed}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                        <CheckCircle2 className="h-5 w-5" />
+                    </div>
+                </div>
             </div>
 
-            <div className="min-h-[600px]">
-                {activeTab === "schedule" ? (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <ScheduleHeader
-                            view={view as any}
-                            onViewChange={(v: any) => setView(v)}
-                            selectedDate={selectedDate}
-                            onDateChange={setSelectedDate}
-                            selectedDoctorId={doctor.id}
-                            onDoctorChange={() => {}}
-                            hideDoctorSelector={true}
-                        />
+            <div className="flex flex-col lg:flex-row gap-6 min-h-0 flex-1">
+                {/* Main Content Area */}
+                <div className={cn(
+                    "flex-1 min-w-0 space-y-4 transition-all duration-500",
+                    activeTab === "schedule" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 hidden"
+                )}>
+                    {activeTab === "schedule" && (
+                        <>
+                            <ScheduleHeader
+                                view={view as any}
+                                onViewChange={(v: any) => setView(v)}
+                                selectedDate={selectedDate}
+                                onDateChange={setSelectedDate}
+                                selectedDoctorId={doctor.id}
+                                onDoctorChange={() => {}}
+                                hideDoctorSelector={true}
+                            />
 
-                        <div className="border border-border rounded-[32px] overflow-hidden shadow-xl shadow-primary/5 bg-background h-[calc(100vh-320px)] min-h-[500px] relative">
-                            {loadingAppts && (
-                                <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-30 flex items-center justify-center">
-                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <div className="border border-border/40 rounded-[40px] overflow-hidden shadow-2xl shadow-primary/5 bg-background h-[calc(100vh-340px)] min-h-[450px] relative ring-1 ring-border/5">
+                                {loadingAppts && (
+                                    <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-30 flex items-center justify-center">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Загрузка данных...</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {view === "week" ? (
+                                    <WeekView 
+                                        selectedDate={selectedDate}
+                                        doctorId={doctor.userId || doctor.id}
+                                        appointments={appointments}
+                                        onDateSelect={setSelectedDate}
+                                        onViewChange={(v: any) => v !== 'month' && setView(v)}
+                                        onAddAppointment={() => {}} 
+                                        onEditAppointment={(appt) => {
+                                            setSelectedAppt(appt);
+                                            setIsApptModalOpen(true);
+                                        }}
+                                    />
+                                ) : (
+                                    <MonthView 
+                                        selectedDate={selectedDate}
+                                        doctorId={doctor.userId || doctor.id}
+                                        appointments={appointments}
+                                        onDateSelect={setSelectedDate}
+                                    />
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Sidebar: Today's Focus */}
+                {activeTab === "schedule" && (
+                    <div className="w-full lg:w-[360px] flex flex-col gap-4 animate-in slide-in-from-right-4 duration-500">
+                        <div className="bg-card border border-border/60 rounded-[40px] p-6 shadow-sm flex flex-col h-[calc(100vh-340px)] min-h-[450px]">
+                            <div className="flex items-center justify-between mb-6 shrink-0">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                    <h3 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Пациенты сегодня</h3>
                                 </div>
-                            )}
-                            {view === "week" ? (
-                                <WeekView 
-                                    selectedDate={selectedDate}
-                                    doctorId={doctor.userId || doctor.id}
-                                    appointments={appointments}
-                                    onDateSelect={setSelectedDate}
-                                    onViewChange={(v: any) => v !== 'month' && setView(v)}
-                                    onAddAppointment={() => {}} // Врач не добавляет сам?
-                                    onEditAppointment={(appt) => {
-                                        setSelectedAppt(appt);
-                                        setIsApptModalOpen(true);
-                                    }}
-                                />
-                            ) : (
-                                <MonthView 
-                                    selectedDate={selectedDate}
-                                    doctorId={doctor.userId || doctor.id}
-                                    appointments={appointments}
-                                    onDateSelect={setSelectedDate}
-                                />
-                            )}
+                                <Badge variant="secondary" className="bg-primary/5 text-primary text-[10px] font-black border-none">
+                                    {stats.remaining} ОСТАЛОСЬ
+                                </Badge>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-3">
+                                {todayAppointments.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-40">
+                                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                            <User className="h-8 w-8" />
+                                        </div>
+                                        <p className="text-xs font-bold text-muted-foreground">На сегодня записей нет</p>
+                                    </div>
+                                ) : (
+                                    todayAppointments.map((appt, i) => {
+                                        const isNext = appt.status === "planned" && 
+                                            (!todayAppointments[i-1] || todayAppointments[i-1].status === "completed");
+                                        
+                                        return (
+                                            <div 
+                                                key={appt.id} 
+                                                className={cn(
+                                                    "group p-4 rounded-3xl border transition-all duration-300 relative overflow-hidden",
+                                                    appt.status === "completed" 
+                                                        ? "bg-secondary/10 border-border/30 opacity-60 grayscale-[0.5]" 
+                                                        : isNext 
+                                                            ? "bg-primary/[0.03] border-primary/30 ring-1 ring-primary/20 shadow-lg shadow-primary/5" 
+                                                            : "bg-background border-border/50 hover:border-primary/30 hover:shadow-md"
+                                                )}
+                                            >
+                                                {isNext && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
+                                                
+                                                <div className="flex items-start justify-between gap-3 relative z-10">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className={cn(
+                                                                "text-[10px] font-black tabular-nums tracking-tighter px-1.5 py-0.5 rounded-md",
+                                                                appt.status === "completed" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
+                                                            )}>
+                                                                {appt.time}
+                                                            </span>
+                                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest truncate">{appt.type}</span>
+                                                        </div>
+                                                        <h4 className="text-sm font-black text-foreground group-hover:text-primary transition-colors truncate">
+                                                            {appt.patient}
+                                                        </h4>
+                                                        <p className="text-[10px] font-medium text-muted-foreground mt-0.5 truncate">{appt.service}</p>
+                                                    </div>
+                                                    
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button 
+                                                            size="icon" 
+                                                            variant="ghost" 
+                                                            className="h-8 w-8 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
+                                                            onClick={() => {
+                                                                setSelectedAppt(appt);
+                                                                setIsApptModalOpen(true);
+                                                            }}
+                                                        >
+                                                            <ExternalLink className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            size="icon" 
+                                                            variant="ghost" 
+                                                            className="h-8 w-8 rounded-xl text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all shadow-sm"
+                                                            onClick={() => window.open(`https://wa.me/${appt.phone.replace(/\D/g,'')}`, '_blank')}
+                                                        >
+                                                            <MessageCircle className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+
+                            <Button 
+                                className="w-full mt-4 h-12 rounded-2xl bg-secondary/50 hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest gap-2 shrink-0 border border-border/40"
+                                onClick={() => setActiveTab("settings")}
+                            >
+                                <Settings className="h-4 w-4" /> Управление графиком
+                            </Button>
                         </div>
                     </div>
-                ) : (
-                    <div className="max-w-4xl animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="bg-card border border-border rounded-[32px] p-8 shadow-sm">
+                )}
+
+                {/* Settings Area */}
+                {activeTab === "settings" && (
+                    <div className="flex-1 max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-500">
+                        <div className="bg-card border border-border/60 rounded-[40px] p-8 shadow-sm">
                             <form onSubmit={handleSaveProfile} className="space-y-8">
                                 <div className="grid gap-8 md:grid-cols-2">
                                     <div className="space-y-6">
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                                <User className="h-5 w-5 text-primary" /> Личные данные
+                                            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                                    <User className="h-4 w-4" />
+                                                </div>
+                                                Личные данные
                                             </h3>
                                             <div className="space-y-2">
-                                                <Label htmlFor="name" className="text-sm font-semibold ml-1">ФИО</Label>
+                                                <Label htmlFor="name" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">ФИО</Label>
                                                 <Input 
                                                     id="name"
                                                     value={doctor.name}
                                                     onChange={e => setDoctor({...doctor, name: e.target.value})}
-                                                    className="h-11 rounded-xl bg-secondary/20 border-border/50 focus:bg-background transition-all"
+                                                    className="h-12 rounded-2xl bg-secondary/20 border-border/50 focus:bg-background transition-all font-bold"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label htmlFor="phone" className="text-sm font-semibold ml-1">Телефон</Label>
+                                                <Label htmlFor="phone" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">Телефон</Label>
                                                 <div className="relative">
-                                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                     <Input 
                                                         id="phone"
                                                         value={doctor.phone}
                                                         onChange={e => setDoctor({...doctor, phone: e.target.value})}
-                                                        className="pl-10 h-11 rounded-xl bg-secondary/20 border-border/50 focus:bg-background transition-all"
+                                                        className="pl-11 h-12 rounded-2xl bg-secondary/20 border-border/50 focus:bg-background transition-all font-bold"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                                <Building className="h-5 w-5 text-primary" /> Профиль в клинике
+                                        <div className="space-y-4 pt-4">
+                                            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                                    <Building className="h-4 w-4" />
+                                                </div>
+                                                Профиль в клинике
                                             </h3>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="specialty" className="text-sm font-semibold ml-1">Специальность</Label>
+                                                    <Label htmlFor="specialty" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">Специальность</Label>
                                                     <Input 
                                                         id="specialty"
                                                         value={doctor.specialty}
                                                         onChange={e => setDoctor({...doctor, specialty: e.target.value})}
-                                                        className="h-11 rounded-xl bg-secondary/20 border-border/50"
+                                                        className="h-12 rounded-2xl bg-secondary/20 border-border/50 font-bold"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label htmlFor="office" className="text-sm font-semibold ml-1">Кабинет</Label>
+                                                    <Label htmlFor="office" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">Кабинет</Label>
                                                     <Input 
                                                         id="office"
                                                         value={doctor.office}
                                                         onChange={e => setDoctor({...doctor, office: e.target.value})}
-                                                        className="h-11 rounded-xl bg-secondary/20 border-border/50"
+                                                        className="h-12 rounded-2xl bg-secondary/20 border-border/50 font-bold"
                                                     />
                                                 </div>
                                             </div>
@@ -255,11 +403,14 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
                                     <div className="space-y-6">
                                         <div className="space-y-4">
-                                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                                <Clock className="h-5 w-5 text-primary" /> Конструктор графика
+                                            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                                    <Clock className="h-4 w-4" />
+                                                </div>
+                                                Конструктор графика
                                             </h3>
-                                            <div className="space-y-4 rounded-2xl border border-border p-6 bg-secondary/5">
-                                                <Label className="text-sm font-bold block mb-2">Рабочие дни (1 час на прием)</Label>
+                                            <div className="space-y-4 rounded-3xl border border-border/60 p-6 bg-secondary/10">
+                                                <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Рабочие дни (1 час на прием)</Label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {daysOfWeek.map(day => (
                                                         <button
@@ -267,27 +418,27 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                                             type="button"
                                                             onClick={() => handleToggleDay(day)}
                                                             className={cn(
-                                                                "h-10 w-11 rounded-xl text-xs font-bold border transition-all duration-200",
+                                                                "h-10 w-11 rounded-xl text-[10px] font-black border transition-all duration-300",
                                                                 doctor.workingDays?.includes(day)
-                                                                    ? "bg-primary text-white border-primary shadow-md shadow-primary/20 scale-105"
-                                                                    : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                                                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-110"
+                                                                    : "bg-background border-border/60 text-muted-foreground/60 hover:border-primary/50"
                                                             )}
                                                         >
                                                             {day}
                                                         </button>
                                                     ))}
                                                 </div>
-                                                <div className="space-y-2 pt-4 border-t border-border/50">
-                                                    <Label htmlFor="hours" className="text-sm font-semibold ml-1">Часы приема</Label>
+                                                <div className="space-y-2 pt-6 mt-4 border-t border-border/40">
+                                                    <Label htmlFor="hours" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">Часы приема</Label>
                                                     <Input 
                                                         id="hours"
                                                         placeholder="09:00 - 18:00"
                                                         value={doctor.workingHours}
                                                         onChange={e => setDoctor({...doctor, workingHours: e.target.value})}
-                                                        className="h-11 rounded-xl bg-background/50"
+                                                        className="h-12 rounded-2xl bg-background/50 font-bold"
                                                     />
-                                                    <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                                        * Интервал записи фиксирован: 1 час
+                                                    <p className="text-[9px] font-bold text-muted-foreground/60 mt-2 italic flex items-center gap-1">
+                                                        <ShieldAlert className="h-3 w-3" /> Интервал записи фиксирован: 1 час
                                                     </p>
                                                 </div>
                                             </div>
@@ -295,14 +446,14 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end pt-4 border-t border-border/50">
+                                <div className="flex justify-end pt-6 border-t border-border/40">
                                     <Button 
                                         type="submit" 
                                         disabled={isSaving}
-                                        className="h-12 px-8 rounded-xl shadow-lg shadow-primary/20 gap-2 font-bold uppercase tracking-wider text-xs"
+                                        className="h-14 px-10 rounded-2xl shadow-xl shadow-primary/20 gap-3 font-black uppercase tracking-widest text-[11px] bg-primary hover:scale-[1.02] transition-all"
                                     >
                                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                        Сохранить изменения
+                                        Сохранить профиль
                                     </Button>
                                 </div>
                             </form>
