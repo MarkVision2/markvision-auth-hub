@@ -1213,6 +1213,13 @@ export type Database = {
           status: string | null
           updated_at: string | null
           utm_campaign: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_content: string | null
+          utm_term: string | null
+          scheduled_at: string | null
+          doctor_name: string | null
+          office_name: string | null
         }
         Insert: {
           ai_score?: number | null
@@ -1228,6 +1235,13 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
+          scheduled_at?: string | null
+          doctor_name?: string | null
+          office_name?: string | null
         }
         Update: {
           ai_score?: number | null
@@ -1243,6 +1257,13 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
+          scheduled_at?: string | null
+          doctor_name?: string | null
+          office_name?: string | null
         }
         Relationships: [
           {
