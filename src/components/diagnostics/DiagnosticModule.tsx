@@ -70,12 +70,35 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
         try {
             // Mapping statuses to CRM stages
             let newStatus = lead.status;
+            let pipeline = (lead as any).pipeline || "main";
+
             if (adminData.paymentStatus === "pending") newStatus = "Счет выставлен";
             if (adminData.paymentStatus === "paid") newStatus = "Записан";
             if (adminData.paymentStatus === "declined") newStatus = "Отказ";
 
+            // Doctor decisions override or extend
+            if (doctorData) {
+                if (doctorData.readiness === "not_ready") {
+                    newStatus = "Отказ";
+                    pipeline = "doctor";
+                } else if (doctorData.readiness === "thinking") {
+                    newStatus = "Думает";
+                    pipeline = "doctor";
+                } else if (doctorData.readiness === "ready") {
+                    // When doctor marks as ready, it usually means "Treatment Started" or similar
+                    // But maybe they still need to complete the prescription.
+                }
+            }
+
+            // Prescription confirmation could also trigger "Treatment Started"
+            if (prescriptionData && prescriptionData.confirmed) {
+                newStatus = "Лечение начато";
+                pipeline = "doctor";
+            }
+
             const updateData: any = {
                 status: newStatus,
+                pipeline: pipeline,
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
                 doctor_name: adminData.bookingDoctor || lead.doctor_name,
             };
@@ -91,6 +114,11 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
             if (adminData.paymentStatus === "declined" && adminData.refusalReason) {
                 updateData.ai_summary = (lead.ai_summary || "") + `\n[Отказ от предоплаты: ${adminData.refusalReason}]`;
+            }
+
+            if (doctorData?.readiness === "not_ready" && doctorData.refusalReason) {
+                updateData.refusal_reason = doctorData.refusalReason;
+                updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${doctorData.refusalReason}]`;
             }
 
             const { error } = await (supabase as any)

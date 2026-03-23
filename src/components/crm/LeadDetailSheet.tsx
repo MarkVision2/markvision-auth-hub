@@ -23,7 +23,7 @@ import {
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Globe, Hash, Loader2, Check, CheckCheck, Trash2, Copy, Sparkles,
   Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
-  Stethoscope, Edit2
+  Stethoscope, Edit2, Ban
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,9 +56,13 @@ interface CrmNote {
   created_at: string;
 }
 
-const STAGES = [
+const MAIN_STAGES = [
   "Новая заявка", "Без ответа", "В работе", "Счет выставлен",
   "Записан", "Визит совершен", "Оплачен", "Отказ",
+];
+
+const DOCTOR_STAGES = [
+  "Лечение начато", "Думает", "Отказ",
 ];
 
 const stageColorMap: Record<string, string> = {
@@ -69,7 +73,8 @@ const stageColorMap: Record<string, string> = {
   "Записан": "bg-primary/15 text-primary border-primary/20",
   "Визит совершен": "bg-[hsl(var(--status-good)/0.15)] text-[hsl(var(--status-good))] border-[hsl(var(--status-good)/0.2)]",
   "Оплачен": "bg-[hsl(var(--status-good)/0.15)] text-[hsl(var(--status-good))] border-[hsl(var(--status-good)/0.2)]",
-  "Отказ": "bg-[hsl(var(--status-critical)/0.15)] text-[hsl(var(--status-critical))] border-[hsl(var(--status-critical)/0.2)]",
+  "Лечение начато": "bg-[hsl(var(--status-good)/0.15)] text-[hsl(var(--status-good))] border-[hsl(var(--status-good)/0.2)]",
+  "Думает": "bg-[hsl(var(--status-warning)/0.15)] text-[hsl(var(--status-warning))] border-[hsl(var(--status-warning)/0.2)]",
 };
 
 function getScoreLabel(score: number) {
@@ -193,6 +198,7 @@ function AiCallResultCard({ record }: { record: CallRecord }) {
 export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdated, onTaskGenerated }: LeadDetailSheetProps) {
   const { isSuperadmin } = useRole();
   const [stage, setStage] = useState("");
+  const [pipeline, setPipeline] = useState("main");
   const [aiMode, setAiMode] = useState(true);
   const [message, setMessage] = useState("");
   const [noteText, setNoteText] = useState("");
@@ -305,7 +311,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   useEffect(() => {
     if (lead && open) {
-      setStage(lead.status || "Новая заявка");
+      setPipeline(lead.pipeline || "main");
+      setStage(lead.status || (lead.pipeline === "doctor" ? "Лечение начато" : "Новая заявка"));
       fetchChatMessages(lead.id);
       fetchNotes(lead.id);
       setCallHistory([]);
@@ -380,7 +387,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as any).from("leads_crm").update({ status: newStage }).eq("id", lead.id);
+    const { error } = await (supabase as any).from("leads_crm").update({ status: newStage, pipeline }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -797,11 +804,27 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
             </div>
 
             <div className="px-5 py-3 border-b border-border">
+              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Воронка</label>
+              <Tabs value={pipeline} onValueChange={async (v) => {
+                setPipeline(v);
+                const defaultStage = v === "doctor" ? "Лечение начато" : "Новая заявка";
+                setStage(defaultStage);
+                await (supabase as any).from("leads_crm").update({ pipeline: v, status: defaultStage }).eq("id", lead.id);
+                onLeadUpdated?.();
+              }} className="mt-1.5">
+                <TabsList className="h-8 bg-secondary/50 w-full">
+                  <TabsTrigger value="main" className="text-[10px] flex-1">Основная</TabsTrigger>
+                  <TabsTrigger value="doctor" className="text-[10px] flex-1">Врача</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            <div className="px-5 py-3 border-b border-border">
               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Этап воронки</label>
               <Select value={stage} onValueChange={handleStageChange}>
                 <SelectTrigger className="mt-1.5 bg-secondary/50 border-border text-sm h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STAGES.map((s) => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}
+                  {(pipeline === "doctor" ? DOCTOR_STAGES : MAIN_STAGES).map((s) => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -854,6 +877,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
                   { icon: User, label: "Врач", value: lead.doctor_name || "—" },
                   { icon: MapPin, label: "Кабинет", value: lead.office_name || "—" },
+                  { icon: Ban, label: "Причина отказа", value: (lead as any).refusal_reason || "—" },
                   { icon: Clock, label: "Создан", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "—" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between py-1.5 group">

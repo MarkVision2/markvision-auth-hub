@@ -2,11 +2,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Loader2, Zap, Bell, MessageCircle, CreditCard, Calendar,
-  MapPin, Check, Ban, Phone, DollarSign, Globe,
-  ChevronDown, TrendingUp, Trash2, Pencil
-} from "lucide-react";
+import { MessageCircle, CreditCard, Calendar, MapPin, Check, Ban, Phone, DollarSign, Globe, ChevronDown, TrendingUp, Trash2, Pencil, Layout, Stethoscope } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,10 +10,12 @@ import { toast } from "@/hooks/use-toast";
 import LeadDetailSheet from "./LeadDetailSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
 } from "@/components/ui/tooltip";
-import { loadStages, saveStageLabel, type CrmStage } from "./crm-config";
+import { loadStages, saveStageLabel, type CrmStage, PIPELINES } from "./crm-config";
+import { Loader2 } from "lucide-react";
 
 export interface Lead {
   id: string;
@@ -38,6 +36,7 @@ export interface Lead {
   utm_content?: string | null;
   utm_term?: string | null;
   project_id?: string | null;
+  pipeline?: string | null;
 }
 
 const accentTextMap: Record<string, string> = {
@@ -194,7 +193,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
 export default function KanbanBoard() {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
-  const [stages, setStages] = useState<CrmStage[]>(loadStages(active.id));
+  const [stages, setStages] = useState<CrmStage[]>([]);
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -202,10 +201,11 @@ export default function KanbanBoard() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
+  const [activePipeline, setActivePipeline] = useState<string>("main");
 
   useEffect(() => {
-    setStages(loadStages(active.id));
-  }, [active.id]);
+    setStages(loadStages(active.id, activePipeline));
+  }, [active.id, activePipeline]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -281,7 +281,7 @@ export default function KanbanBoard() {
     const oldStatus = lead?.status || "Новая заявка";
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     const { error } = await (supabase as any)
-      .from("leads_crm").update({ status: newStatus }).eq("id", leadId);
+      .from("leads_crm").update({ status: newStatus, pipeline: activePipeline }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       fetchLeads();
@@ -331,7 +331,7 @@ export default function KanbanBoard() {
   const handleSaveEdit = (e: React.FormEvent | React.MouseEvent, stageKey: string) => {
     e.stopPropagation();
     if (!editValue.trim()) return;
-    saveStageLabel(active.id, stageKey, editValue.trim());
+    saveStageLabel(active.id, stageKey, editValue.trim(), activePipeline);
     setStages(prev => prev.map(s => s.key === stageKey ? { ...s, label: editValue.trim() } : s));
     setEditingStage(null);
     toast({ title: "Сохранено", description: "Название этапа обновлено" });
@@ -354,12 +354,21 @@ export default function KanbanBoard() {
   const leadsByStatus = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     for (const stage of stages) map[stage.key] = [];
-    for (const lead of leads) {
-      const key = lead.status || "Новая заявка";
-      (map[key] ?? map["Новая заявка"]).push(lead);
+    const filteredLeads = leads.filter(l => {
+        const p = l.pipeline || "main";
+        return p === activePipeline;
+    });
+    for (const lead of filteredLeads) {
+      const key = lead.status || (activePipeline === "main" ? "Новая заявка" : "Лечение начато");
+      if (map[key]) {
+        map[key].push(lead);
+      } else {
+        // Если статус не совпадает с текущими этапами, игнорируем или кидаем в первый
+        // map[stages[0].key].push(lead);
+      }
     }
     return map;
-  }, [leads, stages]);
+  }, [leads, stages, activePipeline]);
 
   const amountByStatus = useMemo(() => {
     const map: Record<string, number> = {};
@@ -381,45 +390,62 @@ export default function KanbanBoard() {
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
         {/* Summary bar */}
-        <div className="flex items-center gap-4 mb-4 px-1 shrink-0">
-        <div className="flex items-center gap-2 text-sm">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <TrendingUp className="h-4 w-4 text-primary" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-1 shrink-0">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-sm">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Лидов</p>
+                <p className="text-sm font-bold text-foreground">{leads.length}</p>
+              </div>
+            </div>
+            <div className="h-8 w-px bg-border hidden md:block" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Сумма</p>
+              <p className="text-sm font-bold text-foreground tabular-nums">{fmt(totalAmount)} ₸</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Воронка</p>
-            <p className="text-sm font-bold text-foreground">{leads.length} <span className="text-muted-foreground font-normal text-xs">лидов</span></p>
+
+          <div className="flex items-center gap-4">
+            <Tabs value={activePipeline} onValueChange={setActivePipeline} className="w-auto">
+              <TabsList className="bg-secondary/50 border border-border h-9 p-1 rounded-xl">
+                <TabsTrigger 
+                  value="main" 
+                  className="rounded-lg px-4 py-1.5 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all gap-2"
+                >
+                  <Layout className="h-3.5 w-3.5" />
+                  Основная
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="doctor" 
+                  className="rounded-lg px-4 py-1.5 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all gap-2"
+                >
+                  <Stethoscope className="h-3.5 w-3.5" />
+                  Воронка врача
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <div className="hidden lg:flex items-center gap-1 ml-4 bg-background/50 p-1.5 rounded-xl border border-border/40">
+              {stages.map(s => {
+                const count = (leadsByStatus[s.key] || []).length;
+                const pct = leads.length ? (count / leads.length) * 100 : 0;
+                return (
+                  <Tooltip key={s.key}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center gap-0.5 px-0.5">
+                        <div className={`w-3 rounded-full ${s.dotClass} opacity-80`} style={{ height: Math.max(4, pct * 0.4) }} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-[10px] font-bold">{s.label}: {count}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
           </div>
         </div>
-        <div className="h-8 w-px bg-border" />
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Сумма сделок</p>
-          <p className="text-sm font-bold text-foreground tabular-nums">{fmt(totalAmount)} ₸</p>
-        </div>
-        <div className="h-8 w-px bg-border" />
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Средний скор</p>
-          <p className="text-sm font-bold text-foreground tabular-nums">{avgScore}%</p>
-        </div>
-        <div className="flex-1" />
-        <div className="hidden lg:flex items-center gap-1">
-          {stages.map(s => {
-            const count = (leadsByStatus[s.key] || []).length;
-            const pct = leads.length ? (count / leads.length) * 100 : 0;
-            return (
-              <Tooltip key={s.key}>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <div className={`w-6 rounded-sm ${s.dotClass}`} style={{ height: Math.max(4, pct * 0.4) }} />
-                    <span className="text-[8px] text-muted-foreground tabular-nums">{count}</span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{s.label}: {count}</TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Kanban with DnD */}
       <DragDropContext onDragEnd={onDragEnd}>

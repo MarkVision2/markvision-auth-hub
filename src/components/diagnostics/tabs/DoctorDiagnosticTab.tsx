@@ -10,7 +10,17 @@ import {
 import { Lead } from "../../crm/KanbanBoard";
 import { AdminFormData } from "./AdminDiagnosticTab";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+const REFUSAL_REASONS = [
+    "Дорого",
+    "Ушел в другую клинику",
+    "Сам передумал",
+    "Нет времени",
+    "Не понравился врач",
+    "Другое"
+];
 
 export interface DoctorFormData {
     // 1. Жалобы
@@ -34,7 +44,8 @@ export interface DoctorFormData {
     // 5. Итог
     conclusion: string;
     recommendedCourse: string;
-    readiness: "not_ready" | "thinking" | "ready";
+    readiness: "not_ready" | "thinking" | "ready" | "";
+    refusalReason?: string;
 }
 
 interface Props {
@@ -212,6 +223,25 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({ lead, adminData, data, on
                             <span className="text-xs opacity-70">Оформить лист назначения</span>
                         </Label>
                     </RadioGroup>
+
+                    {formData.readiness === "not_ready" && (
+                        <div className="pt-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                            <Label className="text-xs font-semibold text-rose-600 uppercase tracking-wider">Укажите причину отказа</Label>
+                            <Select 
+                                value={formData.refusalReason} 
+                                onValueChange={(val) => setFormData({...formData, refusalReason: val})}
+                            >
+                                <SelectTrigger className="h-12 bg-rose-50/50 border-rose-200">
+                                    <SelectValue placeholder="Выберите одну из причин..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {REFUSAL_REASONS.map(r => (
+                                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
 
                 {formData.readiness === "ready" && (

@@ -16,6 +16,7 @@ export interface PrescriptionFormData {
     startDate: string;
     doctorName: string;
     schedule: Array<{ date: string; time: string; procedure: string; room: string }>;
+    confirmed?: boolean;
 }
 
 interface Props {
@@ -42,7 +43,8 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
             { date: "2026-03-20", time: "10:00", procedure: "УВТ", room: "2" },
             { date: "2026-03-22", time: "10:00", procedure: "Массаж", room: "3" },
             { date: "2026-03-24", time: "10:00", procedure: "Осмотр врача", room: "1" },
-        ]
+        ],
+        confirmed: data?.confirmed || false,
     });
 
     useEffect(() => {
@@ -196,8 +198,20 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
             <div className="flex justify-end pt-4 mt-8 border-t border-border">
                 {/* PDF generation button will be disabled/handled in parent */}
                 <p className="text-xs text-muted-foreground mr-6 self-center">Не забудьте сохранить изменения перед генерацией PDF листа</p>
-                <div className="px-6 py-3 rounded-xl bg-secondary/30 text-sm font-semibold flex items-center gap-2 border border-secondary">
-                    Итого: {PACKAGES.find(p => p.id === formData.packageId)?.price || "0 ₸"}
+                <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 cursor-pointer hover:bg-emerald-500/10 transition-colors"
+                         onClick={() => setFormData({...formData, confirmed: !formData.confirmed})}>
+                        <div className={cn(
+                            "w-5 h-5 rounded border-2 flex items-center justify-center transition-all",
+                            formData.confirmed ? "bg-emerald-500 border-emerald-500" : "bg-background border-muted-foreground"
+                        )}>
+                            {formData.confirmed && <ShieldCheck className="h-3.5 w-3.5 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide select-none">Назначение подтверждено</span>
+                    </div>
+                    <div className="px-6 py-3 rounded-xl bg-secondary/30 text-sm font-semibold flex items-center gap-2 border border-secondary shrink-0">
+                        Итого: {PACKAGES.find(p => p.id === formData.packageId)?.price || "0 ₸"}
+                    </div>
                 </div>
             </div>
 
