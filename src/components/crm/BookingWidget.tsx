@@ -77,85 +77,95 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     };
 
     return (
-        <div className="space-y-6 w-full py-2">
-            {/* Header & Doctor Selection */}
-            <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
-                    <User className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ВРАЧА
+        <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                {/* Left Column: Doctor & Date */}
+                <div className="space-y-6">
+                    {/* Doctor Selection */}
+                    <div className="space-y-3">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                            <User className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ВРАЧА
+                        </div>
+                        <Select value={doctor} onValueChange={(v) => handleUpdate(v, undefined, "")}>
+                            <SelectTrigger className="h-12 bg-background border-border rounded-xl shadow-sm hover:border-primary/50 transition-all">
+                                <SelectValue placeholder="Выберите специалиста" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl border-border">
+                                {doctors.map(d => (
+                                    <SelectItem key={d.id} value={d.name} className="rounded-lg">
+                                        <div className="flex flex-col items-start translate-y-[-2px]">
+                                            <span className="font-bold text-sm">{d.name}</span>
+                                            <span className="text-[10px] text-muted-foreground">{d.specialty}</span>
+                                        </div>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Calendar Section */}
+                    <div className="space-y-3">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                            <Calendar className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ДАТУ
+                        </div>
+                        <div className="p-4 rounded-2xl bg-card border border-border/60 shadow-sm flex justify-center">
+                            <CalendarUI
+                                mode="single"
+                                selected={date}
+                                onSelect={(d) => handleUpdate(doctor, d, "")}
+                                disabled={isDayDisabled}
+                                className="rounded-xl border-none p-0"
+                            />
+                        </div>
+                    </div>
                 </div>
-                <div className="w-full">
-                    <Select value={doctor} onValueChange={(v) => {
-                        handleUpdate(v, undefined, "");
-                    }}>
-                        <SelectTrigger className="h-12 bg-background border-border rounded-xl shadow-sm hover:border-primary/50 transition-colors">
-                            <SelectValue placeholder="Выберите специалиста из списка" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-border">
-                            {doctors.map(d => (
-                                <SelectItem key={d.id} value={d.name} className="rounded-lg">
-                                    <div className="flex flex-col items-start">
-                                        <span className="font-bold">{d.name}</span>
-                                        <span className="text-[10px] text-muted-foreground">{d.specialty}</span>
-                                    </div>
-                                </SelectItem>
+
+                {/* Right Column: Time Slots & Confirmation */}
+                <div className="space-y-6">
+                    <div className={cn("space-y-4 transition-opacity duration-300", !date && "opacity-40 pointer-events-none")}>
+                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                            <Clock className="h-2.5 w-2.5" /> ДОСТУПНОЕ ВРЕМЯ
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {timeSlots.map(t => (
+                                <button
+                                    key={t}
+                                    onClick={() => handleUpdate(doctor, date, t)}
+                                    className={cn(
+                                        "h-10 text-[11px] font-bold rounded-xl border transition-all duration-200",
+                                        time === t
+                                            ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
+                                            : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                                    )}
+                                >
+                                    {t}
+                                </button>
                             ))}
-                        </SelectContent>
-                    </Select>
+                        </div>
+
+                        {!date && (
+                            <p className="text-[10px] text-muted-foreground text-center italic py-4">
+                                Выберите дату на календаре слева
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Confirmation Alert */}
+                    {date && time && doctor && (
+                        <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-4 animate-in fade-in zoom-in-95 duration-300 ring-1 ring-emerald-500/20">
+                            <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-500/20">
+                                <Check className="h-5 w-5" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <p className="text-xs font-bold text-foreground leading-tight">Записан к врачу: {doctor}</p>
+                                <p className="text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md inline-block mt-1">
+                                    {format(date, "dd.MM.yyyy")} в {time}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
-
-                <div className="flex flex-col items-center gap-2">
-                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
-                        <Calendar className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ДАТУ
-                    </div>
-                    <div className="p-3 rounded-2xl bg-card border border-border shadow-sm">
-                        <CalendarUI
-                            mode="single"
-                            selected={date}
-                            onSelect={(d) => handleUpdate(doctor, d, "")}
-                            disabled={isDayDisabled}
-                            className="rounded-xl border-none p-0 scale-95 origin-top"
-                        />
-                    </div>
-                </div>
-
-            {/* Time Slots Section */}
-            <div className={cn("space-y-3 text-center transition-opacity", !date && "opacity-50 pointer-events-none")}>
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
-                    <Clock className="h-2.5 w-2.5" /> ДОСТУПНОЕ ВРЕМЯ
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                    {timeSlots.map(t => (
-                        <button
-                            key={t}
-                            onClick={() => handleUpdate(doctor, date, t)}
-                            className={cn(
-                                "h-9 text-[11px] font-bold rounded-lg border transition-all duration-200",
-                                time === t
-                                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-105"
-                                    : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
-                            )}
-                        >
-                            {t}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Confirmation Alert */}
-            {date && time && doctor && (
-                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
-                        <Check className="h-4 w-4" />
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-foreground leading-tight">Записан: {doctor}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {format(date, "dd.MM.yyyy")} в {time}
-                        </p>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

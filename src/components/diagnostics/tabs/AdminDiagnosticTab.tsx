@@ -104,6 +104,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
         finalPhone: lead.phone || "",
     });
 
+    const [isBookingOpen, setIsBookingOpen] = useState(false);
+
     useEffect(() => {
         onChange(formData);
     }, [formData]);
@@ -359,20 +361,20 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                 </div>
                             </div>
 
-                            <Dialog>
+                            <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
                                 <DialogTrigger asChild>
                                     <Button size="lg" className="h-12 px-8 gap-3 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
                                         <Calendar className="h-5 w-5" />
                                         {formData.bookingDate && formData.bookingTime ? "Изменить запись" : "Запись на прием"}
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-[700px] p-0 border-none bg-background overflow-hidden rounded-[32px]">
+                                <DialogContent className="sm:max-w-[900px] p-0 border-none bg-background overflow-hidden rounded-[32px] shadow-2xl">
                                     <DialogHeader className="p-8 bg-primary/5 border-b border-primary/10">
                                         <DialogTitle className="text-2xl font-bold text-primary flex items-center gap-3">
                                             <Calendar className="h-6 w-6" /> Запись на прием
                                         </DialogTitle>
                                         <DialogDescription className="text-muted-foreground font-medium">
-                                            Выберите удобного врача, дату и свободное время из графиков врачей.
+                                            Выберите врача, дату и свободное время. Все изменения сохраняются автоматически.
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="p-8">
@@ -387,6 +389,15 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                                 bookingDoctor: booking.doctor
                                             })}
                                         />
+                                        
+                                        <div className="mt-8 pt-6 border-t border-border/50 flex justify-end">
+                                            <Button 
+                                                onClick={() => setIsBookingOpen(false)}
+                                                className="h-12 px-10 rounded-xl bg-primary hover:bg-primary/90 text-sm font-bold uppercase tracking-widest shadow-lg shadow-primary/10"
+                                            >
+                                                Подтвердить и закрыть
+                                            </Button>
+                                        </div>
                                     </div>
                                 </DialogContent>
                             </Dialog>
