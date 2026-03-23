@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   title: string;
@@ -125,23 +126,23 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
     }));
   };
 
+  const { user } = useAuth();
+
   useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
     const load = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data, error } = await (supabase as any).from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
-        if (error) throw error;
-        if (data) setProfile(data as any);
-      } catch (err) {
-        console.error("Sidebar profile load error:", err);
+      const { data, error } = await (supabase as any).from("profiles").select("full_name, avatar_url").eq("id", user.id).single();
+      if (cancelled) return;
+      if (error) {
+        console.warn("Sidebar profile load skipped:", error.message);
+        return;
       }
+      if (data) setProfile(data as any);
     };
     load();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { load(); });
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   const initials = profile.full_name
     ? profile.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()

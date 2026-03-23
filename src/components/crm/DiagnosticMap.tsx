@@ -226,7 +226,7 @@ export const DiagnosticMap: React.FC<DiagnosticMapProps> = ({ lead, open, onOpen
                 const [hours, minutes] = formData.bookingTime.split(":");
                 scheduledAt.setHours(parseInt(hours), parseInt(minutes));
 
-                const { error: leadError } = await (supabase as any).from("leads").update({
+                const { error: leadError } = await (supabase as any).from("leads_crm").update({
                     status: "Записан на диагностику",
                     scheduled_at: scheduledAt.toISOString(),
                 }).eq("id", lead.id);

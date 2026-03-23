@@ -86,7 +86,7 @@ export default function AiReportsPage() {
 
         let curQ = (supabase as any).from("daily_data").select("*").gte("date", curStart).lte("date", curEnd);
         let prevQ = (supabase as any).from("daily_data").select("*").gte("date", pStart).lte("date", pEnd);
-        let leadsQ = (supabase as any).from("leads").select("id, status, amount, ai_score, source, created_at").gte("created_at", curStart);
+        let leadsQ = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, source, created_at").gte("created_at", curStart);
         let channelsQ = (supabase as any).from("analytics_channels").select("*");
         let creativesQ = (supabase as any)
           .from("analytics_creatives")

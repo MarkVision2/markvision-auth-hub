@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Sun, Moon, Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -12,9 +13,10 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 interface DashboardLayoutProps {
   children: ReactNode;
   breadcrumb?: string;
+  noPadding?: boolean;
 }
 
-export default function DashboardLayout({ children, breadcrumb }: DashboardLayoutProps) {
+export default function DashboardLayout({ children, breadcrumb, noPadding }: DashboardLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isDoctor } = useRole();
   const { active } = useWorkspace();
@@ -72,7 +74,7 @@ export default function DashboardLayout({ children, breadcrumb }: DashboardLayou
 
         </header>
 
-        <main key={active.id} className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main key={active.id} className={cn("flex-1 overflow-y-auto", !noPadding && "p-4 md:p-6")}>
           {children}
         </main>
       </div>

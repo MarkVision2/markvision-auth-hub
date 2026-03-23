@@ -49,7 +49,7 @@ export default function DashboardSales() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      let query = (supabase as any).from("leads").select("*").order("created_at", { ascending: false });
+      let query = (supabase as any).from("leads_crm").select("*").order("created_at", { ascending: false });
       if (active.id !== HQ_ID) {
         query = query.eq("project_id", active.id);
       }

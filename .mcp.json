@@ -7,6 +7,10 @@
         "N8N_BASE_URL": "https://n8n.zapoinov.com",
         "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YzNhZTVmYi1hNzY2LTQ1MmItOTBkMC1mNDAyNWRmMDhlY2YiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY5MzQ1MjY5fQ.9AmpXYBswg4DWh8vvklOBKM6j-IbL3zy-HFdahtoKUQ"
       }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
     }
   }
 }

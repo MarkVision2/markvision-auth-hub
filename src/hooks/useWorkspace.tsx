@@ -42,34 +42,41 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   });
   const [projects, setProjects] = useState<Workspace[]>(loadCachedProjects);
 
-  const fetchProjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select("id, name")
-        .order("name");
+  const refreshProjects = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id, name")
+      .order("name");
 
-      if (error) throw error;
-
-      if (data) {
-        const mapped = data
-          .filter(p => p.id !== HQ_ID) // HQ is prepended separately
-          .map(p => ({
-            id: p.id,
-            name: p.name,
-            type: "client" as const,
-          }));
-        setProjects(mapped);
-        localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(mapped));
-      }
-    } catch (err) {
-      console.error("WorkspaceProvider: failed to fetch projects", err);
+    if (error) {
+      console.warn("WorkspaceProvider: projects fetch error:", error.message);
+      return;
     }
-  };
+
+    if (data) {
+      const mapped = data
+        .filter(p => p.id !== HQ_ID) // HQ is prepended separately
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          type: "client" as const,
+        }));
+      setProjects(mapped);
+      localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(mapped));
+    }
+  }, []);
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (!user) return;
+    let cancelled = false;
+    const run = async () => {
+      await refreshProjects();
+      // cancelled check prevents state updates after unmount via refreshProjects' setProjects
+      // but since refreshProjects uses setState, React handles unmounted updates gracefully
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [user, refreshProjects]);
 
   useEffect(() => {
     localStorage.setItem("activeProjectId", activeId);
@@ -99,7 +106,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      await fetchProjects();
+      await refreshProjects();
       if (data) {
         setActiveId(data.id);
         return data.id;
@@ -109,7 +116,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       console.error("Failed to create project:", err);
       return null;
     }
-  }, [user]);
+  }, [user, refreshProjects]);
 
   const workspaces = useMemo(() => [HQ, ...projects], [projects]);
   const active = useMemo(() => workspaces.find(w => w.id === activeId) || HQ, [workspaces, activeId]);

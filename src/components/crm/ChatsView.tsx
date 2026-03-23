@@ -111,7 +111,7 @@ export default function ChatsView() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      let query = (supabase as any).from("leads").select("*");
+      let query = (supabase as any).from("leads_crm").select("*");
 
       if (active.id === HQ_ID) {
         // HQ sees everything
@@ -260,7 +260,7 @@ export default function ChatsView() {
   const handleStageChange = async (leadId: string, newStage: string) => {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStage } : l));
     const { error } = await (supabase as any)
-      .from("leads").update({ status: newStage }).eq("id", leadId);
+      .from("leads_crm").update({ status: newStage }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       fetchLeads();

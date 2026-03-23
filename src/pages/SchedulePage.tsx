@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 
 const SchedulePage = () => {
     const { user } = useAuth();
@@ -34,7 +35,7 @@ const SchedulePage = () => {
         setIsLoading(true);
         try {
             const { data, error } = await supabase
-                .from("leads")
+                .from("leads_crm" as any)
                 .select("*")
                 .not("scheduled_at", "is", null);
 
@@ -86,8 +87,9 @@ const SchedulePage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-background overflow-hidden">
-            <ScheduleHeader 
+        <DashboardLayout breadcrumb="Сетка расписания" noPadding>
+            <div className="flex flex-col h-full bg-background overflow-hidden relative">
+                <ScheduleHeader 
                 view={view} 
                 onViewChange={setView}
                 selectedDate={selectedDate}
@@ -158,6 +160,7 @@ const SchedulePage = () => {
                 />
             </div>
         </div>
+    </DashboardLayout>
     );
 };
 
