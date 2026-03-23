@@ -9,7 +9,7 @@ import ClientDatabase from "@/components/crm/ClientDatabase";
 import Automations from "@/components/crm/Automations";
 import AddLeadSheet from "@/components/crm/AddLeadSheet";
 import TodayTasksPanel from "@/components/crm/TodayTasksPanel";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
 import { type AITask } from "@/components/crm/types";
 import {
@@ -52,6 +52,10 @@ export default function CrmSystem() {
   const [tasks, setTasks] = useState<AITask[]>([]);
 
   useEffect(() => {
+    if (active.id === HQ_ID) {
+      setLeads([]);
+      return;
+    }
     const load = async () => {
       try {
         let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");

@@ -114,7 +114,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                     <div 
                                         key={`${i}-${hour}`} 
                                         onClick={() => !appt && onAddAppointment(day, hourStr)}
-                                        className="h-[85px] border-r border-b border-border/50 relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
+                                        className="h-[85px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
                                     >
                                         {appt ? (
                                             <div 

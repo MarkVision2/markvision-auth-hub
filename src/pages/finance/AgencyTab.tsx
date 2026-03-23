@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -109,7 +109,7 @@ export default function AgencyTab() {
     const fetchData = useCallback(async () => {
         try {
             let clientsQuery = supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true);
-            if (active.id !== "hq") {
+            if (active.id !== HQ_ID) {
                 clientsQuery = clientsQuery.eq("project_id", active.id);
             }
             const { data: clients } = await clientsQuery;

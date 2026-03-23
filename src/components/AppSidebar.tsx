@@ -8,7 +8,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { useRole, AppRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import {
@@ -174,7 +174,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             <div className="flex-1 min-w-0 text-left">
               <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {active.id === "hq" ? "Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
+                {active.id === HQ_ID ? "Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
               </p>
             </div>
             {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" />}

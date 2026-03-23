@@ -50,7 +50,7 @@ export default function AiRopPage() {
             >
               <PhoneCall className="h-3.5 w-3.5" />
               Звонки
-              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-background/20 text-[10px] font-bold tabular-nums">{callsCount}</span>
+              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-bold tabular-nums">{callsCount}</span>
             </TabsTrigger>
             <TabsTrigger
               value="chats"
@@ -58,7 +58,7 @@ export default function AiRopPage() {
             >
               <MessageSquare className="h-3.5 w-3.5" />
               Чаты
-              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-background/20 text-[10px] font-bold tabular-nums">{chatsCount}</span>
+              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-bold tabular-nums">{chatsCount}</span>
             </TabsTrigger>
             <TabsTrigger
               value="rating"
@@ -66,7 +66,7 @@ export default function AiRopPage() {
             >
               <Trophy className="h-3.5 w-3.5" />
               Рейтинг
-              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-background/20 text-[10px] font-bold tabular-nums">{managersCount}</span>
+              <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-secondary text-[10px] font-bold tabular-nums">{managersCount}</span>
             </TabsTrigger>
           </TabsList>
 

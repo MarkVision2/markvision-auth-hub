@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download, MessageCircle, Instagram, Loader2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface ClientRow {
@@ -38,6 +38,11 @@ export default function ClientDatabase() {
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
+    if (active.id === HQ_ID) {
+      setClients([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("name, phone, source, amount, ai_score, status, updated_at, created_at");

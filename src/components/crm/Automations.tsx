@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Plus, Zap, MessageCircle, Clock, Bell, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface Automation {
@@ -46,7 +46,7 @@ export default function Automations() {
     try {
       let query = (supabase as any).from("crm_automations").select("*");
 
-      if (active.id === "hq") {
+      if (active.id === HQ_ID) {
         // HQ sees everything
       } else {
         query = query.eq("project_id", active.id);
@@ -73,7 +73,7 @@ export default function Automations() {
   const handleCreate = async () => {
     if (!form.trigger_value.trim()) { toast({ title: "Укажите значение триггера" }); return; }
     const { error } = await (supabase as any).from("crm_automations").insert({
-      project_id: active.id === "hq" ? null : active.id,
+      project_id: active.id === HQ_ID ? null : active.id,
       trigger_type: form.trigger_type,
       trigger_value: form.trigger_value.trim(),
       action_type: form.action_type,

@@ -5,7 +5,7 @@ import { ru } from "date-fns/locale";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -230,11 +230,11 @@ export default function RetentionLtvPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      let tasksQ = (supabase as any).from("retention_tasks").select("*, leads(name), retention_templates(name)");
+      let tasksQ = (supabase as any).from("retention_tasks").select("*, retention_templates(name)");
       let templatesQ = (supabase as any).from("retention_templates").select("*");
-      let leadsQ = (supabase as any).from("leads").select("id, name");
+      let leadsQ = (supabase as any).from("leads_crm").select("id, name");
 
-      if (active.id !== "hq") {
+      if (active.id !== HQ_ID) {
         tasksQ = tasksQ.eq("project_id", active.id);
         templatesQ = templatesQ.eq("project_id", active.id);
         leadsQ = leadsQ.eq("project_id", active.id);
@@ -250,6 +250,12 @@ export default function RetentionLtvPage() {
       if (templatesRes.error) throw templatesRes.error;
       if (leadsRes.error) throw leadsRes.error;
 
+      // Build lead name lookup from leadsRes
+      const leadNames: Record<string, string> = {};
+      for (const l of (leadsRes.data || [])) {
+        leadNames[l.id] = l.name;
+      }
+
       setTasks((tasksRes.data || []).map((r: any) => ({
         id: r.id,
         lead_id: r.lead_id,
@@ -258,7 +264,7 @@ export default function RetentionLtvPage() {
         promo_code: r.promo_code,
         status: r.status || "pending",
         sent_at: r.sent_at || null,
-        lead_name: r.leads?.name || "—",
+        lead_name: leadNames[r.lead_id] || "—",
         template_name: r.retention_templates?.name || "—",
       })));
       setTemplates((templatesRes.data || []).map((r: any) => ({
@@ -285,7 +291,7 @@ export default function RetentionLtvPage() {
       toast({ title: "Заполните все поля", variant: "destructive" });
       return;
     }
-    if (active.id === "hq") {
+    if (active.id === HQ_ID) {
       toast({ title: "Ошибка", description: "Выберите проект для планирования касания", variant: "destructive" });
       return;
     }
@@ -317,7 +323,7 @@ export default function RetentionLtvPage() {
       toast({ title: "Заполните название и промпт", variant: "destructive" });
       return;
     }
-    if (active.id === "hq") {
+    if (active.id === HQ_ID) {
       toast({ title: "Ошибка", description: "Выберите проект", variant: "destructive" });
       return;
     }

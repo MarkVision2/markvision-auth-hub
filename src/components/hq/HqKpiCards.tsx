@@ -164,7 +164,7 @@ export default function HqKpiCards({ metrics }: { metrics: AgencyMetrics | null 
         ) : (
           <button
             onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-4 py-1.5 rounded-xl border border-border transition-colors h-9 bg-card/50"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground px-4 py-1.5 rounded-xl border border-border transition-colors h-9 bg-card"
           >
             <Pencil className="h-3.5 w-3.5" /> Изменить цели
           </button>

@@ -51,7 +51,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         onClick={() => onDateSelect(day)}
                         className={cn(
                             "min-h-[120px] p-4 border-r border-b border-border transition-all cursor-pointer relative group",
-                            !isSameMonth(day, monthStart) ? "bg-secondary/30" : "bg-card hover:bg-secondary"
+                            !isSameMonth(day, monthStart) ? "bg-secondary/50" : "bg-card hover:bg-secondary"
                         )}
                     >
                         <div className="flex items-start justify-between">

@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
@@ -160,7 +160,7 @@ export default function DashboardTarget() {
         .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
         .order("client_name");
 
-      if (active.id === "hq") {
+      if (active.id === HQ_ID) {
         // MarkVision AI (HQ) sees everything
       } else {
         const { data: shared } = await (supabase as any)

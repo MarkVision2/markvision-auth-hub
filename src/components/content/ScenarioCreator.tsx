@@ -66,7 +66,7 @@ function ModernSelect({ label, value, onChange, options, icon: Icon }: {
                 {label}
             </Label>
             <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="h-12 bg-background/50 border-border/40 rounded-2xl font-bold text-sm focus:ring-primary/20">
+                <SelectTrigger className="h-12 bg-secondary border-border/40 rounded-2xl font-bold text-sm focus:ring-primary/20">
                     <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-border/40">
@@ -94,7 +94,7 @@ function ResultBlock({ title, content, icon: Icon }: { title: string; content?: 
                     <Copy className="h-3 w-3" /> Копировать
                 </button>
             </div>
-            <div className="p-6 bg-background/40 border border-border/40 rounded-[2rem] text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto custom-scrollbar font-medium">
+            <div className="p-6 bg-secondary border border-border/40 rounded-[2rem] text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto custom-scrollbar font-medium">
                 {content}
             </div>
         </div>
@@ -330,7 +330,7 @@ export default function ScenarioCreator() {
             {/* Mode Selection */}
             <CfSection className="space-y-6">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Выберите способ создания</Label>
-                <div className="flex bg-background/50 rounded-2xl p-1.5 border border-border/40 shadow-inner">
+                <div className="flex bg-secondary rounded-2xl p-1.5 border border-border/40 shadow-inner">
                     <button
                         onClick={() => setCreationMode("link")}
                         className={cn(
@@ -347,7 +347,7 @@ export default function ScenarioCreator() {
                             creationMode === "topic" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
-                        <Sparkles className="h-4 w-4" /> Творческая тема
+                        <Sparkles className="h-4 w-4" /> Создать сценарий
                     </button>
                 </div>
             </CfSection>
@@ -368,7 +368,7 @@ export default function ScenarioCreator() {
                                     value={linkUrl}
                                     onChange={(e) => setLinkUrl(e.target.value)}
                                     placeholder="Вставьте ссылку для анализа..."
-                                    className="h-14 bg-background/50 border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20"
+                                    className="h-14 bg-secondary border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-focus-within:scale-110 transition-transform">
                                     <Link className="h-4 w-4" />
@@ -390,7 +390,7 @@ export default function ScenarioCreator() {
                                     value={topic}
                                     onChange={(e) => setTopic(e.target.value)}
                                     placeholder="О чём будет ролик? Просто опишите идею своими словами..."
-                                    className="min-h-[160px] bg-background/50 border-border/40 text-sm font-bold rounded-[2rem] p-6 focus-visible:ring-primary/20 resize-none pr-20 shadow-inner"
+                                    className="min-h-[160px] bg-secondary border-border/40 text-sm font-bold rounded-[2rem] p-6 focus-visible:ring-primary/20 resize-none pr-20 shadow-inner"
                                 />
                                 <div className="absolute bottom-6 right-6 flex flex-col gap-3">
                                     <button
@@ -419,7 +419,7 @@ export default function ScenarioCreator() {
                                 <motion.div 
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="flex items-center gap-4 p-4 bg-background/60 border border-border/40 rounded-2xl shadow-sm"
+                                    className="flex items-center gap-4 p-4 bg-secondary border border-border/40 rounded-2xl shadow-sm"
                                 >
                                     <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <Play className="h-4 w-4 fill-primary" />
@@ -435,36 +435,40 @@ export default function ScenarioCreator() {
                     )}
                 </AnimatePresence>
 
-                {/* FORM GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
-                    <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
-                    <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
-                    <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
-                    <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
-                    <ModernSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
-                    <div className="space-y-2.5">
-                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                            <MessageSquare className="h-3 w-3 opacity-40" />
-                            Триггер-слово
-                        </Label>
-                        <Input
-                            value={trigger}
-                            onChange={(e) => setTrigger(e.target.value)}
-                            placeholder="Например: ГАЙД"
-                            className="h-12 bg-background/50 border-border/40 rounded-2xl font-bold text-sm focus-visible:ring-primary/20"
-                        />
-                    </div>
-                </div>
+                {/* FORM GRID — only for "Создать сценарий" mode */}
+                {creationMode === "topic" && (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
+                            <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
+                            <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
+                            <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
+                            <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
+                            <ModernSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
+                            <div className="space-y-2.5">
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+                                    <MessageSquare className="h-3 w-3 opacity-40" />
+                                    Триггер-слово
+                                </Label>
+                                <Input
+                                    value={trigger}
+                                    onChange={(e) => setTrigger(e.target.value)}
+                                    placeholder="Например: ГАЙД"
+                                    className="h-12 bg-secondary border-border/40 rounded-2xl font-bold text-sm focus-visible:ring-primary/20"
+                                />
+                            </div>
+                        </div>
 
-                <CfSection className="space-y-4">
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Доп. пожелания / Референсы</Label>
-                    <Textarea
-                        value={refs}
-                        onChange={(e) => setRefs(e.target.value)}
-                        placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
-                        className="min-h-[100px] bg-background/50 border-border/40 text-sm font-bold rounded-2xl p-6 focus-visible:ring-primary/20 resize-none shadow-inner"
-                    />
-                </CfSection>
+                        <CfSection className="space-y-4">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Доп. пожелания / Референсы</Label>
+                            <Textarea
+                                value={refs}
+                                onChange={(e) => setRefs(e.target.value)}
+                                placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
+                                className="min-h-[100px] bg-secondary border-border/40 text-sm font-bold rounded-2xl p-6 focus-visible:ring-primary/20 resize-none shadow-inner"
+                            />
+                        </CfSection>
+                    </>
+                )}
             </div>
 
             {/* CTA BUTTONS */}
@@ -496,7 +500,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="rounded-[3rem] border border-border/40 bg-card/50 backdrop-blur-2xl p-16 text-center space-y-10 shadow-2xl relative overflow-hidden"
+                        className="rounded-[3rem] border border-border/40 bg-card backdrop-blur-2xl p-16 text-center space-y-10 shadow-2xl relative overflow-hidden"
                     >
                          <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                             <motion.div 
@@ -543,7 +547,7 @@ export default function ScenarioCreator() {
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-[3rem] border border-primary/30 bg-card/50 backdrop-blur-xl overflow-hidden shadow-2xl"
+                        className="rounded-[3rem] border border-primary/30 bg-card backdrop-blur-xl overflow-hidden shadow-2xl"
                     >
                         {/* Result header */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-10 py-8 border-b border-border/40 bg-primary/5 gap-4">

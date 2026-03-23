@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 
 // ─── Constants ───
 const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
@@ -281,7 +281,7 @@ export function CompetitorAnalysis() {
 
             const { data, error } = await (supabase as any)
                 .from("competitors")
-                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: active.id === "hq" ? null : active.id })
+                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: active.id === HQ_ID ? null : active.id })
                 .select()
                 .single();
             if (error) throw error;
@@ -307,7 +307,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(N8N_SCRAPE_HEAVY, {
                     username,
                     competitor_id: data.id,
-                    project_id: active.id === "hq" ? null : active.id,
+                    project_id: active.id === HQ_ID ? null : active.id,
                 });
                 toast({ title: "🚀 Сканирование запущено!", description: "Посты появятся через 1-2 мин" });
             } catch {
@@ -339,7 +339,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(url, {
                     username: comp.username,
                     competitor_id: comp.id,
-                    project_id: active.id === "hq" ? null : active.id,
+                    project_id: active.id === HQ_ID ? null : active.id,
                 }).catch(() => {/* n8n optional */});
             }
 
@@ -403,7 +403,7 @@ export function CompetitorAnalysis() {
                 body: {
                     action: "analyze_video",
                     url: postUrl.trim(),
-                    project_id: active.id === "hq" ? null : active.id,
+                    project_id: active.id === HQ_ID ? null : active.id,
                 },
             });
             if (error) throw new Error(error.message);
@@ -522,7 +522,7 @@ export function CompetitorAnalysis() {
                 body: JSON.stringify({
                     url: instagramUrl,
                     username,
-                    project_id: active.id === "hq" ? null : active.id,
+                    project_id: active.id === HQ_ID ? null : active.id,
                 }),
             });
 
@@ -544,14 +544,14 @@ export function CompetitorAnalysis() {
             {/* KPI Cards — Premium Glass */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                    { label: "Конкуренты", value: competitors.length, icon: Users, gradient: "from-blue-500/10 to-cyan-500/5", iconColor: "text-blue-400" },
-                    { label: "AI-разборов", value: displayAnalyses.length, icon: BarChart3, gradient: "from-violet-500/10 to-purple-500/5", iconColor: "text-violet-400" },
-                    { label: "Ср. оценка", value: displayAnalyses.length ? Math.round(displayAnalyses.reduce((s, a) => s + a.performance_score, 0) / displayAnalyses.length) : 0, icon: TrendingUp, gradient: "from-amber-500/10 to-orange-500/5", iconColor: "text-amber-400" },
-                    { label: "Сценариев", value: displayAnalyses.filter((a) => a.generated_script).length, icon: Sparkles, gradient: "from-emerald-500/10 to-green-500/5", iconColor: "text-emerald-400" },
+                    { label: "Конкуренты", value: competitors.length, icon: Users, gradient: "from-blue-500/20 to-cyan-500/10", iconColor: "text-blue-400" },
+                    { label: "AI-разборов", value: displayAnalyses.length, icon: BarChart3, gradient: "from-violet-500/20 to-purple-500/10", iconColor: "text-violet-400" },
+                    { label: "Ср. оценка", value: displayAnalyses.length ? Math.round(displayAnalyses.reduce((s, a) => s + a.performance_score, 0) / displayAnalyses.length) : 0, icon: TrendingUp, gradient: "from-amber-500/20 to-orange-500/10", iconColor: "text-amber-400" },
+                    { label: "Сценариев", value: displayAnalyses.filter((a) => a.generated_script).length, icon: Sparkles, gradient: "from-emerald-500/20 to-green-500/10", iconColor: "text-emerald-400" },
                 ].map((kpi) => (
                     <motion.div key={kpi.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`rounded-xl border border-border/40 bg-gradient-to-br ${kpi.gradient} backdrop-blur-sm p-4 text-left hover:border-border/60 transition-all`}>
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] text-foreground/70 font-medium">{kpi.label}</span>
+                            <span className="text-[11px] text-foreground font-semibold">{kpi.label}</span>
                             <div className={`h-7 w-7 rounded-lg bg-card border border-border/30 flex items-center justify-center`}>
                                 <kpi.icon className={`h-3.5 w-3.5 ${kpi.iconColor}`} />
                             </div>

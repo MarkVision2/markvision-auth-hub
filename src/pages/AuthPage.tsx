@@ -102,12 +102,12 @@ const AuthPage = () => {
           </div>
 
           <h1 className="text-4xl font-bold leading-[1.15] tracking-tight text-foreground lg:text-5xl">
-            Штаб-квартира
+            Управляйте бизнесом
             <br />
-            <span className="text-primary">вашего маркетинга</span>
+            <span className="text-primary">в одном месте</span>
           </h1>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-            Трафик, контент, продажи, команда — управляйте агентством из одной панели. AI делает рутину за вас.
+            Трафик, контент, продажи, финансы и команда — одна панель. AI следит за результатом 24/7.
           </p>
 
           {/* Feature grid */}

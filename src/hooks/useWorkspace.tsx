@@ -10,7 +10,8 @@ export interface Workspace {
   clientName?: string;
 }
 
-const HQ: Workspace = { id: "hq", name: "MarkVision AI", type: "agency" };
+export const HQ_ID = "7e175bca-c8bd-49de-b348-4acc348e5a91";
+const HQ: Workspace = { id: HQ_ID, name: "MarkVision AI", type: "agency" };
 
 function loadCachedProjects(): Workspace[] {
   try {
@@ -33,7 +34,12 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [activeId, setActiveId] = useState(() => localStorage.getItem("activeProjectId") || "hq");
+  const [activeId, setActiveId] = useState(() => {
+    const saved = localStorage.getItem("activeProjectId");
+    // Migrate old virtual "hq" id to real DB id
+    if (saved === "hq") return HQ_ID;
+    return saved || HQ_ID;
+  });
   const [projects, setProjects] = useState<Workspace[]>(loadCachedProjects);
 
   const fetchProjects = async () => {
@@ -46,11 +52,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       if (data) {
-        const mapped = data.map(p => ({
-          id: p.id,
-          name: p.name,
-          type: "client" as const,
-        }));
+        const mapped = data
+          .filter(p => p.id !== HQ_ID) // HQ is prepended separately
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            type: "client" as const,
+          }));
         setProjects(mapped);
         localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(mapped));
       }

@@ -15,7 +15,7 @@ import {
   CircleDot, Bell, Paperclip, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface Lead {
@@ -113,7 +113,7 @@ export default function ChatsView() {
     try {
       let query = (supabase as any).from("leads").select("*");
 
-      if (active.id === "hq") {
+      if (active.id === HQ_ID) {
         // HQ sees everything
       } else {
         // Client project: own + shared
@@ -320,7 +320,7 @@ export default function ChatsView() {
             }`}
         >
           Все
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${filterStage === "all" ? "bg-background/20" : "bg-secondary"}`}>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${filterStage === "all" ? "bg-secondary" : "bg-secondary"}`}>
             {stageCounts.all}
           </span>
         </button>
@@ -340,7 +340,7 @@ export default function ChatsView() {
               <s.icon className="h-3 w-3" />
               {s.label}
               {count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${isActive ? "bg-background/20" : "bg-secondary"}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${isActive ? "bg-secondary" : "bg-secondary"}`}>
                   {count}
                 </span>
               )}

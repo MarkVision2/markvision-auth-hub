@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Calendar, Loader2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { format, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { DailyRow, ClientOption } from "./ai-reports/shared";
@@ -52,7 +52,7 @@ export default function AiReportsPage() {
         .eq("is_active", true)
         .neq("is_agency", true);
 
-      if (active.id !== "hq") {
+      if (active.id !== HQ_ID) {
         // Client project: own + shared
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
@@ -94,7 +94,7 @@ export default function AiReportsPage() {
           .order("leads", { ascending: false })
           .limit(10);
 
-        if (active.id !== "hq") {
+        if (active.id !== HQ_ID) {
           // Client project: own
           leadsQ = leadsQ.eq("project_id", active.id);
           channelsQ = channelsQ.eq("project_id", active.id);

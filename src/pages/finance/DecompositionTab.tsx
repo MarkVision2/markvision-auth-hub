@@ -10,7 +10,7 @@ import {
     ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { fmt, fmtCurrency, KpiCard } from "./shared";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 
 interface SummaryRow {
     type?: "header" | "row";
@@ -247,11 +247,11 @@ export default function DecompositionTab() {
                                     plan_visits: calc.diagnostics,
                                     plan_sales: calc.sales,
                                     plan_revenue: Math.round(calc.revenue),
-                                    project_id: active.id === "hq" ? null : active.id
+                                    project_id: active.id === HQ_ID ? null : active.id
                                 };
 
                                 const query = (supabase as unknown).from("monthly_plans").select("id").eq("month_year", monthYear);
-                                if (active.id === "hq") {
+                                if (active.id === HQ_ID) {
                                     query.is("project_id", null);
                                 } else {
                                     query.eq("project_id", active.id);

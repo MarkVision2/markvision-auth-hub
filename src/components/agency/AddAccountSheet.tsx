@@ -9,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { Loader2, Target, Facebook, Link2, Settings2, ShieldCheck, Database, Info, Globe, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +107,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
           .eq("client_config_id", account.id);
         
         if (data) {
-          const ids = data.map((v: any) => v.is_hq_sharing ? "hq" : v.project_id).filter(Boolean);
+          const ids = data.map((v: any) => v.is_hq_sharing ? HQ_ID : v.project_id).filter(Boolean);
           setSelectedVisibilities(ids);
         }
       } else if (!account && open) {
@@ -120,7 +120,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
   }, [account, open, active.id]);
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
 
-  const isInHq = active.id === "hq";
+  const isInHq = active.id === HQ_ID;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,7 +183,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
     // Create visibility records
     const visRecords = selectedVisibilities.map(pid => {
-      if (pid === "hq") return { client_config_id: cab.id, is_hq_sharing: true };
+      if (pid === HQ_ID) return { client_config_id: cab.id, is_hq_sharing: true };
       return { client_config_id: cab.id, project_id: pid };
     });
 
@@ -368,12 +368,12 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                         "h-10 w-10 rounded-xl flex items-center justify-center shadow-sm transition-colors",
                         selectedVisibilities.includes(ws.id) ? "bg-emerald-500 text-white" : "bg-background text-muted-foreground group-hover:text-emerald-500"
                       )}>
-                         {ws.id === "hq" ? <Target className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
+                         {ws.id === HQ_ID ? <Target className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
                       </div>
                       <div>
                         <Label htmlFor={`vis-${ws.id}`} className="font-bold text-sm cursor-pointer block">{ws.name}</Label>
                         <p className="text-[10px] font-medium text-muted-foreground/60">
-                           {ws.id === "hq" ? "Главный проект (HQ)" : "Клиентский проект"}
+                           {ws.id === HQ_ID ? "Главный проект (HQ)" : "Клиентский проект"}
                         </p>
                       </div>
                     </div>

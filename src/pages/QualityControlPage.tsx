@@ -16,7 +16,7 @@ import {
   Clock, Send, FileText,
 } from "lucide-react";
 
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 
 /* ── Types ── */
 interface NpsFeedback {
@@ -108,14 +108,28 @@ export default function QualityControlPage() {
     try {
       let query = (supabase as any)
         .from("nps_feedback")
-        .select("*, leads(name)");
+        .select("*");
 
-      if (active.id !== "hq") {
+      if (active.id !== HQ_ID) {
         query = query.eq("project_id", active.id);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
+
+      // Fetch lead names separately
+      const leadIds = [...new Set((data || []).map((r: any) => r.lead_id).filter(Boolean))];
+      let leadNames: Record<string, string> = {};
+      if (leadIds.length > 0) {
+        const { data: leadsData } = await (supabase as any)
+          .from("leads_crm")
+          .select("id, name")
+          .in("id", leadIds);
+        if (leadsData) {
+          leadNames = Object.fromEntries(leadsData.map((l: any) => [l.id, l.name]));
+        }
+      }
+
       setFeedback((data || []).map((row: any) => ({
         id: row.id,
         lead_id: row.lead_id,
@@ -123,7 +137,7 @@ export default function QualityControlPage() {
         feedback_text: row.feedback_text || "",
         is_resolved: row.is_resolved ?? false,
         created_at: row.created_at,
-        lead_name: row.leads?.name || "Пациент",
+        lead_name: leadNames[row.lead_id] || "Пациент",
       })));
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
@@ -142,7 +156,7 @@ export default function QualityControlPage() {
         event: "INSERT",
         schema: "public",
         table: "nps_feedback",
-        ...(active.id !== "hq" ? { filter: `project_id=eq.${active.id}` } : {})
+        ...(active.id !== HQ_ID ? { filter: `project_id=eq.${active.id}` } : {})
       }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => [{

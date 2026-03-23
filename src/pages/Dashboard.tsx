@@ -6,7 +6,7 @@ import HqAiDirector from "@/components/hq/HqAiDirector";
 import HqRevenueChart from "@/components/hq/HqRevenueChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
 import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, LayoutDashboard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -153,7 +153,7 @@ export default function Dashboard() {
       try {
         let clientsData: ClientMetric[] = [];
 
-        if (active.id === "hq") {
+        if (active.id === HQ_ID) {
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*").neq("is_agency", true);
           if (error) throw error;
           clientsData = data || [];
@@ -273,8 +273,8 @@ export default function Dashboard() {
   };
 
   const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
-  const hqClients = clients.filter(c => (c.project_id === "hq" || c.project_id === null) && c.is_agency === false);
-  const matchedHqClient = aggregateClientData(hqClients, "hq", active.name);
+  const hqClients = clients.filter(c => (c.project_id === HQ_ID || c.project_id === null) && c.is_agency === false);
+  const matchedHqClient = aggregateClientData(hqClients, HQ_ID, active.name);
 
   const breadcrumb = isAgency ? "Штаб-квартира" : active.name;
 
@@ -313,7 +313,7 @@ export default function Dashboard() {
           <HqAiDirector />
         </div>
       </div>
-      <HqRevenueChart clients={clients} />
+      <HqRevenueChart projectId={active.id} />
     </>
   );
 
