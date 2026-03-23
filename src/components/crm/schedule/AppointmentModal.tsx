@@ -16,7 +16,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
     Calendar as CalendarIcon, Clock, User, 
     Phone, MessageSquare, Briefcase, CheckCircle2,
-    ShieldAlert, XCircle, Search, ExternalLink, Plus
+    ShieldAlert, XCircle, Search, ExternalLink, Plus,
+    ChevronDown, Stethoscope, Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -112,19 +113,21 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[32px] bg-card shadow-2xl">
+            <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[32px] bg-background shadow-2xl">
                 {/* Header Section */}
-                <div className="bg-gradient-to-b from-secondary to-card px-10 py-8 border-b border-border/50 relative">
+                <div className="bg-gradient-to-br from-primary/10 via-background to-background px-8 py-6 border-b border-border/40 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
                     <DialogHeader>
-                        <div className="flex items-center gap-5">
-                            <div className="h-14 w-14 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center shadow-sm">
-                                {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6 cursor-pointer" />}
+                        <div className="flex items-center gap-5 relative z-10">
+                            <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner border border-primary/20">
+                                {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
                             </div>
                             <div className="flex flex-col">
                                 <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
                                     {isEditing ? "Изменить запись" : "Новая запись"}
                                 </DialogTitle>
-                                <DialogDescription className="text-muted-foreground text-xs font-medium uppercase tracking-wider mt-1">
+                                <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
                                     {isEditing ? `ID записи: #${appointment.id?.slice(0,8)}` : "Заполнение данных о визите"}
                                 </DialogDescription>
                             </div>
@@ -132,59 +135,87 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     </DialogHeader>
                 </div>
 
-                <div className="px-10 py-6 space-y-7 max-h-[70vh] overflow-y-auto custom-scrollbar">
-                    {/* Patient Search / Info */}
-                    <div className="space-y-3">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Пациент</Label>
+                <div className="px-8 py-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                    {/* Patient Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1 h-4 bg-primary rounded-full" />
+                            <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Данные пациента</Label>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="relative group">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                            <div className="space-y-1.5 relative group">
+                                <div className="absolute left-4 top-[38px] -translate-y-1/2 z-10">
+                                    <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                </div>
                                 <Input 
                                     placeholder="Поиск по ФИО..." 
-                                    className="h-12 pl-12 rounded-xl bg-secondary border-border font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
+                                    className="h-12 pl-11 rounded-2xl bg-secondary/30 border-border/50 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
                                     value={formData.patientName}
                                     onChange={(e) => handlePatientSearch(e.target.value)}
                                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 />
                                 {showResults && searchResults.length > 0 && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 p-1.5 bg-card border border-border rounded-xl shadow-lg z-50 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute top-full left-0 right-0 mt-2 p-1.5 bg-card border border-border rounded-2xl shadow-2xl z-50 animate-in fade-in zoom-in-95 backdrop-blur-xl">
                                         {searchResults.map((p, i) => (
                                             <div 
                                                 key={i} 
                                                 onClick={() => handleSelectPatient(p)}
-                                                className="p-3 hover:bg-secondary/50 rounded-lg cursor-pointer transition-colors group/item"
+                                                className="p-3 hover:bg-primary/5 rounded-xl cursor-pointer transition-all group/item flex items-center justify-between"
                                             >
-                                                <p className="text-sm font-bold text-foreground group-hover/item:text-blue-400">{p.name}</p>
-                                                <p className="text-xs text-muted-foreground font-medium mt-0.5">{p.phone}</p>
+                                                <div>
+                                                    <p className="text-sm font-bold text-foreground group-hover/item:text-primary">{p.name}</p>
+                                                    <p className="text-[10px] text-muted-foreground font-bold mt-0.5">{p.phone}</p>
+                                                </div>
+                                                <Plus className="h-4 w-4 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-all" />
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
-                            <div className="relative group">
-                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                <Input 
-                                    placeholder="Номер телефона" 
-                                    className="h-12 pl-12 rounded-xl bg-secondary border-border font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                />
+                            <div className="flex gap-2">
+                                <div className="relative group flex-1">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                                        <Phone className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    </div>
+                                    <Input 
+                                        placeholder="Номер телефона" 
+                                        className="h-12 pl-11 rounded-2xl bg-secondary/30 border-border/50 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    />
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-12 w-12 rounded-2xl bg-[#25D366]/5 border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366] hover:text-white shrink-0 transition-all shadow-sm"
+                                    onClick={() => window.open(`https://wa.me/${formData.phone.replace(/\D/g,'')}`, '_blank')}
+                                >
+                                    <MessageSquare className="h-5 w-5" />
+                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Date and Time */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Дата визита</Label>
+                    {/* Visit Details Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1 h-4 bg-primary rounded-full" />
+                            <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Детали визита</Label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <div className="h-12 flex items-center gap-3 px-4 rounded-xl bg-secondary border border-border font-semibold text-sm cursor-pointer hover:bg-secondary/80 transition-colors">
-                                        <CalendarIcon className="h-5 w-5 text-blue-500" />
-                                        <span className="text-foreground">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
+                                    <div className="h-14 flex items-center justify-between px-5 rounded-2xl bg-card border border-border/60 font-bold text-sm cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all shadow-sm group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                                <CalendarIcon className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-foreground">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
+                                        </div>
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-all" />
                                     </div>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
+                                <PopoverContent className="w-auto p-0 rounded-3xl overflow-hidden border-border/40 shadow-2xl" align="start">
                                     <Calendar
                                         mode="single"
                                         selected={formData.date}
@@ -193,46 +224,51 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     />
                                 </PopoverContent>
                             </Popover>
-                        </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Время приема</Label>
+
                             <Select value={formData.time} onValueChange={(val) => setFormData({...formData, time: val})}>
-                                <SelectTrigger className="h-12 px-4 rounded-xl bg-secondary border border-border font-semibold transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                                    <div className="flex items-center gap-3">
-                                        <Clock className="h-5 w-5 text-blue-500" />
+                                <SelectTrigger className="h-14 px-5 rounded-2xl bg-card border border-border/60 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] shadow-sm group">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                            <Clock className="h-4 w-4" />
+                                        </div>
                                         <SelectValue />
                                     </div>
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl border border-border shadow-xl p-1.5 bg-card max-h-[220px]">
+                                <SelectContent className="rounded-2xl border border-border shadow-2xl p-2 bg-card/95 backdrop-blur-xl max-h-[280px]">
                                     {Array.from({ length: 25 }, (_, i) => {
                                         const h = Math.floor(i / 2) + 8;
                                         const m = i % 2 === 0 ? "00" : "30";
                                         const t = `${h.toString().padStart(2, "0")}:${m}`;
-                                        return <SelectItem key={t} value={t} className="rounded-lg py-2.5 font-semibold cursor-pointer">{t}</SelectItem>;
+                                        return <SelectItem key={t} value={t} className="rounded-xl py-3 px-4 font-bold cursor-pointer hover:bg-primary/5 focus:bg-primary/5 mb-1 last:mb-0 transition-all">{t}</SelectItem>;
                                     })}
                                 </SelectContent>
                             </Select>
                         </div>
-                    </div>
 
-                    {/* Service & Status */}
-                    <div className="space-y-6">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Причина обращения / Услуга</Label>
+                        <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                                <Stethoscope className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                            </div>
                             <Input 
-                                placeholder="Напр. Первичная консультация" 
-                                className="h-12 px-4 rounded-xl bg-secondary border-border font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
+                                placeholder="Услуга или причина обращения..." 
+                                className="h-14 pl-12 rounded-2xl bg-card border-border/60 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:font-medium placeholder:text-muted-foreground/40"
                                 value={formData.service}
                                 onChange={(e) => setFormData({...formData, service: e.target.value})}
                             />
                         </div>
+                    </div>
 
-                        <div className="space-y-3">
-                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Статус визита</Label>
+                    {/* Status & Comment Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Статус</Label>
+                            </div>
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                                className="grid grid-cols-3 gap-2"
                             >
                                 {STATUSES.map((item) => {
                                     const isActive = formData.status === item.id;
@@ -240,16 +276,16 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     let dotColor = "";
                                     
                                     if (item.id === "planned" && isActive) {
-                                        activeClasses = "bg-amber-500/10 border-amber-500/50 shadow-sm";
+                                        activeClasses = "bg-amber-500/10 border-amber-500/30 shadow-inner";
                                         dotColor = "bg-amber-500";
                                     } else if (item.id === "completed" && isActive) {
-                                        activeClasses = "bg-emerald-500/10 border-emerald-500/50 shadow-sm";
+                                        activeClasses = "bg-emerald-500/10 border-emerald-500/30 shadow-inner";
                                         dotColor = "bg-emerald-500";
                                     } else if (item.id === "no-show" && isActive) {
-                                        activeClasses = "bg-rose-500/10 border-rose-500/50 shadow-sm";
+                                        activeClasses = "bg-rose-500/10 border-rose-500/30 shadow-inner";
                                         dotColor = "bg-rose-500";
                                     } else {
-                                        activeClasses = "bg-card border-border hover:bg-secondary";
+                                        activeClasses = "bg-secondary/20 border-border/40 hover:bg-secondary/40";
                                     }
 
                                     return (
@@ -257,21 +293,22 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "relative flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200",
-                                                activeClasses
+                                                "relative flex flex-col items-center justify-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group",
+                                                activeClasses,
+                                                isActive ? "ring-2 ring-offset-2 ring-offset-background" : ""
                                             )}
                                         >
                                             <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
                                             {isActive && (
-                                                <div className="absolute top-3 right-3 flex h-3 w-3">
+                                                <div className="absolute top-2 right-2 flex h-2 w-2">
                                                     <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-40", dotColor)}></span>
-                                                    <span className={cn("relative inline-flex rounded-full h-3 w-3", dotColor)}></span>
+                                                    <span className={cn("relative inline-flex rounded-full h-2 w-2", dotColor)}></span>
                                                 </div>
                                             )}
-                                            <item.icon className={cn("h-6 w-6 mb-2", isActive ? item.color : "text-muted-foreground/60")} />
+                                            <item.icon className={cn("h-5 w-5 mb-2 transition-transform group-hover:scale-110", isActive ? item.color : "text-muted-foreground/40")} />
                                             <span className={cn(
-                                                "text-[11px] font-bold uppercase tracking-wider text-center", 
-                                                isActive ? item.color : "text-muted-foreground"
+                                                "text-[9px] font-black uppercase tracking-tighter text-center", 
+                                                isActive ? item.color : "text-muted-foreground/60"
                                             )}>
                                                 {item.label}
                                             </span>
@@ -280,44 +317,60 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 })}
                             </RadioGroup>
                         </div>
-                    </div>
 
-                    {/* Comment Area */}
-                    <div className="space-y-3">
-                        <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Комментарий к записи</Label>
-                        <Textarea 
-                            placeholder="Важные детали (жалобы, наличие МРТ, особенности пациента)..." 
-                            className="bg-secondary border-border rounded-xl p-4 min-h-[100px] font-medium resize-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:font-normal"
-                            value={formData.comment}
-                            onChange={(e) => setFormData({...formData, comment: e.target.value})}
-                        />
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Заметки</Label>
+                            </div>
+                            <Textarea 
+                                placeholder="Особенности пациента, жалобы..." 
+                                className="bg-secondary/20 border-border/40 rounded-2xl p-4 min-h-[105px] font-bold text-xs leading-relaxed resize-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40 shadow-inner"
+                                value={formData.comment}
+                                onChange={(e) => setFormData({...formData, comment: e.target.value})}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <DialogFooter className="bg-secondary/50 px-10 py-5 border-t border-border/50 flex flex-col sm:flex-row gap-3 items-center">
-                    {isEditing && (
+                <DialogFooter className="bg-secondary/10 px-8 py-6 border-t border-border/40 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {isEditing && (
+                            <Button 
+                                variant="outline"
+                                className="h-12 px-6 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/10 flex items-center gap-2 group border-2"
+                                onClick={() => setIsDiagnosticOpen(true)}
+                            >
+                                <ExternalLink className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                                Провести осмотр
+                            </Button>
+                        )}
+                        {isEditing && (
+                             <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="h-12 w-12 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-colors"
+                             >
+                                <Trash2 className="h-5 w-5" />
+                             </Button>
+                        )}
+                    </div>
+                    
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Button 
                             variant="ghost" 
-                            className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center gap-2"
-                            onClick={() => setIsDiagnosticOpen(true)}
+                            onClick={() => onOpenChange(false)}
+                            className="h-12 px-6 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] text-muted-foreground hover:bg-secondary/60"
                         >
-                            <ExternalLink className="h-4 w-4" /> Провести осмотр
+                            Отмена
                         </Button>
-                    )}
-                    <div className="flex-1" />
-                    <Button 
-                        variant="outline" 
-                        onClick={() => onOpenChange(false)}
-                        className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] border-border text-muted-foreground hover:bg-secondary"
-                    >
-                        Отмена
-                    </Button>
-                    <Button 
-                        onClick={handleSave}
-                        className="h-12 px-8 rounded-xl font-bold uppercase tracking-wider text-[11px] bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all"
-                    >
-                        {isEditing ? "Сохранить изменения" : "Создать запись"}
-                    </Button>
+                        <Button 
+                            onClick={handleSave}
+                            className="h-12 px-10 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5"
+                        >
+                            {isEditing ? "Обновить запись" : "Создать запись"}
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
 
