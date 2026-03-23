@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -34,32 +34,88 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const pdfRef = useRef<DiagnosticPdfExportRef>(null);
     
-    const [adminQuestions, setAdminQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
-    const [doctorQuestions, setDoctorQuestions] = useState<DoctorQuestion[]>(DEFAULT_DOCTOR_QUESTIONS);
+    const [adminQuestions, setAdminQuestions] = useState<Question[]>([]);
+    const [doctorQuestions, setDoctorQuestions] = useState<DoctorQuestion[]>([]);
+    const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
     
     // В реальном проекте здесь будет стейт для всех 3 вкладок
-    const [adminData, setAdminData] = useState<AdminFormData | null>({
-        answers: {
-            complaints: lead.ai_summary || "",
-        },
-        adminComment: (lead as any).comments || "",
-        paymentMethod: "Kaspi",
-        paymentStatus: "pending",
-        prepaymentAmount: "",
-        refusalReason: "",
-        confirmed: false,
-        finalFio: lead.name,
-        finalPhone: lead.phone || "",
-        // Initialize legacy fields for internal state consistency if needed
-        complaints: lead.ai_summary || "",
-        painLocation: "",
-        painDuration: "",
-        painType: "",
-        painIntensity: "5",
-        previousTreatment: ""
-    });
+    const [adminData, setAdminData] = useState<AdminFormData | null>(null);
     const [doctorData, setDoctorData] = useState<DoctorFormData | null>(null);
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
+
+    // Initial data setup
+    useEffect(() => {
+        if (open) {
+            setAdminData({
+                answers: {
+                    complaints: lead.ai_summary || "",
+                },
+                adminComment: (lead as any).comments || "",
+                paymentMethod: "Kaspi",
+                paymentStatus: "pending",
+                prepaymentAmount: "",
+                refusalReason: "",
+                confirmed: false,
+                finalFio: lead.name,
+                finalPhone: lead.phone || "",
+                complaints: lead.ai_summary || "",
+                painLocation: "",
+                painDuration: "",
+                painType: "",
+                painIntensity: "5",
+                previousTreatment: ""
+            });
+            fetchQuestions();
+        }
+    }, [open, lead.id]);
+
+    const fetchQuestions = async () => {
+        setIsLoadingQuestions(true);
+        if (!lead.project_id) {
+            setIsLoadingQuestions(false);
+            return;
+        }
+        try {
+            const { data, error } = await (supabase
+                .from("diagnostic_questions")
+                .select("*") as any)
+                .eq("project_id", lead.project_id)
+                .order("sort_order", { ascending: true });
+
+            if (error) throw error;
+
+            const questionsData = data as any[];
+            if (questionsData && questionsData.length > 0) {
+                const adminQs: Question[] = questionsData.filter(q => q.category === "admin").map(q => ({
+                    id: q.id,
+                    label: q.label,
+                    type: q.type as any,
+                    options: q.options as any,
+                    required: q.is_required
+                }));
+                const doctorQs: DoctorQuestion[] = questionsData.filter(q => q.category === "doctor").map(q => ({
+                    id: q.id,
+                    label: q.label,
+                    section: q.section || "complaints",
+                    type: q.type as any,
+                    options: q.options as any,
+                    required: q.is_required
+                }));
+                setAdminQuestions(adminQs);
+                setDoctorQuestions(doctorQs);
+            } else {
+                // Fallback to defaults if no questions found for project
+                setAdminQuestions(DEFAULT_QUESTIONS);
+                setDoctorQuestions(DEFAULT_DOCTOR_QUESTIONS);
+            }
+        } catch (error: any) {
+            console.error("Error fetching questions:", error);
+            setAdminQuestions(DEFAULT_QUESTIONS);
+            setDoctorQuestions(DEFAULT_DOCTOR_QUESTIONS);
+        } finally {
+            setIsLoadingQuestions(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!adminData) return;
@@ -127,6 +183,50 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 .eq("id", lead.id);
 
             if (error) throw error;
+
+            // Save questions if user is admin
+            const userRole = (user?.app_metadata as any)?.role || "user";
+            if (userRole === "admin" && lead.project_id) {
+                const allQuestions = [
+                    ...adminQuestions.map((q, i) => ({
+                        project_id: lead.project_id,
+                        label: q.label,
+                        type: q.type,
+                        options: q.options || [],
+                        sort_order: i,
+                        category: "admin",
+                        is_required: !!q.required
+                    })),
+                    ...doctorQuestions.map((q, i) => ({
+                        project_id: lead.project_id,
+                        label: q.label,
+                        type: q.type,
+                        options: q.options || [],
+                        sort_order: i,
+                        category: "doctor",
+                        section: q.section,
+                        is_required: !!q.required
+                    }))
+                ];
+
+                // Upsert questions (this assumes we have IDs or we just wipe and recreate for simplicity per project)
+                // For better UX, we should ideally have the IDs from fetchQuestions
+                const { error: qError } = await supabase
+                    .from("diagnostic_questions")
+                    .upsert(
+                        allQuestions.map(q => {
+                            // Find existing question ID to preserve it
+                            const existing = [...adminQuestions, ...doctorQuestions].find(item => item.label === q.label && (item as any).category === q.category);
+                            return {
+                                ...q,
+                                id: (existing as any)?.id || undefined
+                            } as any;
+                        }),
+                        { onConflict: "project_id, label, category" }
+                    );
+                
+                if (qError) console.error("Error saving questions:", qError);
+            }
 
             // Trigger analytics webhook (n8n)
             try {

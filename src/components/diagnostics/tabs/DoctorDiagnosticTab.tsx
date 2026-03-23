@@ -17,7 +17,9 @@ export interface DoctorQuestion {
     id: string;
     label: string;
     section: "complaints" | "exam" | "procedure" | "conclusion";
-    type: "text" | "textarea";
+    type: "text" | "textarea" | "radio" | "checkbox";
+    options?: { id: string; label: string }[];
+    required?: boolean;
 }
 
 export const DEFAULT_DOCTOR_QUESTIONS: DoctorQuestion[] = [
@@ -68,11 +70,15 @@ const DoctorQuestionEditor = ({
     question, 
     onUpdate, 
     onDelete,
+    onMoveUp,
+    onMoveDown,
     readOnly = false
 }: { 
     question: DoctorQuestion; 
     onUpdate: (q: DoctorQuestion) => void; 
     onDelete: () => void;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
     readOnly?: boolean;
 }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -86,9 +92,9 @@ const DoctorQuestionEditor = ({
     };
 
     return (
-        <div className="flex flex-col gap-2 min-w-[100px]">
+        <div className="flex flex-col gap-2 min-w-[120px]">
             {!isEditing ? (
-                <div className="flex items-center gap-1 bg-secondary/20 p-1.5 rounded-xl border border-border/40">
+                <div className="flex items-center gap-1 bg-secondary/20 p-1 rounded-xl border border-border/40">
                     <Button 
                         size="icon" 
                         variant="ghost" 
@@ -98,6 +104,26 @@ const DoctorQuestionEditor = ({
                     >
                         <Edit2 className="h-3.5 w-3.5" />
                     </Button>
+                    <div className="flex items-center">
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            onClick={onMoveUp}
+                            title="Переместить вверх"
+                        >
+                            <ArrowRight className="h-3.5 w-3.5 -rotate-90" />
+                        </Button>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            onClick={onMoveDown}
+                            title="Переместить вниз"
+                        >
+                            <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                        </Button>
+                    </div>
                     <Button 
                         size="icon" 
                         variant="ghost" 
@@ -109,16 +135,83 @@ const DoctorQuestionEditor = ({
                     </Button>
                 </div>
             ) : (
-                <div className="p-2 bg-background border border-primary/30 rounded-xl shadow-lg animate-in zoom-in-95 duration-200 z-20 mt-2">
-                    <Input 
-                        value={editLabel} 
-                        onChange={e => setEditLabel(e.target.value)} 
-                        className="h-8 text-[11px] font-bold mb-2 bg-secondary/10" 
-                        autoFocus
-                    />
-                    <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider" onClick={() => setIsEditing(false)}>Отмена</Button>
-                        <Button size="sm" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider bg-primary hover:bg-primary/90" onClick={handleSave}>Сохранить</Button>
+                <div className="p-3 bg-background border border-primary/30 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200 z-50 w-80">
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Текст вопроса</Label>
+                            <Input 
+                                value={editLabel} 
+                                onChange={e => setEditLabel(e.target.value)} 
+                                className="h-9 text-xs mb-2 bg-secondary/10 border-none rounded-xl" 
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Тип ответа</Label>
+                            <Select 
+                                value={question.type} 
+                                onValueChange={(v: any) => onUpdate({ ...question, type: v, options: (v === 'radio' || v === 'checkbox') ? (question.options || []) : [] })}
+                            >
+                                <SelectTrigger className="h-8 text-[11px] bg-secondary/10 border-none rounded-lg">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="text">Текст (строка)</SelectItem>
+                                    <SelectItem value="textarea">Текст (абзац)</SelectItem>
+                                    <SelectItem value="radio">Один из списка</SelectItem>
+                                    <SelectItem value="checkbox">Несколько из списка</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {(question.type === "radio" || question.type === "checkbox") && (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Варианты ответа</Label>
+                                <div className="space-y-1.5">
+                                    {(question.options || []).map((opt, idx) => (
+                                        <div key={idx} className="flex gap-1">
+                                            <Input 
+                                                value={opt.label}
+                                                onChange={(e) => {
+                                                    const newOpts = [...(question.options || [])];
+                                                    newOpts[idx] = { ...newOpts[idx], label: e.target.value };
+                                                    onUpdate({ ...question, options: newOpts });
+                                                }}
+                                                className="h-8 text-[11px] bg-secondary/5 border-none rounded-lg"
+                                            />
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                className="h-8 w-8 shrink-0 hover:bg-destructive/10 text-destructive"
+                                                onClick={() => {
+                                                    const newOpts = (question.options || []).filter((_, i) => i !== idx);
+                                                    onUpdate({ ...question, options: newOpts });
+                                                }}
+                                            >
+                                                <X className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full h-8 text-[10px] border-dashed gap-1 rounded-lg"
+                                        onClick={() => {
+                                            const newOpts = [...(question.options || []), { id: `opt_${Date.now()}`, label: "" }];
+                                            onUpdate({ ...question, options: newOpts });
+                                        }}
+                                    >
+                                        <Plus className="h-3 w-3" /> Добавить вариант
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-1 pt-2">
+                            <Button size="sm" variant="ghost" className="h-8 px-3 text-[10px] uppercase font-bold tracking-wider rounded-xl" onClick={() => setIsEditing(false)}>Отмена</Button>
+                            <Button size="sm" className="h-8 px-3 text-[10px] uppercase font-bold tracking-wider bg-primary hover:bg-primary/90 text-white rounded-xl" onClick={handleSave}>Сохранить</Button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -154,6 +247,22 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
             type: "text"
         };
         onQuestionsChange([...questions, newQ]);
+    };
+
+    const moveQuestion = (index: number, direction: 'up' | 'down') => {
+        const newQuestions = [...questions];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        // Ensure we only move within the SAME section for doctor questions UI
+        if (targetIndex >= 0 && targetIndex < newQuestions.length) {
+            const currentQ = newQuestions[index];
+            const targetQ = newQuestions[targetIndex];
+            
+            if (currentQ.section === targetQ.section) {
+                [newQuestions[index], newQuestions[targetIndex]] = [newQuestions[targetIndex], newQuestions[index]];
+                onQuestionsChange(newQuestions);
+            }
+        }
     };
 
     const toggleSection = (section: string) => {
@@ -203,6 +312,8 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                             question={q}
                                             onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
                                             onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                            onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
+                                            onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
                                         />
                                     )}
                                 </div>

@@ -89,6 +89,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
     const [isApptModalOpen, setIsApptModalOpen] = useState(false);
     const [selectedAppt, setSelectedAppt] = useState<any>(null);
+    const [newApptDate, setNewApptDate] = useState<Date | undefined>(undefined);
+    const [newApptTime, setNewApptTime] = useState<string | undefined>(undefined);
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -147,7 +149,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-black tracking-tight text-foreground truncate">{doctor.name}</h2>
+                        <h2 className="text-lg font-black tracking-tight text-foreground">{doctor.name}</h2>
                         <div className="flex flex-wrap gap-2 mt-0.5">
                             <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
                                 {doctor.specialty}
@@ -227,7 +229,12 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                         appointments={appointments}
                                         onDateSelect={setSelectedDate}
                                         onViewChange={(v: any) => v !== 'month' && setView(v)}
-                                        onAddAppointment={() => {}} 
+                                        onAddAppointment={(date, time) => {
+                                            setNewApptDate(date);
+                                            setNewApptTime(time);
+                                            setSelectedAppt(null);
+                                            setIsApptModalOpen(true);
+                                        }} 
                                         onEditAppointment={(appt) => {
                                             setSelectedAppt(appt);
                                             setIsApptModalOpen(true);
@@ -584,10 +591,22 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
             <AppointmentModal 
                 open={isApptModalOpen}
-                onOpenChange={setIsApptModalOpen}
+                onOpenChange={(open) => {
+                    setIsApptModalOpen(open);
+                    if (!open) {
+                        setNewApptDate(undefined);
+                        setNewApptTime(undefined);
+                    }
+                }}
                 appointment={selectedAppt}
+                selectedDate={newApptDate}
+                selectedTime={newApptTime}
                 mode="doctor"
-                onSave={() => {}}
+                onSave={() => {
+                    setIsApptModalOpen(false);
+                    setNewApptDate(undefined);
+                    setNewApptTime(undefined);
+                }}
             />
         </div>
     );

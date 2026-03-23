@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
     Stethoscope, ArrowRight, ArrowLeft, Check,
     Calendar, ClipboardList, Star, CheckCheck, Loader2,
@@ -33,6 +34,7 @@ export interface Question {
     type: "text" | "textarea" | "radio" | "checkbox";
     options?: { id: string; label: string }[];
     required?: boolean;
+    section?: string; // For compatibility with DoctorQuestion
 }
 
 export const DEFAULT_QUESTIONS: Question[] = [
@@ -118,11 +120,15 @@ const QuestionEditor = ({
     question, 
     onUpdate, 
     onDelete,
+    onMoveUp,
+    onMoveDown,
     readOnly = false
 }: { 
     question: Question; 
     onUpdate: (q: Question) => void; 
     onDelete: () => void;
+    onMoveUp: () => void;
+    onMoveDown: () => void;
     readOnly?: boolean;
 }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -136,9 +142,9 @@ const QuestionEditor = ({
     };
 
     return (
-        <div className="flex flex-col gap-2 min-w-[100px]">
+        <div className="flex flex-col gap-2 min-w-[120px]">
             {!isEditing ? (
-                <div className="flex items-center gap-1 bg-secondary/20 p-1.5 rounded-xl border border-border/40">
+                <div className="flex items-center gap-1 bg-secondary/20 p-1 rounded-xl border border-border/40">
                     <Button 
                         size="icon" 
                         variant="ghost" 
@@ -148,6 +154,26 @@ const QuestionEditor = ({
                     >
                         <Edit2 className="h-3.5 w-3.5" />
                     </Button>
+                    <div className="flex items-center">
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            onClick={onMoveUp}
+                            title="Переместить вверх"
+                        >
+                            <ArrowRight className="h-3.5 w-3.5 -rotate-90" />
+                        </Button>
+                        <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            onClick={onMoveDown}
+                            title="Переместить вниз"
+                        >
+                            <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                        </Button>
+                    </div>
                     <Button 
                         size="icon" 
                         variant="ghost" 
@@ -159,16 +185,65 @@ const QuestionEditor = ({
                     </Button>
                 </div>
             ) : (
-                <div className="p-2 bg-background border border-primary/30 rounded-xl shadow-lg animate-in zoom-in-95 duration-200 z-20">
-                    <Input 
-                        value={editLabel} 
-                        onChange={e => setEditLabel(e.target.value)} 
-                        className="h-8 text-[11px] font-bold mb-2 bg-secondary/10" 
-                        autoFocus
-                    />
-                    <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider" onClick={() => setIsEditing(false)}>Отмена</Button>
-                        <Button size="sm" className="h-6 px-2 text-[9px] uppercase font-bold tracking-wider bg-primary hover:bg-primary/90" onClick={handleSave}>Сохранить</Button>
+                <div className="p-3 bg-background border border-primary/30 rounded-2xl shadow-xl animate-in zoom-in-95 duration-200 z-50 w-80">
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] uppercase font-bold text-muted-foreground">Текст вопроса</Label>
+                            <Input 
+                                value={editLabel} 
+                                onChange={e => setEditLabel(e.target.value)} 
+                                className="h-9 text-xs mb-2 bg-secondary/10 border-none rounded-xl" 
+                                autoFocus
+                            />
+                        </div>
+
+                        {(question.type === "radio" || question.type === "checkbox") && (
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Варианты ответа</Label>
+                                <div className="space-y-1.5">
+                                    {(question.options || []).map((opt, idx) => (
+                                        <div key={idx} className="flex gap-1">
+                                            <Input 
+                                                value={opt.label}
+                                                onChange={(e) => {
+                                                    const newOpts = [...(question.options || [])];
+                                                    newOpts[idx] = { ...newOpts[idx], label: e.target.value };
+                                                    onUpdate({ ...question, options: newOpts });
+                                                }}
+                                                className="h-8 text-[11px] bg-secondary/5 border-none rounded-lg"
+                                            />
+                                            <Button 
+                                                size="icon" 
+                                                variant="ghost" 
+                                                className="h-8 w-8 shrink-0 hover:bg-destructive/10 text-destructive"
+                                                onClick={() => {
+                                                    const newOpts = (question.options || []).filter((_, i) => i !== idx);
+                                                    onUpdate({ ...question, options: newOpts });
+                                                }}
+                                            >
+                                                <X className="h-3.5 w-3.5" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full h-8 text-[10px] border-dashed gap-1 rounded-lg"
+                                        onClick={() => {
+                                            const newOpts = [...(question.options || []), { id: `opt_${Date.now()}`, label: "" }];
+                                            onUpdate({ ...question, options: newOpts });
+                                        }}
+                                    >
+                                        <Plus className="h-3 w-3" /> Добавить вариант
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-1 pt-2">
+                            <Button size="sm" variant="ghost" className="h-8 px-3 text-[10px] uppercase font-bold tracking-wider rounded-xl" onClick={() => setIsEditing(false)}>Отмена</Button>
+                            <Button size="sm" className="h-8 px-3 text-[10px] uppercase font-bold tracking-wider bg-primary hover:bg-primary/90 text-white rounded-xl" onClick={handleSave}>Сохранить</Button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -220,9 +295,19 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         const newQ: Question = {
             id: `q_${Date.now()}`,
             label: "Новый вопрос",
-            type: "text"
+            type: "text",
+            options: []
         };
         onQuestionsChange([...questions, newQ]);
+    };
+
+    const moveQuestion = (index: number, direction: 'up' | 'down') => {
+        const newQuestions = [...questions];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex >= 0 && targetIndex < newQuestions.length) {
+            [newQuestions[index], newQuestions[targetIndex]] = [newQuestions[targetIndex], newQuestions[index]];
+            onQuestionsChange(newQuestions);
+        }
     };
 
     const nextStep = () => {
@@ -361,80 +446,98 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-8">
-                            {questions.map((q) => (
-                                <div key={q.id} className="space-y-4">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground flex items-center gap-1">
-                                            {q.label} {q.required && <span className="text-destructive">*</span>}
-                                        </Label>
-                                        {!readOnly && (
-                                            <QuestionEditor 
-                                                question={q} 
-                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
-                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                            />
-                                        )}
-                                    </div>
+                        <div className="space-y-6">
+                            <ScrollArea className="h-[500px] pr-4 -mr-4">
+                                <div className="space-y-8 pb-10">
+                                    {questions.map((q) => (
+                                        <div key={q.id} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground flex items-center gap-1">
+                                                    {q.label} {q.required && <span className="text-destructive">*</span>}
+                                                </Label>
+                                                {!readOnly && (
+                                                    <QuestionEditor 
+                                                        question={q} 
+                                                        onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                        onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                        onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
+                                                        onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
+                                                    />
+                                                )}
+                                            </div>
 
-                                    {q.type === "textarea" && (
-                                        <Textarea
-                                            placeholder="..."
-                                            className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 w-full"
-                                            value={formData.answers[q.id] || ""}
-                                            onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                            disabled={readOnly}
-                                        />
-                                    )}
+                                            {q.type === "textarea" && (
+                                                <div className="relative group">
+                                                    <Textarea
+                                                        placeholder="..."
+                                                        className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 w-full transition-all group-hover:bg-secondary/15"
+                                                        value={formData.answers[q.id] || ""}
+                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                        disabled={readOnly}
+                                                    />
+                                                </div>
+                                            )}
 
-                                    {q.type === "text" && (
-                                        <Input
-                                            placeholder="..."
-                                            className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary w-full"
-                                            value={formData.answers[q.id] || ""}
-                                            onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                            disabled={readOnly}
-                                        />
-                                    )}
+                                            {q.type === "text" && (
+                                                <div className="relative group">
+                                                    <Input
+                                                        placeholder="..."
+                                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary w-full transition-all group-hover:bg-secondary/15"
+                                                        value={formData.answers[q.id] || ""}
+                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                        disabled={readOnly}
+                                                    />
+                                                </div>
+                                            )}
 
-                                    {q.type === "radio" && q.options && (
-                                        <div className="space-y-4">
-                                            <RadioGroup
-                                                value={formData.answers[q.id] || ""}
-                                                onValueChange={(v) => !readOnly && setFormData({ ...formData, answers: { ...formData.answers, [q.id]: v } })}
-                                                className="grid grid-cols-2 gap-3"
-                                                disabled={readOnly}
-                                            >
-                                                {q.options.map((opt) => (
-                                                    <div 
-                                                        key={opt.id}
-                                                        className={cn(
-                                                            "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
-                                                            formData.answers[q.id] === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30",
-                                                            !readOnly && "cursor-pointer"
-                                                        )}
-                                                        onClick={() => !readOnly && setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } })}
-                                                    >
-                                                        <RadioGroupItem value={opt.id} id={`${q.id}-${opt.id}`} className="sr-only" />
-                                                        <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.answers[q.id] === opt.id && "bg-primary")}>
-                                                            {formData.answers[q.id] === opt.id && <Check className="h-3 w-3 text-white" />}
-                                                        </div>
-                                                        <Label htmlFor={`${q.id}-${opt.id}`} className={cn("text-sm font-semibold", !readOnly && "cursor-pointer")}>{opt.label}</Label>
+                                            {(q.type === "radio" || q.type === "checkbox") && q.options && (
+                                                <div className="space-y-4">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        {q.options.map((opt) => {
+                                                            const isSelected = q.type === "radio" 
+                                                                ? formData.answers[q.id] === opt.id
+                                                                : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={opt.id}
+                                                                    className={cn(
+                                                                        "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
+                                                                        isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 hover:bg-secondary/10",
+                                                                        !readOnly && "cursor-pointer"
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        if (readOnly) return;
+                                                                        if (q.type === "radio") {
+                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
+                                                                        } else {
+                                                                            const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
+                                                                            const newVal = current.includes(opt.id) 
+                                                                                ? current.filter((i: string) => i !== opt.id)
+                                                                                : [...current, opt.id];
+                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <div className={cn(
+                                                                        "h-5 w-5 rounded-full border-2 border-primary flex items-center justify-center transition-all",
+                                                                        isSelected ? "bg-primary" : "bg-transparent"
+                                                                    )}>
+                                                                        {isSelected && <Check className="h-3 w-3 text-white" />}
+                                                                    </div>
+                                                                    <Label className={cn("text-sm font-semibold transition-colors", isSelected ? "text-primary" : "text-foreground", !readOnly && "cursor-pointer")}>
+                                                                        {opt.label}
+                                                                    </Label>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                ))}
-                                            </RadioGroup>
-                                            {formData.answers[q.id] === "other" && (
-                                                <Input
-                                                    placeholder="Введите место..."
-                                                    className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary animate-in zoom-in-95 duration-200"
-                                                    value={formData.painLocationOther}
-                                                    onChange={(e) => setFormData({ ...formData, painLocationOther: e.target.value })}
-                                                />
+                                                </div>
                                             )}
                                         </div>
-                                    )}
+                                    ))}
                                 </div>
-                            ))}
+                            </ScrollArea>
                         </div>
                     </div>
                 )}
