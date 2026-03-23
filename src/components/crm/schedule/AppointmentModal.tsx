@@ -21,6 +21,8 @@ import {
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { DiagnosticModule } from "../../diagnostics/DiagnosticModule";
+import { Lead } from "../KanbanBoard";
 
 interface AppointmentModalProps {
     open: boolean;
@@ -29,6 +31,7 @@ interface AppointmentModalProps {
     selectedDate?: Date;
     selectedTime?: string;
     onSave: (data: any) => void;
+    mode?: "admin" | "doctor";
 }
 
 const STATUSES = [
@@ -46,7 +49,7 @@ const MOCK_PATIENTS = [
 
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     open, onOpenChange, appointment, 
-    selectedDate, selectedTime, onSave
+    selectedDate, selectedTime, onSave, mode = "admin"
 }) => {
     const isEditing = !!appointment;
     const [formData, setFormData] = useState({
@@ -76,6 +79,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         }
     }, [open, appointment, selectedDate, selectedTime]);
 
+    const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
     const [searchResults, setSearchResults] = useState<typeof MOCK_PATIENTS>([]);
     const [showResults, setShowResults] = useState(false);
 
@@ -292,7 +296,11 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
                 <DialogFooter className="bg-secondary/50 px-10 py-5 border-t border-border/50 flex flex-col sm:flex-row gap-3 items-center">
                     {isEditing && (
-                        <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center gap-2">
+                        <Button 
+                            variant="ghost" 
+                            className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center gap-2"
+                            onClick={() => setIsDiagnosticOpen(true)}
+                        >
                             <ExternalLink className="h-4 w-4" /> В карточку
                         </Button>
                     )}
@@ -312,6 +320,30 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     </Button>
                 </DialogFooter>
             </DialogContent>
+
+            {isEditing && (
+                <DiagnosticModule 
+                    open={isDiagnosticOpen}
+                    onOpenChange={setIsDiagnosticOpen}
+                    lead={{
+                        id: appointment.id,
+                        name: appointment.patient,
+                        phone: appointment.phone,
+                        status: appointment.status === "completed" ? "Готов к лечению" : (appointment.status === "planned" ? "Записан" : "Новая заявка"),
+                        scheduled_at: appointment.date ? (appointment.date instanceof Date ? appointment.date.toISOString() : appointment.date) : undefined,
+                        project_id: "default",
+                        comments: appointment.comment,
+                        email: "",
+                        source: "Schedule",
+                        created_at: new Date().toISOString(),
+                        amount: "0",
+                        utm_campaign: "",
+                        ai_score: 0,
+                        ai_summary: ""
+                    } as any as Lead}
+                    mode={mode}
+                />
+            )}
         </Dialog>
     );
 };

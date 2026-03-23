@@ -24,7 +24,12 @@ const AuthPage = () => {
 
   useEffect(() => {
     if (isReady && user) {
-      navigate("/dashboard", { replace: true });
+      const userRole = user.user_metadata?.role;
+      if (userRole === "doctor") {
+        navigate("/doctor/terminal", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     }
   }, [isReady, user, navigate]);
 
@@ -59,7 +64,7 @@ const AuthPage = () => {
         }
         toast({ title: "Проверьте почту", description: "Мы отправили письмо для подтверждения." });
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ title: "Непредвиденная ошибка", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);

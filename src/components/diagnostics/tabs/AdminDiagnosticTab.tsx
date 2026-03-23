@@ -50,9 +50,10 @@ interface Props {
     data: AdminFormData | null;
     onChange: (data: AdminFormData) => void;
     onNext: () => void;
+    readOnly?: boolean;
 }
 
-export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNext }) => {
+export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNext, readOnly = false }) => {
     const [step, setStep] = useState(1);
     const totalSteps = 4;
 
@@ -214,6 +215,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4"
                                     value={formData.complaints}
                                     onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
+                                    disabled={readOnly}
                                 />
                             </div>
 
@@ -221,8 +223,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                 <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Где именно ощущается боль? <span className="text-destructive">*</span></Label>
                                 <RadioGroup
                                     value={formData.painLocation}
-                                    onValueChange={(v) => setFormData({ ...formData, painLocation: v })}
+                                    onValueChange={(v) => !readOnly && setFormData({ ...formData, painLocation: v })}
                                     className="grid grid-cols-2 gap-3"
+                                    disabled={readOnly}
                                 >
                                     {[
                                         { id: "lumbar", label: "Поясница" },
@@ -234,16 +237,17 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         <div 
                                             key={opt.id}
                                             className={cn(
-                                                "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl cursor-pointer transition-all",
-                                                formData.painLocation === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"
+                                                "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
+                                                formData.painLocation === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30",
+                                                !readOnly && "cursor-pointer"
                                             )}
-                                            onClick={() => setFormData({ ...formData, painLocation: opt.id })}
+                                            onClick={() => !readOnly && setFormData({ ...formData, painLocation: opt.id })}
                                         >
                                             <RadioGroupItem value={opt.id} id={`loc-${opt.id}`} className="sr-only" />
                                             <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.painLocation === opt.id && "bg-primary")}>
                                                 {formData.painLocation === opt.id && <Check className="h-3 w-3 text-white" />}
                                             </div>
-                                            <Label htmlFor={`loc-${opt.id}`} className="text-sm font-semibold cursor-pointer">{opt.label}</Label>
+                                            <Label htmlFor={`loc-${opt.id}`} className={cn("text-sm font-semibold", !readOnly && "cursor-pointer")}>{opt.label}</Label>
                                         </div>
                                     ))}
                                 </RadioGroup>
@@ -265,6 +269,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
                                         value={formData.painDuration}
                                         onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
+                                        disabled={readOnly}
                                     />
                                 </div>
                                 <div className="space-y-3">
@@ -274,6 +279,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                         className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
                                         value={formData.painType}
                                         onChange={(e) => setFormData({ ...formData, painType: e.target.value })}
+                                        disabled={readOnly}
                                     />
                                 </div>
                             </div>
@@ -362,6 +368,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                             className="bg-background border-none focus:ring-1 focus:ring-primary h-24 text-sm font-medium resize-none rounded-xl p-4"
                                             value={formData.adminComment}
                                             onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
+                                            disabled={readOnly}
                                         />
                                     </div>
                                 </div>
@@ -417,8 +424,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Статус предоплаты</Label>
                                     <RadioGroup
                                         value={formData.paymentStatus}
-                                        onValueChange={(val: "pending" | "paid" | "declined") => setFormData({ ...formData, paymentStatus: val })}
+                                        onValueChange={(val: "pending" | "paid" | "declined") => !readOnly && setFormData({ ...formData, paymentStatus: val })}
                                         className="grid grid-cols-1 gap-3"
+                                        disabled={readOnly}
                                     >
                                         {[
                                             { id: "pending", label: "Ожидается оплата", color: "text-amber-500", bg: "bg-amber-500/10" },
@@ -430,10 +438,11 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                                 <Label
                                                     htmlFor={item.id}
                                                     className={cn(
-                                                        "flex-1 flex items-center justify-between p-5 rounded-3xl border-2 cursor-pointer transition-all",
+                                                        "flex-1 flex items-center justify-between p-5 rounded-3xl border-2 transition-all",
                                                         formData.paymentStatus === item.id 
                                                             ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
-                                                            : "border-transparent bg-secondary/5 hover:bg-secondary/10"
+                                                            : "border-transparent bg-secondary/5 hover:bg-secondary/10",
+                                                        !readOnly && "cursor-pointer"
                                                     )}
                                                 >
                                                     <div className="flex items-center gap-3">
@@ -472,7 +481,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <h3 className="font-semibold flex items-center gap-2">
                                         <User className="h-5 w-5 text-primary" /> Данные пациента
                                     </h3>
-                                    <Button variant="ghost" size="sm" onClick={() => setEditPatientData(!editPatientData)} className="h-8 text-xs gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => !readOnly && setEditPatientData(!editPatientData)} className="h-8 text-xs gap-1" disabled={readOnly}>
                                         <Edit2 className="h-3 w-3" /> {editPatientData ? "Готово" : "Изменить"}
                                     </Button>
                                 </div>
@@ -502,7 +511,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <h3 className="font-semibold flex items-center gap-2">
                                         <Calendar className="h-5 w-5 text-primary" /> Запись
                                     </h3>
-                                    <Button variant="ghost" size="sm" onClick={() => setEditBookingData(!editBookingData)} className="h-8 text-xs gap-1">
+                                    <Button variant="ghost" size="sm" onClick={() => !readOnly && setEditBookingData(!editBookingData)} className="h-8 text-xs gap-1" disabled={readOnly}>
                                         <Edit2 className="h-3 w-3" /> {editBookingData ? "Готово" : "Изменить"}
                                     </Button>
                                 </div>
@@ -538,7 +547,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                                     <h3 className="font-semibold flex items-center gap-2 text-primary">
                                         <ClipboardList className="h-5 w-5" /> Краткая выжимка (Для врача)
                                     </h3>
-                                    <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="h-8 text-xs gap-1 text-primary hover:bg-primary/10">
+                                    <Button variant="ghost" size="sm" onClick={() => !readOnly && setStep(1)} className="h-8 text-xs gap-1 text-primary hover:bg-primary/10" disabled={readOnly}>
                                         <Edit2 className="h-3 w-3" /> Изменить анкету
                                     </Button>
                                 </div>
@@ -550,15 +559,17 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                             </div>
                         </div>
 
-                        <div className="flex justify-end pt-4">
-                            <Button 
-                                onClick={handleConfirm}
-                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm uppercase gap-3 shadow-xl shadow-primary/20"
-                            >
-                                <CheckCircle2 className="h-5 w-5" />
-                                Подтвердить запись
-                            </Button>
-                        </div>
+                        {!readOnly && (
+                            <div className="flex justify-end pt-4">
+                                <Button 
+                                    onClick={handleConfirm}
+                                    className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-semibold text-sm uppercase gap-3 shadow-xl shadow-primary/20"
+                                >
+                                    <CheckCircle2 className="h-5 w-5" />
+                                    Подтвердить запись
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

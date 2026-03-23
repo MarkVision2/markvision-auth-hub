@@ -13,11 +13,17 @@ import {
   loadTeam, saveTeam, type TeamMember, ROLE_PRESETS 
 } from "@/pages/settings/types";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
+import { DoctorWorkspace } from "@/components/doctor/DoctorWorkspace";
 
 const DoctorTerminal = () => {
+  const { user } = useAuth();
+  const { isDoctor, isSuperadmin } = useRole();
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [search, setSearch] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState<TeamMember | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -93,11 +99,37 @@ const DoctorTerminal = () => {
     toast({ title: "Удалено", description: "Врач удален из системы" });
   };
 
-  const doctors = team.filter(m => 
-    m.role === "doctor" && 
-    (m.name.toLowerCase().includes(search.toLowerCase()) || 
-     m.specialty?.toLowerCase().includes(search.toLowerCase()))
-  );
+  // If the user is a doctor, filter the list to show ONLY them
+  // or allow them to "claim" a profile if userId matches
+  const displayDoctors = team.filter(m => {
+    if (m.role !== "doctor") return false;
+    
+    // If current user is a doctor, they should see only their linked profile
+    // or if they haven't linked yet, maybe all? Actually, user said: "Врач видит карточку своего профиля"
+    if (isDoctor && user) {
+        return m.userId === user.id || m.email === user.email;
+    }
+
+    return m.name.toLowerCase().includes(search.toLowerCase()) || 
+           m.specialty?.toLowerCase().includes(search.toLowerCase());
+  });
+
+  if (selectedDoctor) {
+      return (
+        <DashboardLayout breadcrumb={`Терминал / ${selectedDoctor.name}`}>
+            <div className="max-w-6xl mx-auto space-y-6">
+                <Button 
+                    variant="ghost" 
+                    onClick={() => setSelectedDoctor(null)}
+                    className="gap-2 text-muted-foreground hover:text-foreground"
+                >
+                    <X className="h-4 w-4" /> Назад к списку
+                </Button>
+                <DoctorWorkspace doctor={selectedDoctor} />
+            </div>
+        </DashboardLayout>
+      );
+  }
 
   return (
     <DashboardLayout breadcrumb="Терминал Врача">
@@ -233,20 +265,27 @@ const DoctorTerminal = () => {
           </div>
           <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl border border-border/40">
             <Users className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold">{doctors.length}</span>
+            <span className="text-sm font-bold">{displayDoctors.length}</span>
             <span className="text-xs text-muted-foreground">Врачей</span>
           </div>
         </div>
 
         {/* Doctors List */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {doctors.map(doc => (
-            <div key={doc.id} className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 shadow-sm overflow-hidden">
-              <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {displayDoctors.map(doc => (
+            <div 
+                key={doc.id} 
+                className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 shadow-sm overflow-hidden cursor-pointer"
+                onClick={() => setSelectedDoctor(doc)}
+            >
+              <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={() => handleDeleteDoctor(doc.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteDoctor(doc.id);
+                  }}
                   className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -295,18 +334,25 @@ const DoctorTerminal = () => {
             </div>
           ))}
 
-          {doctors.length === 0 && !showAddForm && (
+          {displayDoctors.length === 0 && !showAddForm && (
             <div className="col-span-full py-16 text-center border-2 border-dashed border-border/50 rounded-3xl bg-secondary/5">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted border border-border">
                 <Users className="h-7 w-7 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">Врачи не найдены</h3>
+              <h3 className="text-lg font-bold text-foreground mb-1">
+                {isDoctor ? "Ваш профиль не найден" : "Врачи не найдены"}
+              </h3>
               <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Добавьте первого специалиста, чтобы начать работу с расписанием
+                {isDoctor 
+                    ? "Свяжитесь с администратором для создания вашей учетной записи врача."
+                    : "Добавьте первого специалиста, чтобы начать работу с расписанием"
+                }
               </p>
-              <Button onClick={() => setShowAddForm(true)} variant="link" className="mt-2 text-primary">
-                Добавить врача прямо сейчас
-              </Button>
+              {!isDoctor && (
+                  <Button onClick={() => setShowAddForm(true)} variant="link" className="mt-2 text-primary">
+                    Добавить врача прямо сейчас
+                  </Button>
+              )}
             </div>
           )}
         </div>

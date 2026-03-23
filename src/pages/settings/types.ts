@@ -98,6 +98,7 @@ export interface TeamMember {
     specialty?: string;
     workingDays?: string[];
     workingHours?: string;
+    userId?: string;
 }
 
 export const INITIAL_TEAM: TeamMember[] = [

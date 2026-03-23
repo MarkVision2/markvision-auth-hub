@@ -20,10 +20,11 @@ interface DiagnosticModuleProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onComplete?: (data: any) => void;
+    mode?: "admin" | "doctor";
 }
 
 export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({ 
-    lead, open, onOpenChange, onComplete 
+    lead, open, onOpenChange, onComplete, mode = "admin" 
 }) => {
     const [activeTab, setActiveTab] = useState("admin");
     const [isSaving, setIsSaving] = useState(false);
@@ -116,34 +117,48 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                         <ClipboardList className="h-4 w-4" />
                                         1. Диагностика (Админ)
                                     </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="doctor" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                    >
-                                        <Stethoscope className="h-4 w-4" />
-                                        2. Осмотр (Врач)
-                                    </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="prescription" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                        3. Лист назначения
-                                    </TabsTrigger>
+                                    {mode === "doctor" && (
+                                        <>
+                                            <TabsTrigger 
+                                                value="doctor" 
+                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                            >
+                                                <Stethoscope className="h-4 w-4" />
+                                                2. Осмотр (Врач)
+                                            </TabsTrigger>
+                                            <TabsTrigger 
+                                                value="prescription" 
+                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                            >
+                                                <FileText className="h-4 w-4" />
+                                                3. Лист назначения
+                                            </TabsTrigger>
+                                        </>
+                                    )}
                                 </TabsList>
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
                                 <div className="p-6 min-h-full">
                                     <TabsContent value="admin" className="m-0 focus-visible:outline-none">
-                                        <AdminDiagnosticTab lead={lead} data={adminData} onChange={setAdminData} onNext={() => setActiveTab("doctor")} />
+                                        <AdminDiagnosticTab 
+                                            lead={lead} 
+                                            data={adminData} 
+                                            onChange={setAdminData} 
+                                            onNext={() => mode === "doctor" && setActiveTab("doctor")}
+                                            readOnly={mode === "doctor"}
+                                        />
                                     </TabsContent>
-                                    <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
-                                        <DoctorDiagnosticTab lead={lead} adminData={adminData} data={doctorData} onChange={setDoctorData} onNext={() => setActiveTab("prescription")} />
-                                    </TabsContent>
-                                    <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
-                                        <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
-                                    </TabsContent>
+                                    {mode === "doctor" && (
+                                        <>
+                                            <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
+                                                <DoctorDiagnosticTab lead={lead} adminData={adminData} data={doctorData} onChange={setDoctorData} onNext={() => setActiveTab("prescription")} />
+                                            </TabsContent>
+                                            <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
+                                                <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
+                                            </TabsContent>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </Tabs>
