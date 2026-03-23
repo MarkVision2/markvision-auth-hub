@@ -23,7 +23,7 @@ import {
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Globe, Hash, Loader2, Check, CheckCheck, Trash2, Copy, Sparkles,
   Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
-  Stethoscope,
+  Stethoscope, Edit2
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -214,6 +214,9 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [busySlots, setBusySlots] = useState<{ date: string; time: string; doctor: string }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [diagnosticOpen, setDiagnosticOpen] = useState(false);
+  const [amountValue, setAmountValue] = useState(0);
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [tempAmount, setTempAmount] = useState("");
 
   const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
   const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
@@ -240,7 +243,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     setLoadingSlots(true);
     try {
       const dateStr = date.toISOString().split("T")[0];
-      const { data, error } = await (supabase as unknown)
+      const { data, error } = await (supabase as any)
         .from("leads_crm")
         .select("scheduled_at, doctor_name")
         .not("scheduled_at", "is", null)
@@ -248,7 +251,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         .filter("scheduled_at", "lte", `${dateStr}T23:59:59Z`);
 
       if (error) throw error;
-      const slots = data.map((l: unknown) => {
+      const slots = (data as any).map((l: any) => {
         const d = new Date(l.scheduled_at);
         return {
           date: dateStr,
@@ -271,7 +274,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const fetchChatMessages = useCallback(async (leadId: string) => {
     setMessagesLoading(true);
     try {
-      const { data, error } = await (supabase as unknown)
+      const { data, error } = await (supabase as any)
         .from("chat_messages")
         .select("*")
         .eq("lead_id", leadId)
@@ -287,7 +290,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
   const fetchNotes = useCallback(async (leadId: string) => {
     try {
-      const { data, error } = await (supabase as unknown)
+      const { data, error } = await (supabase as any)
         .from("crm_notes").select("*").eq("lead_id", leadId).order("created_at", { ascending: false });
       if (error) throw error;
       setNotes((data as CrmNote[]) ?? []);
@@ -304,6 +307,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       setCallHistory([]);
       setIsCallActive(false);
       setIsAnalyzing(false);
+      setAmountValue(Number(lead.amount) || 0);
+      setTempAmount(String(lead.amount || "0"));
     }
   }, [lead, open, fetchChatMessages, fetchNotes]);
 
@@ -311,14 +316,14 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     if (!lead || !open) return;
     const ch = supabase
       .channel(`lead_chat_${lead.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `lead_id=eq.${lead.id}` }, (payload: unknown) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
         setChatMessages(prev => {
           const newMsg = payload.new as ChatMessage;
           if (prev.some(m => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: unknown) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_notes", filter: `lead_id=eq.${lead.id}` }, (payload: any) => {
         setNotes(prev => [payload.new as CrmNote, ...prev]);
       })
       .subscribe();
@@ -335,7 +340,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   if (!lead) return null;
 
   const initials = lead.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const amount = Number(lead.amount) || 0;
   const score = lead.ai_score ?? 0;
   const scoreBadge = getScoreLabel(score);
 
@@ -354,7 +358,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           table: "leads_crm", type: "UPDATE",
-          record: { id: lead.id, status: capiKey, project_id: (lead as unknown).project_id || null, deal_amount: Number(lead.amount) || 0 },
+          record: { id: lead.id, status: capiKey, project_id: (lead as any).project_id || null, deal_amount: Number(lead.amount) || 0 },
           old_record: { status: oldStatus },
         }),
       });
@@ -372,7 +376,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as unknown).from("leads_crm").update({ status: newStage }).eq("id", lead.id);
+    const { error } = await (supabase as any).from("leads_crm").update({ status: newStage }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -383,7 +387,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   };
 
   const handleDeleteLead = async () => {
-    const { error } = await (supabase as unknown).from("leads_crm").delete().eq("id", lead.id);
+    const { error } = await (supabase as any).from("leads_crm").delete().eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
       return;
@@ -422,7 +426,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       return;
     }
 
-    const { error } = await (supabase as unknown)
+    const { error } = await (supabase as any)
       .from("leads_crm")
       .update({
         scheduled_at: fullDate.toISOString(),
@@ -437,6 +441,24 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     } else {
       setStage("Записан");
       toast({ title: "Запись подтверждена", description: `${fullDate.toLocaleDateString("ru-RU")} в ${scheduledTime}` });
+      onLeadUpdated?.();
+    }
+  };
+
+  const handleAmountSave = async () => {
+    const newAmount = Number(tempAmount);
+    if (isNaN(newAmount)) return;
+
+    setAmountValue(newAmount);
+    setIsEditingAmount(false);
+    
+    if (!lead) return;
+    const { error } = await (supabase as any).from("leads_crm").update({ amount: newAmount }).eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      setAmountValue(Number(lead.amount) || 0);
+    } else {
+      toast({ title: "Сумма обновлена", description: `${newAmount} ₸` });
       onLeadUpdated?.();
     }
   };
@@ -460,7 +482,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       if (error) throw error;
       const webhookUrl = import.meta.env.VITE_N8N_WA_SEND_WEBHOOK;
       if (webhookUrl) {
-        fetch(webhookUrl, {
+        fetch(webhookUrl as string, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ lead_id: lead.id, phone: lead.phone || "", message: body }),
@@ -477,7 +499,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
     if (!noteText.trim()) return;
     const body = noteText.trim();
     setNoteText("");
-    const { error } = await (supabase as unknown).from("crm_notes").insert({
+    const { error } = await (supabase as any).from("crm_notes").insert({
       lead_id: lead.id, author_name: "Менеджер", body,
     });
     if (error) toast({ title: "Ошибка", description: error.message, variant: "destructive" });
@@ -661,9 +683,9 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
                   onClick={async () => {
                     try {
-                      const { error } = await (supabase as unknown).from("retention_tasks").insert({
+                      const { error } = await (supabase as any).from("retention_tasks").insert({
                         lead_id: lead.id,
-                        project_id: (lead as unknown).project_id || null,
+                        project_id: (lead as any).project_id || null,
                         trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
                         status: "pending",
                       });
@@ -692,8 +714,46 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
             <div className="px-5 py-3 border-b border-border space-y-2.5">
               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Детали</label>
               <div className="space-y-1.5">
+                {/* Сумма — Editable */}
+                <div className="flex items-center justify-between py-1.5 group">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <DollarSign className="h-3.5 w-3.5" />
+                    <span className="text-xs">Сумма</span>
+                  </div>
+                  {isEditingAmount ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        value={tempAmount}
+                        onChange={(e) => setTempAmount(e.target.value)}
+                        className="h-7 w-24 text-right text-xs bg-secondary/50 border-primary/30"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAmountSave();
+                          if (e.key === "Escape") setIsEditingAmount(false);
+                        }}
+                      />
+                      <button onClick={handleAmountSave} className="text-emerald-500 hover:text-emerald-600 p-1">
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      className="flex items-center gap-1.5 cursor-pointer hover:text-primary transition-colors group/amount"
+                      onClick={() => {
+                        setTempAmount(String(amountValue));
+                        setIsEditingAmount(true);
+                      }}
+                    >
+                      <span className="text-xs font-bold text-foreground/80">
+                        {amountValue > 0 ? `${new Intl.NumberFormat("ru-RU").format(amountValue)} ₸` : "0 ₸"}
+                      </span>
+                      <Edit2 className="h-3 w-3 opacity-0 group-hover/amount:opacity-100 transition-opacity text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+
                 {[
-                  { icon: DollarSign, label: "Сумма", value: amount > 0 ? `${new Intl.NumberFormat("ru-RU").format(amount)} ₸` : "Не указана" },
                   { icon: Globe, label: "Источник", value: lead.source || "—" },
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
@@ -716,17 +776,17 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               <div className="space-y-1.5">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">UTM Метки</p>
                 {[
-                  { label: "Источник (utm_source)", value: (lead as unknown).utm_source },
-                  { label: "Тип трафика (utm_medium)", value: (lead as unknown).utm_medium },
-                  { label: "Контент (utm_content)", value: (lead as unknown).utm_content },
-                  { label: "Ключевое слово (utm_term)", value: (lead as unknown).utm_term },
+                  { label: "Источник (utm_source)", value: (lead as any).utm_source },
+                  { label: "Тип трафика (utm_medium)", value: (lead as any).utm_medium },
+                  { label: "Контент (utm_content)", value: (lead as any).utm_content },
+                  { label: "Ключевое слово (utm_term)", value: (lead as any).utm_term },
                 ].map((utm) => utm.value && (
                   <div key={utm.label} className="flex flex-col py-1">
                     <span className="text-[9px] text-muted-foreground">{utm.label}</span>
                     <span className="text-xs font-medium text-foreground/70 truncate">{utm.value}</span>
                   </div>
                 ))}
-                {!(lead as unknown).utm_source && !(lead as unknown).utm_medium && !(lead as unknown).utm_content && !(lead as unknown).utm_term && (
+                {!(lead as any).utm_source && !(lead as any).utm_medium && !(lead as any).utm_content && !(lead as any).utm_term && (
                   <p className="text-[10px] text-muted-foreground italic">UTM-метки отсутствуют</p>
                 )}
               </div>
@@ -764,7 +824,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
           {/* RIGHT — Chat / Notes / Calls */}
           <div className="w-[65%] flex flex-col">
             <div className="flex items-center justify-between px-5 py-2 border-b border-border">
-              <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as unknown)}>
+              <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as any)}>
                 <TabsList className="h-8 bg-secondary/50">
                   <TabsTrigger value="chat" className="text-xs h-6 gap-1 data-[state=active]:bg-background">
                     <MessageCircle className="h-3 w-3" /> Чат
