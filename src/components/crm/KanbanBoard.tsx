@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/tooltip";
 import { loadStages, saveStageLabel, type CrmStage, PIPELINES } from "./crm-config";
 import { Loader2 } from "lucide-react";
+import { AppointmentModal } from "./schedule/AppointmentModal";
+
+// Stage-specific task descriptions
+const STAGE_TASKS: Record<string, { task: string; emoji: string }> = {
+  "Без ответа": { task: "Связаться позже", emoji: "📞" },
+  "Счет отправлен": { task: "Уточнить / напомнить про оплату", emoji: "💳" },
+  "Диагностика": { task: "Напомнить о записи", emoji: "📅" },
+};
 
 export interface Lead {
   id: string;
@@ -205,6 +213,8 @@ export default function KanbanBoard() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
   const [activePipeline, setActivePipeline] = useState<string>("main");
+  const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   useEffect(() => {
     setStages(loadStages(active.id, activePipeline));
@@ -282,14 +292,32 @@ export default function KanbanBoard() {
   const handleMoveStage = async (leadId: string, newStatus: string) => {
     const lead = leads.find(l => l.id === leadId);
     const oldStatus = lead?.status || "Новая заявка";
+
+    // If moving to "Диагностика" — open scheduling modal first
+    if (newStatus === "Диагностика" && lead) {
+      setPendingScheduleLead({ ...lead, status: newStatus });
+      setShowScheduleModal(true);
+      return;
+    }
+
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
     const { error } = await (supabase as any)
-      .from("leads_crm").update({ status: newStatus, pipeline: activePipeline }).eq("id", leadId);
+      .from("leads_crm").update({ status: newStatus }).eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       fetchLeads();
       return;
     }
+
+    // Show stage-specific task toast
+    const stageTask = STAGE_TASKS[newStatus];
+    if (stageTask) {
+      toast({
+        title: `${stageTask.emoji} Задача: ${stageTask.task}`,
+        description: `${lead?.name || "Лид"} → ${newStatus}`,
+      });
+    }
+
     // Фоново отправляем CAPI-событие в n8n
     if (lead) fireCAPIWebhook(lead, oldStatus, newStatus);
   };
@@ -598,6 +626,54 @@ export default function KanbanBoard() {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onLeadUpdated={() => fetchLeads()}
+      />
+
+      {/* Scheduling Modal for "Диагностика" stage */}
+      <AppointmentModal
+        open={showScheduleModal}
+        onOpenChange={(open) => {
+          setShowScheduleModal(open);
+          if (!open) setPendingScheduleLead(null);
+        }}
+        appointment={pendingScheduleLead ? {
+          id: pendingScheduleLead.id,
+          patient: pendingScheduleLead.name,
+          phone: pendingScheduleLead.phone,
+          status: "planned",
+          lead: pendingScheduleLead,
+        } : undefined}
+        mode="admin"
+        onSave={async (data: any) => {
+          if (pendingScheduleLead) {
+            const updatePayload: any = { status: "Диагностика" };
+            if (data.date && data.time) {
+              const [h, m] = data.time.split(":").map(Number);
+              const scheduledAt = new Date(data.date);
+              scheduledAt.setHours(h, m, 0, 0);
+              updatePayload.scheduled_at = scheduledAt.toISOString();
+            }
+            if (data.doctor) {
+              updatePayload.doctor_name = data.doctor;
+            }
+
+            setLeads(prev => prev.map(l => l.id === pendingScheduleLead.id ? { ...l, ...updatePayload } : l));
+            const { error } = await (supabase as any)
+              .from("leads_crm").update(updatePayload).eq("id", pendingScheduleLead.id);
+
+            if (error) {
+              toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+              fetchLeads();
+            } else {
+              toast({
+                title: "📅 Задача: Напомнить о записи",
+                description: `${pendingScheduleLead.name} записан на диагностику`,
+              });
+              fireCAPIWebhook(pendingScheduleLead, pendingScheduleLead.status || "Новая заявка", "Диагностика");
+            }
+          }
+          setShowScheduleModal(false);
+          setPendingScheduleLead(null);
+        }}
       />
     </TooltipProvider>
   );

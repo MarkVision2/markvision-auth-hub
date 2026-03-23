@@ -387,7 +387,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const handleStageChange = async (newStage: string) => {
     const oldStatus = stage;
     setStage(newStage);
-    const { error } = await (supabase as any).from("leads_crm").update({ status: newStage, pipeline }).eq("id", lead.id);
+    const { error } = await (supabase as any).from("leads_crm").update({ status: newStage }).eq("id", lead.id);
     if (error) {
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
       return;
@@ -809,7 +809,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 setPipeline(v);
                 const defaultStage = v === "doctor" ? "Лечение начато" : "Новая заявка";
                 setStage(defaultStage);
-                await (supabase as any).from("leads_crm").update({ pipeline: v, status: defaultStage }).eq("id", lead.id);
+                await (supabase as any).from("leads_crm").update({ status: defaultStage }).eq("id", lead.id);
                 onLeadUpdated?.();
               }} className="mt-1.5">
                 <TabsList className="h-8 bg-secondary/50 w-full">
