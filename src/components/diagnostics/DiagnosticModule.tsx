@@ -70,8 +70,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
         try {
             // Mapping statuses to CRM stages
             let newStatus = lead.status;
-            if (adminData.paymentStatus === "pending") newStatus = "Счет отправлен";
-            if (adminData.paymentStatus === "paid") newStatus = "Диагностика";
+            if (adminData.paymentStatus === "pending") newStatus = "Счет выставлен";
+            if (adminData.paymentStatus === "paid") newStatus = "Записан";
             if (adminData.paymentStatus === "declined") newStatus = "Отказ";
 
             const updateData: any = {

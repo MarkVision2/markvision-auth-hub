@@ -382,6 +382,12 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       return;
     }
     toast({ title: "Статус обновлён", description: `${lead.name} → ${newStage}` });
+    
+    // Automatic Navigation: Open Diagnostic Form if visit is completed
+    if (newStage === "Визит совершен") {
+      setDiagnosticOpen(true);
+    }
+    
     fireCAPIWebhook(oldStatus, newStage);
     onLeadUpdated?.();
   };
@@ -692,7 +698,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                       if (error) throw error;
                       toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
                     } catch (err: unknown) {
-                      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+                      toast({ title: "Ошибка", description: (err as any).message, variant: "destructive" });
                     }
                   }}
                 >
