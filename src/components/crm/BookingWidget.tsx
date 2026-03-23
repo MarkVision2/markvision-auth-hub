@@ -77,13 +77,13 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     };
 
     return (
-        <div className="space-y-10 max-w-2xl mx-auto py-4">
+        <div className="space-y-6 w-full py-2">
             {/* Header & Doctor Selection */}
-            <div className="space-y-4 text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px] uppercase font-bold tracking-widest text-primary">
-                    <User className="h-3 w-3" /> ВЫБЕРИТЕ ВРАЧА
+            <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                    <User className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ВРАЧА
                 </div>
-                <div className="max-w-md mx-auto">
+                <div className="w-full">
                     <Select value={doctor} onValueChange={(v) => {
                         handleUpdate(v, undefined, "");
                     }}>
@@ -104,36 +104,35 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                 </div>
             </div>
 
-            {/* Calendar Section */}
-            <div className={cn("space-y-4 flex flex-col items-center transition-opacity", !doctor && "opacity-50 pointer-events-none")}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px] uppercase font-bold tracking-widest text-primary">
-                    <Calendar className="h-3 w-3" /> ВЫБЕРИТЕ ДАТУ
+                <div className="flex flex-col items-center gap-2">
+                    <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                        <Calendar className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ДАТУ
+                    </div>
+                    <div className="p-3 rounded-2xl bg-card border border-border shadow-sm">
+                        <CalendarUI
+                            mode="single"
+                            selected={date}
+                            onSelect={(d) => handleUpdate(doctor, d, "")}
+                            disabled={isDayDisabled}
+                            className="rounded-xl border-none p-0 scale-95 origin-top"
+                        />
+                    </div>
                 </div>
-                <div className="inline-block p-4 rounded-3xl bg-card border border-border shadow-xl shadow-primary/5">
-                    <CalendarUI
-                        mode="single"
-                        selected={date}
-                        onSelect={(d) => handleUpdate(doctor, d, "")}
-                        disabled={isDayDisabled}
-                        className="rounded-xl border-none p-0"
-                    />
-                </div>
-            </div>
 
             {/* Time Slots Section */}
-            <div className={cn("space-y-4 text-center transition-opacity", !date && "opacity-50 pointer-events-none")}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/5 border border-primary/10 text-[10px] uppercase font-bold tracking-widest text-primary">
-                    <Clock className="h-3 w-3" /> ДОСТУПНОЕ ВРЕМЯ
+            <div className={cn("space-y-3 text-center transition-opacity", !date && "opacity-50 pointer-events-none")}>
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                    <Clock className="h-2.5 w-2.5" /> ДОСТУПНОЕ ВРЕМЯ
                 </div>
-                <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 max-w-xl mx-auto">
+                <div className="grid grid-cols-4 gap-2">
                     {timeSlots.map(t => (
                         <button
                             key={t}
                             onClick={() => handleUpdate(doctor, date, t)}
                             className={cn(
-                                "h-12 text-sm font-bold rounded-xl border transition-all duration-200",
+                                "h-9 text-[11px] font-bold rounded-lg border transition-all duration-200",
                                 time === t
-                                    ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105"
+                                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-105"
                                     : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
                             )}
                         >
@@ -145,14 +144,14 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
 
             {/* Confirmation Alert */}
             {date && time && doctor && (
-                <div className="p-6 rounded-[24px] bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="h-12 w-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-emerald-500/20">
-                        <Check className="h-6 w-6" />
+                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-md">
+                        <Check className="h-4 w-4" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-foreground leading-tight">Запись подтверждена</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            <span className="text-emerald-600 font-bold">{doctor}</span> • {format(date, "dd.MM.yyyy")} в <span className="text-emerald-600 font-bold">{time}</span>
+                        <p className="text-[11px] font-bold text-foreground leading-tight">Записан: {doctor}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {format(date, "dd.MM.yyyy")} в {time}
                         </p>
                     </div>
                 </div>
