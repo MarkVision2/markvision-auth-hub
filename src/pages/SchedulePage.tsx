@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { loadTeam } from "@/pages/settings/types";
 import DashboardLayout from "@/components/DashboardLayout";
 
 const SchedulePage = () => {
@@ -27,7 +28,11 @@ const SchedulePage = () => {
     // If the user is a doctor, they should only see their own schedule by default
     useEffect(() => {
         if (isDoctor && user) {
-            setSelectedDoctorId(user.id);
+            const team = loadTeam();
+            const me = team.find(m => m.userId === user.id || m.email === user.email);
+            if (me) {
+                setSelectedDoctorId(me.name);
+            }
         }
     }, [isDoctor, user]);
 
@@ -51,9 +56,9 @@ const SchedulePage = () => {
                     time: scheduledDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }),
                     status: mapLeadStatusToAppt(lead.status),
                     type: "Консультация",
-                    service: "Первичный прием",
+                    service: lead.ai_summary || "Первичный прием",
                     comment: lead.comments || "",
-                    doctorId: lead.assigned_to || "1" // Default or actual doctor ID
+                    doctorId: lead.doctor_name || "all" // Use doctor_name for consistency
                 };
             });
 
@@ -87,7 +92,7 @@ const SchedulePage = () => {
     };
 
     return (
-        <DashboardLayout breadcrumb="Сетка расписания" noPadding>
+        <DashboardLayout breadcrumb="Расписание" noPadding>
             <div className="flex flex-col h-full bg-background overflow-hidden relative">
                 <ScheduleHeader 
                 view={view} 

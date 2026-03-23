@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { WeekView } from "../crm/schedule/WeekView";
 import { MonthView } from "../crm/schedule/MonthView";
+import { ScheduleHeader } from "../crm/schedule/ScheduleHeader";
 import { AppointmentModal } from "../crm/schedule/AppointmentModal";
 import { TeamMember, saveTeam, loadTeam } from "@/pages/settings/types";
 import { cn } from "@/lib/utils";
@@ -153,42 +154,15 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
             <div className="min-h-[600px]">
                 {activeTab === "schedule" ? (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="flex items-center justify-between bg-card px-6 py-3 rounded-2xl border border-border/50 shadow-sm">
-                            <div className="flex items-center gap-4">
-                                <h3 className="font-bold text-foreground flex items-center gap-2">
-                                    <Activity className="h-4 w-4 text-primary" />
-                                    Мой график
-                                </h3>
-                                <div className="h-4 w-px bg-border hidden sm:block" />
-                                <div className="flex rounded-lg bg-secondary/30 p-1 h-9">
-                                    <button 
-                                        onClick={() => setView("week")}
-                                        className={cn(
-                                            "px-3 text-xs font-bold transition-all rounded-md", 
-                                            view === "week" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        Неделя
-                                    </button>
-                                    <button 
-                                        onClick={() => setView("month")}
-                                        className={cn(
-                                            "px-3 text-xs font-bold transition-all rounded-md", 
-                                            view === "month" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        Месяц
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-500 rounded-lg border border-emerald-500/20">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider">Рабочее время</span>
-                                </div>
-                            </div>
-                        </div>
+                        <ScheduleHeader
+                            view={view as any}
+                            onViewChange={(v: any) => setView(v)}
+                            selectedDate={selectedDate}
+                            onDateChange={setSelectedDate}
+                            selectedDoctorId={doctor.id}
+                            onDoctorChange={() => {}}
+                            hideDoctorSelector={true}
+                        />
 
                         <div className="border border-border rounded-[32px] overflow-hidden shadow-xl shadow-primary/5 bg-background h-[calc(100vh-320px)] min-h-[500px] relative">
                             {loadingAppts && (
