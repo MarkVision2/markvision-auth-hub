@@ -4,7 +4,8 @@ import { format } from "date-fns";
 import { 
   Calendar, Settings, Clock, User, Phone, Building, 
   Briefcase, Save, Loader2, Activity, CheckCircle2,
-  ExternalLink, MessageCircle, ShieldAlert
+  ExternalLink, MessageCircle, ShieldAlert, ClipboardList,
+  FileDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,10 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
         }));
     };
 
+    const formatAmount = (amount: number) => {
+        return new Intl.NumberFormat("ru-RU").format(amount);
+    };
+
     const todayAppointments = useMemo(() => {
         const todayStr = format(new Date(), "yyyy-MM-dd");
         return appointments.filter(a => format(a.date, "yyyy-MM-dd") === todayStr)
@@ -157,6 +162,9 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                             <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Calendar className="h-3.5 w-3.5" /> График
                             </TabsTrigger>
+                            <TabsTrigger value="analytics" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Activity className="h-3.5 w-3.5" /> Рейтинг
+                            </TabsTrigger>
                             <TabsTrigger value="settings" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Settings className="h-3.5 w-3.5" /> Опции
                             </TabsTrigger>
@@ -189,7 +197,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                 {/* Main Content Area */}
                 <div className={cn(
                     "flex-1 min-w-0 space-y-4 transition-all duration-500",
-                    activeTab === "schedule" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 hidden"
+                    activeTab !== "settings" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 hidden"
                 )}>
                     {activeTab === "schedule" && (
                         <>
@@ -235,6 +243,118 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 )}
                             </div>
                         </>
+                    )}
+
+                    {activeTab === "analytics" && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="h-10 w-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                            <ClipboardList className="h-5 w-5" />
+                                        </div>
+                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black">МЕСЯЦ</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Диагностик проведено</p>
+                                    <h4 className="text-3xl font-black mt-1">
+                                        {appointments.filter(a => a.lead?.is_diagnostic).length}
+                                    </h4>
+                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1">
+                                        +12% к прошлому периоду
+                                    </p>
+                                </div>
+
+                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="h-10 w-10 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+                                            <Activity className="h-5 w-5" />
+                                        </div>
+                                        <Badge variant="outline" className="bg-purple-500/5 text-purple-500 border-none text-[9px] font-black">KPI</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Конверсия в лечение</p>
+                                    <h4 className="text-3xl font-black mt-1">
+                                        {Math.round((appointments.filter(a => a.status === "completed").length / (appointments.length || 1)) * 100)}%
+                                    </h4>
+                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1">
+                                        Цель: 65%
+                                    </p>
+                                </div>
+
+                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                                        <Briefcase className="h-24 w-24" />
+                                    </div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                            <Save className="h-5 w-5" />
+                                        </div>
+                                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-none text-[9px] font-black">БОНУС 10%</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Ваши бонусы</p>
+                                    <h4 className="text-3xl font-black mt-1 text-emerald-600">
+                                        {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0) * 0.1)} ₸
+                                    </h4>
+                                    <p className="text-[10px] text-muted-foreground font-bold mt-2 truncate">
+                                        Выручка: {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0))} ₸
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="bg-card border border-border/60 rounded-[40px] p-8 shadow-sm">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                            <ClipboardList className="h-4 w-4" />
+                                        </div>
+                                        История назначений
+                                    </h3>
+                                    <Button variant="outline" size="sm" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest gap-2">
+                                        <FileDown className="h-3.5 w-3.5" /> Экспорт
+                                    </Button>
+                                </div>
+
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-separate border-spacing-y-2">
+                                        <thead>
+                                            <tr>
+                                                <th className="pb-4 px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Дата</th>
+                                                <th className="pb-4 px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Пациент</th>
+                                                <th className="pb-4 px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Пакет лечения</th>
+                                                <th className="pb-4 px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Сумма</th>
+                                                <th className="pb-4 px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest text-right">Бонус</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="space-y-2">
+                                            {appointments.filter(a => a.status === "completed").length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="py-20 text-center text-xs font-bold text-muted-foreground opacity-40">
+                                                        Пока нет завершенных приемов с назначениями
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                appointments.filter(a => a.status === "completed").map((appt) => (
+                                                    <tr key={appt.id} className="group transition-all duration-300">
+                                                        <td className="py-4 px-4 text-xs font-bold text-muted-foreground tabular-nums bg-secondary/5 rounded-l-2xl group-hover:bg-secondary/10">{format(appt.date, "dd.MM.yyyy")}</td>
+                                                        <td className="py-4 px-4 text-xs font-black bg-secondary/5 group-hover:bg-secondary/10 whitespace-nowrap">{appt.patient}</td>
+                                                        <td className="py-4 px-4 bg-secondary/5 group-hover:bg-secondary/10">
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {appt.lead?.prescribed_packages?.map((pkg: string) => (
+                                                                    <Badge key={pkg} variant="secondary" className="bg-primary/5 text-primary border-none text-[9px] font-black px-2 py-0.5">
+                                                                        {pkg}
+                                                                    </Badge>
+                                                                )) || <span className="text-[10px] text-muted-foreground/30 italic">Пакет не указан</span>}
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-4 px-4 text-xs font-black tabular-nums text-right bg-secondary/5 group-hover:bg-secondary/10">{formatAmount(Number(appt.lead?.amount) || 0)} ₸</td>
+                                                        <td className="py-4 px-4 text-xs font-black text-emerald-600 tabular-nums text-right bg-secondary/5 rounded-r-2xl group-hover:bg-secondary/10">+{formatAmount((Number(appt.lead?.amount) || 0) * 0.1)} ₸</td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </div>
 

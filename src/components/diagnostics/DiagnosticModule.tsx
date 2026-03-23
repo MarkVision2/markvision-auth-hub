@@ -101,6 +101,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 pipeline: pipeline,
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
                 doctor_name: adminData.bookingDoctor || lead.doctor_name,
+                is_diagnostic: true,
+                prescribed_packages: prescriptionData?.confirmed && prescriptionData.packageId ? [prescriptionData.packageId] : []
             };
 
             if (adminData.bookingDate && adminData.bookingTime) {
