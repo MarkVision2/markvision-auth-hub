@@ -10,7 +10,7 @@ import {
     MessageCircle, Heart, Info, Phone, User, X,
     CreditCard, Smartphone, MessageSquare, Flag, CheckCircle2, 
     ShieldAlert, History as LucideHistory, Edit2, Clock,
-    Activity, FileSearch, ShieldCheck, Zap, HeartPulse, UserCheck
+    Activity, FileSearch, ShieldCheck, Zap, HeartPulse, UserCheck, Plus
 } from "lucide-react";
 import { Lead } from "../../crm/KanbanBoard";
 import { cn } from "@/lib/utils";
@@ -27,25 +27,61 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 
+export interface Question {
+    id: string;
+    label: string;
+    type: "text" | "textarea" | "radio" | "checkbox";
+    options?: { id: string; label: string }[];
+    required?: boolean;
+}
+
+export const DEFAULT_QUESTIONS: Question[] = [
+    {
+        id: "complaints",
+        label: "Что именно вас сейчас беспокоит?",
+        type: "textarea",
+        required: true
+    },
+    {
+        id: "pain_location",
+        label: "Где именно ощущается боль?",
+        type: "radio",
+        required: true,
+        options: [
+            { id: "lumbar", label: "Поясница" },
+            { id: "neck", label: "Шея" },
+            { id: "scapula", label: "Между лопатками" },
+            { id: "joints", label: "Суставы" },
+            { id: "other", label: "Другое" },
+        ]
+    },
+    {
+        id: "pain_duration",
+        label: "Как давно появилась эта проблема?",
+        type: "text",
+        required: true
+    },
+    {
+        id: "pain_type",
+        label: "Боль постоянная или периодическая?",
+        type: "text",
+        required: true
+    },
+    {
+        id: "pain_intensity",
+        label: "Сила боли (1-10)",
+        type: "text"
+    },
+    {
+        id: "previous_treatment",
+        label: "Пробовали лечить?",
+        type: "text"
+    }
+];
+
 export interface AdminFormData {
-    complaints: string;
-    painLocation: string;
-    painLocationOther: string;
-    painDuration: string;
-    painType: string;
-    painTriggers: string[];
-    painTriggersOther: string;
-    painRadiation: string[];
-    painRadiationOther: string;
-    numbness: string;
-    painIntensity: string;
-    lifeImpact: string[];
-    lifeImpactOther: string;
-    previousTreatment: string;
-    treatmentMethods: string;
-    doctorsSeen: string;
-    mriCtHistory: string;
-    hasResults: string;
+    answers: Record<string, any>;
+    painLocationOther?: string; // Special case for "other" in radioactive/checkbox
     bookingDate?: Date;
     bookingTime?: string;
     bookingDoctor?: string;
@@ -57,43 +93,82 @@ export interface AdminFormData {
     confirmed: boolean;
     finalFio: string;
     finalPhone: string;
+    mriCtHistory?: string;
+    // Legacy mapping (to avoid breaking exports)
+    complaints: string;
+    painLocation: string;
+    painDuration: string;
+    painType: string;
+    painIntensity: string;
+    previousTreatment: string;
 }
 
 interface Props {
     lead: Lead;
     data: AdminFormData | null;
+    questions: Question[];
+    onQuestionsChange: (questions: Question[]) => void;
     onChange: (data: AdminFormData) => void;
     onNext: () => void;
     readOnly?: boolean;
     onSave?: () => void;
 }
 
-export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNext, readOnly = false, onSave }) => {
+const QuestionEditor = ({ 
+    question, 
+    onUpdate, 
+    onDelete 
+}: { 
+    question: Question; 
+    onUpdate: (q: Question) => void; 
+    onDelete: () => void;
+}) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editLabel, setEditLabel] = useState(question.label);
+
+    const handleSave = () => {
+        onUpdate({ ...question, label: editLabel });
+        setIsEditing(false);
+    };
+
+    return (
+        <div className="group relative">
+            <div className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+                <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full shadow-sm" onClick={() => setIsEditing(true)}>
+                    <Edit2 className="h-3 w-3" />
+                </Button>
+                <Button size="icon" variant="destructive" className="h-6 w-6 rounded-full shadow-sm" onClick={onDelete}>
+                    <X className="h-3 w-3" />
+                </Button>
+            </div>
+            {isEditing ? (
+                <div className="p-3 bg-secondary/20 rounded-xl space-y-2 border border-primary/20">
+                    <Input value={editLabel} onChange={e => setEditLabel(e.target.value)} className="h-8 text-sm" />
+                    <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setIsEditing(false)}>Отмена</Button>
+                        <Button size="sm" className="h-7 text-[10px]" onClick={handleSave}>Ок</Button>
+                    </div>
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
+export const AdminDiagnosticTab: React.FC<Props> = ({ 
+    lead, data, questions, onQuestionsChange, onChange, onNext, readOnly = false, onSave 
+}) => {
     const [step, setStep] = useState(1);
     const totalSteps = 4;
+    // const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
 
     const [formData, setFormData] = useState<AdminFormData>(data || {
+        answers: {},
         complaints: "",
         painLocation: "",
-        painLocationOther: "",
         painDuration: "",
         painType: "",
-        painTriggers: [],
-        painTriggersOther: "",
-        painRadiation: [],
-        painRadiationOther: "",
-        numbness: "",
         painIntensity: "",
-        lifeImpact: [],
-        lifeImpactOther: "",
         previousTreatment: "",
-        treatmentMethods: "",
-        doctorsSeen: "no",
-        mriCtHistory: "no",
-        hasResults: "no",
-        bookingDate: undefined,
-        bookingTime: "",
-        bookingDoctor: "",
         adminComment: "",
         paymentMethod: "Kaspi",
         paymentStatus: "pending",
@@ -107,13 +182,30 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
     const [isBookingOpen, setIsBookingOpen] = useState(false);
 
     useEffect(() => {
-        onChange(formData);
+        // Map dynamic answers to legacy fields for compatibility
+        const updated = { ...formData };
+        updated.complaints = formData.answers["complaints"] || "";
+        updated.painLocation = formData.answers["pain_location"] || "";
+        updated.painDuration = formData.answers["pain_duration"] || "";
+        updated.painType = formData.answers["pain_type"] || "";
+        updated.painIntensity = formData.answers["pain_intensity"] || "";
+        updated.previousTreatment = formData.answers["previous_treatment"] || "";
+        
+        onChange(updated);
     }, [formData]);
+
+    const addQuestion = () => {
+        const newQ: Question = {
+            id: `q_${Date.now()}`,
+            label: "Новый вопрос",
+            type: "text"
+        };
+        onQuestionsChange([...questions, newQ]);
+    };
 
     const nextStep = () => {
         if (validateStage(step)) {
             if (step === 3 && formData.paymentStatus === "declined") {
-                // Skip step 4 if declined
                 handleConfirm();
             } else {
                 setStep((s) => Math.min(s + 1, totalSteps));
@@ -123,13 +215,15 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
     const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
     const validateStage = (currentStep: number) => {
+        if (currentStep === 1) {
+            const missing = questions.filter(q => q.required && !formData.answers[q.id]);
+            if (missing.length > 0) {
+                toast({ title: "Внимание", description: `Заполните обязательное поле: "${missing[0].label}"`, variant: "destructive" });
+                return false;
+            }
+        }
+        // Other steps validation stays similar
         switch (currentStep) {
-            case 1:
-                if (!formData.complaints || !formData.painLocation || !formData.painDuration || !formData.painType) {
-                    toast({ title: "Внимание", description: "Заполните обязательные поля первого этапа", variant: "destructive" });
-                    return false;
-                }
-                break;
             case 2:
                 if (!formData.bookingDate || !formData.bookingTime || !formData.bookingDoctor) {
                     toast({ title: "Внимание", description: "Для перехода укажите время и врача", variant: "destructive" });
@@ -218,14 +312,21 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                 {step === 1 && (
                     <div className="space-y-10">
                         <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <ClipboardList className="h-6 w-6" />
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                        <ClipboardList className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-semibold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
+                                        <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-semibold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
-                                    <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
-                                </div>
+                                {!readOnly && (
+                                    <Button variant="outline" size="sm" onClick={addQuestion} className="gap-2 rounded-xl">
+                                        <Plus className="h-4 w-4" /> Добавить вопрос
+                                    </Button>
+                                )}
                             </div>
                             <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50 space-y-2">
                                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -239,110 +340,79 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
                         </div>
 
                         <div className="space-y-8">
-                            <div className="space-y-3">
-                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Что именно вас сейчас беспокоит? <span className="text-destructive">*</span></Label>
-                                <Textarea
-                                    placeholder="Дайте пациенту выговориться..."
-                                    className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4"
-                                    value={formData.complaints}
-                                    onChange={(e) => setFormData({ ...formData, complaints: e.target.value })}
-                                    disabled={readOnly}
-                                />
-                            </div>
+                            {questions.map((q) => (
+                                <div key={q.id} className="space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground flex items-center gap-1">
+                                            {q.label} {q.required && <span className="text-destructive">*</span>}
+                                        </Label>
+                                        {!readOnly && (
+                                            <QuestionEditor 
+                                                question={q} 
+                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                            />
+                                        )}
+                                    </div>
 
-                            <div className="space-y-4">
-                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Где именно ощущается боль? <span className="text-destructive">*</span></Label>
-                                <RadioGroup
-                                    value={formData.painLocation}
-                                    onValueChange={(v) => !readOnly && setFormData({ ...formData, painLocation: v })}
-                                    className="grid grid-cols-2 gap-3"
-                                    disabled={readOnly}
-                                >
-                                    {[
-                                        { id: "lumbar", label: "Поясница" },
-                                        { id: "neck", label: "Шея" },
-                                        { id: "scapula", label: "Между лопатками" },
-                                        { id: "joints", label: "Суставы" },
-                                        { id: "other", label: "Другое" },
-                                    ].map((opt) => (
-                                        <div 
-                                            key={opt.id}
-                                            className={cn(
-                                                "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
-                                                formData.painLocation === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30",
-                                                !readOnly && "cursor-pointer"
+                                    {q.type === "textarea" && (
+                                        <Textarea
+                                            placeholder="..."
+                                            className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 w-full"
+                                            value={formData.answers[q.id] || ""}
+                                            onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                            disabled={readOnly}
+                                        />
+                                    )}
+
+                                    {q.type === "text" && (
+                                        <Input
+                                            placeholder="..."
+                                            className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary w-full"
+                                            value={formData.answers[q.id] || ""}
+                                            onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                            disabled={readOnly}
+                                        />
+                                    )}
+
+                                    {q.type === "radio" && q.options && (
+                                        <div className="space-y-4">
+                                            <RadioGroup
+                                                value={formData.answers[q.id] || ""}
+                                                onValueChange={(v) => !readOnly && setFormData({ ...formData, answers: { ...formData.answers, [q.id]: v } })}
+                                                className="grid grid-cols-2 gap-3"
+                                                disabled={readOnly}
+                                            >
+                                                {q.options.map((opt) => (
+                                                    <div 
+                                                        key={opt.id}
+                                                        className={cn(
+                                                            "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
+                                                            formData.answers[q.id] === opt.id ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30",
+                                                            !readOnly && "cursor-pointer"
+                                                        )}
+                                                        onClick={() => !readOnly && setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } })}
+                                                    >
+                                                        <RadioGroupItem value={opt.id} id={`${q.id}-${opt.id}`} className="sr-only" />
+                                                        <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.answers[q.id] === opt.id && "bg-primary")}>
+                                                            {formData.answers[q.id] === opt.id && <Check className="h-3 w-3 text-white" />}
+                                                        </div>
+                                                        <Label htmlFor={`${q.id}-${opt.id}`} className={cn("text-sm font-semibold", !readOnly && "cursor-pointer")}>{opt.label}</Label>
+                                                    </div>
+                                                ))}
+                                            </RadioGroup>
+                                            {formData.answers[q.id] === "other" && (
+                                                <Input
+                                                    placeholder="Введите место..."
+                                                    className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary animate-in zoom-in-95 duration-200"
+                                                    value={formData.painLocationOther}
+                                                    onChange={(e) => setFormData({ ...formData, painLocationOther: e.target.value })}
+                                                />
                                             )}
-                                            onClick={() => !readOnly && setFormData({ ...formData, painLocation: opt.id })}
-                                        >
-                                            <RadioGroupItem value={opt.id} id={`loc-${opt.id}`} className="sr-only" />
-                                            <div className={cn("h-4 w-4 rounded-full border border-primary flex items-center justify-center", formData.painLocation === opt.id && "bg-primary")}>
-                                                {formData.painLocation === opt.id && <Check className="h-3 w-3 text-white" />}
-                                            </div>
-                                            <Label htmlFor={`loc-${opt.id}`} className={cn("text-sm font-semibold", !readOnly && "cursor-pointer")}>{opt.label}</Label>
                                         </div>
-                                    ))}
-                                </RadioGroup>
-                                {formData.painLocation === "other" && (
-                                    <Input
-                                        placeholder="Введите место..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary animate-in zoom-in-95 duration-200"
-                                        value={formData.painLocationOther}
-                                        onChange={(e) => setFormData({ ...formData, painLocationOther: e.target.value })}
-                                    />
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Как давно появилась эта проблема? <span className="text-destructive">*</span></Label>
-                                    <Input
-                                        placeholder="Например: 2 недели..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                        value={formData.painDuration}
-                                        onChange={(e) => setFormData({ ...formData, painDuration: e.target.value })}
-                                        disabled={readOnly}
-                                    />
+                                    )}
                                 </div>
-                                <div className="space-y-3">
-                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Боль постоянная или периодическая? <span className="text-destructive">*</span></Label>
-                                    <Input
-                                        placeholder="Введите ответ пациента..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                        value={formData.painType}
-                                        onChange={(e) => setFormData({ ...formData, painType: e.target.value })}
-                                        disabled={readOnly}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Additional questions (abbreviated for brevity in this step) */}
-                        {/* They are similar to what was in DiagnosticMap we can omit some non-core ones if too long or keep them. Let's keep a few critical ones. */}
-                        <div className="space-y-6 pt-4 border-t border-border/40">
-                            <h3 className="text-sm font-semibold uppercase tracking-wider text-primary flex items-center gap-2">
-                                <LucideHistory className="h-4 w-4" /> Анамнез и доп. вопросы
-                            </h3>
-                            <div className="grid grid-cols-2 gap-8">
-                                <div className="space-y-3">
-                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground ">Сила боли (1-10)</Label>
-                                    <Input
-                                        type="number"
-                                        placeholder="Например: 7..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                        value={formData.painIntensity}
-                                        onChange={(e) => setFormData({ ...formData, painIntensity: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-3">
-                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Пробовали лечить?</Label>
-                                    <Input
-                                        placeholder="Да / Нет / Что именно..."
-                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary"
-                                        value={formData.previousTreatment}
-                                        onChange={(e) => setFormData({ ...formData, previousTreatment: e.target.value })}
-                                    />
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 )}

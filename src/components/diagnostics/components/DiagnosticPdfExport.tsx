@@ -2,8 +2,8 @@ import React, { useRef, useImperativeHandle, forwardRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Lead } from "../../crm/KanbanBoard";
-import { AdminFormData } from "../tabs/AdminDiagnosticTab";
-import { DoctorFormData } from "../tabs/DoctorDiagnosticTab";
+import { AdminFormData, Question } from "../tabs/AdminDiagnosticTab";
+import { DoctorFormData, DoctorQuestion } from "../tabs/DoctorDiagnosticTab";
 import { PrescriptionFormData } from "../tabs/PrescriptionTab";
 import { InteractiveBodyMap } from "./InteractiveBodyMap";
 
@@ -16,9 +16,13 @@ interface Props {
     adminData: AdminFormData | null;
     doctorData: DoctorFormData | null;
     prescriptionData: PrescriptionFormData | null;
+    adminQuestions?: Question[];
+    doctorQuestions?: DoctorQuestion[];
 }
 
-export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ lead, adminData, doctorData, prescriptionData }, ref) => {
+export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
+    lead, adminData, doctorData, prescriptionData, adminQuestions = [], doctorQuestions = [] 
+}, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -42,8 +46,24 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
         }
     }));
 
-    // Элемент физически рендерится, но скрыт (мы спрячем его через CSS в родителе)
-    // Размер А4: 210x297мм, что примерно 794x1123px при 96dpi. Поставим фиксированную ширину 794px.
+    const renderDynamicAnswers = (questions: any[], answers: Record<string, any>) => {
+        if (!questions.length) return null;
+        return (
+            <div className="grid grid-cols-1 gap-y-3 mt-4">
+                {questions.map(q => {
+                    const val = answers[q.id];
+                    if (!val) return null;
+                    return (
+                        <div key={q.id} className="border-b border-gray-100 pb-2">
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold">{q.label}</p>
+                            <p className="text-sm font-medium whitespace-pre-wrap">{Array.isArray(val) ? val.join(", ") : val}</p>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
         <div ref={containerRef} className="bg-white">
             
@@ -63,32 +83,16 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
 
                 <div className="space-y-6">
                     <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Основная жалоба</h3>
-                        <p className="pl-2 border-l-2 border-primary/20">{adminData?.complaints || "—"}</p>
+                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Ответы на вопросы</h3>
+                        {renderDynamicAnswers(adminQuestions, adminData?.answers || {})}
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <h3 className="text-sm font-bold text-muted-foreground">Локализация</h3>
-                            <p>{adminData?.painLocation} {adminData?.painLocationOther}</p>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-muted-foreground">Длительность</h3>
-                            <p>{adminData?.painDuration || "—"}</p>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-muted-foreground">Характер боли</h3>
-                            <p>{adminData?.painType || "—"}</p>
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-muted-foreground">Прошлое лечение</h3>
-                            <p>{adminData?.previousTreatment || "—"}</p>
-                        </div>
-                    </div>
-                    <div>
+                    
+                    <div className="mt-8 border-t pt-4">
                         <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Запись и оплата</h3>
                         <p>Назначено на: <strong>{adminData?.bookingDate?.toLocaleDateString()} в {adminData?.bookingTime}</strong></p>
                         <p>Врач: <strong>{adminData?.bookingDoctor}</strong></p>
                         <p>Статус оплаты: <strong>{adminData?.paymentStatus === "paid" ? "Оплачено" : "Ожидается"}</strong></p>
+                        {adminData?.prepaymentAmount && <p>Сумма: <strong>{adminData.prepaymentAmount} ₸</strong></p>}
                         <p className="mt-2 text-xs text-muted-foreground">Комментарий админа: {adminData?.adminComment}</p>
                     </div>
                 </div>
@@ -108,28 +112,20 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
 
                 <div className="space-y-6">
                     <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">1. Уточненные жалобы</h3>
-                        <p className="font-medium whitespace-pre-wrap">{doctorData?.mainComplaint}</p>
-                        <p className="text-xs text-muted-foreground mt-2">Триггеры: {doctorData?.triggers || "—"}</p>
+                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Данные осмотра</h3>
+                        {renderDynamicAnswers(doctorQuestions, doctorData?.answers || {})}
                     </div>
-                    <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">2. Осмотр (визуально и пальпация)</h3>
-                        <p><strong>Визуально:</strong> {doctorData?.visualExam || "—"}</p>
-                        <p className="mt-2"><strong>Пальпация:</strong> {doctorData?.palpation || "—"}</p>
-                    </div>
-                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-                        <h3 className="text-sm font-bold uppercase text-[#0060cf] mb-1">Предварительный диагноз</h3>
-                        <p className="font-bold text-lg">{doctorData?.preliminaryDiagnosis || "Не установлен"}</p>
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">3. Первая процедура</h3>
-                        <p>Вид: <strong>{doctorData?.procedureType || "—"}</strong></p>
-                        <p>Реакция: {doctorData?.procedureReaction || "—"}</p>
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">4. Рекомендация врача</h3>
-                        <p><strong>Пакет:</strong> {doctorData?.recommendedCourse || "—"}</p>
-                        <p className="mt-2 text-xs">Комментарий: {doctorData?.conclusion}</p>
+
+                    <div className="mt-8 border-t pt-6">
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl mb-6">
+                            <h3 className="text-sm font-bold uppercase text-[#0060cf] mb-1">Рекомендация врача</h3>
+                            <p className="font-bold text-lg">{doctorData?.recommendedCourse || "Не установлена"}</p>
+                        </div>
+                        <p>Готовность пациента: <strong>{
+                            doctorData?.readiness === "ready" ? "✅ Готов начать" : 
+                            doctorData?.readiness === "thinking" ? "🤔 Думает" : "❌ Не готов"
+                        }</strong></p>
+                        {doctorData?.refusalReason && <p>Причина отказа: <strong>{doctorData.refusalReason}</strong></p>}
                     </div>
                 </div>
 
@@ -149,7 +145,6 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
                 <div className="grid grid-cols-2 gap-8 mb-8">
                     <div>
                         <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-4">Зоны лечения</h3>
-                        {/* Interactive Body Map is rendered as static SVG here */}
                         <div className="w-full h-auto">
                             <InteractiveBodyMap selectedZones={prescriptionData?.selectedZones || []} onToggleZone={() => {}} isPrint={true} />
                         </div>
@@ -158,6 +153,7 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
                         <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Детали курса</h3>
                         <p>Старт: <strong>{prescriptionData?.startDate}</strong></p>
                         <p>Врач: <strong>{prescriptionData?.doctorName}</strong></p>
+                        <p>Пакет: <strong>{doctorData?.recommendedCourse || "—"}</strong></p>
                     </div>
                 </div>
 

@@ -7,8 +7,8 @@ import {
   Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList
 } from "lucide-react";
 import { Lead } from "../crm/KanbanBoard";
-import { AdminDiagnosticTab, AdminFormData } from "./tabs/AdminDiagnosticTab";
-import { DoctorDiagnosticTab, DoctorFormData } from "./tabs/DoctorDiagnosticTab";
+import { AdminDiagnosticTab, AdminFormData, Question, DEFAULT_QUESTIONS } from "./tabs/AdminDiagnosticTab";
+import { DoctorDiagnosticTab, DoctorFormData, DoctorQuestion, DEFAULT_DOCTOR_QUESTIONS } from "./tabs/DoctorDiagnosticTab";
 import { PrescriptionTab, PrescriptionFormData } from "./tabs/PrescriptionTab";
 import { DiagnosticPdfExport, DiagnosticPdfExportRef } from "./components/DiagnosticPdfExport";
 import { Badge } from "@/components/ui/badge";
@@ -34,26 +34,14 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     const [isSaving, setIsSaving] = useState(false);
     const pdfRef = useRef<DiagnosticPdfExportRef>(null);
     
+    const [adminQuestions, setAdminQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
+    const [doctorQuestions, setDoctorQuestions] = useState<DoctorQuestion[]>(DEFAULT_DOCTOR_QUESTIONS);
+    
     // В реальном проекте здесь будет стейт для всех 3 вкладок
     const [adminData, setAdminData] = useState<AdminFormData | null>({
-        complaints: lead.ai_summary || "",
-        painLocation: "",
-        painLocationOther: "",
-        painDuration: "",
-        painType: "",
-        painTriggers: [],
-        painTriggersOther: "",
-        painRadiation: [],
-        painRadiationOther: "",
-        numbness: "",
-        painIntensity: "5",
-        lifeImpact: [],
-        lifeImpactOther: "",
-        previousTreatment: "",
-        treatmentMethods: "",
-        doctorsSeen: "no",
-        mriCtHistory: "no",
-        hasResults: "no",
+        answers: {
+            complaints: lead.ai_summary || "",
+        },
         adminComment: (lead as any).comments || "",
         paymentMethod: "Kaspi",
         paymentStatus: "pending",
@@ -61,7 +49,14 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
         refusalReason: "",
         confirmed: false,
         finalFio: lead.name,
-        finalPhone: lead.phone || ""
+        finalPhone: lead.phone || "",
+        // Initialize legacy fields for internal state consistency if needed
+        complaints: lead.ai_summary || "",
+        painLocation: "",
+        painDuration: "",
+        painType: "",
+        painIntensity: "5",
+        previousTreatment: ""
     });
     const [doctorData, setDoctorData] = useState<DoctorFormData | null>(null);
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
@@ -257,6 +252,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                             <AdminDiagnosticTab 
                                                 lead={lead} 
                                                 data={adminData} 
+                                                questions={adminQuestions}
+                                                onQuestionsChange={setAdminQuestions}
                                                 onChange={setAdminData} 
                                                 onNext={() => setActiveTab("doctor")}
                                                 readOnly={false}
@@ -265,7 +262,15 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                         </TabsContent>
                                     )}
                                     <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
-                                        <DoctorDiagnosticTab lead={lead} adminData={adminData} data={doctorData} onChange={setDoctorData} onNext={() => setActiveTab("prescription")} />
+                                        <DoctorDiagnosticTab 
+                                            lead={lead} 
+                                            adminData={adminData} 
+                                            data={doctorData} 
+                                            questions={doctorQuestions}
+                                            onQuestionsChange={setDoctorQuestions}
+                                            onChange={setDoctorData} 
+                                            onComplete={() => setActiveTab("prescription")} 
+                                        />
                                     </TabsContent>
                                     <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
                                         <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
@@ -336,6 +341,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     adminData={adminData}
                     doctorData={doctorData}
                     prescriptionData={prescriptionData}
+                    adminQuestions={adminQuestions}
+                    doctorQuestions={doctorQuestions}
                 />
             </div>
         </Dialog>
