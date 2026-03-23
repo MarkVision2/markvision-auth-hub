@@ -37,6 +37,9 @@ export interface Lead {
   utm_term?: string | null;
   project_id?: string | null;
   pipeline?: string | null;
+  is_diagnostic?: boolean | null;
+  prescribed_packages?: string[] | null;
+  serviced_by?: string | null;
 }
 
 const accentTextMap: Record<string, string> = {

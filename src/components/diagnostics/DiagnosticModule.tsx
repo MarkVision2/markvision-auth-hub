@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DiagnosticModuleProps {
     lead: Lead;
@@ -28,6 +29,7 @@ interface DiagnosticModuleProps {
 export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({ 
     lead, open, onOpenChange, onComplete, mode = "admin" 
 }) => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState(mode === "doctor" ? "doctor" : "admin");
     const [isSaving, setIsSaving] = useState(false);
     const pdfRef = useRef<DiagnosticPdfExportRef>(null);
@@ -102,7 +104,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
                 doctor_name: adminData.bookingDoctor || lead.doctor_name,
                 is_diagnostic: true,
-                prescribed_packages: prescriptionData?.confirmed && prescriptionData.packageId ? [prescriptionData.packageId] : []
+                prescribed_packages: prescriptionData?.confirmed && prescriptionData.packageId ? [prescriptionData.packageId] : [],
+                serviced_by: mode === "admin" ? (user?.user_metadata?.full_name || user?.email) : lead.serviced_by
             };
 
             if (adminData.bookingDate && adminData.bookingTime) {
