@@ -228,20 +228,24 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                             1. Диагностика (Админ)
                                         </TabsTrigger>
                                     )}
-                                    <TabsTrigger 
-                                        value="doctor" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                    >
-                                        <Stethoscope className="h-4 w-4" />
-                                        2. Осмотр (Врач)
-                                    </TabsTrigger>
-                                    <TabsTrigger 
-                                        value="prescription" 
-                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                        3. Лист назначения
-                                    </TabsTrigger>
+                                    {mode === "doctor" && (
+                                        <>
+                                            <TabsTrigger 
+                                                value="doctor" 
+                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                            >
+                                                <Stethoscope className="h-4 w-4" />
+                                                2. Осмотр (Врач)
+                                            </TabsTrigger>
+                                            <TabsTrigger 
+                                                value="prescription" 
+                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                            >
+                                                <FileText className="h-4 w-4" />
+                                                3. Лист назначения
+                                            </TabsTrigger>
+                                        </>
+                                    )}
                                 </TabsList>
                             </div>
 
@@ -261,20 +265,24 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                             />
                                         </TabsContent>
                                     )}
-                                    <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
-                                        <DoctorDiagnosticTab 
-                                            lead={lead} 
-                                            adminData={adminData} 
-                                            data={doctorData} 
-                                            questions={doctorQuestions}
-                                            onQuestionsChange={setDoctorQuestions}
-                                            onChange={setDoctorData} 
-                                            onComplete={() => setActiveTab("prescription")} 
-                                        />
-                                    </TabsContent>
-                                    <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
-                                        <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
-                                    </TabsContent>
+                                    {mode === "doctor" && (
+                                        <>
+                                            <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
+                                                <DoctorDiagnosticTab 
+                                                    lead={lead} 
+                                                    adminData={adminData} 
+                                                    data={doctorData} 
+                                                    questions={doctorQuestions}
+                                                    onQuestionsChange={setDoctorQuestions}
+                                                    onChange={setDoctorData} 
+                                                    onComplete={() => setActiveTab("prescription")} 
+                                                />
+                                            </TabsContent>
+                                            <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
+                                                <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
+                                            </TabsContent>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </Tabs>
