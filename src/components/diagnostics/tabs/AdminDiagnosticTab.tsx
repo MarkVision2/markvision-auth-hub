@@ -15,8 +15,17 @@ import {
 import { Lead } from "../../crm/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { BookingWidget } from "../../crm/BookingWidget";
+import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 export interface AdminFormData {
     complaints: string;
@@ -338,116 +347,130 @@ export const AdminDiagnosticTab: React.FC<Props> = ({ lead, data, onChange, onNe
 
                 {/* STEP 2 */}
                 {step === 2 && (
-                    <div className="animate-in fade-in slide-in-from-right-4 space-y-10">
-                        <div className="space-y-3">
+                    <div className="animate-in fade-in slide-in-from-right-4 space-y-8 max-w-6xl mx-auto w-full">
+                        <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <MessageCircle className="h-6 w-6" />
+                                <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <Star className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-semibold tracking-tight">2. Презентация диагностики и запись</h2>
-                                    <p className="text-muted-foreground">Показать ценность и записать на удобное время.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
-                            <div className="space-y-6">
-                                <div className="p-8 rounded-[32px] bg-primary/5 border border-primary/10 space-y-8">
-                                    <div className="flex items-center gap-3 text-primary">
-                                        <Star className="h-6 w-6 fill-primary/20" />
-                                        <h3 className="text-lg font-bold uppercase tracking-tight">Ценность диагностики</h3>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {[
-                                            {
-                                                icon: Stethoscope,
-                                                title: "Осмотр терапевта",
-                                                desc: "Общий осмотр, давление, пульс, анамнез для исключения факторов."
-                                            },
-                                            {
-                                                icon: Activity,
-                                                title: "Осмотр реабилитолога",
-                                                desc: "Диагностика позвоночника, подвижности и нервных реакций."
-                                            },
-                                            {
-                                                icon: UserCheck,
-                                                title: "Функциональные тесты",
-                                                desc: "Тестовые движения для выявления блоков и перегрузок."
-                                            },
-                                            {
-                                                icon: FileSearch,
-                                                title: "Анализ обследований",
-                                                desc: "Разбор ваших МРТ/КТ/Рентген на понятном языке."
-                                            },
-                                            {
-                                                icon: ClipboardList,
-                                                title: "Рекомендации",
-                                                desc: "Причины боли, допустимые нагрузки и ограничения."
-                                            },
-                                            {
-                                                icon: ShieldCheck,
-                                                title: "План лечения",
-                                                desc: "Пошаговый индивидуальный план восстановления."
-                                            },
-                                            {
-                                                icon: Zap,
-                                                title: "Первая процедура",
-                                                desc: "Сразу после диагностики для быстрого снижения боли."
-                                            }
-                                        ].map((item, i) => (
-                                            <div key={i} className="flex gap-4 p-4 rounded-2xl bg-background/60 border border-primary/5 hover:bg-background transition-colors group">
-                                                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                                    <item.icon className="h-5 w-5" />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <h4 className="text-xs font-bold text-foreground leading-tight uppercase tracking-wide">{item.title}</h4>
-                                                    <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">{item.desc}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="p-5 rounded-2xl bg-primary/10 border border-primary/10 flex items-center gap-4">
-                                        <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white shrink-0">
-                                            <HeartPulse className="h-5 w-5" />
-                                        </div>
-                                        <p className="text-[11px] font-bold text-primary leading-tight italic">
-                                            «Это не просто консультация, а комплексное обследование для устранения причины боли.»
-                                        </p>
-                                    </div>
+                                    <h2 className="text-xl font-bold tracking-tight uppercase">2. Презентация и назначение</h2>
+                                    <p className="text-sm text-muted-foreground font-medium">Покажите ценность обследования и выберите удобное время.</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-6 sticky top-8">
-                                <div className="bg-background p-6 rounded-[32px] border border-border/80 shadow-xl shadow-primary/5 space-y-6">
-                                    <div className="space-y-1 px-1">
-                                        <h3 className="text-lg font-bold tracking-tight">Запись на прием</h3>
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Выберите дату и время</p>
-                                    </div>
-                                    <BookingWidget
-                                        selectedDate={formData.bookingDate}
-                                        selectedTime={formData.bookingTime}
-                                        selectedDoctor={formData.bookingDoctor}
-                                        onBookingChange={(booking) => setFormData({ 
-                                            ...formData, 
-                                            bookingDate: booking.date, 
-                                            bookingTime: booking.time,
-                                            bookingDoctor: booking.doctor
-                                        })}
-                                    />
-                                    <div className="space-y-3 pt-4 border-t border-border/40">
-                                        <Label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-1">Комментарий админа</Label>
-                                        <Textarea
-                                            placeholder="Например: будет с МРТ..."
-                                            className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-20 text-xs font-medium resize-none rounded-xl p-3"
-                                            value={formData.adminComment}
-                                            onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
-                                            disabled={readOnly}
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button size="lg" className="h-12 px-8 gap-3 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
+                                        <Calendar className="h-5 w-5" />
+                                        {formData.bookingDate && formData.bookingTime ? "Изменить запись" : "Запись на прием"}
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[700px] p-0 border-none bg-background overflow-hidden rounded-[32px]">
+                                    <DialogHeader className="p-8 bg-primary/5 border-b border-primary/10">
+                                        <DialogTitle className="text-2xl font-bold text-primary flex items-center gap-3">
+                                            <Calendar className="h-6 w-6" /> Запись на прием
+                                        </DialogTitle>
+                                        <DialogDescription className="text-muted-foreground font-medium">
+                                            Выберите удобного врача, дату и свободное время из графиков врачей.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="p-8">
+                                        <BookingWidget
+                                            selectedDate={formData.bookingDate}
+                                            selectedTime={formData.bookingTime}
+                                            selectedDoctor={formData.bookingDoctor}
+                                            onBookingChange={(booking) => setFormData({ 
+                                                ...formData, 
+                                                bookingDate: booking.date, 
+                                                bookingTime: booking.time,
+                                                bookingDoctor: booking.doctor
+                                            })}
                                         />
                                     </div>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                            {[
+                                {
+                                    icon: Stethoscope,
+                                    title: "Осмотр терапевта",
+                                    desc: "Общий осмотр, давление, пульс, анамнез для исключения факторов."
+                                },
+                                {
+                                    icon: Activity,
+                                    title: "Осмотр реабилитолога",
+                                    desc: "Диагностика позвоночника, подвижности и нервных реакций."
+                                },
+                                {
+                                    icon: UserCheck,
+                                    title: "Функциональные тесты",
+                                    desc: "Тестовые движения для выявления блоков и перегрузок."
+                                },
+                                {
+                                    icon: FileSearch,
+                                    title: "Анализ обследований",
+                                    desc: "Разбор ваших МРТ/КТ/Рентген на понятном языке."
+                                },
+                                {
+                                    icon: ClipboardList,
+                                    title: "Рекомендации",
+                                    desc: "Причины боли, допустимые нагрузки и ограничения."
+                                },
+                                {
+                                    icon: ShieldCheck,
+                                    title: "План лечения",
+                                    desc: "Пошаговый индивидуальный план восстановления."
+                                },
+                                {
+                                    icon: Zap,
+                                    title: "Первая процедура",
+                                    desc: "Сразу после диагностики для быстрого снижения боли."
+                                }
+                            ].map((item, i) => (
+                                <div key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-white hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
+                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                        <item.icon className="h-4 w-4" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h4 className="text-[11px] font-bold text-foreground leading-tight uppercase tracking-tight">{item.title}</h4>
+                                        <p className="text-[10px] text-muted-foreground leading-relaxed font-medium line-clamp-2">{item.desc}</p>
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
+                            <div className="p-4 rounded-2xl bg-secondary/20 border border-border/40 space-y-3">
+                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground ml-1">Комментарий для врача</Label>
+                                <Textarea
+                                    placeholder="Детали: что именно беспокоит, есть ли результаты анализов..."
+                                    className="bg-transparent border-none focus:ring-0 h-16 text-xs font-medium resize-none p-0"
+                                    value={formData.adminComment}
+                                    onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
+                                    disabled={readOnly}
+                                />
+                            </div>
+                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
+                                {formData.bookingDate && formData.bookingTime ? (
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Текущая запись</p>
+                                        <p className="text-xs font-bold text-primary flex items-center gap-2">
+                                            <Calendar className="h-3.5 w-3.5" />
+                                            {format(formData.bookingDate, "dd.MM.yyyy")} в {formData.bookingTime}
+                                        </p>
+                                        <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                                            <User className="h-3 w-3" /> {formData.bookingDoctor || "Врач не выбран"}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-muted-foreground italic">
+                                        <HeartPulse className="h-4 w-4" />
+                                        <span className="text-xs font-medium">Запись ещё не назначена</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
