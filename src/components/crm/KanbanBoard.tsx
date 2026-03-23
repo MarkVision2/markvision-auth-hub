@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Loader2, Zap, Bell, MessageCircle, CreditCard, Calendar,
   MapPin, Check, Ban, Phone, DollarSign, Globe,
-  ChevronDown, TrendingUp, Trash2,
+  ChevronDown, TrendingUp, Trash2, Pencil
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -13,9 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import LeadDetailSheet from "./LeadDetailSheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
 } from "@/components/ui/tooltip";
+import { loadStages, saveStageLabel, type CrmStage } from "./crm-config";
 
 export interface Lead {
   id: string;
@@ -37,17 +39,6 @@ export interface Lead {
   utm_term?: string | null;
   project_id?: string | null;
 }
-
-const STAGES = [
-  { key: "Новая заявка", label: "Новая", icon: Zap, gradient: "from-primary/20 to-primary/5", accent: "primary", dotClass: "bg-primary" },
-  { key: "Без ответа", label: "Без ответа", icon: Bell, gradient: "from-[hsl(var(--status-warning)/0.2)] to-[hsl(var(--status-warning)/0.05)]", accent: "warning", dotClass: "bg-[hsl(var(--status-warning))]" },
-  { key: "В работе", label: "В работе", icon: MessageCircle, gradient: "from-[hsl(var(--status-ai)/0.2)] to-[hsl(var(--status-ai)/0.05)]", accent: "ai", dotClass: "bg-[hsl(var(--status-ai))]" },
-  { key: "Счет выставлен", label: "Счёт", icon: CreditCard, gradient: "from-[hsl(var(--status-warning)/0.2)] to-[hsl(var(--status-warning)/0.05)]", accent: "warning", dotClass: "bg-[hsl(var(--status-warning))]" },
-  { key: "Записан", label: "Записан", icon: Calendar, gradient: "from-primary/20 to-primary/5", accent: "primary", dotClass: "bg-primary" },
-  { key: "Визит совершен", label: "Визит", icon: MapPin, gradient: "from-[hsl(var(--status-good)/0.2)] to-[hsl(var(--status-good)/0.05)]", accent: "good", dotClass: "bg-[hsl(var(--status-good))]" },
-  { key: "Оплачен", label: "Оплачен", icon: Check, gradient: "from-[hsl(var(--status-good)/0.2)] to-[hsl(var(--status-good)/0.05)]", accent: "good", dotClass: "bg-[hsl(var(--status-good))]" },
-  { key: "Отказ", label: "Отказ", icon: Ban, gradient: "from-[hsl(var(--status-critical)/0.2)] to-[hsl(var(--status-critical)/0.05)]", accent: "critical", dotClass: "bg-[hsl(var(--status-critical))]" },
-];
 
 const accentTextMap: Record<string, string> = {
   primary: "text-primary",
@@ -90,15 +81,16 @@ function getInitials(name: string) {
 
 interface LeadCardProps {
   lead: Lead;
-  stage: typeof STAGES[number];
+  stage: CrmStage;
   currentIdx: number;
+  stages: CrmStage[];
   isSuperadmin: boolean;
   onCardClick: (lead: Lead) => void;
   onMove: (leadId: string, status: string) => void;
   onDelete: (leadId: string, leadName: string) => void;
 }
 
-const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin, onCardClick, onMove, onDelete }: LeadCardProps) {
+const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSuperadmin, onCardClick, onMove, onDelete }: LeadCardProps) {
   const score = lead.ai_score ?? 0;
   const badge = getScoreBadge(score);
   const amount = Number(lead.amount) || 0;
@@ -179,19 +171,19 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin,
             variant="ghost"
             size="sm"
             className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground flex-1"
-            onClick={(e) => { e.stopPropagation(); onMove(lead.id, STAGES[currentIdx - 1].key); }}
+            onClick={(e) => { e.stopPropagation(); onMove(lead.id, stages[currentIdx - 1].key); }}
           >
-            ← {STAGES[currentIdx - 1].label}
+            ← {stages[currentIdx - 1].label}
           </Button>
         )}
-        {currentIdx < STAGES.length - 1 && (
+        {currentIdx < stages.length - 1 && (
           <Button
             variant="ghost"
             size="sm"
-            className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[STAGES[currentIdx + 1].accent]}`}
-            onClick={(e) => { e.stopPropagation(); onMove(lead.id, STAGES[currentIdx + 1].key); }}
+            className={`h-6 text-[10px] px-2 flex-1 ${accentTextMap[stages[currentIdx + 1].accent]}`}
+            onClick={(e) => { e.stopPropagation(); onMove(lead.id, stages[currentIdx + 1].key); }}
           >
-            {STAGES[currentIdx + 1].label} →
+            {stages[currentIdx + 1].label} →
           </Button>
         )}
       </div>
@@ -202,11 +194,18 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, isSuperadmin,
 export default function KanbanBoard() {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
+  const [stages, setStages] = useState<CrmStage[]>(loadStages(active.id));
+  const [editingStage, setEditingStage] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setStages(loadStages(active.id));
+  }, [active.id]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -323,6 +322,21 @@ export default function KanbanBoard() {
     setSheetOpen(true);
   }, []);
 
+  const handleStartEdit = (e: React.MouseEvent, stage: CrmStage) => {
+    e.stopPropagation();
+    setEditingStage(stage.key);
+    setEditValue(stage.label);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent | React.MouseEvent, stageKey: string) => {
+    e.stopPropagation();
+    if (!editValue.trim()) return;
+    saveStageLabel(active.id, stageKey, editValue.trim());
+    setStages(prev => prev.map(s => s.key === stageKey ? { ...s, label: editValue.trim() } : s));
+    setEditingStage(null);
+    toast({ title: "Сохранено", description: "Название этапа обновлено" });
+  };
+
   const toggleCollapse = (key: string) => {
     setCollapsedCols(prev => {
       const next = new Set(prev);
@@ -339,21 +353,21 @@ export default function KanbanBoard() {
 
   const leadsByStatus = useMemo(() => {
     const map: Record<string, Lead[]> = {};
-    for (const stage of STAGES) map[stage.key] = [];
+    for (const stage of stages) map[stage.key] = [];
     for (const lead of leads) {
       const key = lead.status || "Новая заявка";
       (map[key] ?? map["Новая заявка"]).push(lead);
     }
     return map;
-  }, [leads]);
+  }, [leads, stages]);
 
   const amountByStatus = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const stage of STAGES) {
+    for (const stage of stages) {
       map[stage.key] = (leadsByStatus[stage.key] || []).reduce((s, l) => s + (Number(l.amount) || 0), 0);
     }
     return map;
-  }, [leadsByStatus]);
+  }, [leadsByStatus, stages]);
 
   if (loading) {
     return (
@@ -389,7 +403,7 @@ export default function KanbanBoard() {
         </div>
         <div className="flex-1" />
         <div className="hidden lg:flex items-center gap-1">
-          {STAGES.map(s => {
+          {stages.map(s => {
             const count = (leadsByStatus[s.key] || []).length;
             const pct = leads.length ? (count / leads.length) * 100 : 0;
             return (
@@ -400,7 +414,7 @@ export default function KanbanBoard() {
                     <span className="text-[8px] text-muted-foreground tabular-nums">{count}</span>
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{s.key}: {count}</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">{s.label}: {count}</TooltipContent>
               </Tooltip>
             );
           })}
@@ -410,17 +424,18 @@ export default function KanbanBoard() {
       {/* Kanban with DnD */}
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 min-h-0 flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
-          {STAGES.map((stage) => {
+          {stages.map((stage) => {
             const stageLeads = leadsByStatus[stage.key] || [];
             const stageAmount = amountByStatus[stage.key] || 0;
             const collapsed = collapsedCols.has(stage.key);
             const Icon = stage.icon;
+            const isEditing = editingStage === stage.key;
 
             return (
               <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-secondary/40 rounded-2xl p-2.5 transition-all duration-300 border border-border/60 shadow-sm ${collapsed ? "min-w-[56px] w-[56px]" : "min-w-[320px] w-[320px]"}`}>
                 {/* Column header */}
                 <div
-                  className={`rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
+                  className={`group/header rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
                   onClick={() => collapsed && toggleCollapse(stage.key)}
                 >
                   {collapsed ? (
@@ -436,18 +451,41 @@ export default function KanbanBoard() {
                   ) : (
                     <>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-6 w-6 rounded-lg ${accentBgMap[stage.accent]} flex items-center justify-center`}>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className={`h-6 w-6 rounded-lg ${accentBgMap[stage.accent]} flex items-center justify-center shrink-0`}>
                             <Icon className={`h-3.5 w-3.5 ${accentTextMap[stage.accent]}`} />
                           </div>
-                          <span className="text-sm font-semibold text-foreground">{stage.label}</span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background">
-                            {stageLeads.length}
-                          </Badge>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1 flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+                              <Input 
+                                autoFocus
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && handleSaveEdit(e, stage.key)}
+                                onBlur={e => handleSaveEdit(e, stage.key)}
+                                className="h-6 text-xs px-2 rounded-md bg-background/80 border-primary/30"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                              <span className="text-sm font-semibold text-foreground truncate">{stage.label}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-border bg-background shrink-0">
+                                {stageLeads.length}
+                              </Badge>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5 opacity-0 group-hover/header:opacity-100 transition-opacity"
+                                onClick={(e) => handleStartEdit(e, stage)}
+                              >
+                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleCollapse(stage.key); }}
-                          className="h-6 w-6 rounded-md hover:bg-secondary/80 flex items-center justify-center text-muted-foreground"
+                          className="h-6 w-6 rounded-md hover:bg-secondary/80 flex items-center justify-center text-muted-foreground ml-1 shrink-0"
                         >
                           <ChevronDown className="h-3.5 w-3.5" />
                         </button>
@@ -468,13 +506,13 @@ export default function KanbanBoard() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`flex-1 min-h-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-muted-foreground/20 ${snapshot.isDraggingOver
+                        className={`flex-1 min-y-0 overflow-y-auto space-y-3 p-1 rounded-xl transition-colors duration-200 scrollbar-thin scrollbar-thumb-muted-foreground/20 ${snapshot.isDraggingOver
                           ? `${accentBgMap[stage.accent]} border-2 border-dashed ${stage.accent === "primary" ? "border-primary/40" : stage.accent === "warning" ? "border-[hsl(var(--status-warning)/0.4)]" : stage.accent === "good" ? "border-[hsl(var(--status-good)/0.4)]" : stage.accent === "critical" ? "border-[hsl(var(--status-critical)/0.4)]" : "border-[hsl(var(--status-ai)/0.4)]"}`
                           : ""
                           }`}
                       >
                         {stageLeads.map((lead, index) => {
-                          const currentIdx = STAGES.findIndex(s => s.key === stage.key);
+                          const currentIdx = stages.findIndex(s => s.key === stage.key);
                           return (
                             <Draggable key={lead.id} draggableId={lead.id} index={index}>
                               {(dragProvided, dragSnapshot) => (
@@ -488,6 +526,7 @@ export default function KanbanBoard() {
                                     lead={lead}
                                     stage={stage}
                                     currentIdx={currentIdx}
+                                    stages={stages}
                                     isSuperadmin={isSuperadmin}
                                     onCardClick={handleCardClick}
                                     onMove={handleMoveStage}
