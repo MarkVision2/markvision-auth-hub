@@ -59,7 +59,11 @@
             phone: formData.phone || '',
             source: formData.source || window.location.hostname,
             project_id: CONFIG.projectId,
+            utm_source: utmTags.utm_source || null,
+            utm_medium: utmTags.utm_medium || null,
             utm_campaign: utmTags.utm_campaign || null,
+            utm_content: utmTags.utm_content || null,
+            utm_term: utmTags.utm_term || null,
             // Additional data to be processed by CRM (leads_crm table)
             metadata: {
                 ...getMetadata(),
@@ -85,10 +89,11 @@
                     phone: payload.phone,
                     source: payload.source,
                     project_id: payload.project_id,
+                    utm_source: payload.utm_source,
+                    utm_medium: payload.utm_medium,
                     utm_campaign: payload.utm_campaign,
-                    // Store extra data that doesn't map to columns gracefully inside metadata or just drop them if no metadata column
-                    // Supabase will ignore extra fields if they are in JSON but PostgREST will fail if we send columns that don't exist
-                    // Assuming metadata column does not exist on leads_crm based on schema dump, we just send standard columns
+                    utm_content: payload.utm_content,
+                    utm_term: payload.utm_term
                 })
             });
 
