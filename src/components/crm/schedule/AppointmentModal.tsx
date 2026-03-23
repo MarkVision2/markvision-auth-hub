@@ -301,7 +301,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             className="h-12 px-6 rounded-xl font-bold uppercase tracking-wider text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center gap-2"
                             onClick={() => setIsDiagnosticOpen(true)}
                         >
-                            <ExternalLink className="h-4 w-4" /> В карточку
+                            <ExternalLink className="h-4 w-4" /> Провести осмотр
                         </Button>
                     )}
                     <div className="flex-1" />
@@ -328,18 +328,18 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     lead={{
                         id: appointment.id,
                         name: appointment.patient,
-                        phone: appointment.phone,
+                        phone: appointment.phone || formData.phone,
                         status: appointment.status === "completed" ? "Готов к лечению" : (appointment.status === "planned" ? "Записан" : "Новая заявка"),
                         scheduled_at: appointment.date ? (appointment.date instanceof Date ? appointment.date.toISOString() : appointment.date) : undefined,
                         project_id: "default",
-                        comments: appointment.comment,
+                        comments: appointment.comment || formData.comment,
                         email: "",
                         source: "Schedule",
                         created_at: new Date().toISOString(),
                         amount: "0",
                         utm_campaign: "",
                         ai_score: 0,
-                        ai_summary: ""
+                        ai_summary: appointment.service || formData.service
                     } as any as Lead}
                     mode={mode}
                 />

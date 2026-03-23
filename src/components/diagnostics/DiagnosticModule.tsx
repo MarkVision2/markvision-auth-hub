@@ -28,12 +28,39 @@ interface DiagnosticModuleProps {
 export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({ 
     lead, open, onOpenChange, onComplete, mode = "admin" 
 }) => {
-    const [activeTab, setActiveTab] = useState("admin");
+    const [activeTab, setActiveTab] = useState(mode === "doctor" ? "doctor" : "admin");
     const [isSaving, setIsSaving] = useState(false);
     const pdfRef = useRef<DiagnosticPdfExportRef>(null);
     
     // В реальном проекте здесь будет стейт для всех 3 вкладок
-    const [adminData, setAdminData] = useState<AdminFormData | null>(null);
+    const [adminData, setAdminData] = useState<AdminFormData | null>({
+        complaints: lead.ai_summary || "",
+        painLocation: "",
+        painLocationOther: "",
+        painDuration: "",
+        painType: "",
+        painTriggers: [],
+        painTriggersOther: "",
+        painRadiation: [],
+        painRadiationOther: "",
+        numbness: "",
+        painIntensity: "5",
+        lifeImpact: [],
+        lifeImpactOther: "",
+        previousTreatment: "",
+        treatmentMethods: "",
+        doctorsSeen: "no",
+        mriCtHistory: "no",
+        hasResults: "no",
+        adminComment: (lead as any).comments || "",
+        paymentMethod: "Kaspi",
+        paymentStatus: "pending",
+        prepaymentAmount: "",
+        refusalReason: "",
+        confirmed: false,
+        finalFio: lead.name,
+        finalPhone: lead.phone || ""
+    });
     const [doctorData, setDoctorData] = useState<DoctorFormData | null>(null);
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
 
@@ -164,56 +191,52 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-6 pt-4 pb-0 border-b border-border bg-background shrink-0">
                                 <TabsList className="bg-transparent border-none p-0 h-auto gap-6 mb-[-1px]">
+                                    {mode !== "doctor" && (
+                                        <TabsTrigger 
+                                            value="admin" 
+                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                        >
+                                            <ClipboardList className="h-4 w-4" />
+                                            1. Диагностика (Админ)
+                                        </TabsTrigger>
+                                    )}
                                     <TabsTrigger 
-                                        value="admin" 
+                                        value="doctor" 
                                         className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
                                     >
-                                        <ClipboardList className="h-4 w-4" />
-                                        1. Диагностика (Админ)
+                                        <Stethoscope className="h-4 w-4" />
+                                        2. Осмотр (Врач)
                                     </TabsTrigger>
-                                    {mode === "doctor" && (
-                                        <>
-                                            <TabsTrigger 
-                                                value="doctor" 
-                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                            >
-                                                <Stethoscope className="h-4 w-4" />
-                                                2. Осмотр (Врач)
-                                            </TabsTrigger>
-                                            <TabsTrigger 
-                                                value="prescription" 
-                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
-                                            >
-                                                <FileText className="h-4 w-4" />
-                                                3. Лист назначения
-                                            </TabsTrigger>
-                                        </>
-                                    )}
+                                    <TabsTrigger 
+                                        value="prescription" 
+                                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        3. Лист назначения
+                                    </TabsTrigger>
                                 </TabsList>
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
                                 <div className="p-6 min-h-full">
-                                    <TabsContent value="admin" className="m-0 focus-visible:outline-none">
-                                        <AdminDiagnosticTab 
-                                            lead={lead} 
-                                            data={adminData} 
-                                            onChange={setAdminData} 
-                                            onNext={() => mode === "doctor" && setActiveTab("doctor")}
-                                            readOnly={mode === "doctor"}
-                                            onSave={handleSave}
-                                        />
-                                    </TabsContent>
-                                    {mode === "doctor" && (
-                                        <>
-                                            <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
-                                                <DoctorDiagnosticTab lead={lead} adminData={adminData} data={doctorData} onChange={setDoctorData} onNext={() => setActiveTab("prescription")} />
-                                            </TabsContent>
-                                            <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
-                                                <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
-                                            </TabsContent>
-                                        </>
+                                    {mode !== "doctor" && (
+                                        <TabsContent value="admin" className="m-0 focus-visible:outline-none">
+                                            <AdminDiagnosticTab 
+                                                lead={lead} 
+                                                data={adminData} 
+                                                onChange={setAdminData} 
+                                                onNext={() => setActiveTab("doctor")}
+                                                readOnly={false}
+                                                onSave={handleSave}
+                                            />
+                                        </TabsContent>
                                     )}
+                                    <TabsContent value="doctor" className="m-0 focus-visible:outline-none">
+                                        <DoctorDiagnosticTab lead={lead} adminData={adminData} data={doctorData} onChange={setDoctorData} onNext={() => setActiveTab("prescription")} />
+                                    </TabsContent>
+                                    <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
+                                        <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
+                                    </TabsContent>
                                 </div>
                             </div>
                         </Tabs>
@@ -244,16 +267,28 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                         {lead.scheduled_at ? new Date(lead.scheduled_at).toLocaleString("ru-RU", { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' }) : "Нет записи"}
                                     </div>
                                 </div>
-                                {adminData?.paymentStatus && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Предоплата</p>
-                                        <Badge variant="outline" className={cn(
-                                            adminData.paymentStatus === 'paid' ? "border-emerald-500/30 text-emerald-600 bg-emerald-500/10" : "border-amber-500/30 text-amber-600 bg-amber-500/10"
-                                        )}>
-                                            {adminData.paymentStatus === 'paid' ? "Оплачено" : "Ожидание"}
-                                        </Badge>
+                                <div>
+                                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Информация от регистратуры</p>
+                                    <div className="space-y-3 p-3 bg-secondary/50 rounded-lg border border-border">
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Жалоба</p>
+                                            <p className="text-sm font-medium">{adminData?.complaints || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Комментарий</p>
+                                            <p className="text-sm font-medium">{adminData?.adminComment || "—"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Предоплата</p>
+                                            <Badge variant="outline" className={cn(
+                                                "mt-1 text-[10px]",
+                                                adminData?.paymentStatus === 'paid' ? "border-emerald-500/30 text-emerald-600 bg-emerald-500/10" : "border-amber-500/30 text-amber-600 bg-amber-500/10"
+                                            )}>
+                                                {adminData?.paymentStatus === 'paid' ? "✅ Оплачено" : "⏳ Ожидание"}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -48,9 +48,11 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     return {
                         id: lead.id,
                         patient: lead.name,
+                        phone: lead.phone, // Added phone
                         date: date,
                         time: format(date, "HH:mm"),
                         type: lead.status === "Записан" ? "Диагностика" : "Приём",
+                        service: lead.ai_summary || "Первичный приём", // Added service
                         status: lead.status === "Визит совершен" ? "completed" : "planned",
                         doctor: lead.doctor_name,
                         lead: lead // Keep original for modal
