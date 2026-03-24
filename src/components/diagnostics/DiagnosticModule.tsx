@@ -152,8 +152,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             const updateData: any = {
                 status: newStatus,
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
-                doctor_name: adminData.bookingDoctor || lead.doctor_name,
-                serviced_by: mode === "admin" ? (user?.user_metadata?.full_name || user?.email) : lead.serviced_by
+                doctor_name: adminData.bookingDoctor || lead.doctor_name
             };
 
             if (adminData.bookingDate && adminData.bookingTime) {
