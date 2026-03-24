@@ -111,6 +111,7 @@ export interface AdminFormData {
     paymentStatus: "pending" | "paid" | "declined";
     prepaymentAmount: string;
     refusalReason: string;
+    refusalReasonOther?: string;
     confirmed: boolean;
     finalFio: string;
     finalPhone: string;
@@ -268,6 +269,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         paymentStatus: "pending",
         prepaymentAmount: "",
         refusalReason: "",
+        refusalReasonOther: "",
         confirmed: false,
         finalFio: lead.name || "",
         finalPhone: lead.phone || "",
@@ -838,12 +840,25 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                                     <SelectValue placeholder="Выберите причину" />
                                                                 </SelectTrigger>
                                                                 <SelectContent className="rounded-xl">
-                                                                    <SelectItem value="expensive">Дорого</SelectItem>
-                                                                    <SelectItem value="thinking">Подумает</SelectItem>
-                                                                    <SelectItem value="not_now">Не сейчас</SelectItem>
-                                                                    <SelectItem value="other">Другое</SelectItem>
+                                                                    <SelectItem value="Дорого">Дорого</SelectItem>
+                                                                    <SelectItem value="Другой город">Другой город</SelectItem>
+                                                                    <SelectItem value="Подумает">Подумает</SelectItem>
+                                                                    <SelectItem value="Не сейчас">Не сейчас</SelectItem>
+                                                                    <SelectItem value="Другое">Другое</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
+
+                                                            {formData.refusalReason === "Другое" && (
+                                                                <div className="pt-2 animate-in slide-in-from-top-1 duration-200">
+                                                                    <Input 
+                                                                        placeholder="Укажите свою причину..."
+                                                                        value={formData.refusalReasonOther || ""}
+                                                                        onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
+                                                                        className="h-10 bg-background border-rose-500/20 focus:ring-rose-500"
+                                                                        disabled={readOnly}
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 )}

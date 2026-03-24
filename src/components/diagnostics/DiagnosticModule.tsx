@@ -121,7 +121,15 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
         if (!adminData) return;
         setIsSaving(true);
         try {
-            // Mapping statuses to CRM stages
+            // Initial update data
+            const updateData: any = {
+                status: lead.status,
+                pipeline: (lead as any).pipeline || "main",
+                amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
+                doctor_name: adminData.bookingDoctor || lead.doctor_name,
+                refusal_reason: null
+            };
+
             let newStatus = lead.status;
             let pipeline = (lead as any).pipeline || "main";
 
@@ -136,6 +144,9 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             if (adminData.paymentStatus === "declined") {
                 newStatus = "Отказ";
                 pipeline = "main";
+                updateData.refusal_reason = adminData.refusalReason === "Другое" 
+                    ? adminData.refusalReasonOther 
+                    : adminData.refusalReason;
             }
 
             // Doctor decisions override or extend
@@ -143,6 +154,9 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 if (doctorData.readiness === "not_ready") {
                     newStatus = "Отказ";
                     pipeline = "main";
+                    updateData.refusal_reason = doctorData.refusalReason === "Другое"
+                        ? (doctorData as any).refusalReasonOther
+                        : doctorData.refusalReason;
                 } else if (doctorData.readiness === "thinking") {
                     newStatus = "Счет отправлен";
                     pipeline = "main";
@@ -158,12 +172,9 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 pipeline = "doctor";
             }
 
-            const updateData: any = {
-                status: newStatus,
-                pipeline: pipeline,
-                amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
-                doctor_name: adminData.bookingDoctor || lead.doctor_name
-            };
+            // Update the object with final values
+            updateData.status = newStatus;
+            updateData.pipeline = pipeline;
 
             if (adminData.bookingDate && adminData.bookingTime) {
                 // Combine date and time
@@ -174,12 +185,12 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 updateData.scheduled_at = scheduledAt.toISOString();
             }
 
-            if (adminData.paymentStatus === "declined" && adminData.refusalReason) {
-                updateData.ai_summary = (lead.ai_summary || "") + `\n[Отказ от предоплаты: ${adminData.refusalReason}]`;
+            if (adminData.paymentStatus === "declined" && updateData.refusal_reason) {
+                updateData.ai_summary = (lead.ai_summary || "") + `\n[Отказ от предоплаты: ${updateData.refusal_reason}]`;
             }
 
-            if (doctorData?.readiness === "not_ready" && doctorData.refusalReason) {
-                updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${doctorData.refusalReason}]`;
+            if (doctorData?.readiness === "not_ready" && updateData.refusal_reason) {
+                updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${updateData.refusal_reason}]`;
             }
 
             let { error: updateError } = await (supabase as any)

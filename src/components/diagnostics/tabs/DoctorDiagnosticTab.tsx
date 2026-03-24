@@ -40,6 +40,7 @@ export interface DoctorFormData {
     answers: Record<string, any>;
     readiness: "not_ready" | "thinking" | "ready" | "";
     refusalReason?: string;
+    refusalReasonOther?: string;
     // Legacy mapping
     mainComplaint: string;
     recommendedCourse: string;
@@ -48,10 +49,9 @@ export interface DoctorFormData {
 
 const REFUSAL_REASONS = [
     "Дорого",
-    "Ушел в другую клинику",
-    "Сам передумал",
-    "Нет времени",
-    "Не понравился врач",
+    "Другой город",
+    "Подумает",
+    "Не сейчас",
     "Другое"
 ];
 
@@ -416,6 +416,18 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {formData.refusalReason === "Другое" && (
+                            <div className="pt-2 animate-in slide-in-from-top-1 duration-200">
+                                <Input 
+                                    placeholder="Укажите свою причину..."
+                                    value={formData.refusalReasonOther || ""}
+                                    onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
+                                    className="h-12 rounded-2xl border-rose-500/20 bg-background focus:ring-rose-500 font-medium"
+                                    disabled={readOnly}
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
