@@ -153,8 +153,6 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 status: newStatus,
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
                 doctor_name: adminData.bookingDoctor || lead.doctor_name,
-                is_diagnostic: true,
-                prescribed_packages: prescriptionData?.confirmed && prescriptionData.packageId ? [prescriptionData.packageId] : [],
                 serviced_by: mode === "admin" ? (user?.user_metadata?.full_name || user?.email) : lead.serviced_by
             };
 
@@ -172,12 +170,11 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             }
 
             if (doctorData?.readiness === "not_ready" && doctorData.refusalReason) {
-                updateData.refusal_reason = doctorData.refusalReason;
                 updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${doctorData.refusalReason}]`;
             }
 
             const { error } = await (supabase as any)
-                .from("leads_crm")
+                .from("leads")
                 .update(updateData)
                 .eq("id", lead.id);
 
