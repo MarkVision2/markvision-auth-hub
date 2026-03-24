@@ -183,48 +183,47 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
             if (error) throw error;
 
-            // Save questions if user is admin
-            const userRole = (user?.app_metadata as any)?.role || "user";
-            if (userRole === "admin" && lead.project_id) {
-                const allQuestions = [
-                    ...adminQuestions.map((q, i) => ({
-                        project_id: lead.project_id,
-                        label: q.label,
-                        type: q.type,
-                        options: q.options || [],
-                        sort_order: i,
-                        category: "admin",
-                        is_required: !!q.required
-                    })),
-                    ...doctorQuestions.map((q, i) => ({
-                        project_id: lead.project_id,
-                        label: q.label,
-                        type: q.type,
-                        options: q.options || [],
-                        sort_order: i,
-                        category: "doctor",
-                        section: q.section,
-                        is_required: !!q.required
-                    }))
-                ];
+            // Save questions for this project
+            if (lead.project_id) {
+                try {
+                    // Delete existing questions for this project, then insert fresh
+                    await (supabase as any)
+                        .from("diagnostic_questions")
+                        .delete()
+                        .eq("project_id", lead.project_id);
 
-                // Upsert questions (this assumes we have IDs or we just wipe and recreate for simplicity per project)
-                // For better UX, we should ideally have the IDs from fetchQuestions
-                const { error: qError } = await supabase
-                    .from("diagnostic_questions")
-                    .upsert(
-                        allQuestions.map(q => {
-                            // Find existing question ID to preserve it
-                            const existing = [...adminQuestions, ...doctorQuestions].find(item => item.label === q.label && (item as any).category === q.category);
-                            return {
-                                ...q,
-                                id: (existing as any)?.id || undefined
-                            } as any;
-                        }),
-                        { onConflict: "project_id, label, category" }
-                    );
-                
-                if (qError) console.error("Error saving questions:", qError);
+                    const allQuestions = [
+                        ...adminQuestions.map((q, i) => ({
+                            project_id: lead.project_id,
+                            label: q.label,
+                            type: q.type,
+                            options: q.options || [],
+                            sort_order: i,
+                            category: "admin",
+                            is_required: !!q.required
+                        })),
+                        ...doctorQuestions.map((q, i) => ({
+                            project_id: lead.project_id,
+                            label: q.label,
+                            type: q.type,
+                            options: q.options || [],
+                            sort_order: i,
+                            category: "doctor",
+                            section: (q as any).section || "complaints",
+                            is_required: !!q.required
+                        }))
+                    ];
+
+                    if (allQuestions.length > 0) {
+                        const { error: qError } = await (supabase as any)
+                            .from("diagnostic_questions")
+                            .insert(allQuestions);
+                        
+                        if (qError) console.error("Error saving questions:", qError);
+                    }
+                } catch (qErr) {
+                    console.error("Error saving questions:", qErr);
+                }
             }
 
             // Trigger analytics webhook (n8n)
