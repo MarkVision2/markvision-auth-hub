@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Calendar, User, Clock, Check } from "lucide-react";
+import { Calendar, User, Clock, Check, Loader2 } from "lucide-react";
 import { loadTeam, TeamMember } from "@/pages/settings/types";
-import { format, parse, addHours, isBefore } from "date-fns";
+import { format, parse, addHours, isBefore, startOfDay, endOfDay } from "date-fns";
+import { ru } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingWidgetProps {
     onBookingChange: (data: { date: Date; time: string; doctor: string }) => void;
@@ -27,10 +29,50 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     const [doctor, setDoctor] = useState(initialDoctor || "");
     const [date, setDate] = useState<Date | undefined>(initialDate);
     const [time, setTime] = useState(initialTime || "");
+    const [bookedSlots, setBookedSlots] = useState<string[]>([]);
+    const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
     useEffect(() => {
         setTeam(loadTeam());
     }, []);
+
+    // Fetch booked slots when doctor or date changes
+    useEffect(() => {
+        const fetchBookedSlots = async () => {
+            if (!doctor || !date) {
+                setBookedSlots([]);
+                return;
+            }
+
+            setIsLoadingSlots(true);
+            try {
+                const dayStart = startOfDay(date).toISOString();
+                const dayEnd = endOfDay(date).toISOString();
+
+                const { data, error } = await (supabase as any)
+                    .from("leads_crm")
+                    .select("scheduled_at")
+                    .eq("doctor_name", doctor)
+                    .gte("scheduled_at", dayStart)
+                    .lte("scheduled_at", dayEnd);
+
+                if (error) throw error;
+
+                if (data) {
+                    const booked = (data as any[])
+                        .filter(item => item.scheduled_at)
+                        .map(item => format(new Date(item.scheduled_at), "HH:mm"));
+                    setBookedSlots(booked);
+                }
+            } catch (err) {
+                console.error("Error fetching booked slots:", err);
+            } finally {
+                setIsLoadingSlots(false);
+            }
+        };
+
+        fetchBookedSlots();
+    }, [doctor, date]);
 
     const doctors = team.filter(m => m.role === "doctor");
     const selectedDoctorObj = doctors.find(d => d.name === doctor);
@@ -57,7 +99,9 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
         }
     };
 
-    const timeSlots = getTimeSlots(selectedDoctorObj?.workingHours);
+    const allSlots = getTimeSlots(selectedDoctorObj?.workingHours);
+    // Filter out already booked slots
+    const availableSlots = allSlots.filter(s => !bookedSlots.includes(s));
 
     const handleUpdate = (newDoctor: string, newDate: Date | undefined, newTime: string) => {
         setDoctor(newDoctor);
@@ -86,7 +130,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
                             <User className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ВРАЧА
                         </div>
-                        <Select value={doctor} onValueChange={(v) => handleUpdate(v, undefined, "")}>
+                        <Select value={doctor} onValueChange={(v) => handleUpdate(v, date, "")}>
                             <SelectTrigger className="h-12 bg-background border-border rounded-xl shadow-sm hover:border-primary/50 transition-all">
                                 <SelectValue placeholder="Выберите специалиста" />
                             </SelectTrigger>
@@ -114,6 +158,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                                 selected={date}
                                 onSelect={(d) => handleUpdate(doctor, d, "")}
                                 disabled={isDayDisabled}
+                                locale={ru}
                                 className="rounded-xl border-none p-0"
                             />
                         </div>
@@ -123,24 +168,36 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                 {/* Right Column: Time Slots & Confirmation */}
                 <div className="space-y-6">
                     <div className={cn("space-y-4 transition-opacity duration-300", !date && "opacity-40 pointer-events-none")}>
-                        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
-                            <Clock className="h-2.5 w-2.5" /> ДОСТУПНОЕ ВРЕМЯ
+                        <div className="flex items-center justify-between">
+                            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
+                                <Clock className="h-2.5 w-2.5" /> ДОСТУПНОЕ ВРЕМЯ
+                            </div>
+                            {isLoadingSlots && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                         </div>
+                        
                         <div className="grid grid-cols-3 gap-2">
-                            {timeSlots.map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => handleUpdate(doctor, date, t)}
-                                    className={cn(
-                                        "h-10 text-[11px] font-bold rounded-xl border transition-all duration-200",
-                                        time === t
-                                            ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
-                                            : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
-                                    )}
-                                >
-                                    {t}
-                                </button>
-                            ))}
+                            {availableSlots.length > 0 ? (
+                                availableSlots.map(t => (
+                                    <button
+                                        key={t}
+                                        onClick={() => handleUpdate(doctor, date, t)}
+                                        className={cn(
+                                            "h-10 text-[11px] font-bold rounded-xl border transition-all duration-200",
+                                            time === t
+                                                ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
+                                                : "bg-background border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/5"
+                                        )}
+                                    >
+                                        {t}
+                                    </button>
+                                ))
+                            ) : date ? (
+                                <div className="col-span-3 py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-border/60">
+                                    <p className="text-[11px] text-muted-foreground font-medium italic">
+                                        Нет свободного времени на эту дату
+                                    </p>
+                                </div>
+                            ) : null}
                         </div>
 
                         {!date && (
