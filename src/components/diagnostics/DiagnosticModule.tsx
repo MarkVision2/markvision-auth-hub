@@ -174,7 +174,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             }
 
             const { error } = await (supabase as any)
-                .from("leads")
+                .from("leads_crm")
                 .update(updateData)
                 .eq("id", lead.id);
 
