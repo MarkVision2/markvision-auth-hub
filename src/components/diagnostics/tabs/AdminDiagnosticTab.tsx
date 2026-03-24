@@ -142,46 +142,46 @@ const QuestionEditor = ({
     };
 
     return (
-        <div className="flex flex-col gap-2 min-w-[120px]">
+        <div className="flex flex-col gap-2 min-w-[140px]">
             {!isEditing ? (
-                <div className="flex items-center gap-1 bg-secondary/20 p-1 rounded-xl border border-border/40">
+                <div className="flex items-center gap-1.5 bg-secondary/20 p-1.5 rounded-xl border border-border/40">
                     <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                        className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
                         onClick={() => setIsEditing(true)}
                         title="Редактировать вопрос"
                     >
-                        <Edit2 className="h-3.5 w-3.5" />
+                        <Edit2 className="h-4 w-4" />
                     </Button>
                     <div className="flex items-center">
                         <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
                             onClick={onMoveUp}
                             title="Переместить вверх"
                         >
-                            <ArrowRight className="h-3.5 w-3.5 -rotate-90" />
+                            <ArrowRight className="h-4 w-4 -rotate-90" />
                         </Button>
                         <Button 
                             size="icon" 
                             variant="ghost" 
-                            className="h-7 w-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
+                            className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors" 
                             onClick={onMoveDown}
                             title="Переместить вниз"
                         >
-                            <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                            <ArrowRight className="h-4 w-4 rotate-90" />
                         </Button>
                     </div>
                     <Button 
                         size="icon" 
                         variant="ghost" 
-                        className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors" 
+                        className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors" 
                         onClick={onDelete}
                         title="Удалить вопрос"
                     >
-                        <X className="h-3.5 w-3.5" />
+                        <X className="h-4 w-4" />
                     </Button>
                 </div>
             ) : (
@@ -435,26 +435,31 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     </Button>
                                 )}
                             </div>
-                            <div className="p-4 rounded-2xl bg-secondary/20 border border-border/50 space-y-2">
+                            <div className="p-5 rounded-2xl bg-secondary/20 border border-border/50 space-y-2">
                                 <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Info className="h-4 w-4" />
-                                    <span className="text-[10px] font-semibold uppercase tracking-wider">Совет администратору</span>
+                                    <Info className="h-5 w-5" />
+                                    <span className="text-xs font-semibold uppercase tracking-wider">Совет администратору</span>
                                 </div>
-                                <p className="text-[11px] text-muted-foreground font-medium leading-relaxed">
+                                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
                                     Не перебивайте. Слушайте внимательно. Ведите пациента мягко, без хаоса и допроса.
                                 </p>
                             </div>
                         </div>
 
                         <div className="space-y-6">
-                            <ScrollArea className="h-[500px] pr-4 -mr-4">
-                                <div className="space-y-8 pb-10">
-                                    {questions.map((q) => (
-                                        <div key={q.id} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <ScrollArea className="h-[550px] pr-4 -mr-4">
+                                <div className="space-y-5 pb-10">
+                                    {questions.map((q, qIndex) => (
+                                        <div key={q.id} className="p-6 rounded-2xl bg-secondary/5 border border-border/40 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 hover:border-border/60 transition-colors">
                                             <div className="flex items-center justify-between gap-4">
-                                                <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground flex items-center gap-1">
-                                                    {q.label} {q.required && <span className="text-destructive">*</span>}
-                                                </Label>
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-sm font-bold">
+                                                        {qIndex + 1}
+                                                    </div>
+                                                    <Label className="text-base font-semibold text-foreground leading-snug">
+                                                        {q.label} {q.required && <span className="text-destructive ml-1">*</span>}
+                                                    </Label>
+                                                </div>
                                                 {!readOnly && (
                                                     <QuestionEditor 
                                                         question={q} 
@@ -469,8 +474,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                             {q.type === "textarea" && (
                                                 <div className="relative group">
                                                     <Textarea
-                                                        placeholder="..."
-                                                        className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-24 text-base resize-none rounded-2xl p-4 w-full transition-all group-hover:bg-secondary/15"
+                                                        placeholder="Введите ответ..."
+                                                        className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-28 text-base resize-none rounded-2xl p-5 w-full transition-all group-hover:bg-secondary/15"
                                                         value={formData.answers[q.id] || ""}
                                                         onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
                                                         disabled={readOnly}
@@ -481,8 +486,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                             {q.type === "text" && (
                                                 <div className="relative group">
                                                     <Input
-                                                        placeholder="..."
-                                                        className="bg-secondary/10 border-none text-base h-12 rounded-xl px-4 focus:ring-1 focus:ring-primary w-full transition-all group-hover:bg-secondary/15"
+                                                        placeholder="Введите ответ..."
+                                                        className="bg-secondary/10 border-none text-base h-14 rounded-xl px-5 focus:ring-1 focus:ring-primary w-full transition-all group-hover:bg-secondary/15"
                                                         value={formData.answers[q.id] || ""}
                                                         onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
                                                         disabled={readOnly}
@@ -520,12 +525,12 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                                     }}
                                                                 >
                                                                     <div className={cn(
-                                                                        "h-5 w-5 rounded-full border-2 border-primary flex items-center justify-center transition-all",
+                                                                        "h-6 w-6 rounded-full border-2 border-primary flex items-center justify-center transition-all",
                                                                         isSelected ? "bg-primary" : "bg-transparent"
                                                                     )}>
-                                                                        {isSelected && <Check className="h-3 w-3 text-white" />}
+                                                                        {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
                                                                     </div>
-                                                                    <Label className={cn("text-sm font-semibold transition-colors", isSelected ? "text-primary" : "text-foreground", !readOnly && "cursor-pointer")}>
+                                                                    <Label className={cn("text-base font-semibold transition-colors", isSelected ? "text-primary" : "text-foreground", !readOnly && "cursor-pointer")}>
                                                                         {opt.label}
                                                                     </Label>
                                                                 </div>
@@ -598,7 +603,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             </Dialog>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {[
                                 {
                                     icon: Stethoscope,
@@ -636,24 +641,24 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     desc: "Сразу после диагностики для быстрого снижения боли."
                                 }
                             ].map((item, i) => (
-                                <div key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-white hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                        <item.icon className="h-4 w-4" />
+                                <div key={i} className="flex flex-col gap-3 p-5 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-white hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
+                                    <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                        <item.icon className="h-5 w-5" />
                                     </div>
-                                    <div className="space-y-1">
-                                        <h4 className="text-[11px] font-bold text-foreground leading-tight uppercase tracking-tight">{item.title}</h4>
-                                        <p className="text-[10px] text-muted-foreground leading-relaxed font-medium line-clamp-2">{item.desc}</p>
+                                    <div className="space-y-1.5">
+                                        <h4 className="text-sm font-bold text-foreground leading-tight uppercase tracking-tight">{item.title}</h4>
+                                        <p className="text-xs text-muted-foreground leading-relaxed font-medium">{item.desc}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-                            <div className="p-4 rounded-2xl bg-secondary/20 border border-border/40 space-y-3">
-                                <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground ml-1">Комментарий для врача</Label>
+                            <div className="p-5 rounded-2xl bg-secondary/20 border border-border/40 space-y-3">
+                                <Label className="text-xs uppercase font-bold tracking-widest text-muted-foreground ml-1">Комментарий для врача</Label>
                                 <Textarea
                                     placeholder="Детали: что именно беспокоит, есть ли результаты анализов..."
-                                    className="bg-transparent border-none focus:ring-0 h-16 text-xs font-medium resize-none p-0"
+                                    className="bg-transparent border-none focus:ring-0 h-20 text-sm font-medium resize-none p-0"
                                     value={formData.adminComment}
                                     onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
                                     disabled={readOnly}
@@ -661,20 +666,20 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             </div>
                             <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
                                 {formData.bookingDate && formData.bookingTime ? (
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Текущая запись</p>
-                                        <p className="text-xs font-bold text-primary flex items-center gap-2">
-                                            <Calendar className="h-3.5 w-3.5" />
+                                    <div className="space-y-1.5">
+                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Текущая запись</p>
+                                        <p className="text-sm font-bold text-primary flex items-center gap-2">
+                                            <Calendar className="h-4 w-4" />
                                             {format(formData.bookingDate, "dd.MM.yyyy")} в {formData.bookingTime}
                                         </p>
-                                        <p className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-                                            <User className="h-3 w-3" /> {formData.bookingDoctor || "Врач не выбран"}
+                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                            <User className="h-3.5 w-3.5" /> {formData.bookingDoctor || "Врач не выбран"}
                                         </p>
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2 text-muted-foreground italic">
-                                        <HeartPulse className="h-4 w-4" />
-                                        <span className="text-xs font-medium">Запись ещё не назначена</span>
+                                        <HeartPulse className="h-5 w-5" />
+                                        <span className="text-sm font-medium">Запись ещё не назначена</span>
                                     </div>
                                 )}
                             </div>
