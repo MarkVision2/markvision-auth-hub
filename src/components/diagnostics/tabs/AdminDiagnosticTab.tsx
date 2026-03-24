@@ -362,7 +362,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                 toast({ title: "Подтверждено", description: "Запись подтверждена. Передача врачу." });
             }
             if (onSave) onSave();
-            onNext();
+            if (formData.paymentStatus !== "declined") {
+                onNext();
+            }
         }
     };
 

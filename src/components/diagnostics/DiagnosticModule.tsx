@@ -206,7 +206,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     amount: updateData.amount,
                     doctor_name: updateData.doctor_name,
                     scheduled_at: updateData.scheduled_at,
-                    ai_summary: updateData.ai_summary
+                    ai_summary: updateData.ai_summary,
+                    refusal_reason: updateData.refusal_reason
                 };
                 const { error: fallbackError } = await (supabase as any)
                     .from("leads_crm")
@@ -290,10 +291,6 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 onComplete({ adminData, doctorData, prescriptionData });
             } else if (onOpenChange) {
                 onOpenChange(false);
-                // Fallback: reload to ensure CRM view is fresh if no specific onComplete is provided
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
             }
         } catch (error: any) {
             toast({ title: "Ошибка", description: error.message || "Не удалось сохранить", variant: "destructive" });
