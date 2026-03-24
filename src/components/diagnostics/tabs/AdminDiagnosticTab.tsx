@@ -641,7 +641,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     desc: "Сразу после диагностики для быстрого снижения боли."
                                 }
                             ].map((item, i) => (
-                                <div key={i} className="flex flex-col gap-3 p-5 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-white hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
+                                <div key={i} className="flex flex-col gap-3 p-5 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-primary/[0.08] hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
                                     <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                                         <item.icon className="h-5 w-5" />
                                     </div>
