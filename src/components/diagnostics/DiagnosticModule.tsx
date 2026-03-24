@@ -125,9 +125,18 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             let newStatus = lead.status;
             let pipeline = (lead as any).pipeline || "main";
 
-            if (adminData.paymentStatus === "pending") newStatus = "Счет отправлен";
-            if (adminData.paymentStatus === "paid") newStatus = "Записан";
-            if (adminData.paymentStatus === "declined") newStatus = "Отказ";
+            if (adminData.paymentStatus === "pending") {
+                newStatus = "Счет отправлен";
+                pipeline = "main";
+            }
+            if (adminData.paymentStatus === "paid") {
+                newStatus = "Записан";
+                pipeline = "main";
+            }
+            if (adminData.paymentStatus === "declined") {
+                newStatus = "Отказ";
+                pipeline = "main";
+            }
 
             // Doctor decisions override or extend
             if (doctorData) {
@@ -138,7 +147,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     newStatus = "Счет отправлен";
                     pipeline = "main";
                 } else if (doctorData.readiness === "ready") {
-                    // newStatus = "Визит совершен";
+                    // Stay in current or move to main?
+                    // Usually ready means move to treatment, but user wants paid -> записан
                 }
             }
 
