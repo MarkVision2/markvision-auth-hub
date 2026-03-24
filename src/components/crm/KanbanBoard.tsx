@@ -370,9 +370,9 @@ export default function KanbanBoard() {
       const key = lead.status || (activePipeline === "main" ? "Новая заявка" : "Лечение начато");
       if (map[key]) {
         map[key].push(lead);
-      } else {
-        // Если статус не совпадает с текущими этапами, игнорируем или кидаем в первый
-        // map[stages[0].key].push(lead);
+      } else if (stages.length > 0) {
+        //fallback to first stage if status doesn't match
+        map[stages[0].key].push(lead);
       }
     }
     return map;

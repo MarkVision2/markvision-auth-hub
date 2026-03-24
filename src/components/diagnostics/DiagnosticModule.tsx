@@ -182,17 +182,31 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${doctorData.refusalReason}]`;
             }
 
-            const { error: updateError } = await (supabase as any)
+            let { error: updateError } = await (supabase as any)
                 .from("leads_crm")
                 .update(updateData)
                 .eq("id", lead.id);
 
+            // Universal fallback: if 'pipeline' or other column is missing, try saving without it
+            if (updateError && updateError.code === "42703") {
+                console.warn("Column missing, retrying without extended columns...");
+                const fallbackData = { 
+                    status: updateData.status,
+                    amount: updateData.amount,
+                    doctor_name: updateData.doctor_name,
+                    scheduled_at: updateData.scheduled_at,
+                    ai_summary: updateData.ai_summary
+                };
+                const { error: fallbackError } = await (supabase as any)
+                    .from("leads_crm")
+                    .update(fallbackData)
+                    .eq("id", lead.id);
+                updateError = fallbackError;
+            }
+
             if (updateError) {
-                console.error("Update error:", updateError);
-                if (updateError.code === "42703") {
-                    throw new Error("В базе данных отсутствуют необходимые колонки (pipeline и др.). Пожалуйста, выполните SQL-миграции из инструкции в Supabase.");
-                }
-                throw updateError;
+                console.error("Update error after fallback:", updateError);
+                throw new Error("Не удалось обновить данные. Пожалуйста, убедитесь, что в Supabase выполнены все SQL-миграции.");
             }
 
             // Save questions for this project
