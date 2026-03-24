@@ -378,6 +378,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 <DiagnosticModule 
                     open={isDiagnosticOpen}
                     onOpenChange={setIsDiagnosticOpen}
+                    onComplete={() => {
+                        setIsDiagnosticOpen(false);
+                        onOpenChange(false);
+                        // Refresh to show updated lead in the correct Kanban column
+                        window.location.reload();
+                    }}
                     lead={{
                         id: appointment.id,
                         name: appointment.patient,

@@ -125,7 +125,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             let newStatus = lead.status;
             let pipeline = (lead as any).pipeline || "main";
 
-            if (adminData.paymentStatus === "pending") newStatus = "Счет выставлен";
+            if (adminData.paymentStatus === "pending") newStatus = "Счет отправлен";
             if (adminData.paymentStatus === "paid") newStatus = "Записан";
             if (adminData.paymentStatus === "declined") newStatus = "Отказ";
 
@@ -133,13 +133,12 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             if (doctorData) {
                 if (doctorData.readiness === "not_ready") {
                     newStatus = "Отказ";
-                    pipeline = "doctor";
+                    pipeline = "main";
                 } else if (doctorData.readiness === "thinking") {
-                    newStatus = "Думает";
-                    pipeline = "doctor";
+                    newStatus = "Счет отправлен";
+                    pipeline = "main";
                 } else if (doctorData.readiness === "ready") {
-                    // When doctor marks as ready, it usually means "Treatment Started" or similar
-                    // But maybe they still need to complete the prescription.
+                    // newStatus = "Визит совершен";
                 }
             }
 
@@ -151,6 +150,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
             const updateData: any = {
                 status: newStatus,
+                pipeline: pipeline,
                 amount: adminData.prepaymentAmount ? Number(adminData.prepaymentAmount) : lead.amount,
                 doctor_name: adminData.bookingDoctor || lead.doctor_name
             };
@@ -244,7 +244,16 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             }
 
             toast({ title: "Успешно", description: "Данные карточки обновлены и синхронизированы" });
-            if (onComplete) onComplete({ adminData, doctorData, prescriptionData });
+            
+            if (onComplete) {
+                onComplete({ adminData, doctorData, prescriptionData });
+            } else if (onOpenChange) {
+                onOpenChange(false);
+                // Fallback: reload to ensure CRM view is fresh if no specific onComplete is provided
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
         } catch (error: any) {
             toast({ title: "Ошибка", description: error.message || "Не удалось сохранить", variant: "destructive" });
         } finally {
