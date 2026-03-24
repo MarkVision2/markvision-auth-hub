@@ -172,12 +172,18 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${doctorData.refusalReason}]`;
             }
 
-            const { error } = await (supabase as any)
+            const { error: updateError } = await (supabase as any)
                 .from("leads_crm")
                 .update(updateData)
                 .eq("id", lead.id);
 
-            if (error) throw error;
+            if (updateError) {
+                console.error("Update error:", updateError);
+                if (updateError.code === "42703") {
+                    throw new Error("В базе данных отсутствуют необходимые колонки (pipeline и др.). Пожалуйста, выполните SQL-миграции из инструкции в Supabase.");
+                }
+                throw updateError;
+            }
 
             // Save questions for this project
             if (lead.project_id) {
