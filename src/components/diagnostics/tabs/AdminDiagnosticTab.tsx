@@ -241,28 +241,10 @@ const QuestionActions = ({
     onEdit: () => void;
     onDelete: () => void;
 }) => (
-    <div className="flex flex-col items-center gap-0.5 -ml-2 mr-1">
-        <Button 
-            size="icon" 
-            variant="ghost" 
-            className="h-7 w-7 rounded-md hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground" 
-            onClick={onMoveUp}
-            title="Переместить вверх"
-        >
-            <ChevronUp className="h-4 w-4" />
-        </Button>
-        <div className="text-muted-foreground/50 cursor-grab">
-            <GripVertical className="h-4 w-4" />
-        </div>
-        <Button 
-            size="icon" 
-            variant="ghost" 
-            className="h-7 w-7 rounded-md hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground" 
-            onClick={onMoveDown}
-            title="Переместить вниз"
-        >
-            <ChevronDown className="h-4 w-4" />
-        </Button>
+    <div className="flex items-center justify-center px-2 py-4 text-muted-foreground/40 cursor-grab hover:text-muted-foreground/70 transition-colors"
+         onDoubleClick={onMoveUp}
+    >
+        <GripVertical className="h-5 w-5" />
     </div>
 );
 
