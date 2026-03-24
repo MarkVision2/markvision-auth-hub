@@ -1147,6 +1147,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         onOpenChange={setDiagnosticOpen}
         onComplete={(data) => {
           setDiagnosticOpen(false);
+          onOpenChange(false);
           onLeadUpdated?.();
         }}
       />
