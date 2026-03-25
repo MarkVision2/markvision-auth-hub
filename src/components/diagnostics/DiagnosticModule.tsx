@@ -149,27 +149,30 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     : adminData.refusalReason;
             }
 
-            // Doctor decisions override or extend
-            if (doctorData) {
-                if (doctorData.readiness === "not_ready") {
+            // Prescription decision overrides everything
+            if (prescriptionData) {
+                if (prescriptionData.decision === "treatment") {
+                    newStatus = "Лечение начато";
+                    pipeline = "doctor";
+                    // Set amount from selected package
+                    const PACKAGE_PRICES: Record<string, number> = {
+                        pain_relief: 110000,
+                        spine_recovery: 210000,
+                        full_rehab: 310000
+                    };
+                    if (prescriptionData.packageId && PACKAGE_PRICES[prescriptionData.packageId]) {
+                        updateData.amount = PACKAGE_PRICES[prescriptionData.packageId];
+                    }
+                } else if (prescriptionData.decision === "thinking") {
+                    newStatus = "Думает";
+                    pipeline = "doctor";
+                } else if (prescriptionData.decision === "refused") {
                     newStatus = "Отказ";
-                    pipeline = "main";
-                    updateData.refusal_reason = doctorData.refusalReason === "Другое"
-                        ? (doctorData as any).refusalReasonOther
-                        : doctorData.refusalReason;
-                } else if (doctorData.readiness === "thinking") {
-                    newStatus = "Счет отправлен";
-                    pipeline = "main";
-                } else if (doctorData.readiness === "ready") {
-                    // Stay in current or move to main?
-                    // Usually ready means move to treatment, but user wants paid -> записан
+                    pipeline = "doctor";
+                    updateData.refusal_reason = prescriptionData.refusalReason === "Другое"
+                        ? prescriptionData.refusalReasonOther
+                        : prescriptionData.refusalReason;
                 }
-            }
-
-            // Prescription confirmation could also trigger "Treatment Started"
-            if (prescriptionData && prescriptionData.confirmed) {
-                newStatus = "Лечение начато";
-                pipeline = "doctor";
             }
 
             // Update the object with final values
@@ -189,8 +192,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 updateData.ai_summary = (lead.ai_summary || "") + `\n[Отказ от предоплаты: ${updateData.refusal_reason}]`;
             }
 
-            if (doctorData?.readiness === "not_ready" && updateData.refusal_reason) {
-                updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ врача: ${updateData.refusal_reason}]`;
+            if (prescriptionData?.decision === "refused" && updateData.refusal_reason) {
+                updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ: ${updateData.refusal_reason}]`;
             }
 
             let { error: updateError } = await (supabase as any)
@@ -420,7 +423,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                                 />
                                             </TabsContent>
                                             <TabsContent value="prescription" className="m-0 focus-visible:outline-none">
-                                                <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} />
+                                                <PrescriptionTab lead={lead} doctorData={doctorData} data={prescriptionData} onChange={setPrescriptionData} onComplete={handleSave} />
                                             </TabsContent>
                                         </>
                                     )}

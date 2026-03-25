@@ -418,177 +418,140 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
             <div className="max-w-4xl mx-auto w-full">
                 {/* STEP 1 */}
                 {step === 1 && (
-                    <div className="space-y-10">
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                        <ClipboardList className="h-6 w-6" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-semibold tracking-tight">Шаг 1. Выявление основной проблемы</h2>
-                                        <p className="text-muted-foreground">Понять, что именно беспокоит пациента.</p>
-                                    </div>
+                    <div className="space-y-5">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <ClipboardList className="h-5 w-5" />
                                 </div>
-                                {!readOnly && (
-                                    <Button variant="outline" size="sm" onClick={addQuestion} className="gap-2 rounded-xl">
-                                        <Plus className="h-4 w-4" /> Добавить вопрос
-                                    </Button>
-                                )}
-                            </div>
-                            <div className="p-5 rounded-2xl bg-secondary/20 border border-border/50 space-y-2">
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Info className="h-5 w-5" />
-                                    <span className="text-xs font-semibold uppercase tracking-wider">Совет администратору</span>
+                                <div>
+                                    <h2 className="text-lg font-bold tracking-tight">Шаг 1. Опрос пациента</h2>
+                                    <p className="text-xs text-muted-foreground">Слушайте внимательно. Ведите пациента мягко.</p>
                                 </div>
-                                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                                    Не перебивайте. Слушайте внимательно. Ведите пациента мягко, без хаоса и допроса.
-                                </p>
                             </div>
+                            {!readOnly && (
+                                <Button variant="outline" size="sm" onClick={addQuestion} className="gap-1.5 rounded-lg h-8 text-xs">
+                                    <Plus className="h-3.5 w-3.5" /> Вопрос
+                                </Button>
+                            )}
                         </div>
 
-                        <div className="space-y-6">
-                            <ScrollArea className="h-[550px] pr-4 -mr-4">
-                                <div className="space-y-4 pb-10">
-                                    {questions.map((q, qIndex) => (
-                                        <div key={q.id} className="rounded-2xl bg-secondary/5 border border-border/40 animate-in fade-in slide-in-from-top-2 duration-300 hover:border-border/60 transition-colors">
-                                            <div className="flex">
-                                                {/* Grip handle on the left */}
+                        <div className="rounded-xl border border-border/50 bg-secondary/5 overflow-hidden divide-y divide-border/30">
+                            {questions.map((q, qIndex) => (
+                                <div key={q.id} className="group/row hover:bg-secondary/10 transition-colors">
+                                    <div className="flex items-start gap-3 px-4 py-3">
+                                        {/* Number */}
+                                        <span className="text-xs font-bold text-primary/60 mt-2.5 w-5 shrink-0 text-right tabular-nums">
+                                            {qIndex + 1}.
+                                        </span>
+
+                                        {/* Label + Input stacked */}
+                                        <div className="flex-1 min-w-0 space-y-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-medium text-foreground leading-snug">
+                                                    {q.label}
+                                                    {q.required && <span className="text-destructive ml-0.5">*</span>}
+                                                </span>
+
+                                                {/* Edit/Delete — visible on hover */}
                                                 {!readOnly && (
-                                                    <QuestionActions
-                                                        onMoveUp={() => moveQuestion(qIndex, 'up')}
-                                                        onMoveDown={() => moveQuestion(qIndex, 'down')}
-                                                        onEdit={() => {}}
-                                                        onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                    />
-                                                )}
-                                                
-                                                {/* Question content */}
-                                                <div className="flex-1 p-5 space-y-4">
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-sm font-bold">
-                                                                {qIndex + 1}
-                                                            </div>
-                                                            <Label className="text-base font-semibold text-foreground leading-snug">
-                                                                {q.label} {q.required && <span className="text-destructive ml-1">*</span>}
-                                                            </Label>
-                                                        </div>
-                                                        {!readOnly && (
-                                                            <div className="flex items-center gap-1 shrink-0">
-                                                                <Button 
-                                                                    size="icon" 
-                                                                    variant="ghost" 
-                                                                    className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground" 
-                                                                    onClick={() => {
-                                                                        // Toggle edit mode by dispatching a custom event
-                                                                        const el = document.getElementById(`q-editor-${q.id}`);
-                                                                        if (el) el.classList.toggle('hidden');
-                                                                    }}
-                                                                    title="Редактировать"
-                                                                >
-                                                                    <Edit2 className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button 
-                                                                    size="icon" 
-                                                                    variant="ghost" 
-                                                                    className="h-8 w-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors text-muted-foreground" 
-                                                                    onClick={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                                    title="Удалить"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        )}
+                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto shrink-0">
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-6 w-6 rounded text-muted-foreground/50 hover:text-primary hover:bg-primary/10"
+                                                            onClick={() => {
+                                                                const el = document.getElementById(`q-editor-${q.id}`);
+                                                                if (el) el.classList.toggle('hidden');
+                                                            }}
+                                                            title="Редактировать"
+                                                        >
+                                                            <Edit2 className="h-3 w-3" />
+                                                        </Button>
+                                                        <Button
+                                                            size="icon"
+                                                            variant="ghost"
+                                                            className="h-6 w-6 rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                                                            onClick={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                            title="Удалить"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" />
+                                                        </Button>
                                                     </div>
-
-                                                    {/* Inline editor (hidden by default) */}
-                                                    {!readOnly && (
-                                                        <div id={`q-editor-${q.id}`} className="hidden">
-                                                            <QuestionEditor 
-                                                                question={q} 
-                                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
-                                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                                onMoveUp={() => moveQuestion(qIndex, 'up')}
-                                                                onMoveDown={() => moveQuestion(qIndex, 'down')}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {q.type === "textarea" && (
-                                                        <div className="relative group">
-                                                            <Textarea
-                                                                placeholder="Введите ответ..."
-                                                                className="bg-secondary/10 border-none focus:ring-1 focus:ring-primary h-28 text-base resize-none rounded-2xl p-5 w-full transition-all group-hover:bg-secondary/15"
-                                                                value={formData.answers[q.id] || ""}
-                                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                                disabled={readOnly}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {q.type === "text" && (
-                                                        <div className="relative group">
-                                                            <Input
-                                                                placeholder="Введите ответ..."
-                                                                className="bg-secondary/10 border-none text-base h-14 rounded-xl px-5 focus:ring-1 focus:ring-primary w-full transition-all group-hover:bg-secondary/15"
-                                                                value={formData.answers[q.id] || ""}
-                                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                                disabled={readOnly}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {(q.type === "radio" || q.type === "checkbox") && q.options && (
-                                                        <div className="space-y-4">
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                                {q.options.map((opt) => {
-                                                                    const isSelected = q.type === "radio" 
-                                                                        ? formData.answers[q.id] === opt.id
-                                                                        : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
-                                                                    
-                                                                    return (
-                                                                        <div 
-                                                                            key={opt.id}
-                                                                            className={cn(
-                                                                                "flex items-center space-x-3 bg-secondary/5 border px-5 py-4 rounded-2xl transition-all",
-                                                                                isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 hover:bg-secondary/10",
-                                                                                !readOnly && "cursor-pointer"
-                                                                            )}
-                                                                            onClick={() => {
-                                                                                if (readOnly) return;
-                                                                                if (q.type === "radio") {
-                                                                                    setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
-                                                                                } else {
-                                                                                    const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
-                                                                                    const newVal = current.includes(opt.id) 
-                                                                                        ? current.filter((i: string) => i !== opt.id)
-                                                                                        : [...current, opt.id];
-                                                                                    setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <div className={cn(
-                                                                                "h-6 w-6 rounded-full border-2 border-primary flex items-center justify-center transition-all",
-                                                                                isSelected ? "bg-primary" : "bg-transparent"
-                                                                            )}>
-                                                                                {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
-                                                                            </div>
-                                                                            <Label className={cn("text-base font-semibold transition-colors", isSelected ? "text-primary" : "text-foreground", !readOnly && "cursor-pointer")}>
-                                                                                {opt.label}
-                                                                            </Label>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
+
+                                            {/* Input field */}
+                                            {q.type === "textarea" ? (
+                                                <Textarea
+                                                    placeholder="Ответ..."
+                                                    className="bg-background/80 border-border/40 focus:ring-1 focus:ring-primary h-16 text-sm resize-none rounded-lg p-3"
+                                                    value={formData.answers[q.id] || ""}
+                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    disabled={readOnly}
+                                                />
+                                            ) : q.type === "text" ? (
+                                                <Input
+                                                    placeholder="Ответ..."
+                                                    className="bg-background/80 border-border/40 h-9 rounded-lg px-3 text-sm focus:ring-1 focus:ring-primary"
+                                                    value={formData.answers[q.id] || ""}
+                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    disabled={readOnly}
+                                                />
+                                            ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
+                                                <div className="flex flex-wrap gap-2 py-1">
+                                                    {q.options.map((opt) => {
+                                                        const isSelected = q.type === "radio"
+                                                            ? formData.answers[q.id] === opt.id
+                                                            : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
+                                                        return (
+                                                            <button
+                                                                key={opt.id}
+                                                                className={cn(
+                                                                    "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                                                                    isSelected
+                                                                        ? "border-primary bg-primary/10 text-primary"
+                                                                        : "border-border/50 bg-background/50 text-muted-foreground hover:border-primary/30",
+                                                                    !readOnly && "cursor-pointer"
+                                                                )}
+                                                                onClick={() => {
+                                                                    if (readOnly) return;
+                                                                    if (q.type === "radio") {
+                                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
+                                                                    } else {
+                                                                        const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
+                                                                        const newVal = current.includes(opt.id)
+                                                                            ? current.filter((i: string) => i !== opt.id)
+                                                                            : [...current, opt.id];
+                                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
+                                                                    }
+                                                                }}
+                                                                disabled={readOnly}
+                                                            >
+                                                                {isSelected && <Check className="h-3 w-3 inline mr-1" />}
+                                                                {opt.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    {/* Inline editor (hidden by default) */}
+                                    {!readOnly && (
+                                        <div id={`q-editor-${q.id}`} className="hidden px-4 pb-3">
+                                            <QuestionEditor
+                                                question={q}
+                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                onMoveUp={() => moveQuestion(qIndex, 'up')}
+                                                onMoveDown={() => moveQuestion(qIndex, 'down')}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                            </ScrollArea>
+                            ))}
                         </div>
                     </div>
                 )}

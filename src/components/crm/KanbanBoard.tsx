@@ -142,7 +142,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
       <div className="flex items-center gap-1.5 mt-1.5 pl-9">
         {lead.source && (
           <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-[1px] rounded bg-secondary/80 text-muted-foreground/70 max-w-[80px] truncate">
-            <Globe className="h-2 w-2 shrink-0" /> {lead.source}
+            <Globe className="h-2 w-2 shrink-0" /> {(lead.source || "").replace(/^Popup АҚ СИСА\s*\|\s*/, '')}
           </span>
         )}
         {lead.utm_campaign && (

@@ -31,6 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
 import type { CallRecord, AITask } from "./types";
 import { DiagnosticModule } from "../diagnostics/DiagnosticModule";
+import { loadTeam } from "@/pages/settings/types";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -872,11 +873,24 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </div>
 
                 {[
-                  { icon: Globe, label: "Источник", value: lead.source || "—" },
+                  { 
+                    icon: Globe, 
+                    label: "Источник", 
+                    value: (lead.source || "—").replace(/^Popup АҚ СИСА\s*\|\s*/, ''),
+                    isPrimary: true 
+                  },
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
                   { icon: User, label: "Врач", value: lead.doctor_name || "—" },
-                  { icon: MapPin, label: "Кабинет", value: lead.office_name || "—" },
+                  { icon: MapPin, label: "Кабинет", value: (() => {
+                    if (lead.office_name) return lead.office_name;
+                    if (lead.doctor_name) {
+                      const team = loadTeam();
+                      const doc = team.find(m => m.name === lead.doctor_name);
+                      if (doc?.office) return `Кабинет ${doc.office}`;
+                    }
+                    return "—";
+                  })() },
                   { icon: Ban, label: "Причина отказа", value: (lead as any).refusal_reason || "—" },
                   { icon: Clock, label: "Создан", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "—" },
                 ].map((item) => (
@@ -885,7 +899,12 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                       <item.icon className="h-3.5 w-3.5" />
                       <span className="text-xs">{item.label}</span>
                     </div>
-                    <span className="text-xs font-medium text-foreground/80 max-w-[55%] truncate text-right">{item.value}</span>
+                    <span className={cn(
+                      "text-xs truncate text-right",
+                      item.isPrimary ? "font-bold text-primary max-w-[70%]" : "font-medium text-foreground/80 max-w-[55%]"
+                    )}>
+                      {item.value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -896,6 +915,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">UTM Метки</p>
                 {[
                   { label: "Источник (utm_source)", value: (lead as any).utm_source },
+                  { label: "Кампания (utm_campaign)", value: lead.utm_campaign },
                   { label: "Тип трафика (utm_medium)", value: (lead as any).utm_medium },
                   { label: "Контент (utm_content)", value: (lead as any).utm_content },
                   { label: "Ключевое слово (utm_term)", value: (lead as any).utm_term },

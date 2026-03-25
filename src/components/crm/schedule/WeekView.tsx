@@ -114,7 +114,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                     <div 
                                         key={`${i}-${hour}`} 
                                         onClick={() => !appt && onAddAppointment(day, hourStr)}
-                                        className="h-[85px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
+                                        className="h-[100px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
                                     >
                                         {appt ? (
                                             <div 
@@ -123,25 +123,18 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                     onEditAppointment(appt);
                                                 }}
                                                 className={cn(
-                                                    "absolute inset-1.5 p-3 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between group/appt hover:-translate-y-0.5",
+                                                    "absolute inset-1 p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col group/appt hover:-translate-y-0.5 overflow-hidden",
                                                     getStatusStyles(appt.status)
                                                 )}
                                             >
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-xs font-bold truncate leading-tight mb-1">
-                                                            {appt.patient}
-                                                        </span>
-                                                        <div className="flex items-center gap-1.5 opacity-90">
-                                                            <div className={cn("h-1.5 w-1.5 rounded-full", getStatusIndicator(appt.status))} />
-                                                            <span className="text-[9px] uppercase font-bold tracking-wider truncate text-inherit opacity-80">{appt.type}</span>
-                                                        </div>
-                                                    </div>
+                                                <span className="text-[11px] font-bold leading-tight line-clamp-2">
+                                                    {appt.patient}
+                                                </span>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getStatusIndicator(appt.status))} />
+                                                    <span className="text-[9px] uppercase font-bold tracking-wide opacity-80">{appt.type}</span>
                                                 </div>
-                                                
-                                                <div className="flex items-center gap-2 mt-auto">
-                                                    <span className="text-[10px] font-bold tracking-wider ml-auto opacity-70 px-1.5 rounded-md bg-white/10">{appt.time}</span>
-                                                </div>
+                                                <span className="text-[10px] font-bold mt-auto opacity-70">{appt.time}</span>
                                             </div>
                                         ) : (
                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">

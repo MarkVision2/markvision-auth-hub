@@ -277,63 +277,70 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         const Icon = icon;
 
         return (
-            <Collapsible open={isOpen} onOpenChange={() => toggleSection(section)} className="bg-secondary/5 border border-border/50 rounded-[32px] overflow-hidden transition-all">
+            <Collapsible open={isOpen} onOpenChange={() => toggleSection(section)} className="border border-border/50 rounded-2xl overflow-hidden transition-all">
                 <CollapsibleTrigger asChild>
-                    <div className="p-6 flex items-center justify-between cursor-pointer hover:bg-secondary/10 transition-colors">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                <Icon className="h-5 w-5" />
+                    <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-secondary/10 transition-colors bg-secondary/5">
+                        <div className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                <Icon className="h-3.5 w-3.5" />
                             </div>
-                            <h3 className="text-sm font-bold uppercase tracking-widest">{title}</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-widest">{title}</h3>
+                            <span className="text-[10px] text-muted-foreground/50 font-bold">{sectionQuestions.length} полей</span>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
                              {!readOnly && (
                                 <Button 
                                     variant="ghost" 
                                     size="icon" 
-                                    className="h-8 w-8 rounded-full" 
+                                    className="h-7 w-7 rounded-lg hover:bg-primary/10" 
                                     onClick={(e) => { e.stopPropagation(); addQuestion(section); }}
                                 >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="h-3.5 w-3.5" />
                                 </Button>
                              )}
-                             {isOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
+                             {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                         </div>
                     </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <div className="px-6 pb-8 space-y-6 animate-in slide-in-from-top-2 duration-300">
+                    <div className="divide-y divide-border/30 animate-in slide-in-from-top-1 duration-200">
                         {sectionQuestions.map(q => (
-                            <div key={q.id} className="space-y-3">
-                                <div className="flex items-center justify-between gap-4">
-                                    <Label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground ml-1">{q.label}</Label>
+                            <div key={q.id} className="group/row hover:bg-secondary/5 transition-colors">
+                                <div className="px-4 py-3 flex items-start gap-4">
+                                    <div className="w-[180px] shrink-0 pt-2">
+                                        <Label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground leading-tight">{q.label}</Label>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        {q.type === "textarea" ? (
+                                            <Textarea
+                                                placeholder="Введите..."
+                                                className="bg-background/50 border-border/40 focus:ring-1 focus:ring-primary h-16 text-sm resize-none rounded-xl p-3"
+                                                value={formData.answers[q.id] || ""}
+                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                disabled={readOnly}
+                                            />
+                                        ) : (
+                                            <Input
+                                                placeholder="Введите..."
+                                                className="bg-background/50 border-border/40 h-9 rounded-lg px-3 text-sm focus:ring-1 focus:ring-primary"
+                                                value={formData.answers[q.id] || ""}
+                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                disabled={readOnly}
+                                            />
+                                        )}
+                                    </div>
                                     {!readOnly && (
-                                        <DoctorQuestionEditor 
-                                            question={q}
-                                            onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
-                                            onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                            onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
-                                            onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
-                                        />
+                                        <div className="opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 pt-1">
+                                            <DoctorQuestionEditor 
+                                                question={q}
+                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
+                                                onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
+                                            />
+                                        </div>
                                     )}
                                 </div>
-                                {q.type === "textarea" ? (
-                                    <Textarea
-                                        placeholder="..."
-                                        className="bg-background border-border/50 focus:ring-1 focus:ring-primary h-24 text-sm resize-none rounded-2xl p-4"
-                                        value={formData.answers[q.id] || ""}
-                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                        disabled={readOnly}
-                                    />
-                                ) : (
-                                    <Input
-                                        placeholder="..."
-                                        className="bg-background border-border/50 h-12 rounded-xl px-4 text-sm focus:ring-1 focus:ring-primary"
-                                        value={formData.answers[q.id] || ""}
-                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                        disabled={readOnly}
-                                    />
-                                )}
                             </div>
                         ))}
                     </div>
@@ -342,26 +349,58 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         );
     };
 
+    const [adminInfoOpen, setAdminInfoOpen] = useState(false);
+
     return (
-        <div className="space-y-8 animate-in fade-in pb-10 max-w-4xl mx-auto w-full">
-             {/* Admin Summary Box */}
+        <div className="space-y-4 animate-in fade-in pb-10 max-w-4xl mx-auto w-full">
+             {/* Collapsible Admin Summary Box */}
              {adminData && (
-                <div className="p-6 bg-primary/5 border border-primary/20 rounded-[32px] space-y-4">
-                    <div className="flex items-center gap-3 border-b border-primary/10 pb-4">
-                        <Info className="h-5 w-5 text-primary" />
-                        <h3 className="font-bold text-primary text-sm uppercase tracking-widest">Информация от администратора</h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Жалобы</span>
-                            <p className="text-sm font-medium">{adminData.complaints || "Не указаны"}</p>
+                <Collapsible open={adminInfoOpen} onOpenChange={setAdminInfoOpen}>
+                    <CollapsibleTrigger asChild>
+                        <div className="px-4 py-3 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-primary/10 transition-colors">
+                            <div className="flex items-center gap-3">
+                                <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                                    <Info className="h-3.5 w-3.5" />
+                                </div>
+                                <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Информация от администратора</h3>
+                            </div>
+                            {adminInfoOpen ? <ChevronUp className="h-4 w-4 text-primary" /> : <ChevronDown className="h-4 w-4 text-primary" />}
                         </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-muted-foreground">Локализация</span>
-                            <p className="text-sm font-medium">{adminData.painLocation} {adminData.painLocationOther}</p>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                        <div className="mt-1 border border-primary/10 rounded-2xl divide-y divide-primary/10 bg-primary/[0.02] animate-in slide-in-from-top-1 duration-200">
+                            {/* Static fields */}
+                            <div className="grid grid-cols-2 divide-x divide-primary/10">
+                                <div className="px-4 py-3">
+                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Жалобы</span>
+                                    <p className="text-sm font-medium mt-0.5">{adminData.complaints || "Не указаны"}</p>
+                                </div>
+                                <div className="px-4 py-3">
+                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Локализация</span>
+                                    <p className="text-sm font-medium mt-0.5">{adminData.painLocation} {adminData.painLocationOther}</p>
+                                </div>
+                            </div>
+                            {/* Dynamic answers from Step 1 */}
+                            {adminData.answers && Object.keys(adminData.answers).length > 0 && (
+                                <div className="px-4 py-3 space-y-2">
+                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Ответы из анкеты</span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
+                                        {Object.entries(adminData.answers).map(([key, val]) => {
+                                            if (!val) return null;
+                                            const labelText = key.replace(/_/g, ' ').replace(/^q\d+\s*/, '');
+                                            return (
+                                                <div key={key} className="flex items-baseline gap-2 text-sm">
+                                                    <span className="text-muted-foreground text-xs font-medium shrink-0">{labelText}:</span>
+                                                    <span className="font-medium truncate">{String(val)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    </div>
-                </div>
+                    </CollapsibleContent>
+                </Collapsible>
             )}
 
             {renderQuestionsSection("complaints", "1. Жалобы и анамнез", FileText)}
@@ -369,77 +408,14 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
             {renderQuestionsSection("procedure", "3. Первая процедура", Zap)}
             {renderQuestionsSection("conclusion", "4. План лечения и итог", Activity)}
 
-            {/* Decision Status */}
-            <div className="p-8 bg-secondary/5 border border-border/50 rounded-[32px] space-y-6">
-                <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold tracking-widest text-muted-foreground ml-1">Готовность к лечению</Label>
-                    <RadioGroup
-                        value={formData.readiness}
-                        onValueChange={(val: any) => !readOnly && setFormData({ ...formData, readiness: val })}
-                        className="grid grid-cols-1 md:grid-cols-3 gap-4"
-                        disabled={readOnly}
-                    >
-                        {[
-                            { id: "ready", label: "Готов начать", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                            { id: "thinking", label: "Думает", color: "text-amber-500", bg: "bg-amber-500/10" },
-                            { id: "not_ready", label: "Не готов", color: "text-rose-500", bg: "bg-rose-500/10" },
-                        ].map((item) => (
-                            <div 
-                                key={item.id}
-                                className={cn(
-                                    "flex items-center justify-between p-5 rounded-3xl border-2 transition-all cursor-pointer",
-                                    formData.readiness === item.id ? "border-primary bg-primary/5" : "border-transparent bg-background hover:bg-secondary/5"
-                                )}
-                                onClick={() => !readOnly && setFormData({...formData, readiness: item.id as any})}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={cn("h-3 w-3 rounded-full", item.bg, item.color)} />
-                                    <span className="font-bold text-sm">{item.label}</span>
-                                </div>
-                                <RadioGroupItem value={item.id} id={`rd-${item.id}`} className="sr-only" />
-                                {formData.readiness === item.id && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                            </div>
-                        ))}
-                    </RadioGroup>
-                </div>
-
-                {formData.readiness === "not_ready" && (
-                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
-                        <Label className="text-[10px] uppercase font-bold tracking-widest text-rose-600 ml-1">Причина отказа</Label>
-                        <Select value={formData.refusalReason} onValueChange={(v) => !readOnly && setFormData({ ...formData, refusalReason: v })} disabled={readOnly}>
-                            <SelectTrigger className="h-12 rounded-2xl border-rose-500/20 bg-rose-500/5 focus:ring-rose-500 font-bold">
-                                <SelectValue placeholder="Выберите причину..." />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-border/50">
-                                {REFUSAL_REASONS.map(r => (
-                                    <SelectItem key={r} value={r} className="rounded-xl">{r}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        {formData.refusalReason === "Другое" && (
-                            <div className="pt-2 animate-in slide-in-from-top-1 duration-200">
-                                <Input 
-                                    placeholder="Укажите свою причину..."
-                                    value={formData.refusalReasonOther || ""}
-                                    onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
-                                    className="h-12 rounded-2xl border-rose-500/20 bg-background focus:ring-rose-500 font-medium"
-                                    disabled={readOnly}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
             {!readOnly && (
                 <div className="flex justify-end pt-4">
                     <Button 
                         onClick={onComplete}
-                        className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-sm uppercase gap-3 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase gap-2 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        Завершить диагностику
-                        <ArrowRight className="h-5 w-5" />
+                        Перейти к листу назначения
+                        <ArrowRight className="h-4 w-4" />
                     </Button>
                 </div>
             )}

@@ -131,17 +131,34 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
             .sort((a, b) => a.time.localeCompare(b.time));
     }, [appointments]);
 
+    const monthlyAppointments = useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        return appointments.filter(a => {
+            const d = new Date(a.date);
+            return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+    }, [appointments]);
+
     const stats = useMemo(() => {
-        const total = todayAppointments.length;
-        const completed = todayAppointments.filter(a => a.status === "completed").length;
-        const remaining = total - completed;
-        return { total, completed, remaining };
-    }, [todayAppointments]);
+        const totalMonth = monthlyAppointments.length;
+        const diagnostics = monthlyAppointments.filter(a => 
+            a.type === "Диагностика" || a.lead?.is_diagnostic
+        ).length;
+        const treatments = monthlyAppointments.filter(a => 
+            a.type === "Приём" || a.status === "completed"
+        ).length;
+        const todayTotal = todayAppointments.length;
+        const todayCompleted = todayAppointments.filter(a => a.status === "completed").length;
+        const todayRemaining = todayTotal - todayCompleted;
+        return { totalMonth, diagnostics, treatments, todayTotal, todayCompleted, todayRemaining };
+    }, [monthlyAppointments, todayAppointments]);
 
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 shrink-0">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 shrink-0">
                 <div className="lg:col-span-2 flex items-center gap-4 bg-card p-5 rounded-[32px] border border-border shadow-sm">
                     <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner">
                         <span className="text-xl font-black text-primary">
@@ -176,18 +193,28 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
                 <div className="bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all">
                     <div>
-                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1">Всего сегодня</p>
-                        <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.total}</p>
+                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1">Пациенты в месяце</p>
+                        <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.totalMonth}</p>
                     </div>
                     <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                         <Activity className="h-5 w-5" />
                     </div>
                 </div>
 
+                <div className="bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all">
+                    <div>
+                        <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-1">Диагностик</p>
+                        <p className="text-2xl font-black text-amber-600 tabular-nums tracking-tighter">{stats.diagnostics}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                        <ClipboardList className="h-5 w-5" />
+                    </div>
+                </div>
+
                 <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all">
                     <div>
-                        <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-1">Принято</p>
-                        <p className="text-2xl font-black text-emerald-600 tabular-nums tracking-tighter">{stats.completed}</p>
+                        <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-1">Курс лечения</p>
+                        <p className="text-2xl font-black text-emerald-600 tabular-nums tracking-tighter">{stats.treatments}</p>
                     </div>
                     <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
                         <CheckCircle2 className="h-5 w-5" />
@@ -375,7 +402,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                     <h3 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Пациенты сегодня</h3>
                                 </div>
                                 <Badge variant="secondary" className="bg-primary/5 text-primary text-[10px] font-black border-none">
-                                    {stats.remaining} ОСТАЛОСЬ
+                                    {stats.todayRemaining} ОСТАЛОСЬ
                                 </Badge>
                             </div>
 

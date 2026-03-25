@@ -17,7 +17,7 @@ import {
     Calendar as CalendarIcon, Clock, User, 
     Phone, MessageSquare, Briefcase, CheckCircle2,
     ShieldAlert, XCircle, Search, ExternalLink, Plus,
-    ChevronDown, Stethoscope, Trash2
+    ChevronDown, Stethoscope
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -39,6 +39,18 @@ const STATUSES = [
     { id: "planned", label: "Запланирован", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
     { id: "completed", label: "Прием совершен", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { id: "no-show", label: "Не явился", icon: XCircle, color: "text-rose-500", bg: "bg-rose-500/10" },
+];
+
+const DOCTOR_STATUSES = [
+    { id: "planned", label: "Запланирован", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { id: "completed", label: "Лечение начато", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { id: "thinking", label: "Думает", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { id: "no-show", label: "Отказ", icon: XCircle, color: "text-rose-500", bg: "bg-rose-500/10" },
+];
+
+const VISIT_TYPES = [
+    { id: "primary", label: "Первичный приём" },
+    { id: "repeat", label: "Повторный приём" },
 ];
 
 const MOCK_PATIENTS = [
@@ -245,17 +257,23 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             </Select>
                         </div>
 
-                        <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                                <Stethoscope className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                            </div>
-                            <Input 
-                                placeholder="Услуга или причина обращения..." 
-                                className="h-14 pl-12 rounded-2xl bg-card border-border/60 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all shadow-sm placeholder:font-medium placeholder:text-muted-foreground/40"
-                                value={formData.service}
-                                onChange={(e) => setFormData({...formData, service: e.target.value})}
-                            />
-                        </div>
+                        <Select value={formData.service || "primary"} onValueChange={(val) => setFormData({...formData, service: val})}>
+                            <SelectTrigger className="h-14 px-5 rounded-2xl bg-card border border-border/60 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] shadow-sm group">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                        <Stethoscope className="h-4 w-4" />
+                                    </div>
+                                    <SelectValue placeholder="Тип приёма" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border border-border shadow-2xl p-2 bg-card/95 backdrop-blur-xl">
+                                {VISIT_TYPES.map(vt => (
+                                    <SelectItem key={vt.id} value={vt.id} className="rounded-xl py-3 px-4 font-bold cursor-pointer hover:bg-primary/5 focus:bg-primary/5 mb-1 last:mb-0 transition-all">
+                                        {vt.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* Status & Comment Section */}
@@ -268,9 +286,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className="grid grid-cols-3 gap-2"
+                                className={`grid gap-2 ${mode === "doctor" ? "grid-cols-4" : "grid-cols-3"}`}
                             >
-                                {STATUSES.map((item) => {
+                            {(mode === "doctor" ? DOCTOR_STATUSES : STATUSES).map((item) => {
                                     const isActive = formData.status === item.id;
                                     let activeClasses = "";
                                     let dotColor = "";
@@ -281,6 +299,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     } else if (item.id === "completed" && isActive) {
                                         activeClasses = "bg-emerald-500/10 border-emerald-500/30 shadow-inner";
                                         dotColor = "bg-emerald-500";
+                                    } else if (item.id === "thinking" && isActive) {
+                                        activeClasses = "bg-blue-500/10 border-blue-500/30 shadow-inner";
+                                        dotColor = "bg-blue-500";
                                     } else if (item.id === "no-show" && isActive) {
                                         activeClasses = "bg-rose-500/10 border-rose-500/30 shadow-inner";
                                         dotColor = "bg-rose-500";
@@ -344,15 +365,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 <ExternalLink className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                                 Провести осмотр
                             </Button>
-                        )}
-                        {isEditing && (
-                             <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="h-12 w-12 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-colors"
-                             >
-                                <Trash2 className="h-5 w-5" />
-                             </Button>
                         )}
                     </div>
                     
