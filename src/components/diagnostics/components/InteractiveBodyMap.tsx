@@ -14,65 +14,60 @@ interface Props {
 
 export const InteractiveBodyMap: React.FC<Props> = ({ isPrint = false }) => {
     
-    const renderFigureTable = (title: string, isBack: boolean) => (
-        <div className="flex flex-col items-center w-full max-w-[280px]">
-            <div className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                {title}
-            </div>
-            <div className="relative w-full aspect-[1/2] bg-white rounded-2xl overflow-hidden border-2 border-slate-100 shadow-sm">
-                <div 
-                    className="absolute inset-0 bg-no-repeat"
-                    style={{ 
-                        backgroundImage: `url('/images/diagnostics/human_anatomy_gray.png')`,
-                        backgroundPosition: isBack ? '98% center' : '2% center',
-                        backgroundSize: '200% auto'
-                    }}
-                />
-                {/* Clean overlay for the clinician to imagine zones or for future use, but currently empty to avoid any "crooked" UI */}
-                <svg viewBox="0 0 320 640" className="absolute inset-0 w-full h-full z-10 pointer-events-none" />
-            </div>
-        </div>
-    );
-
     if (isPrint) {
         return (
             <div className="w-full bg-white font-sans pt-12 mt-4 pb-12">
-                <h2 className="text-2xl font-black mb-16 uppercase tracking-tight text-slate-900 text-center border-b-2 border-slate-900 pb-4 mx-auto max-w-2xl">
-                    КАРТА ТЕЛА: ЗОНЫ ДЛЯ ЛЕЧЕНИЯ
+                <h2 className="text-2xl font-black mb-12 uppercase tracking-tight text-slate-900 text-center border-b-2 border-slate-900 pb-4 mx-auto max-w-2xl">
+                    КАРТА ПРОБЛЕМНЫХ ЗОН
                 </h2>
-                <div className="flex items-start justify-center gap-24 scale-[1.2] origin-top">
-                    {renderFigureTable("ВИД СПЕРЕДИ (АНФАС)", false)}
-                    {renderFigureTable("ВИД СЗАДИ (ПОСТЕРИОР)", true)}
+                <div className="flex justify-center w-full">
+                    <div className="relative w-full max-w-[800px] border-2 border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <img 
+                            src="/images/diagnostics/problem_zones_detailed.jpg" 
+                            alt="Карта проблемных зон" 
+                            className="w-full h-auto block"
+                        />
+                    </div>
                 </div>
-                <div className="mt-20 border-t border-slate-200 pt-8 text-center text-[10px] text-slate-400 uppercase tracking-widest">
-                    Медицинский протокол • Ручная разметка зон боли
+                <div className="mt-16 border-t border-slate-200 pt-8 text-center text-[10px] text-slate-400 uppercase tracking-widest">
+                    Медицинский протокол • Подробная анатомия боли
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="w-full bg-card flex flex-col items-center p-8 rounded-[2rem] border border-border shadow-xl">
+        <div className="w-full bg-card flex flex-col items-center p-6 sm:p-10 rounded-[2.5rem] border border-border shadow-2xl overflow-hidden relative">
+            {/* Background Accent */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
+            
             {/* Professional Medical Header */}
-            <div className="w-full mb-12 border-b-2 border-foreground pb-6">
-                <h3 className="text-lg font-black text-foreground uppercase tracking-tighter">
-                    АНАТОМИЧЕСКАЯ КАРТА ХАБ
+            <div className="w-full mb-10 border-b-2 border-foreground pb-6 relative z-10 text-center sm:text-left">
+                <h3 className="text-xl font-black text-foreground uppercase tracking-tight">
+                    КАРТА ПРОБЛЕМНЫХ ЗОН
                 </h3>
             </div>
 
-            {/* Large Clear Figures */}
-            <div className="flex items-start justify-center gap-12 w-full mb-8">
-                {renderFigureTable("АНФАС", false)}
-                {renderFigureTable("ВИД СЗАДИ", true)}
+            {/* Large High-Res Detailed Map */}
+            <div className="w-full max-w-[650px] aspect-[1/1.4] relative rounded-3xl overflow-hidden border-2 border-border/50 shadow-inner bg-slate-900/5 group">
+                <img 
+                    src="/images/diagnostics/problem_zones_detailed.jpg" 
+                    alt="Детализированная карта анатомии" 
+                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-[1.02]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             </div>
 
-            <div className="mt-8 p-6 bg-secondary rounded-2xl border border-border w-full text-center">
-                <p className="text-sm font-bold text-foreground uppercase tracking-tight mb-2">
-                    Режим ручной разметки
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+            <div className="mt-10 p-6 bg-secondary/50 backdrop-blur-sm rounded-3xl border border-border/40 w-full text-center relative z-10">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <p className="text-xs font-black text-foreground uppercase tracking-widest">
+                        Режим ручной разметки
+                    </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed max-w-md mx-auto font-medium">
                     Используйте распечатанную версию Листа Назначений для точного указания зон боли вручную. 
-                    <br/>Анатомическая 3D-модель представлена в высоком разрешении.
+                    <br/>На данной карте представлены основные очаги напряжения и патологий.
                 </p>
             </div>
         </div>
