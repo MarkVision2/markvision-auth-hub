@@ -52,7 +52,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     return (
         <div className="flex flex-col h-full bg-card select-none">
             {/* Week Header */}
-            <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border bg-secondary z-20">
+            <div className="grid grid-cols-[80px_repeat(7,minmax(130px,1fr))] border-b border-border bg-secondary z-20 sticky top-0">
                 <div className="flex items-center justify-center p-4 border-r border-border">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
@@ -91,7 +91,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
             {/* Time Grid with ScrollArea */}
             <ScrollArea className="flex-1 bg-card">
-                <div className="grid grid-cols-[80px_repeat(7,1fr)] relative">
+                <div className="grid grid-cols-[80px_repeat(7,minmax(130px,1fr))] relative">
                     
                     {/* Current Time Line Mockup (Static for visual logic) */}
                     <div className="absolute left-[80px] right-0 h-px bg-rose-500 z-20 pointer-events-none" style={{ top: '350px' }}>
@@ -119,7 +119,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                     <div 
                                         key={`${i}-${hour}`} 
                                         onClick={() => !appt && onAddAppointment(day, hourStr)}
-                                        className="h-[100px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
+                                        className="h-[120px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
                                     >
                                         {appt ? (
                                             <div 
@@ -135,9 +135,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                 <span className="text-[11px] font-bold leading-snug break-words whitespace-normal">
                                                     {appt.patient}
                                                 </span>
-                                                <div className="flex items-center gap-1 mt-0.5">
+                                                <div className="flex items-center gap-1.5 mt-1.5">
                                                     <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getDateIndicator(appt.date))} />
-                                                    <span className="text-[8px] uppercase font-black opacity-90 leading-none break-all whitespace-normal">{appt.type}</span>
+                                                    <span className="text-[10px] uppercase font-black opacity-90 tracking-wide break-words whitespace-normal">{appt.type}</span>
                                                 </div>
                                                 <span className="text-[10px] font-bold mt-auto opacity-70">{appt.time}</span>
                                             </div>
