@@ -8,7 +8,7 @@ import {
     Plus, Edit2, X, ChevronDown, ChevronUp, Stethoscope, Activity, Zap, CheckCircle2, ArrowRight, FileText, Info
 } from "lucide-react";
 import { Lead } from "../../crm/KanbanBoard";
-import { AdminFormData } from "./AdminDiagnosticTab";
+import { AdminFormData, Question } from "./AdminDiagnosticTab";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,7 @@ const REFUSAL_REASONS = [
 interface Props {
     lead: Lead;
     adminData: AdminFormData | null;
+    adminQuestions?: Question[];
     data: DoctorFormData | null;
     questions: DoctorQuestion[];
     onQuestionsChange: (questions: DoctorQuestion[]) => void;
@@ -220,7 +221,7 @@ const DoctorQuestionEditor = ({
 };
 
 export const DoctorDiagnosticTab: React.FC<Props> = ({ 
-    lead, adminData, data, questions, onQuestionsChange, onChange, onComplete, readOnly = false 
+    lead, adminData, adminQuestions = [], data, questions, onQuestionsChange, onChange, onComplete, readOnly = false 
 }) => {
     // const [questions, setQuestions] = useState<DoctorQuestion[]>(DEFAULT_DOCTOR_QUESTIONS);
     const [formData, setFormData] = useState<DoctorFormData>(data || {
@@ -368,36 +369,57 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                         </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                        <div className="mt-1 border border-primary/10 rounded-2xl divide-y divide-primary/10 bg-primary/[0.02] animate-in slide-in-from-top-1 duration-200">
-                            {/* Static fields */}
-                            <div className="grid grid-cols-2 divide-x divide-primary/10">
-                                <div className="px-4 py-3">
-                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Жалобы</span>
-                                    <p className="text-sm font-medium mt-0.5">{adminData.complaints || "Не указаны"}</p>
-                                </div>
-                                <div className="px-4 py-3">
-                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Локализация</span>
-                                    <p className="text-sm font-medium mt-0.5">{adminData.painLocation} {adminData.painLocationOther}</p>
-                                </div>
-                            </div>
-                            {/* Dynamic answers from Step 1 */}
-                            {adminData.answers && Object.keys(adminData.answers).length > 0 && (
-                                <div className="px-4 py-3 space-y-2">
-                                    <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider">Ответы из анкеты</span>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
-                                        {Object.entries(adminData.answers).map(([key, val]) => {
-                                            if (!val) return null;
-                                            const labelText = key.replace(/_/g, ' ').replace(/^q\d+\s*/, '');
-                                            return (
-                                                <div key={key} className="flex items-baseline gap-2 text-sm">
-                                                    <span className="text-muted-foreground text-xs font-medium shrink-0">{labelText}:</span>
-                                                    <span className="font-medium truncate">{String(val)}</span>
+                        <div className="mt-1 border border-primary/10 rounded-2xl bg-primary/[0.02] animate-in slide-in-from-top-1 duration-200">
+                            {/* All admin questions with answers */}
+                            <div className="divide-y divide-primary/10">
+                                {adminQuestions.length > 0 ? (
+                                    adminQuestions.map((q, idx) => {
+                                        const answer = adminData.answers?.[q.id];
+                                        const displayVal = answer 
+                                            ? (Array.isArray(answer) ? answer.join(', ') : String(answer))
+                                            : '—';
+                                        return (
+                                            <div key={q.id} className="px-4 py-3 flex items-start gap-4">
+                                                <div className="w-[200px] shrink-0 pt-0.5">
+                                                    <span className="text-[9px] uppercase font-bold text-primary/60 tracking-wider leading-tight">{q.label}</span>
                                                 </div>
-                                            );
-                                        })}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={cn(
+                                                        "text-sm font-medium",
+                                                        answer ? "text-foreground" : "text-muted-foreground/40 italic"
+                                                    )}>{displayVal}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    /* Fallback: show raw answers if no admin questions available */
+                                    adminData.answers && Object.entries(adminData.answers).map(([key, val]) => {
+                                        if (!val) return null;
+                                        return (
+                                            <div key={key} className="px-4 py-3 flex items-start gap-4">
+                                                <div className="w-[200px] shrink-0 pt-0.5">
+                                                    <span className="text-[9px] uppercase font-bold text-primary/60 tracking-wider">{key.replace(/_/g, ' ')}</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium">{String(val)}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                                {/* Admin comment */}
+                                {adminData.adminComment && (
+                                    <div className="px-4 py-3 flex items-start gap-4 bg-amber-500/5">
+                                        <div className="w-[200px] shrink-0 pt-0.5">
+                                            <span className="text-[9px] uppercase font-bold text-amber-600 tracking-wider">Комментарий админа</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-foreground">{adminData.adminComment}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </CollapsibleContent>
                 </Collapsible>

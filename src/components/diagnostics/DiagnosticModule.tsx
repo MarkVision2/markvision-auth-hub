@@ -415,6 +415,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                                 <DoctorDiagnosticTab 
                                                     lead={lead} 
                                                     adminData={adminData} 
+                                                    adminQuestions={adminQuestions}
                                                     data={doctorData} 
                                                     questions={doctorQuestions}
                                                     onQuestionsChange={setDoctorQuestions}
