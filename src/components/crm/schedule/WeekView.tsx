@@ -135,9 +135,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                 <span className="text-[11px] font-bold leading-snug break-words whitespace-normal">
                                                     {appt.patient}
                                                 </span>
-                                                <div className="flex items-center gap-1.5 mt-1">
+                                                <div className="flex items-center gap-1 mt-0.5">
                                                     <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getDateIndicator(appt.date))} />
-                                                    <span className="text-[9px] uppercase font-bold tracking-wide opacity-80 break-words whitespace-normal">{appt.type}</span>
+                                                    <span className="text-[8px] uppercase font-black opacity-90 leading-none break-all whitespace-normal">{appt.type}</span>
                                                 </div>
                                                 <span className="text-[10px] font-bold mt-auto opacity-70">{appt.time}</span>
                                             </div>
