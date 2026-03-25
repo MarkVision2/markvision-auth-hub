@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { 
   Activity, Users, UserPlus, Phone, Building, Briefcase, 
@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
 import { DoctorWorkspace } from "@/components/doctor/DoctorWorkspace";
+import { supabase } from "@/integrations/supabase/client";
+import { startOfWeek, endOfWeek, format, addDays } from "date-fns";
 
 const DoctorTerminal = () => {
   const { user } = useAuth();
@@ -41,6 +43,44 @@ const DoctorTerminal = () => {
   useEffect(() => {
     setTeam(loadTeam());
   }, []);
+
+  // Weekly appointment counts per doctor
+  const [weekCounts, setWeekCounts] = useState<Record<string, Record<string, number>>>({});
+  const allWeekDays = ["Пн", "Вт", "Ср", "Чт", "Пт"];
+
+  useEffect(() => {
+    const fetchWeekCounts = async () => {
+      const now = new Date();
+      const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+      try {
+        const { data, error } = await (supabase as any)
+          .from("leads_crm")
+          .select("doctor_name, scheduled_at")
+          .gte("scheduled_at", weekStart.toISOString())
+          .lte("scheduled_at", weekEnd.toISOString());
+
+        if (error) throw error;
+
+        const counts: Record<string, Record<string, number>> = {};
+        (data || []).forEach((item: any) => {
+          if (!item.scheduled_at || !item.doctor_name) return;
+          const d = new Date(item.scheduled_at);
+          const dayIdx = d.getDay(); // 0=Sun, 1=Mon...
+          const dayNames = ["", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+          const dayName = dayNames[dayIdx];
+          if (!dayName) return;
+          if (!counts[item.doctor_name]) counts[item.doctor_name] = {};
+          counts[item.doctor_name][dayName] = (counts[item.doctor_name][dayName] || 0) + 1;
+        });
+        setWeekCounts(counts);
+      } catch (e) {
+        console.error("Error fetching week counts:", e);
+      }
+    };
+    fetchWeekCounts();
+  }, [team]);
 
   const handleToggleDay = (day: string) => {
     setFormData(prev => ({
@@ -319,15 +359,34 @@ const DoctorTerminal = () => {
                     <span>Кабинет {doc.office}</span>
                   </div>
                 )}
-                <div className="flex items-start gap-3 text-xs text-muted-foreground">
-                  <Calendar className="h-3.5 w-3.5 mt-0.5 text-primary/60" />
-                  <div>
-                    <div className="flex flex-wrap gap-1">
-                      {doc.workingDays?.map(d => (
-                        <span key={d} className="inline-block px-1.5 py-0.5 rounded bg-secondary/50 font-bold text-[9px] uppercase">{d}</span>
-                      ))}
+                <div className="flex items-start gap-3 text-xs">
+                  <Calendar className="h-3.5 w-3.5 mt-1.5 text-primary/60 shrink-0" />
+                  <div className="flex-1">
+                    <div className="grid grid-cols-5 gap-1">
+                      {allWeekDays.map(day => {
+                        const isWorking = doc.workingDays?.includes(day);
+                        const count = weekCounts[doc.name]?.[day] || 0;
+                        return (
+                          <div 
+                            key={day} 
+                            className={cn(
+                              "flex flex-col items-center rounded-lg py-1.5 transition-all",
+                              isWorking ? "bg-primary/10" : "bg-secondary/30 opacity-40"
+                            )}
+                          >
+                            <span className={cn(
+                              "text-[9px] font-black uppercase tracking-wider",
+                              isWorking ? "text-primary" : "text-muted-foreground"
+                            )}>{day}</span>
+                            <span className={cn(
+                              "text-sm font-black tabular-nums mt-0.5",
+                              count > 0 ? "text-foreground" : "text-muted-foreground/40"
+                            )}>{count}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    {doc.workingHours && <p className="mt-1 opacity-70 italic">{doc.workingHours}</p>}
+                    {doc.workingHours && <p className="mt-1.5 text-[10px] opacity-60 italic text-muted-foreground">{doc.workingHours}</p>}
                   </div>
                 </div>
               </div>
