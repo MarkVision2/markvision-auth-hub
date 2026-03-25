@@ -48,17 +48,20 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
                 const mapped = (data || []).map((lead: any) => {
                     const date = new Date(lead.scheduled_at);
+                    const isCompleted = ["Визит совершен", "Лечение начато", "Думает", "Отказ"].includes(lead.status);
+                    const isDiag = lead.status === "Записан" || lead.status === "Визит совершен" || lead.is_diagnostic;
+                    
                     return {
                         id: lead.id,
                         patient: lead.name,
-                        phone: lead.phone, // Added phone
+                        phone: lead.phone,
                         date: date,
                         time: format(date, "HH:mm"),
-                        type: lead.status === "Записан" ? "Диагностика" : "Приём",
-                        service: lead.ai_summary || "Первичный приём", // Added service
-                        status: lead.status === "Визит совершен" ? "completed" : "planned",
+                        type: isDiag ? "Диагностика" : "Приём",
+                        service: lead.ai_summary || (isDiag ? "Первичная диагностика" : "Повторный приём"),
+                        status: isCompleted ? "completed" : "planned",
                         doctor: lead.doctor_name,
-                        lead: lead // Keep original for modal
+                        lead: lead
                     };
                 });
                 setAppointments(mapped);
@@ -168,8 +171,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
-            <div className="grid grid-cols-1 xl:grid-cols-6 gap-4 shrink-0">
-                <div className="xl:col-span-3 flex flex-col md:flex-row md:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-4 shrink-0">
+                <div className="lg:col-span-2 xl:col-span-3 flex flex-col md:flex-row md:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
                     
                     <div className="flex items-center gap-5 flex-1 min-w-0">
@@ -177,7 +180,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                             <Stethoscope className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-black tracking-tight text-foreground truncate">{doctor.name}</h2>
+                            <h2 className="text-xl font-black tracking-tight text-foreground whitespace-nowrap overflow-hidden text-ellipsis">{doctor.name}</h2>
                             <div className="flex flex-wrap gap-2 mt-1.5 line-clamp-1">
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
                                     {doctor.specialty}
