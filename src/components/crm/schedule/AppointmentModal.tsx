@@ -286,7 +286,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className={`grid gap-2 ${mode === "doctor" ? "grid-cols-4" : "grid-cols-3"}`}
+                                className={`grid gap-2 ${mode === "doctor" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"}`}
                             >
                             {(mode === "doctor" ? DOCTOR_STATUSES : STATUSES).map((item) => {
                                     const isActive = formData.status === item.id;
@@ -314,7 +314,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "relative flex flex-col items-center justify-center p-4 rounded-2xl border cursor-pointer transition-all duration-300 group",
+                                                "relative flex flex-col items-center justify-center p-3 rounded-2xl border cursor-pointer transition-all duration-300 group min-h-[70px]",
                                                 activeClasses,
                                                 isActive ? "ring-2 ring-offset-2 ring-offset-background" : ""
                                             )}
@@ -326,9 +326,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                                     <span className={cn("relative inline-flex rounded-full h-2 w-2", dotColor)}></span>
                                                 </div>
                                             )}
-                                            <item.icon className={cn("h-5 w-5 mb-2 transition-transform group-hover:scale-110", isActive ? item.color : "text-muted-foreground/40")} />
+                                            <item.icon className={cn("h-4 w-4 mb-1.5 transition-transform group-hover:scale-110", isActive ? item.color : "text-muted-foreground/40")} />
                                             <span className={cn(
-                                                "text-[9px] font-black uppercase tracking-tighter text-center", 
+                                                "text-[8px] font-black uppercase tracking-tight text-center leading-tight", 
                                                 isActive ? item.color : "text-muted-foreground/60"
                                             )}>
                                                 {item.label}

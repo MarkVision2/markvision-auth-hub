@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
-import { format, addDays, startOfWeek, isSameDay } from "date-fns";
+import { format, addDays, startOfWeek, isSameDay, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Clock, Plus, User, FileText } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,23 +25,28 @@ export const WeekView: React.FC<WeekViewProps> = ({
 }) => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    const today = startOfDay(new Date());
 
-    const getStatusStyles = (status: string) => {
-        switch (status) {
-            case "planned": return "bg-amber-500/10 border-amber-500/30 text-amber-400 shadow-sm hover:shadow-md hover:border-amber-500/50";
-            case "completed": return "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-sm hover:shadow-md hover:border-emerald-500/50";
-            case "no-show": return "bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-sm hover:shadow-md hover:border-rose-500/50";
-            default: return "bg-card border-border text-muted-foreground shadow-sm hover:shadow-md hover:border-border";
+    // Date-based color coding for appointment cards
+    const getDateStyles = (apptDate: Date) => {
+        const apptDay = startOfDay(apptDate);
+        if (isSameDay(apptDay, today)) {
+            // Today = green
+            return "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/10 hover:shadow-md hover:border-emerald-500/60";
+        } else if (isBefore(apptDay, today)) {
+            // Past = red
+            return "bg-rose-500/15 border-rose-500/40 text-rose-300 shadow-sm shadow-rose-500/10 hover:shadow-md hover:border-rose-500/60";
+        } else {
+            // Future = yellow/amber
+            return "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/10 hover:shadow-md hover:border-amber-500/60";
         }
     };
 
-    const getStatusIndicator = (status: string) => {
-        switch (status) {
-            case "planned": return "bg-amber-500";
-            case "completed": return "bg-emerald-500";
-            case "no-show": return "bg-rose-500";
-            default: return "bg-slate-400";
-        }
+    const getDateIndicator = (apptDate: Date) => {
+        const apptDay = startOfDay(apptDate);
+        if (isSameDay(apptDay, today)) return "bg-emerald-500";
+        if (isBefore(apptDay, today)) return "bg-rose-500";
+        return "bg-amber-500";
     };
 
     return (
@@ -64,17 +69,17 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                 "flex flex-col items-center justify-center py-4 border-r border-border transition-all cursor-pointer hover:bg-secondary group relative",
                             )}
                         >
-                            {isToday && <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500" />}
+                            {isToday && <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />}
                             <span className={cn(
                                 "text-[10px] uppercase font-bold tracking-[0.1em] mb-1.5 transition-colors",
-                                isToday ? "text-blue-400" : "text-muted-foreground group-hover:text-foreground"
+                                isToday ? "text-emerald-400" : "text-muted-foreground group-hover:text-foreground"
                             )}>
                                 {DAYS[i]}
                             </span>
                             <div className={cn(
                                 "h-9 w-9 flex items-center justify-center text-[15px] font-bold transition-all rounded-full",
                                 isToday 
-                                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20" 
+                                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20" 
                                     : "text-foreground group-hover:bg-secondary"
                             )}>
                                 {format(day, "d")}
@@ -123,16 +128,16 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                     onEditAppointment(appt);
                                                 }}
                                                 className={cn(
-                                                    "absolute inset-1 p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col group/appt hover:-translate-y-0.5 overflow-hidden",
-                                                    getStatusStyles(appt.status)
+                                                    "absolute inset-1 p-2 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col group/appt hover:-translate-y-0.5 overflow-hidden",
+                                                    getDateStyles(appt.date)
                                                 )}
                                             >
-                                                <span className="text-[11px] font-bold leading-tight line-clamp-2">
+                                                <span className="text-[11px] font-bold leading-snug break-words whitespace-normal">
                                                     {appt.patient}
                                                 </span>
                                                 <div className="flex items-center gap-1.5 mt-1">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getStatusIndicator(appt.status))} />
-                                                    <span className="text-[9px] uppercase font-bold tracking-wide opacity-80">{appt.type}</span>
+                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getDateIndicator(appt.date))} />
+                                                    <span className="text-[9px] uppercase font-bold tracking-wide opacity-80 break-words whitespace-normal">{appt.type}</span>
                                                 </div>
                                                 <span className="text-[10px] font-bold mt-auto opacity-70">{appt.time}</span>
                                             </div>
