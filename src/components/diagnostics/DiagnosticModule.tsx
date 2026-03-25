@@ -154,14 +154,21 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 if (prescriptionData.decision === "treatment") {
                     newStatus = "Лечение начато";
                     pipeline = "doctor";
-                    // Set amount from selected package
+                    // Set amount from selected package with discount
                     const PACKAGE_PRICES: Record<string, number> = {
                         pain_relief: 110000,
                         spine_recovery: 210000,
                         full_rehab: 310000
                     };
                     if (prescriptionData.packageId && PACKAGE_PRICES[prescriptionData.packageId]) {
-                        updateData.amount = PACKAGE_PRICES[prescriptionData.packageId];
+                        const basePrice = PACKAGE_PRICES[prescriptionData.packageId];
+                        const discount = prescriptionData.discountPercent || 0;
+                        updateData.amount = Math.round(basePrice * (1 - discount / 100));
+                        
+                        if (prescriptionData.discountReason) {
+                            updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + 
+                                `\n[Скидка ${discount}%: ${prescriptionData.discountReason}]`;
+                        }
                     }
                 } else if (prescriptionData.decision === "thinking") {
                     newStatus = "Думает";

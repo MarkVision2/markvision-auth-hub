@@ -25,6 +25,8 @@ export interface PrescriptionFormData {
     decision: "treatment" | "thinking" | "refused" | "";
     refusalReason?: string;
     refusalReasonOther?: string;
+    discountPercent: number;
+    discountReason: string;
 }
 
 interface Props {
@@ -157,6 +159,8 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
         decision: data?.decision || "",
         refusalReason: data?.refusalReason || "",
         refusalReasonOther: data?.refusalReasonOther || "",
+        discountPercent: data?.discountPercent || 0,
+        discountReason: data?.discountReason || "",
     });
 
     const [expandedPackage, setExpandedPackage] = useState<string | null>(null);
@@ -195,7 +199,7 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
     };
 
     const selectedPkg = PACKAGES.find(p => p.id === formData.packageId);
-    const discountedPrice = selectedPkg ? Math.round(selectedPkg.price * (1 - selectedPkg.discount / 100)) : 0;
+    const discountedPrice = selectedPkg ? Math.round(selectedPkg.price * (1 - formData.discountPercent / 100)) : 0;
 
     const renderPackageDetails = (pkg: typeof PACKAGES[0]) => {
         const hasWeeks = 'procedures_week1' in pkg;
@@ -274,12 +278,11 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                     </ul>
                 </div>
 
-                {/* Discount info */}
-                <div className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-                    <Percent className="h-4 w-4 text-emerald-500" />
-                    <span className="text-xs font-bold text-emerald-600">При полной оплате скидка {pkg.discount}%</span>
-                    <span className="text-xs font-bold text-foreground ml-auto">
-                        {Math.round(pkg.price * (1 - pkg.discount / 100)).toLocaleString('ru-RU')} ₸
+                {/* Base price info (removed automatic discount) */}
+                <div className="flex items-center justify-between p-3 bg-secondary/5 border border-border/30 rounded-xl">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Базовая стоимость</span>
+                    <span className="text-sm font-black text-foreground">
+                        {pkg.price.toLocaleString('ru-RU')} ₸
                     </span>
                 </div>
             </div>
@@ -521,31 +524,79 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                     </div>
 
                     {/* Summary & Action */}
-                    <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                        <div className="flex items-center gap-4">
-                            {selectedPkg && (
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-xs text-muted-foreground font-bold uppercase">Итого:</span>
-                                    <span className="text-lg font-black text-foreground">{selectedPkg.priceDisplay}</span>
-                                    <span className="text-xs text-emerald-500 font-bold line-through opacity-60"></span>
+                    <div className="space-y-4 pt-4 border-t border-border/30">
+                        {selectedPkg && (
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 p-5 bg-primary/5 rounded-2xl border border-primary/10">
+                                <div className="space-y-4 flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <Percent className="h-4 w-4 text-primary" />
+                                        <span className="text-xs font-bold uppercase tracking-widest text-primary">Скидка и расчет</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-2">
+                                        {[0, 5, 10, 15].map((pct) => (
+                                            <Button
+                                                key={pct}
+                                                variant={formData.discountPercent === pct ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setFormData({...formData, discountPercent: pct})}
+                                                className={cn(
+                                                    "h-9 px-4 rounded-xl font-bold text-xs transition-all",
+                                                    formData.discountPercent === pct ? "bg-primary shadow-lg shadow-primary/20" : "hover:bg-primary/5"
+                                                )}
+                                            >
+                                                {pct === 0 ? "Без скидки" : `${pct}%`}
+                                            </Button>
+                                        ))}
+                                    </div>
+
+                                    {formData.discountPercent > 0 && (
+                                        <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <Label className="text-[9px] uppercase font-bold tracking-wider text-muted-foreground">Причина скидки</Label>
+                                            <Input 
+                                                placeholder="Напр: Оплата наличными, льгота..."
+                                                value={formData.discountReason}
+                                                onChange={e => setFormData({...formData, discountReason: e.target.value})}
+                                                className="h-9 bg-background border-border/40 focus:ring-primary rounded-xl text-xs font-medium"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                            {selectedPkg && (
-                                <div className="text-xs text-emerald-600 font-bold bg-emerald-500/10 px-2 py-1 rounded-lg">
-                                    со скидкой {discountedPrice.toLocaleString('ru-RU')} ₸
+
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-[10px] text-muted-foreground font-bold uppercase">Итого:</span>
+                                        <span className={cn(
+                                            "text-2xl font-black transition-all",
+                                            formData.discountPercent > 0 ? "text-muted-foreground/40 line-through text-lg" : "text-foreground"
+                                        )}>
+                                            {selectedPkg.price.toLocaleString('ru-RU')} ₸
+                                        </span>
+                                    </div>
+                                    {formData.discountPercent > 0 && (
+                                        <div className="flex items-baseline gap-2 animate-in zoom-in-95 duration-200">
+                                            <span className="text-[10px] text-emerald-600 font-bold uppercase">Со скидкой:</span>
+                                            <span className="text-3xl font-black text-emerald-500">
+                                                {discountedPrice.toLocaleString('ru-RU')} ₸
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-end">
+                            {onComplete && formData.decision && (
+                                <Button 
+                                    onClick={onComplete}
+                                    disabled={formData.discountPercent > 0 && !formData.discountReason}
+                                    className="h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase gap-2 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:scale-100"
+                                >
+                                    Завершить диагностику
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
                             )}
                         </div>
-                        
-                        {onComplete && formData.decision && (
-                            <Button 
-                                onClick={onComplete}
-                                className="h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase gap-2 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                                Завершить диагностику
-                                <ArrowRight className="h-4 w-4" />
-                            </Button>
-                        )}
                     </div>
                 </div>
             </div>
