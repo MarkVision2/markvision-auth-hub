@@ -171,17 +171,17 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-6 gap-4 shrink-0">
-                <div className="lg:col-span-2 xl:col-span-3 flex flex-col md:flex-row md:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
+                <div className="lg:col-span-12 xl:col-span-6 flex flex-col lg:flex-row lg:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40" />
                     
                     <div className="flex items-center gap-5 flex-1 min-w-0">
                         <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner group">
                             <Stethoscope className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-black tracking-tight text-foreground whitespace-nowrap overflow-hidden text-ellipsis">{doctor.name}</h2>
-                            <div className="flex flex-wrap gap-2 mt-1.5 line-clamp-1">
+                            <h2 className="text-xl font-black tracking-tight text-foreground leading-tight break-words">{doctor.name}</h2>
+                            <div className="flex flex-wrap gap-2 mt-2">
                                 <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
                                     {doctor.specialty}
                                 </Badge>
@@ -192,47 +192,47 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                         </div>
                     </div>
 
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 w-full md:w-auto">
-                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11 w-full md:w-auto">
-                            <TabsTrigger value="schedule" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 w-full lg:w-auto">
+                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11 w-full lg:w-auto">
+                            <TabsTrigger value="schedule" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Calendar className="h-4 w-4" /> ГРАФИК
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                            <TabsTrigger value="analytics" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Activity className="h-4 w-4" /> РЕЙТИНГ
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                            <TabsTrigger value="settings" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Settings className="h-4 w-4" /> ОПЦИИ
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
 
-                <div className="bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all cursor-default">
-                    <div>
-                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1">Пациенты в месяце</p>
+                <div className="lg:col-span-4 xl:col-span-2 bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all cursor-default overflow-hidden">
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1 truncate">Пациенты в месяце</p>
                         <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.totalMonth}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                    <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform shrink-0">
                         <Activity className="h-5 w-5" />
                     </div>
                 </div>
 
-                <div className="bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all cursor-default text-amber-600">
-                    <div>
-                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1">Диагностик</p>
+                <div className="lg:col-span-4 xl:col-span-2 bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all cursor-default text-amber-600 overflow-hidden">
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1 truncate">Диагностик</p>
                         <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.diagnostics}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                    <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform shrink-0">
                         <ClipboardList className="h-5 w-5" />
                     </div>
                 </div>
 
-                <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all cursor-default text-emerald-600">
-                    <div>
-                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1">Курс лечения</p>
+                <div className="lg:col-span-4 xl:col-span-2 bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all cursor-default text-emerald-600 overflow-hidden">
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1 truncate">Курс лечения</p>
                         <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.treatments}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform shrink-0">
                         <CheckCircle2 className="h-5 w-5" />
                     </div>
                 </div>
