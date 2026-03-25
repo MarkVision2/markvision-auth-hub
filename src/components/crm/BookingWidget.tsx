@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Calendar, User, Clock, Check, Loader2 } from "lucide-react";
+import { Calendar, User, Clock, Check, Loader2, DoorOpen } from "lucide-react";
 import { loadTeam, TeamMember } from "@/pages/settings/types";
 import { format, parse, addHours, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BookingWidgetProps {
-    onBookingChange: (data: { date: Date; time: string; doctor: string }) => void;
+    onBookingChange: (data: { date: Date; time: string; doctor: string; cabinet: string }) => void;
     selectedDoctor?: string;
     selectedDate?: Date;
     selectedTime?: string;
@@ -29,6 +29,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     const [doctor, setDoctor] = useState(initialDoctor || "");
     const [date, setDate] = useState<Date | undefined>(initialDate);
     const [time, setTime] = useState(initialTime || "");
+    const [cabinet, setCabinet] = useState("");
     const [bookedSlots, setBookedSlots] = useState<string[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
@@ -103,13 +104,23 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     // Filter out already booked slots
     const availableSlots = allSlots.filter(s => !bookedSlots.includes(s));
 
-    const handleUpdate = (newDoctor: string, newDate: Date | undefined, newTime: string) => {
+    const handleUpdate = (newDoctor: string, newDate: Date | undefined, newTime: string, newCabinet?: string) => {
         setDoctor(newDoctor);
         setDate(newDate);
         setTime(newTime);
+        const cab = newCabinet ?? cabinet;
+        if (newCabinet !== undefined) setCabinet(cab);
         if (newDate && newTime && newDoctor) {
-            onBookingChange({ date: newDate, time: newTime, doctor: newDoctor });
+            onBookingChange({ date: newDate, time: newTime, doctor: newDoctor, cabinet: cab });
         }
+    };
+
+    // Auto-populate cabinet when doctor changes
+    const handleDoctorChange = (newDoctor: string) => {
+        const doc = doctors.find(d => d.name === newDoctor);
+        const docCabinet = doc?.office || "";
+        setCabinet(docCabinet);
+        handleUpdate(newDoctor, date, "", docCabinet);
     };
 
     // Filter for calendar days
@@ -130,7 +141,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
                             <User className="h-2.5 w-2.5" /> ВЫБЕРИТЕ ВРАЧА
                         </div>
-                        <Select value={doctor} onValueChange={(v) => handleUpdate(v, date, "")}>
+                        <Select value={doctor} onValueChange={handleDoctorChange}>
                             <SelectTrigger className="h-12 bg-background border-border rounded-xl shadow-sm hover:border-primary/50 transition-all">
                                 <SelectValue placeholder="Выберите специалиста" />
                             </SelectTrigger>
@@ -145,6 +156,24 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Cabinet field */}
+                        {doctor && (
+                            <div className="flex items-center gap-2 mt-2">
+                                <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center shrink-0">
+                                    <DoorOpen className="h-4 w-4" />
+                                </div>
+                                <div className="flex-1">
+                                    <input
+                                        type="text"
+                                        value={cabinet}
+                                        onChange={(e) => { setCabinet(e.target.value); if (date && time && doctor) onBookingChange({ date, time, doctor, cabinet: e.target.value }); }}
+                                        placeholder="Кабинет №"
+                                        className="w-full h-9 px-3 text-xs font-bold bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/40"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Calendar Section */}
@@ -214,7 +243,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                                 <Check className="h-5 w-5" />
                             </div>
                             <div className="space-y-0.5">
-                                <p className="text-xs font-bold text-foreground leading-tight">Записан к врачу: {doctor}</p>
+                                <p className="text-xs font-bold text-foreground leading-tight">Записан к врачу: {doctor}{cabinet ? ` · Каб. ${cabinet}` : ""}</p>
                                 <p className="text-[11px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md inline-block mt-1">
                                     {format(date, "dd.MM.yyyy")} в {time}
                                 </p>
