@@ -2,7 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, isSameDay, isBefore, startOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Clock, Plus, User, FileText } from "lucide-react";
+import { Clock, Plus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 
@@ -14,30 +14,49 @@ interface WeekViewProps {
     onViewChange: (view: "day" | "week" | "month") => void;
     onAddAppointment: (date: Date, time: string) => void;
     onEditAppointment: (appt: any) => void;
+    workingDays?: string[];
+    workingHoursPerDay?: Record<string, string>;
 }
 
-const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 08:00 - 18:00
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 export const WeekView: React.FC<WeekViewProps> = ({
     selectedDate, doctorId, appointments, onDateSelect, onViewChange,
-    onAddAppointment, onEditAppointment
+    onAddAppointment, onEditAppointment, workingDays, workingHoursPerDay
 }) => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(start, i));
     const today = startOfDay(new Date());
 
-    // Date-based color coding for appointment cards
+    const ALL_HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 - 21:00
+
+    const isWorkingHour = (day: Date, hour: number) => {
+        const dName = format(day, "eeeee", { locale: ru }); // Пн, Вт etc
+        if (!workingDays?.includes(dName)) return false;
+        
+        const hoursStr = workingHoursPerDay?.[dName];
+        if (!hoursStr) return true; 
+
+        try {
+            const parts = hoursStr.split("-").map(p => p.trim());
+            if (parts.length === 2) {
+                const startH = parseInt(parts[0]);
+                const endH = parseInt(parts[1]);
+                return hour >= startH && hour < endH;
+            }
+        } catch (e) {
+            console.error("Error parsing hours:", hoursStr);
+        }
+        return true;
+    };
+
     const getDateStyles = (apptDate: Date) => {
         const apptDay = startOfDay(apptDate);
         if (isSameDay(apptDay, today)) {
-            // Today = green
             return "bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-sm shadow-emerald-500/10 hover:shadow-md hover:border-emerald-500/60";
         } else if (isBefore(apptDay, today)) {
-            // Past = red
             return "bg-rose-500/15 border-rose-500/40 text-rose-300 shadow-sm shadow-rose-500/10 hover:shadow-md hover:border-rose-500/60";
         } else {
-            // Future = yellow/amber
             return "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-sm shadow-amber-500/10 hover:shadow-md hover:border-amber-500/60";
         }
     };
@@ -57,16 +76,18 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     <Clock className="h-4 w-4 text-muted-foreground" />
                 </div>
                 {weekDays.map((day, i) => {
-                    const isToday = isSameDay(day, new Date());
+                    const isToday = isSameDay(day, today);
+                    const isWorkDay = workingDays?.includes(DAYS[i]);
                     return (
                         <div 
                             key={i} 
                             onClick={() => {
                                 onDateSelect(day);
-                                onViewChange("day");
+                                onViewChange("day" as any);
                             }}
                             className={cn(
                                 "flex flex-col items-center justify-center py-4 border-r border-border transition-all cursor-pointer hover:bg-secondary group relative",
+                                !isWorkDay && "opacity-40 grayscale-[0.5]"
                             )}
                         >
                             {isToday && <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />}
@@ -89,37 +110,32 @@ export const WeekView: React.FC<WeekViewProps> = ({
                 })}
             </div>
 
-            {/* Time Grid with ScrollArea */}
             <ScrollArea className="flex-1 bg-card">
                 <div className="grid grid-cols-[80px_repeat(7,minmax(130px,1fr))] relative">
-                    
-                    {/* Current Time Line Mockup (Static for visual logic) */}
-                    <div className="absolute left-[80px] right-0 h-px bg-rose-500 z-20 pointer-events-none" style={{ top: '350px' }}>
-                        <div className="absolute -left-1.5 -top-1.5 h-3 w-3 rounded-full border-2 border-background bg-rose-500 shadow-sm" />
-                    </div>
-
-                    {/* Horizontal lines */}
-                    {HOURS.map((hour) => (
+                    {ALL_HOURS.map((hour) => (
                         <React.Fragment key={hour}>
-                            {/* Hour Labels */}
-                            <div className="h-[64px] border-r border-border flex items-start justify-center pt-2 sticky left-0 bg-secondary z-20">
-                                <span className="text-[10px] font-bold text-muted-foreground tabular-nums">
+                            <div className="h-[120px] border-r border-border flex items-start justify-center pt-4 sticky left-0 bg-secondary z-20 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">
+                                <span className="text-xs font-black text-muted-foreground tabular-nums">
                                     {hour}:00
                                 </span>
                             </div>
 
-                            {/* Day Slots */}
                             {weekDays.map((day, i) => {
                                 const hourStr = hour.toString().padStart(2, "0") + ":00";
                                 const appt = appointments.find(a => 
                                     isSameDay(a.date, day) && a.time.startsWith(hour.toString().padStart(2, "0"))
                                 );
+                                const isWorking = isWorkingHour(day, hour);
 
                                 return (
                                     <div 
                                         key={`${i}-${hour}`} 
-                                        onClick={() => !appt && onAddAppointment(day, hourStr)}
-                                        className="h-[120px] border-r border-b border-border relative group transition-colors hover:bg-secondary/50 cursor-pointer p-1"
+                                        onClick={() => !appt && isWorking && onAddAppointment(day, hourStr)}
+                                        className={cn(
+                                            "h-[120px] border-r border-b border-border relative group transition-all p-1.5",
+                                            !isWorking && "bg-secondary/30 bg-dashed opacity-30 cursor-not-allowed",
+                                            isWorking && !appt && "hover:bg-primary/[0.02] cursor-pointer"
+                                        )}
                                     >
                                         {appt ? (
                                             <div 
@@ -128,25 +144,34 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                     onEditAppointment(appt);
                                                 }}
                                                 className={cn(
-                                                    "absolute inset-1 p-2 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col group/appt hover:-translate-y-0.5 overflow-hidden",
+                                                    "absolute inset-1.5 p-3 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col group/appt hover:scale-[1.02] hover:shadow-xl hover:z-10 shadow-sm overflow-hidden",
                                                     getDateStyles(appt.date)
                                                 )}
                                             >
-                                                <span className="text-[11px] font-bold leading-snug break-words whitespace-normal">
+                                                <span className="text-[12px] font-black leading-tight break-words line-clamp-2">
                                                     {appt.patient}
                                                 </span>
-                                                <div className="flex items-center gap-1.5 mt-1.5">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", getDateIndicator(appt.date))} />
-                                                    <span className="text-[10px] uppercase font-black opacity-90 tracking-wide break-words whitespace-normal">{appt.type}</span>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <div className={cn("h-2 w-2 rounded-full shrink-0 animate-pulse", getDateIndicator(appt.date))} />
+                                                    <span className="text-[9px] uppercase font-black opacity-80 tracking-widest truncate">{appt.type}</span>
                                                 </div>
-                                                <span className="text-[10px] font-bold mt-auto opacity-70">{appt.time}</span>
+                                                <div className="mt-auto flex items-center justify-between">
+                                                    <span className="text-[11px] font-black opacity-60 tabular-nums">{appt.time}</span>
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full bg-card border border-border text-muted-foreground hover:text-blue-500 hover:border-blue-500/30 hover:bg-accent transition-all shadow-sm">
-                                                    <Plus className="h-4 w-4" />
-                                                </Button>
+                                        ) : isWorking && (
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <div className="flex items-center gap-2 scale-90 group-hover:scale-100 transition-transform">
+                                                    <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+                                                        <Plus className="h-5 w-5" />
+                                                    </div>
+                                                </div>
                                             </div>
+                                        )}
+                                        {!isWorking && (
+                                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                               <Clock className="h-4 w-4 text-muted-foreground/20" />
+                                           </div>
                                         )}
                                     </div>
                                 );

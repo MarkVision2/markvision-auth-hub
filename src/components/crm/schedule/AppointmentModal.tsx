@@ -33,6 +33,10 @@ interface AppointmentModalProps {
     selectedTime?: string;
     onSave: (data: any) => void;
     mode?: "admin" | "doctor";
+    doctorSchedule?: {
+        workingDays?: string[];
+        workingHoursPerDay?: Record<string, string>;
+    };
 }
 
 const STATUSES = [
@@ -62,7 +66,8 @@ const MOCK_PATIENTS = [
 
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     open, onOpenChange, appointment, 
-    selectedDate, selectedTime, onSave, mode = "admin"
+    selectedDate, selectedTime, onSave, mode = "admin",
+    doctorSchedule
 }) => {
     const isEditing = !!appointment;
     const [formData, setFormData] = useState({
@@ -251,7 +256,41 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                         const h = Math.floor(i / 2) + 8;
                                         const m = i % 2 === 0 ? "00" : "30";
                                         const t = `${h.toString().padStart(2, "0")}:${m}`;
-                                        return <SelectItem key={t} value={t} className="rounded-xl py-3 px-4 font-bold cursor-pointer hover:bg-primary/5 focus:bg-primary/5 mb-1 last:mb-0 transition-all">{t}</SelectItem>;
+                                        
+                                        // Working hour check
+                                        let isWorking = true;
+                                        if (doctorSchedule) {
+                                            const dName = format(formData.date, "eeeee", { locale: ru });
+                                            if (!doctorSchedule.workingDays?.includes(dName)) {
+                                                isWorking = false;
+                                            } else {
+                                                const hoursStr = doctorSchedule.workingHoursPerDay?.[dName];
+                                                if (hoursStr) {
+                                                    try {
+                                                        const parts = hoursStr.split("-").map(p => p.trim());
+                                                        if (parts.length === 2) {
+                                                            const startH = parseInt(parts[0]);
+                                                            const endH = parseInt(parts[1]);
+                                                            isWorking = h >= startH && h < endH;
+                                                        }
+                                                    } catch {}
+                                                }
+                                            }
+                                        }
+
+                                        return (
+                                            <SelectItem 
+                                                key={t} 
+                                                value={t} 
+                                                disabled={!isWorking}
+                                                className={cn(
+                                                    "rounded-xl py-3 px-4 font-bold cursor-pointer mb-1 last:mb-0 transition-all",
+                                                    !isWorking ? "opacity-30 line-through grayscale" : "hover:bg-primary/5 focus:bg-primary/5"
+                                                )}
+                                            >
+                                                {t} {!isWorking && "(Вне графика)"}
+                                            </SelectItem>
+                                        );
                                     })}
                                 </SelectContent>
                             </Select>

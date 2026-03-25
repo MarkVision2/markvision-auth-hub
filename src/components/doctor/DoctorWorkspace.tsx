@@ -5,7 +5,7 @@ import {
   Calendar, Settings, Clock, User, Phone, Building, 
   Briefcase, Save, Loader2, Activity, CheckCircle2,
   ExternalLink, MessageCircle, ShieldAlert, ClipboardList,
-  FileDown
+  FileDown, Stethoscope
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,6 +121,16 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
         }));
     };
 
+    const handleUpdateDayHours = (day: string, hours: string) => {
+        setDoctor(prev => ({
+            ...prev,
+            workingHoursPerDay: {
+                ...(prev.workingHoursPerDay || {}),
+                [day]: hours
+            }
+        }));
+    };
+
     const formatAmount = (amount: number) => {
         return new Intl.NumberFormat("ru-RU").format(amount);
     };
@@ -158,40 +168,43 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 shrink-0">
-                <div className="lg:col-span-2 flex items-center gap-4 bg-card p-5 rounded-[32px] border border-border shadow-sm">
-                    <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner">
-                        <span className="text-xl font-black text-primary">
-                            {doctor.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-                        </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-black tracking-tight text-foreground">{doctor.name}</h2>
-                        <div className="flex flex-wrap gap-2 mt-0.5">
-                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
-                                {doctor.specialty}
-                            </Badge>
-                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-border/50 px-2 py-0.5">
-                                Кабинет {doctor.office || "—"}
-                            </Badge>
+            <div className="grid grid-cols-1 xl:grid-cols-6 gap-4 shrink-0">
+                <div className="xl:col-span-3 flex flex-col md:flex-row md:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-primary/40" />
+                    
+                    <div className="flex items-center gap-5 flex-1 min-w-0">
+                        <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner group">
+                            <Stethoscope className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h2 className="text-xl font-black tracking-tight text-foreground truncate">{doctor.name}</h2>
+                            <div className="flex flex-wrap gap-2 mt-1.5 line-clamp-1">
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
+                                    {doctor.specialty}
+                                </Badge>
+                                <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50 backdrop-blur-sm">
+                                    КАБИНЕТ {doctor.office || "—"}
+                                </Badge>
+                            </div>
                         </div>
                     </div>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden sm:block">
-                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-10">
-                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Calendar className="h-3.5 w-3.5" /> График
+
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 w-full md:w-auto">
+                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11 w-full md:w-auto">
+                            <TabsTrigger value="schedule" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Calendar className="h-4 w-4" /> ГРАФИК
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Activity className="h-3.5 w-3.5" /> Рейтинг
+                            <TabsTrigger value="analytics" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Activity className="h-4 w-4" /> РЕЙТИНГ
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="rounded-xl px-4 text-xs font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Settings className="h-3.5 w-3.5" /> Опции
+                            <TabsTrigger value="settings" className="flex-1 md:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                                <Settings className="h-4 w-4" /> ОПЦИИ
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
 
-                <div className="bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all">
+                <div className="bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all cursor-default">
                     <div>
                         <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1">Пациенты в месяце</p>
                         <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.totalMonth}</p>
@@ -201,20 +214,20 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     </div>
                 </div>
 
-                <div className="bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all">
+                <div className="bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all cursor-default text-amber-600">
                     <div>
-                        <p className="text-[10px] font-black text-amber-600/60 uppercase tracking-[0.2em] mb-1">Диагностик</p>
-                        <p className="text-2xl font-black text-amber-600 tabular-nums tracking-tighter">{stats.diagnostics}</p>
+                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1">Диагностик</p>
+                        <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.diagnostics}</p>
                     </div>
                     <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
                         <ClipboardList className="h-5 w-5" />
                     </div>
                 </div>
 
-                <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all">
+                <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all cursor-default text-emerald-600">
                     <div>
-                        <p className="text-[10px] font-black text-emerald-600/60 uppercase tracking-[0.2em] mb-1">Курс лечения</p>
-                        <p className="text-2xl font-black text-emerald-600 tabular-nums tracking-tighter">{stats.treatments}</p>
+                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1">Курс лечения</p>
+                        <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.treatments}</p>
                     </div>
                     <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
                         <CheckCircle2 className="h-5 w-5" />
@@ -266,6 +279,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                             setSelectedAppt(appt);
                                             setIsApptModalOpen(true);
                                         }}
+                                        workingDays={doctor.workingDays}
+                                        workingHoursPerDay={doctor.workingHoursPerDay}
                                     />
                                 ) : (
                                     <MonthView 
@@ -563,9 +578,10 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                                 </div>
                                                 Конструктор графика
                                             </h3>
-                                            <div className="space-y-4 rounded-3xl border border-border/60 p-6 bg-secondary/10">
-                                                <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Рабочие дни (1 час на прием)</Label>
-                                                <div className="flex flex-wrap gap-2">
+                                            <div className="space-y-4 rounded-[32px] border border-border/60 p-6 bg-secondary/10">
+                                                <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-4">Часы приема (Четко по дням)</Label>
+                                                
+                                                <div className="flex flex-wrap gap-2 mb-6">
                                                     {daysOfWeek.map(day => (
                                                         <button
                                                             key={day}
@@ -574,7 +590,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                                             className={cn(
                                                                 "h-10 w-11 rounded-xl text-[10px] font-black border transition-all duration-300",
                                                                 doctor.workingDays?.includes(day)
-                                                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-110"
+                                                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105"
                                                                     : "bg-background border-border/60 text-muted-foreground/60 hover:border-primary/50"
                                                             )}
                                                         >
@@ -582,17 +598,30 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                                         </button>
                                                     ))}
                                                 </div>
-                                                <div className="space-y-2 pt-6 mt-4 border-t border-border/40">
-                                                    <Label htmlFor="hours" className="text-[11px] font-black text-muted-foreground uppercase tracking-widest ml-1">Часы приема</Label>
-                                                    <Input 
-                                                        id="hours"
-                                                        placeholder="09:00 - 18:00"
-                                                        value={doctor.workingHours}
-                                                        onChange={e => setDoctor({...doctor, workingHours: e.target.value})}
-                                                        className="h-12 rounded-2xl bg-background/50 font-bold"
-                                                    />
-                                                    <p className="text-[9px] font-bold text-muted-foreground/60 mt-2 italic flex items-center gap-1">
-                                                        <ShieldAlert className="h-3 w-3" /> Интервал записи фиксирован: 1 час
+
+                                                <div className="space-y-4 pt-4 border-t border-border/40">
+                                                    {doctor.workingDays?.length === 0 ? (
+                                                        <p className="text-[11px] text-muted-foreground/60 italic text-center py-4 font-bold uppercase tracking-tighter">Выберите рабочие дни сверху</p>
+                                                    ) : (
+                                                        doctor.workingDays?.sort((a, b) => daysOfWeek.indexOf(a) - daysOfWeek.indexOf(b)).map(day => (
+                                                            <div key={day} className="flex flex-col sm:flex-row sm:items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
+                                                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-[10px] font-black shrink-0">
+                                                                    {day}
+                                                                </div>
+                                                                <Input 
+                                                                    placeholder="Напр: 12:00 - 17:00"
+                                                                    value={doctor.workingHoursPerDay?.[day] || ""}
+                                                                    onChange={e => handleUpdateDayHours(day, e.target.value)}
+                                                                    className="h-11 rounded-xl bg-background/50 font-bold border-border/50 text-xs focus:ring-1 ring-primary/30"
+                                                                />
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+
+                                                <div className="pt-4 border-t border-border/20">
+                                                    <p className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest flex items-center gap-1.5 ml-1">
+                                                        <ShieldAlert className="h-3 w-3 text-amber-500" /> Интервал записи фиксирован: 1 час
                                                     </p>
                                                 </div>
                                             </div>

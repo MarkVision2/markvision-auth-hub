@@ -98,6 +98,7 @@ export interface TeamMember {
     specialty?: string;
     workingDays?: string[];
     workingHours?: string;
+    workingHoursPerDay?: Record<string, string>;
     userId?: string;
 }
 
