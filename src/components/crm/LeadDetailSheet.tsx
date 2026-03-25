@@ -358,7 +358,9 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const CAPI_STATUS_MAP: Record<string, string> = {
     "Записан": "scheduled",
     "Визит совершен": "diagnostic",
-    "Оплачен": "paid",
+    "Лечение начато": "paid",
+    "Думает": "thinking",
+    "Отказ": "refused",
   };
 
   const fireCAPIWebhook = async (oldStatus: string, newStatus: string) => {

@@ -154,16 +154,20 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                 if (prescriptionData.decision === "treatment") {
                     newStatus = "Лечение начато";
                     pipeline = "doctor";
-                    // Set amount from selected package with discount
-                    const PACKAGE_PRICES: Record<string, number> = {
-                        pain_relief: 110000,
-                        spine_recovery: 210000,
-                        full_rehab: 310000
+                    // Set amount and package info from selected package with discount
+                    const PACKAGE_DATA: Record<string, { price: number; name: string }> = {
+                        pain_relief: { price: 110000, name: "Снятие боли" },
+                        spine_recovery: { price: 210000, name: "Восстановление позвоночника" },
+                        full_rehab: { price: 310000, name: "Полная реабилитация позвоночника" }
                     };
-                    if (prescriptionData.packageId && PACKAGE_PRICES[prescriptionData.packageId]) {
-                        const basePrice = PACKAGE_PRICES[prescriptionData.packageId];
+                    if (prescriptionData.packageId && PACKAGE_DATA[prescriptionData.packageId]) {
+                        const pkg = PACKAGE_DATA[prescriptionData.packageId];
                         const discount = prescriptionData.discountPercent || 0;
-                        updateData.amount = Math.round(basePrice * (1 - discount / 100));
+                        updateData.amount = Math.round(pkg.price * (1 - discount / 100));
+                        updateData.prescribed_packages = [pkg.name];
+                        if (prescriptionData.doctorName) {
+                            updateData.doctor_name = prescriptionData.doctorName;
+                        }
                         
                         if (prescriptionData.discountReason) {
                             updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + 
@@ -229,6 +233,37 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             if (updateError) {
                 console.error("Update error after fallback:", updateError);
                 throw new Error("Не удалось обновить данные. Пожалуйста, убедитесь, что в Supabase выполнены все SQL-миграции.");
+            }
+
+            // Fire CAPI Webhook for analytics
+            const CAPI_STATUS_MAP: Record<string, string> = {
+                "Записан": "scheduled",
+                "Визит совершен": "diagnostic",
+                "Лечение начато": "paid",
+                "Думает": "thinking",
+                "Отказ": "refused",
+            };
+            const capiKey = newStatus ? CAPI_STATUS_MAP[newStatus] : undefined;
+            if (capiKey) {
+                try {
+                    await fetch("https://n8n.zapoinov.com/webhook/lead-status-changed", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            table: "leads_crm", 
+                            type: "UPDATE",
+                            record: { 
+                                id: lead.id, 
+                                status: capiKey, 
+                                project_id: (lead as any).project_id || null, 
+                                deal_amount: updateData.amount || 0 
+                            },
+                            old_record: { status: lead.status },
+                        }),
+                    });
+                } catch (err) {
+                    console.error("CAPI webhook error:", err);
+                }
             }
 
             // Save questions for this project
