@@ -172,35 +172,37 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-                <div className="lg:col-span-12 xl:col-span-6 flex flex-col lg:flex-row lg:items-center gap-6 bg-card p-6 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+                <div className="lg:col-span-12 xl:col-span-6 flex flex-row items-center gap-4 bg-card p-5 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40" />
                     
-                    <div className="flex items-center gap-5 flex-1 min-w-0">
-                        <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner group">
-                            <Stethoscope className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-black tracking-tight text-foreground leading-tight break-words">{doctor.name}</h2>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                                <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
-                                    {doctor.specialty}
-                                </Badge>
-                                <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50 backdrop-blur-sm">
-                                    КАБИНЕТ {doctor.office || "—"}
-                                </Badge>
-                            </div>
+                    {/* Иконка врача */}
+                    <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner ml-2">
+                        <Stethoscope className="h-7 w-7 text-primary" />
+                    </div>
+
+                    {/* Имя + бейджи */}
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight truncate">{doctor.name}</h2>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
+                                {doctor.specialty}
+                            </Badge>
+                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50">
+                                КАБИНЕТ {doctor.office || "—"}
+                            </Badge>
                         </div>
                     </div>
 
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 w-full lg:w-auto">
-                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11 w-full lg:w-auto">
-                            <TabsTrigger value="schedule" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                    {/* Табы */}
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0">
+                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11">
+                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Calendar className="h-4 w-4" /> ГРАФИК
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                            <TabsTrigger value="analytics" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Activity className="h-4 w-4" /> РЕЙТИНГ
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="flex-1 lg:flex-none rounded-xl px-5 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
+                            <TabsTrigger value="settings" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
                                 <Settings className="h-4 w-4" /> ОПЦИИ
                             </TabsTrigger>
                         </TabsList>
