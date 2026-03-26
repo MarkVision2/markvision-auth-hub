@@ -393,29 +393,49 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
 
     return (
-        <div className="flex flex-col h-full space-y-8 animate-in fade-in pb-10">
-            {/* Progress indicator */}
-            <div className="flex items-center gap-2 max-w-lg mx-auto w-full">
-                {stages.map((s, i) => (
-                    <React.Fragment key={s.id}>
-                        <div className={cn(
-                            "flex items-center justify-center h-8 w-8 rounded-full text-xs font-semibold border-2 transition-all",
-                            step === s.id ? "border-primary bg-primary/10 text-primary" :
-                            step > s.id ? "bg-primary border-primary text-primary-foreground" : "border-border text-muted-foreground"
-                        )}>
-                            {step > s.id ? <Check className="h-4 w-4" /> : s.id}
-                        </div>
-                        {i < stages.length - 1 && (
-                            <div className={cn(
-                                "flex-1 h-1 transition-all",
-                                step > s.id ? "bg-primary" : "bg-border"
-                            )} />
-                        )}
-                    </React.Fragment>
-                ))}
+        <div className="flex flex-col h-full space-y-10 animate-in fade-in pb-16 max-w-6xl mx-auto w-full">
+            {/* High-End Progress Stepper */}
+            <div className="relative px-4 py-8 bg-secondary/10 rounded-[40px] border border-border/20 shadow-inner">
+                <div className="flex items-center justify-between relative z-10 max-w-2xl mx-auto w-full">
+                    {stages.map((s, i) => {
+                        const isCurrent = step === s.id;
+                        const isCompleted = step > s.id;
+                        return (
+                            <React.Fragment key={s.id}>
+                                <div className="flex flex-col items-center gap-3 group">
+                                    <div className={cn(
+                                        "flex items-center justify-center h-12 w-12 rounded-[22px] text-xs font-black transition-all duration-500 border-2",
+                                        isCurrent ? "border-primary bg-primary shadow-xl shadow-primary/30 text-white scale-110" :
+                                        isCompleted ? "bg-primary border-primary text-white" : "border-border/60 bg-white text-muted-foreground/40"
+                                    )}>
+                                        {isCompleted ? <Check className="h-5 w-5 stroke-[3]" /> : s.id}
+                                    </div>
+                                    <span className={cn(
+                                        "text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-300",
+                                        isCurrent ? "text-primary" : "text-muted-foreground/40"
+                                    )}>
+                                        {s.title}
+                                    </span>
+                                </div>
+                                {i < stages.length - 1 && (
+                                    <div className="flex-1 px-4 mb-6">
+                                        <div className={cn(
+                                            "h-[3px] rounded-full transition-all duration-700",
+                                            isCompleted ? "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]" : "bg-border/30"
+                                        )} />
+                                    </div>
+                                )}
+                            </React.Fragment>
+                        );
+                    })}
+                </div>
+                {/* Subtle background glow for the active step */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none overflow-hidden rounded-[40px]">
+                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+                </div>
             </div>
 
-            <div className="max-w-4xl mx-auto w-full">
+            <div className="w-full">
                 {/* STEP 1 */}
                 {step === 1 && (
                     <div className="space-y-5">
@@ -436,111 +456,109 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             )}
                         </div>
 
-                        <div className="rounded-xl border border-border/50 bg-secondary/5 overflow-hidden divide-y divide-border/30">
+                        <div className="grid gap-6">
                             {questions.map((q, qIndex) => (
-                                <div key={q.id} className="group/row hover:bg-secondary/10 transition-colors">
-                                    <div className="flex items-start gap-3 px-4 py-3">
-                                        {/* Number */}
-                                        <span className="text-xs font-bold text-primary/60 mt-2.5 w-5 shrink-0 text-right tabular-nums">
-                                            {qIndex + 1}.
-                                        </span>
+                                <div key={q.id} className="group/q bg-white border border-border/40 hover:border-primary/30 rounded-[32px] p-6 transition-all hover:shadow-xl hover:shadow-primary/5 relative">
+                                    <div className="flex items-start gap-6">
+                                        <div className="h-10 w-10 rounded-2xl bg-primary/5 text-primary flex flex-col items-center justify-center shrink-0 border border-primary/10 group-hover/q:scale-110 transition-transform">
+                                            <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-40">Q</span>
+                                            <span className="text-sm font-black leading-none">{qIndex + 1}</span>
+                                        </div>
 
-                                        {/* Label + Input stacked */}
-                                        <div className="flex-1 min-w-0 space-y-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium text-foreground leading-snug">
+                                        <div className="flex-1 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-[13px] font-black uppercase tracking-widest text-foreground/80 leading-relaxed">
                                                     {q.label}
-                                                    {q.required && <span className="text-destructive ml-0.5">*</span>}
-                                                </span>
-
-                                                {/* Edit/Delete — visible on hover */}
+                                                    {q.required && <span className="text-primary ml-1.5">*</span>}
+                                                </Label>
+                                                
                                                 {!readOnly && (
-                                                    <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity ml-auto shrink-0">
+                                                    <div className="flex items-center gap-1 opacity-0 group-hover/q:opacity-100 transition-opacity">
                                                         <Button
                                                             size="icon"
                                                             variant="ghost"
-                                                            className="h-6 w-6 rounded text-muted-foreground/50 hover:text-primary hover:bg-primary/10"
+                                                            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-primary hover:bg-primary/5"
                                                             onClick={() => {
                                                                 const el = document.getElementById(`q-editor-${q.id}`);
                                                                 if (el) el.classList.toggle('hidden');
                                                             }}
-                                                            title="Редактировать"
                                                         >
-                                                            <Edit2 className="h-3 w-3" />
+                                                            <Edit2 className="h-4 w-4" />
                                                         </Button>
                                                         <Button
                                                             size="icon"
                                                             variant="ghost"
-                                                            className="h-6 w-6 rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                                                            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/5"
                                                             onClick={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                            title="Удалить"
                                                         >
-                                                            <Trash2 className="h-3 w-3" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     </div>
                                                 )}
                                             </div>
 
-                                            {/* Input field */}
-                                            {q.type === "textarea" ? (
-                                                <Textarea
-                                                    placeholder="Ответ..."
-                                                    className="bg-background/80 border-border/40 focus:ring-1 focus:ring-primary h-16 text-sm resize-none rounded-lg p-3"
-                                                    value={formData.answers[q.id] || ""}
-                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                    disabled={readOnly}
-                                                />
-                                            ) : q.type === "text" ? (
-                                                <Input
-                                                    placeholder="Ответ..."
-                                                    className="bg-background/80 border-border/40 h-9 rounded-lg px-3 text-sm focus:ring-1 focus:ring-primary"
-                                                    value={formData.answers[q.id] || ""}
-                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                    disabled={readOnly}
-                                                />
-                                            ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
-                                                <div className="flex flex-wrap gap-2 py-1">
-                                                    {q.options.map((opt) => {
-                                                        const isSelected = q.type === "radio"
-                                                            ? formData.answers[q.id] === opt.id
-                                                            : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
-                                                        return (
-                                                            <button
-                                                                key={opt.id}
-                                                                className={cn(
-                                                                    "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
-                                                                    isSelected
-                                                                        ? "border-primary bg-primary/10 text-primary"
-                                                                        : "border-border/50 bg-background/50 text-muted-foreground hover:border-primary/30",
-                                                                    !readOnly && "cursor-pointer"
-                                                                )}
-                                                                onClick={() => {
-                                                                    if (readOnly) return;
-                                                                    if (q.type === "radio") {
-                                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
-                                                                    } else {
-                                                                        const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
-                                                                        const newVal = current.includes(opt.id)
-                                                                            ? current.filter((i: string) => i !== opt.id)
-                                                                            : [...current, opt.id];
-                                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
-                                                                    }
-                                                                }}
-                                                                disabled={readOnly}
-                                                            >
-                                                                {isSelected && <Check className="h-3 w-3 inline mr-1" />}
-                                                                {opt.label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : null}
+                                            {/* Answer Input */}
+                                            <div className="relative">
+                                                {q.type === "textarea" ? (
+                                                    <Textarea
+                                                        placeholder="ВВЕДИТЕ РАЗВЕРНУТЫЙ ОТВЕТ..."
+                                                        className="h-24 bg-secondary/5 border-none rounded-2xl p-5 text-[11px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/20 shadow-inner resize-none"
+                                                        value={formData.answers[q.id] || ""}
+                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                        disabled={readOnly}
+                                                    />
+                                                ) : q.type === "text" ? (
+                                                    <Input
+                                                        placeholder="ОТВЕТ ПАЦИЕНТА..."
+                                                        className="h-14 bg-secondary/5 border-none rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/20 shadow-inner"
+                                                        value={formData.answers[q.id] || ""}
+                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                        disabled={readOnly}
+                                                    />
+                                                ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {q.options.map((opt) => {
+                                                            const isSelected = q.type === "radio"
+                                                                ? formData.answers[q.id] === opt.id
+                                                                : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
+                                                            return (
+                                                                <button
+                                                                    key={opt.id}
+                                                                    className={cn(
+                                                                        "h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                                                                        isSelected
+                                                                            ? "border-primary bg-primary shadow-lg shadow-primary/20 text-white"
+                                                                            : "border-border/40 bg-white text-muted-foreground/40 hover:border-primary/20",
+                                                                        !readOnly && "cursor-pointer"
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        if (readOnly) return;
+                                                                        if (q.type === "radio") {
+                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
+                                                                        } else {
+                                                                            const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
+                                                                            const newVal = current.includes(opt.id)
+                                                                                ? current.filter((i: string) => i !== opt.id)
+                                                                                : [...current, opt.id];
+                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
+                                                                        }
+                                                                    }}
+                                                                    disabled={readOnly}
+                                                                >
+                                                                    {isSelected && <Check className="h-4 w-4 inline mr-2" />}
+                                                                    {opt.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : null}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Inline editor (hidden by default) */}
+                                    {/* Inline editor */}
                                     {!readOnly && (
-                                        <div id={`q-editor-${q.id}`} className="hidden px-4 pb-3">
+                                        <div id={`q-editor-${q.id}`} className="hidden pt-6">
                                             <QuestionEditor
                                                 question={q}
                                                 onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
@@ -711,86 +729,108 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 items-start">
+                            {/* Left: Messaging/Action */}
                             <div className="space-y-6">
-                                <div className="p-8 rounded-[32px] bg-secondary/10 border-none space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-xl bg-background flex items-center justify-center">
-                                            <Smartphone className="h-5 w-5 text-[#00A2E8]" />
+                                <div className="p-10 rounded-[40px] bg-secondary/10 border-none relative overflow-hidden group">
+                                    <div className="relative z-10 space-y-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-14 w-14 rounded-3xl bg-white shadow-xl flex items-center justify-center">
+                                                <Smartphone className="h-7 w-7 text-[#00A2E8]" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-black uppercase tracking-widest text-[#00A2E8]">Platform</span>
+                                                <h3 className="text-xl font-black uppercase tracking-tight">Kaspi.kz Payment</h3>
+                                            </div>
                                         </div>
-                                        <span className="font-semibold">Kaspi.kz</span>
+                                        <p className="text-[11px] font-black uppercase tracking-[0.15em] leading-relaxed text-muted-foreground/60">
+                                            Отправьте ссылку на оплату через WhatsApp. Это стандартная процедура клиники для фиксации времени и подтверждения серьезности намерений.
+                                        </p>
+                                        <Button 
+                                            variant="outline" 
+                                            className="w-full h-16 rounded-3xl gap-3 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all text-xs font-black uppercase tracking-widest shadow-lg shadow-[#25D366]/10"
+                                            onClick={() => {
+                                                toast({
+                                                    title: "ССЫЛКА ОТПРАВЛЕНА",
+                                                    description: "Ссылка на оплату Kaspi отправлена в WhatsApp",
+                                                });
+                                            }}
+                                        >
+                                            <MessageSquare className="h-5 w-5" /> Отправить в WhatsApp
+                                        </Button>
                                     </div>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                        Отправьте ссылку на оплату через WhatsApp. Это стандартная процедура клиники для фиксации времени.
-                                    </p>
-                                    <Button 
-                                        variant="outline" 
-                                        className="w-full h-12 rounded-2xl gap-2 border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all font-semibold"
-                                        onClick={() => {
-                                            toast({
-                                                title: "Ссылка отправлена",
-                                                description: "Ссылка на оплату Kaspi отправлена в WhatsApp",
-                                            });
-                                        }}
-                                    >
-                                        <MessageSquare className="h-4 w-4" /> Отправить ссылку в WhatsApp
-                                    </Button>
+                                    {/* Abstract background elements */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/10 transition-colors" />
                                 </div>
                             </div>
 
+                            {/* Right: Status Selection */}
                             <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <Label className="text-xs uppercase font-semibold tracking-wider text-muted-foreground">Статус предоплаты</Label>
-                                    <RadioGroup
-                                        value={formData.paymentStatus}
-                                        onValueChange={(val: "pending" | "paid" | "declined") => !readOnly && setFormData({ ...formData, paymentStatus: val })}
-                                        className="grid grid-cols-1 gap-3"
-                                        disabled={readOnly}
-                                    >
-                                        {[
-                                            { id: "pending", label: "Ожидается оплата", color: "text-amber-500", bg: "bg-amber-500/10" },
-                                            { id: "paid", label: "Оплачено", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-                                            { id: "declined", label: "Отказ от предоплаты", color: "text-rose-500", bg: "bg-rose-500/10" },
-                                        ].map((item) => (
-                                            <div key={item.id} className="space-y-3">
-                                                <div className="flex items-center">
-                                                    <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
-                                                    <Label
-                                                        htmlFor={item.id}
-                                                        className={cn(
-                                                            "flex-1 flex items-center justify-between p-5 rounded-3xl border-2 transition-all",
-                                                            formData.paymentStatus === item.id 
-                                                                ? "border-primary bg-primary/5 shadow-md scale-[1.02]" 
-                                                                : "border-transparent bg-secondary/5 hover:bg-secondary/10",
-                                                            !readOnly && "cursor-pointer"
-                                                        )}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={cn("h-4 w-4 rounded-full flex items-center justify-center", item.bg, item.color)} />
-                                                            <span className="font-semibold">{item.label}</span>
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-4">Текущий статус транзакции</Label>
+                                <RadioGroup
+                                    value={formData.paymentStatus}
+                                    onValueChange={(val: "pending" | "paid" | "declined") => !readOnly && setFormData({ ...formData, paymentStatus: val })}
+                                    className="grid grid-cols-1 gap-4"
+                                    disabled={readOnly}
+                                >
+                                    {[
+                                        { id: "pending", label: "Ожидание", desc: "Счет выставлен, ждем подтверждения", color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
+                                        { id: "paid", label: "Оплачено", desc: "Предоплата получена и подтверждена", color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
+                                        { id: "declined", label: "Отказ", desc: "Пациент отказался вносить задаток", color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20" },
+                                    ].map((item) => (
+                                        <div key={item.id} className="space-y-4">
+                                            <div className="flex items-center">
+                                                <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
+                                                <Label
+                                                    htmlFor={item.id}
+                                                    className={cn(
+                                                        "flex-1 flex items-center justify-between p-7 rounded-[32px] border-2 transition-all duration-300",
+                                                        formData.paymentStatus === item.id 
+                                                            ? "border-primary bg-primary shadow-2xl shadow-primary/20 text-white translate-x-2" 
+                                                            : "border-border/30 bg-white hover:border-primary/20",
+                                                        !readOnly && "cursor-pointer"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-5">
+                                                        <div className={cn(
+                                                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-colors duration-300",
+                                                            formData.paymentStatus === item.id ? "bg-white/20" : item.bg
+                                                        )}>
+                                                            <div className={cn(
+                                                                "h-3 w-3 rounded-full transition-colors duration-300",
+                                                                formData.paymentStatus === item.id ? "bg-white" : item.color.replace('text', 'bg')
+                                                            )} />
                                                         </div>
-                                                        {formData.paymentStatus === item.id && (
-                                                            <Check className="h-4 w-4 text-primary animate-in zoom-in" />
-                                                        )}
-                                                    </Label>
-                                                </div>
-
-                                                {/* Conditional Inputs */}
-                                                {formData.paymentStatus === "paid" && item.id === "paid" && (
-                                                    <div className="px-2 animate-in slide-in-from-top-2 duration-300">
-                                                        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-3">
-                                                            <Label className="text-[10px] uppercase font-bold tracking-widest text-emerald-600">Сумма предоплаты (₸)</Label>
-                                                            <Input 
-                                                                type="number"
-                                                                placeholder="Введите сумму, например: 9990"
-                                                                value={formData.prepaymentAmount}
-                                                                onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
-                                                                className="h-10 bg-background border-emerald-500/20 focus:ring-emerald-500 font-bold"
-                                                                disabled={readOnly}
-                                                            />
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
+                                                            <span className={cn(
+                                                                "text-[9px] font-black uppercase tracking-widest opacity-40",
+                                                                formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
+                                                            )}>{item.desc}</span>
                                                         </div>
                                                     </div>
-                                                )}
+                                                    {formData.paymentStatus === item.id && (
+                                                        <CheckCircle2 className="h-6 w-6 text-white animate-in zoom-in" />
+                                                    )}
+                                                </Label>
+                                            </div>
+
+                                            {/* Sub-inputs with micro-animations */}
+                                            {formData.paymentStatus === "paid" && item.id === "paid" && (
+                                                <div className="px-4 animate-in slide-in-from-top-4 duration-500">
+                                                    <div className="p-8 rounded-[32px] bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+                                                        <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">Сумма предоплаты (₸)</Label>
+                                                        <Input 
+                                                            type="number"
+                                                            placeholder="9990"
+                                                            value={formData.prepaymentAmount}
+                                                            onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
+                                                            className="h-16 bg-white border-none rounded-2xl px-6 text-xl font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500/20 shadow-xl shadow-emerald-500/5"
+                                                            disabled={readOnly}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
 
                                                 {formData.paymentStatus === "declined" && item.id === "declined" && (
                                                     <div className="px-2 animate-in slide-in-from-top-2 duration-300">
@@ -833,7 +873,6 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                 </div>
                             </div>
                         </div>
-                    </div>
                 )}
 
                 {/* STEP 4 */}

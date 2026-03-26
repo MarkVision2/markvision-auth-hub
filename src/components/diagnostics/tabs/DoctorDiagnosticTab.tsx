@@ -277,169 +277,177 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         const Icon = icon;
 
         return (
-            <Collapsible open={isOpen} onOpenChange={() => toggleSection(section)} className="border border-border/50 rounded-2xl overflow-hidden transition-all">
-                <CollapsibleTrigger asChild>
-                    <div className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-secondary/10 transition-colors bg-secondary/5">
-                        <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                <Icon className="h-3.5 w-3.5" />
-                            </div>
-                            <h3 className="text-xs font-bold uppercase tracking-widest">{title}</h3>
-                            <span className="text-[10px] text-muted-foreground/50 font-bold">{sectionQuestions.length} полей</span>
+            <div className="bg-card border border-border/40 rounded-[32px] overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
+                <div 
+                    className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-secondary/5 transition-colors"
+                    onClick={() => toggleSection(section)}
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner">
+                            <Icon className="h-5 w-5" />
                         </div>
-                        <div className="flex items-center gap-2">
-                             {!readOnly && (
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 rounded-lg hover:bg-primary/10" 
-                                    onClick={(e) => { e.stopPropagation(); addQuestion(section); }}
-                                >
-                                    <Plus className="h-3.5 w-3.5" />
-                                </Button>
-                             )}
-                             {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-widest text-foreground">{title}</h3>
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">{sectionQuestions.length} полей заполнено</p>
                         </div>
                     </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                    <div className="divide-y divide-border/30 animate-in slide-in-from-top-1 duration-200">
-                        {sectionQuestions.map(q => (
-                            <div key={q.id} className="group/row hover:bg-secondary/5 transition-colors">
-                                <div className="px-4 py-3 flex items-start gap-4">
-                                    <div className="w-[180px] shrink-0 pt-2">
-                                        <Label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground leading-tight">{q.label}</Label>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        {q.type === "textarea" ? (
-                                            <Textarea
-                                                placeholder="Введите..."
-                                                className="bg-background/50 border-border/40 focus:ring-1 focus:ring-primary h-16 text-sm resize-none rounded-xl p-3"
-                                                value={formData.answers[q.id] || ""}
-                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                disabled={readOnly}
-                                            />
-                                        ) : (
-                                            <Input
-                                                placeholder="Введите..."
-                                                className="bg-background/50 border-border/40 h-9 rounded-lg px-3 text-sm focus:ring-1 focus:ring-primary"
-                                                value={formData.answers[q.id] || ""}
-                                                onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                disabled={readOnly}
-                                            />
-                                        )}
-                                    </div>
-                                    {!readOnly && (
-                                        <div className="opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 pt-1">
-                                            <DoctorQuestionEditor 
-                                                question={q}
-                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
-                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
-                                                onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
-                                            />
+                    <div className="flex items-center gap-3">
+                         {!readOnly && (
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-xl hover:bg-primary/10 text-primary transition-all" 
+                                onClick={(e) => { e.stopPropagation(); addQuestion(section); }}
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                         )}
+                         <div className={cn("transition-transform duration-300", isOpen ? "rotate-180" : "rotate-0")}>
+                            <ChevronDown className="h-5 w-5 text-muted-foreground/40" />
+                         </div>
+                    </div>
+                </div>
+                
+                {isOpen && (
+                    <div className="divide-y divide-border/20 border-t border-border/20 bg-secondary/[0.02] animate-in slide-in-from-top-2 duration-300">
+                        {sectionQuestions.length === 0 ? (
+                            <div className="px-6 py-10 text-center opacity-40">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Нет вопросов в этой секции</p>
+                            </div>
+                        ) : (
+                            sectionQuestions.map(q => (
+                                <div key={q.id} className="group/row hover:bg-background transition-colors">
+                                    <div className="px-6 py-5 flex flex-col md:flex-row md:items-start gap-4">
+                                        <div className="md:w-[240px] shrink-0 pt-1">
+                                            <Label className="text-[11px] uppercase font-black tracking-[0.1em] text-muted-foreground leading-snug group-hover/row:text-primary transition-colors">{q.label}</Label>
+                                            {q.required && <span className="text-destructive ml-1">*</span>}
                                         </div>
-                                    )}
+                                        <div className="flex-1 min-w-0 relative">
+                                            {q.type === "textarea" ? (
+                                                <Textarea
+                                                    placeholder="Введите подробный ответ..."
+                                                    className="bg-background border-border/40 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 min-h-[100px] text-sm resize-none rounded-2xl p-4 transition-all shadow-sm group-hover/row:shadow-md"
+                                                    value={formData.answers[q.id] || ""}
+                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    disabled={readOnly}
+                                                />
+                                            ) : (
+                                                <Input
+                                                    placeholder="Введите значение..."
+                                                    className="bg-background border-border/40 h-12 rounded-xl px-4 text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all shadow-sm group-hover/row:shadow-md"
+                                                    value={formData.answers[q.id] || ""}
+                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    disabled={readOnly}
+                                                />
+                                            )}
+                                            
+                                            {!readOnly && (
+                                                <div className="absolute right-3 top-3 opacity-0 group-hover/row:opacity-100 transition-opacity z-10">
+                                                    <DoctorQuestionEditor 
+                                                        question={q}
+                                                        onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                        onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                        onMoveUp={() => moveQuestion(questions.indexOf(q), 'up')}
+                                                        onMoveDown={() => moveQuestion(questions.indexOf(q), 'down')}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
-                </CollapsibleContent>
-            </Collapsible>
+                )}
+            </div>
         );
     };
 
-    const [adminInfoOpen, setAdminInfoOpen] = useState(false);
-
     return (
-        <div className="space-y-4 animate-in fade-in pb-10 max-w-4xl mx-auto w-full">
-             {/* Collapsible Admin Summary Box */}
+        <div className="space-y-6 animate-in fade-in pb-12 max-w-5xl mx-auto w-full">
+             {/* Redesigned Admin Data: High-density compact card */}
              {adminData && (
-                <div className="border border-primary/20 rounded-3xl overflow-hidden bg-primary/[0.02] shadow-sm mb-6">
-                    <div className="px-5 py-4 bg-primary/5 flex items-center justify-between border-b border-primary/10">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                                <Info className="h-4 w-4" />
+                <div className="bg-primary/5 border border-primary/20 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="px-8 py-5 bg-primary/10 flex items-center justify-between border-b border-primary/20">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
+                                <Info className="h-5 w-5" />
                             </div>
                             <div>
-                                <h3 className="font-black text-primary text-[10px] uppercase tracking-[0.2em]">Данные от администратора</h3>
-                                <p className="text-[9px] text-primary/60 font-bold uppercase tracking-wider mt-0.5">Собрано на этапе 1</p>
+                                <h3 className="font-black text-primary text-xs uppercase tracking-[0.2em] leading-tight">Данные от администратора</h3>
+                                <p className="text-[10px] text-primary/60 font-black uppercase tracking-wider mt-1">Опрос на этапе регистрации</p>
                             </div>
                         </div>
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-none text-[9px] font-black px-2.5 py-0.5">
-                            ШАГ 1: READY
+                        <Badge className="bg-white text-primary hover:bg-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-sm">
+                            READY
                         </Badge>
                     </div>
-                    <div>
-                        {/* All admin questions with answers */}
-                        <div className="divide-y divide-primary/5">
-                                {adminQuestions.length > 0 ? (
-                                    adminQuestions.map((q, idx) => {
-                                        const answer = adminData.answers?.[q.id];
-                                        const displayVal = answer 
-                                            ? (Array.isArray(answer) ? answer.join(', ') : String(answer))
-                                            : '—';
-                                        return (
-                                            <div key={q.id} className="px-4 py-3 flex items-start gap-4">
-                                                <div className="w-[200px] shrink-0 pt-0.5">
-                                                    <span className="text-[9px] uppercase font-bold text-primary/60 tracking-wider leading-tight">{q.label}</span>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className={cn(
-                                                        "text-sm font-medium",
-                                                        answer ? "text-foreground" : "text-muted-foreground/40 italic"
-                                                    )}>{displayVal}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    /* Fallback: show raw answers if no admin questions available */
-                                    adminData.answers && Object.entries(adminData.answers).map(([key, val]) => {
-                                        if (!val) return null;
-                                        return (
-                                            <div key={key} className="px-4 py-3 flex items-start gap-4">
-                                                <div className="w-[200px] shrink-0 pt-0.5">
-                                                    <span className="text-[9px] uppercase font-bold text-primary/60 tracking-wider">{key.replace(/_/g, ' ')}</span>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium">{String(val)}</p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                                {/* Admin comment */}
-                                {adminData.adminComment && (
-                                    <div className="px-4 py-3 flex items-start gap-4 bg-amber-500/5">
-                                        <div className="w-[200px] shrink-0 pt-0.5">
-                                            <span className="text-[9px] uppercase font-bold text-amber-600 tracking-wider">Комментарий админа</span>
+                    
+                    <div className="p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-10">
+                            {adminQuestions.length > 0 ? (
+                                adminQuestions.map((q) => {
+                                    const answer = adminData.answers?.[q.id];
+                                    const displayVal = answer 
+                                        ? (Array.isArray(answer) ? answer.join(', ') : String(answer))
+                                        : '—';
+                                    return (
+                                        <div key={q.id} className="space-y-1.5 group/info transition-all">
+                                            <span className="text-[10px] uppercase font-black text-primary/50 tracking-widest group-hover/info:text-primary transition-colors truncate block">{q.label}</span>
+                                            <p className={cn(
+                                                "text-xs font-bold leading-relaxed",
+                                                answer ? "text-foreground" : "text-muted-foreground/30 italic"
+                                            )}>{displayVal}</p>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-foreground">{adminData.adminComment}</p>
+                                    );
+                                })
+                            ) : (
+                                adminData.answers && Object.entries(adminData.answers).slice(0, 9).map(([key, val]) => {
+                                    if (!val) return null;
+                                    return (
+                                        <div key={key} className="space-y-1.5 group/info transition-all">
+                                            <span className="text-[10px] uppercase font-black text-primary/50 tracking-widest group-hover/info:text-primary transition-colors truncate block">{key.replace(/_/g, ' ')}</span>
+                                            <p className="text-xs font-bold leading-relaxed">{String(val)}</p>
                                         </div>
-                                    </div>
-                                )}
+                                    );
+                                })
+                            )}
+                        </div>
+                        
+                        {adminData.adminComment && (
+                            <div className="mt-8 p-5 bg-amber-500/10 border border-amber-500/20 rounded-[28px] flex gap-4 items-start relative overflow-hidden group/comment">
+                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/comment:scale-110 transition-transform">
+                                    <Activity className="h-16 w-16 text-amber-600" />
+                                </div>
+                                <div className="h-9 w-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+                                    <Activity className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <span className="text-[10px] uppercase font-black text-amber-600 tracking-widest block mb-1">Комментарий админа</span>
+                                    <p className="text-xs font-bold text-foreground leading-relaxed">{adminData.adminComment}</p>
+                                </div>
                             </div>
+                        )}
                     </div>
                 </div>
             )}
 
-            {renderQuestionsSection("complaints", "1. Жалобы и двигательные тесты", FileText)}
-            {renderQuestionsSection("exam", "2. Функциональная оценка и симптомы", Activity)}
-            
-            {/* Скрываем пустые секции если в них нет вопросов */}
-            {questions.some(q => q.section === "procedure") && renderQuestionsSection("procedure", "3. Первая процедура", Zap)}
-            {questions.some(q => q.section === "conclusion") && renderQuestionsSection("conclusion", "4. План лечения и итог", Stethoscope)}
+            <div className="grid gap-4">
+                {renderQuestionsSection("complaints", "1. Жалобы и двигательные тесты", FileText)}
+                {renderQuestionsSection("exam", "2. Функциональная оценка и симптомы", Activity)}
+                
+                {questions.some(q => q.section === "procedure") && renderQuestionsSection("procedure", "3. Первая процедура", Zap)}
+                {questions.some(q => q.section === "conclusion") && renderQuestionsSection("conclusion", "4. План лечения и итог", Stethoscope)}
+            </div>
 
             {!readOnly && (
-                <div className="flex justify-end pt-4">
+                <div className="flex justify-end pt-8">
                     <Button 
                         onClick={onComplete}
-                        className="h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase gap-2 shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="h-16 px-10 rounded-[28px] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase gap-3 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                     >
                         Перейти к листу назначения
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                 </div>
             )}

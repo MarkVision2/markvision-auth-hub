@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList
+  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList, CheckCircle2
 } from "lucide-react";
 import { Lead } from "../crm/KanbanBoard";
 import { AdminDiagnosticTab, AdminFormData, Question, DEFAULT_QUESTIONS } from "./tabs/AdminDiagnosticTab";
@@ -401,70 +401,100 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden">
-                {/* Header: Единый статус пациента */}
-                <DialogHeader className="px-6 py-3 border-b border-border shrink-0 bg-background z-10 flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Activity className="h-5 w-5 text-primary" />
+            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none">
+                {/* Header: Premium Glassmorphism Effect */}
+                <DialogHeader className="px-8 py-5 border-b border-border/40 shrink-0 bg-background/80 backdrop-blur-xl z-20 flex flex-row items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-6">
+                        <div className="h-12 w-12 rounded-[20px] bg-primary/10 flex items-center justify-center shadow-inner group/icon">
+                            <Activity className="h-6 w-6 text-primary group-hover/icon:scale-110 transition-transform" />
                         </div>
                         <div>
-                            <DialogTitle className="text-lg font-semibold tracking-tight">Рабочая форма пациента</DialogTitle>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                                <Badge variant="outline" className={cn("px-2 py-0 h-5 font-semibold text-[10px] uppercase tracking-wider", statusColor)}>
+                            <div className="flex items-center gap-3">
+                                <DialogTitle className="text-xl font-black uppercase tracking-[0.1em] text-foreground">Диагностический терминал</DialogTitle>
+                                <Badge className={cn("px-3 py-1 rounded-lg font-black text-[9px] uppercase tracking-widest border-none", statusColor)}>
                                     {lead.status || "Новая заявка"}
                                 </Badge>
-                                <span>·</span>
-                                <span className="flex items-center gap-1"><User className="h-3 w-3" /> {lead.name}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                                <span className="flex items-center gap-2 px-2.5 py-1 bg-secondary/50 rounded-full border border-border/20">
+                                    <User className="h-3 w-3 text-primary" /> {lead.name}
+                                </span>
+                                <span className="text-muted-foreground/30">•</span>
+                                <span className="flex items-center gap-2 px-2.5 py-1 bg-secondary/50 rounded-full border border-border/20">
+                                    <ClipboardList className="h-3 w-3 text-primary" /> ID: {lead.id.slice(0, 8)}
+                                </span>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" size="sm" onClick={handleGeneratePdf} className="h-8 gap-2 text-xs font-semibold">
-                            <FileDown className="h-3.5 w-3.5" /> PDF
-                        </Button>
-                        <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-8 gap-2 text-xs font-semibold">
-                            {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                            Сохранить
-                        </Button>
-                        <div className="w-px h-6 bg-border mx-2" />
-                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full h-8 w-8 hover:bg-destructive/10 hover:text-destructive">
-                            <X className="h-4 w-4" />
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center p-1.5 bg-secondary/30 rounded-2xl border border-border/40">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleGeneratePdf} 
+                                className="h-10 px-6 gap-3 text-[10px] font-black uppercase tracking-widest hover:bg-background rounded-xl transition-all"
+                            >
+                                <FileDown className="h-4 w-4" /> Экспорт PDF
+                            </Button>
+                            <Button 
+                                size="sm" 
+                                onClick={handleSave} 
+                                disabled={isSaving} 
+                                className="h-10 px-8 gap-3 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                Сохранить изменения
+                            </Button>
+                        </div>
+                        <div className="w-px h-8 bg-border/40 mx-2" />
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => onOpenChange(false)} 
+                            className="rounded-2xl h-11 w-11 hover:bg-destructive/10 hover:text-destructive border border-transparent hover:border-destructive/20 transition-all"
+                        >
+                            <X className="h-5 w-5" />
                         </Button>
                     </div>
                 </DialogHeader>
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* Main Content Area */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-muted/10">
+                    <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa]">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="px-6 pt-4 pb-0 border-b border-border bg-background shrink-0">
-                                <TabsList className="bg-transparent border-none p-0 h-auto gap-6 mb-[-1px]">
+                            <div className="px-8 pt-6 pb-0 bg-background shrink-0 z-10">
+                                <TabsList className="bg-secondary/20 p-1.5 h-16 rounded-[24px] border border-border/40 gap-2 flex w-full max-w-3xl">
                                     {mode !== "doctor" && (
                                         <TabsTrigger 
                                             value="admin" 
-                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                            className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                         >
-                                            <ClipboardList className="h-4 w-4" />
-                                            1. Диагностика (Админ)
+                                            <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                <ClipboardList className="h-4 w-4 text-primary" />
+                                            </div>
+                                            I. Сбор анамнеза
                                         </TabsTrigger>
                                     )}
                                     {mode === "doctor" && (
                                         <>
                                             <TabsTrigger 
                                                 value="doctor" 
-                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                             >
-                                                <Stethoscope className="h-4 w-4" />
-                                                2. Осмотр (Врач)
+                                                <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                    <Stethoscope className="h-4 w-4 text-primary" />
+                                                </div>
+                                                II. Врачебный осмотр
                                             </TabsTrigger>
                                             <TabsTrigger 
                                                 value="prescription" 
-                                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-2 py-3 gap-2 font-semibold transition-all"
+                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                             >
-                                                <FileText className="h-4 w-4" />
-                                                3. Лист назначения
+                                                <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                    <FileText className="h-4 w-4 text-primary" />
+                                                </div>
+                                                III. Протокол лечения
                                             </TabsTrigger>
                                         </>
                                     )}
@@ -472,19 +502,21 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                             </div>
 
                             <div className="flex-1 overflow-y-auto">
-                                <div className="p-6 min-h-full">
+                                <div className="p-8 min-h-full">
                                     {mode !== "doctor" && (
                                         <TabsContent value="admin" className="m-0 focus-visible:outline-none">
-                                            <AdminDiagnosticTab 
-                                                lead={lead} 
-                                                data={adminData} 
-                                                questions={adminQuestions}
-                                                onQuestionsChange={setAdminQuestions}
-                                                onChange={setAdminData} 
-                                                onNext={() => setActiveTab("doctor")}
-                                                readOnly={false}
-                                                onSave={handleSave}
-                                            />
+                                            <div className="bg-white border border-border/40 rounded-[40px] shadow-sm p-8">
+                                                <AdminDiagnosticTab 
+                                                    lead={lead} 
+                                                    data={adminData} 
+                                                    questions={adminQuestions}
+                                                    onQuestionsChange={setAdminQuestions}
+                                                    onChange={setAdminData} 
+                                                    onNext={() => setActiveTab("doctor")}
+                                                    readOnly={false}
+                                                    onSave={handleSave}
+                                                />
+                                            </div>
                                         </TabsContent>
                                     )}
                                     {mode === "doctor" && (
@@ -511,53 +543,97 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                         </Tabs>
                     </div>
 
-                    {/* Right Sidebar: Patient Summary */}
-                    <div className="w-[300px] border-l border-border bg-background shrink-0 flex flex-col">
-                        <div className="p-4 border-b border-border font-semibold flex items-center gap-2">
-                            <User className="h-4 w-4 text-primary" />
-                            Сводка по пациенту
+                    {/* Right Sidebar: Premium Patient Summary */}
+                    <div className="w-[340px] border-l border-border/40 bg-background shrink-0 flex flex-col shadow-2xl z-10">
+                        <div className="p-6 border-b border-border/40 flex items-center gap-4 bg-secondary/5">
+                            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-widest">Паспорт пациента</h3>
+                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Quick Reference Card</p>
+                            </div>
                         </div>
                         <div className="flex-1 overflow-y-auto">
-                            <div className="p-4 space-y-6">
-                                <div>
-                                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">ФИО пациента</p>
-                                    <p className="font-semibold text-sm">{lead.name}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Телефон</p>
-                                    <p className="font-semibold text-sm flex items-center gap-2">
-                                        <Phone className="h-3 w-3" /> {lead.phone || "Не указан"}
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Запись</p>
-                                    <div className="flex items-center gap-2 text-sm font-semibold bg-secondary/50 p-2 rounded-lg border border-border">
-                                        <Clock className="h-4 w-4 text-primary" />
-                                        {lead.scheduled_at ? new Date(lead.scheduled_at).toLocaleString("ru-RU", { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' }) : "Нет записи"}
+                            <div className="p-6 space-y-8">
+                                <div className="space-y-4">
+                                    <div className="p-5 bg-secondary/5 border border-border/30 rounded-[24px] space-y-4">
+                                        <div>
+                                            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1.5 opacity-50">Полное имя</p>
+                                            <p className="font-black text-sm uppercase tracking-tight">{lead.name}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1.5 opacity-50">Контактная связь</p>
+                                            <p className="font-black text-sm flex items-center gap-3">
+                                                <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                                    <Phone className="h-3 w-3" />
+                                                </div>
+                                                {lead.phone || "—"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-5 bg-primary/[0.03] border border-primary/10 rounded-[24px] shadow-inner">
+                                        <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-2.5">Запланированный визит</p>
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-10 w-10 rounded-2xl bg-white border border-primary/10 flex flex-col items-center justify-center shadow-sm">
+                                                <span className="text-[8px] font-black text-primary uppercase leading-none mb-0.5">Мар</span>
+                                                <span className="text-lg font-black text-foreground leading-none">26</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-black text-foreground tabular-nums">
+                                                    {lead.scheduled_at ? format(new Date(lead.scheduled_at), "HH:mm") : "—"}
+                                                </span>
+                                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Четверг, сегодня</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Информация от регистратуры</p>
-                                    <div className="space-y-3 p-3 bg-secondary/50 rounded-lg border border-border">
-                                        <div>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Жалоба</p>
-                                            <p className="text-sm font-medium">{adminData?.complaints || "—"}</p>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 px-1">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                        <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Первичные данные</h4>
+                                    </div>
+                                    
+                                    <div className="space-y-3 p-5 bg-secondary/10 rounded-[32px] border border-border/20">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Основная жалоба</p>
+                                            <div className="p-3 bg-background border border-border/40 rounded-2xl">
+                                                <p className="text-[11px] font-bold text-foreground leading-relaxed">{adminData?.complaints || "Данные отсутствуют"}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Комментарий</p>
-                                            <p className="text-sm font-medium">{adminData?.adminComment || "—"}</p>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Комментарий админа</p>
+                                            <div className="p-3 bg-background border border-border/40 rounded-2xl">
+                                                <p className="text-[11px] font-bold text-foreground leading-relaxed italic">"{adminData?.adminComment || "Нет комментариев"}"</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] text-muted-foreground uppercase font-bold">Предоплата</p>
-                                            <Badge variant="outline" className={cn(
-                                                "mt-1 text-[10px]",
-                                                adminData?.paymentStatus === 'paid' ? "border-emerald-500/30 text-emerald-600 bg-emerald-500/10" : "border-amber-500/30 text-amber-600 bg-amber-500/10"
+                                        
+                                        <div className="pt-2">
+                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1 mb-2">Статус платежа</p>
+                                            <div className={cn(
+                                                "px-4 py-2.5 rounded-2xl border flex items-center justify-between",
+                                                adminData?.paymentStatus === 'paid' 
+                                                    ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-600" 
+                                                    : "border-amber-500/20 bg-amber-500/5 text-amber-600"
                                             )}>
-                                                {adminData?.paymentStatus === 'paid' ? "✅ Оплачено" : "⏳ Ожидание"}
-                                            </Badge>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Предоплата</span>
+                                                {adminData?.paymentStatus === 'paid' 
+                                                    ? <CheckCircle2 className="h-4 w-4" /> 
+                                                    : <Clock className="h-4 w-4" />
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <div className="p-6 bg-secondary/10 border-t border-border/40">
+                            <div className="flex items-center gap-3 text-muted-foreground/40 hover:text-primary transition-colors cursor-help group/help">
+                                <Activity className="h-4 w-4 group-hover/help:animate-pulse" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">Medical Workstation v2.0</span>
                             </div>
                         </div>
                     </div>
