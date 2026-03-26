@@ -874,39 +874,68 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   )}
                 </div>
 
-                {/* Источник — специальный блок с разбором оффера и CTA */}
+
+                {/* Источник — показываем оффер и CTA из параметра btn */}
                 {(() => {
-                  const rawSource = (lead.source || "").replace(/^Popup АҚ СИСА\s*\|\s*/, "").trim();
-                  // Пытаемся разбить на части: "Оффер | CTA" или "Оффер | utm_content=CTA"
-                  let offer = rawSource || "—";
+                  const rawSource = (lead.source || "").trim();
+                  let offer = "—";
                   let cta: string | null = null;
-                  if (rawSource) {
-                    const pipeIdx = rawSource.indexOf("|");
-                    if (pipeIdx !== -1) {
-                      offer = rawSource.slice(0, pipeIdx).trim();
-                      const ctaRaw = rawSource.slice(pipeIdx + 1).trim();
-                      // Убираем "utm_content=" если есть
-                      cta = ctaRaw.replace(/^utm_content=/i, "").trim() || null;
-                    } else {
-                      // Иногда utm_content приходит отдельно
-                      const utmContent = (lead as any).utm_content;
-                      if (utmContent) cta = utmContent;
+
+                  try {
+                    // Парсим source как URL query string
+                    const params = new URLSearchParams(rawSource);
+                    const btn = params.get("btn");
+
+                    if (btn) {
+                      // btn вида "hero_v2_грыжи_спина_шея" или "hero_записаться_на_диагностику"
+                      // Разбиваем по "_" и ищем где начинается CTA (глагол/действие)
+                      // Эвристика: CTA начинается с таких слов как записаться, узнать, получить, оставить, заказать, попробовать, скачать
+                      const ctaKeywords = ["записаться", "узнать", "получить", "оставить", "заказать", "попробовать", "скачать", "записаться_на", "cta", "кнопка", "btn"];
+                      const parts = btn.split("_");
+                      let ctaStart = -1;
+                      for (let i = 0; i < parts.length; i++) {
+                        if (ctaKeywords.some(k => parts.slice(i).join("_").toLowerCase().startsWith(k))) {
+                          ctaStart = i;
+                          break;
+                        }
+                      }
+                      if (ctaStart > 0) {
+                        offer = parts.slice(0, ctaStart).join("_");
+                        cta = parts.slice(ctaStart).join(" ");
+                      } else {
+                        // Нет явного CTA — весь btn = оффер
+                        offer = btn;
+                      }
+                    } else if (rawSource && !rawSource.includes("=")) {
+                      // Исходный формат "Оффер | CTA"
+                      const pipeIdx = rawSource.indexOf("|");
+                      if (pipeIdx !== -1) {
+                        offer = rawSource.slice(0, pipeIdx).trim();
+                        cta = rawSource.slice(pipeIdx + 1).trim().replace(/^utm_content=/i, "").trim() || null;
+                      } else {
+                        offer = rawSource;
+                      }
+                    } else if (rawSource && !rawSource.includes("=")) {
+                      offer = rawSource;
                     }
+                  } catch {
+                    offer = rawSource || "—";
                   }
+
                   return (
                     <div className="py-1.5">
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 text-muted-foreground shrink-0">
                           <Globe className="h-3.5 w-3.5 mt-0.5" />
                           <span className="text-xs">Источник</span>
                         </div>
-                        <div className="flex flex-col items-end gap-1 ml-2 min-w-0">
-                          <span className="text-xs font-bold text-primary text-right leading-snug break-all">
+                        <div className="flex flex-col items-end gap-1 min-w-0">
+                          <span className="text-xs font-bold text-primary text-right leading-snug break-words">
                             {offer}
                           </span>
                           {cta && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-semibold text-primary/90 tracking-wide whitespace-nowrap">
-                              🖱 {cta.replace(/_button_name$/i, "").replace(/_button$/i, "")}
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-semibold text-primary/90 tracking-wide text-right">
+                              🖱 {cta}
                             </span>
                           )}
                         </div>
@@ -914,6 +943,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                     </div>
                   );
                 })()}
+
                 {[
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
