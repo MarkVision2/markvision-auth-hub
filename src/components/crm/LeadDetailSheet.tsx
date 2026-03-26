@@ -874,13 +874,47 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   )}
                 </div>
 
+                {/* Источник — специальный блок с разбором оффера и CTA */}
+                {(() => {
+                  const rawSource = (lead.source || "").replace(/^Popup АҚ СИСА\s*\|\s*/, "").trim();
+                  // Пытаемся разбить на части: "Оффер | CTA" или "Оффер | utm_content=CTA"
+                  let offer = rawSource || "—";
+                  let cta: string | null = null;
+                  if (rawSource) {
+                    const pipeIdx = rawSource.indexOf("|");
+                    if (pipeIdx !== -1) {
+                      offer = rawSource.slice(0, pipeIdx).trim();
+                      const ctaRaw = rawSource.slice(pipeIdx + 1).trim();
+                      // Убираем "utm_content=" если есть
+                      cta = ctaRaw.replace(/^utm_content=/i, "").trim() || null;
+                    } else {
+                      // Иногда utm_content приходит отдельно
+                      const utmContent = (lead as any).utm_content;
+                      if (utmContent) cta = utmContent;
+                    }
+                  }
+                  return (
+                    <div className="py-1.5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                          <Globe className="h-3.5 w-3.5 mt-0.5" />
+                          <span className="text-xs">Источник</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 ml-2 min-w-0">
+                          <span className="text-xs font-bold text-primary text-right leading-snug break-all">
+                            {offer}
+                          </span>
+                          {cta && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-semibold text-primary/90 tracking-wide whitespace-nowrap">
+                              🖱 {cta.replace(/_button_name$/i, "").replace(/_button$/i, "")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 {[
-                  { 
-                    icon: Globe, 
-                    label: "Источник", 
-                    value: (lead.source || "—").replace(/^Popup АҚ СИСА\s*\|\s*/, ''),
-                    isPrimary: true 
-                  },
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
                   { icon: User, label: "Врач", value: lead.doctor_name || "—" },
@@ -901,10 +935,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                       <item.icon className="h-3.5 w-3.5" />
                       <span className="text-xs">{item.label}</span>
                     </div>
-                    <span className={cn(
-                      "text-xs truncate text-right",
-                      item.isPrimary ? "font-bold text-primary max-w-[70%]" : "font-medium text-foreground/80 max-w-[55%]"
-                    )}>
+                    <span className="text-xs font-medium text-foreground/80 max-w-[55%] truncate text-right">
                       {item.value}
                     </span>
                   </div>
