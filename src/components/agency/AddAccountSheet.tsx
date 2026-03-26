@@ -30,13 +30,6 @@ const emptyForm = {
   pixel_event: "",
   website_url: "",
   project_id: "",
-  impressions: "",
-  clicks: "",
-  spend: "",
-  meta_leads: "",
-  visits: "",
-  sales: "",
-  revenue: "",
   is_agency: false,
 };
 
@@ -91,13 +84,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
           pixel_event: account.pixel_event || "",
           website_url: account.website_url || "",
           project_id: account.project_id || "",
-          impressions: account.impressions ? String(account.impressions) : "",
-          clicks: account.clicks ? String(account.clicks) : "",
-          spend: account.spend ? String(account.spend) : "",
-          meta_leads: account.meta_leads ? String(account.meta_leads) : "",
-          visits: account.visits ? String(account.visits) : "",
-          sales: account.sales ? String(account.sales) : "",
-          revenue: account.revenue ? String(account.revenue) : "",
           is_agency: !!account.is_agency,
         });
 
@@ -156,13 +142,6 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     if (form.fb_pixel_id) row.fb_pixel_id = form.fb_pixel_id;
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
-    if (form.impressions) row.impressions = Number(form.impressions);
-    if (form.clicks) row.clicks = Number(form.clicks);
-    if (form.spend) row.spend = Number(form.spend);
-    if (form.meta_leads) row.meta_leads = Number(form.meta_leads);
-    if (form.visits) row.visits = Number(form.visits);
-    if (form.sales) row.sales = Number(form.sales);
-    if (form.revenue) row.revenue = Number(form.revenue);
     // Default FB token (shared across all accounts)
     row.fb_token = "EAANaVrGsWLYBQx2zJZCYxaz16KSfXDHFwIZA5xuZACh8fXnWD1gHcu4YryOs5lCcydaQ0f0D0EhDteeIZBMpD99QBy2a5BEB6JULlKi81zgQIjqnXo46dixFo1NB0BdHo1wAQkJ1fwdiZAqtg5AY2DY8XLDDPIMsJJbUkkhtswZCt48Vw8WuU5Ml5es1X9egMK";
 
@@ -282,24 +261,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 px-1">
-               <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/70">Базовые показатели (History)</h3>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 bg-card p-6 rounded-3xl border border-border/60 shadow-sm transition-all hover:shadow-md">
-              <Field label="Показы" value={form.impressions} onChange={(v) => updateField("impressions", v)} placeholder="0" />
-              <Field label="Клики" value={form.clicks} onChange={(v) => updateField("clicks", v)} placeholder="0" />
-              <Field label="Расход" value={form.spend} onChange={(v) => updateField("spend", v)} placeholder="0" />
-              <Field label="Лиды" value={form.meta_leads} onChange={(v) => updateField("meta_leads", v)} placeholder="0" />
-              <Field label="Визиты" value={form.visits} onChange={(v) => updateField("visits", v)} placeholder="0" />
-              <Field label="Продажи" value={form.sales} onChange={(v) => updateField("sales", v)} placeholder="0" />
-              <div className="md:col-span-3">
-                <Field label="Выручка" value={form.revenue} onChange={(v) => updateField("revenue", v)} placeholder="0" />
-              </div>
-            </div>
-          </div>
+
 
           <Accordion type="multiple" className="space-y-5">
             <AccordionItem value="meta" className="border border-border/60 rounded-3xl px-6 bg-card overflow-hidden shadow-sm transition-all hover:shadow-md">
