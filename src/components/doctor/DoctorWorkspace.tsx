@@ -181,14 +181,14 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     </div>
 
                     {/* Имя + бейджи */}
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight truncate">{doctor.name}</h2>
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight whitespace-nowrap overflow-visible">{doctor.name}</h2>
+                        <div className="flex gap-1.5 mt-1.5">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 whitespace-nowrap shrink-0">
                                 {doctor.specialty}
                             </Badge>
-                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50">
-                                КАБИНЕТ {doctor.office || "—"}
+                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50 whitespace-nowrap shrink-0">
+                                КАБ. {doctor.office || "—"}
                             </Badge>
                         </div>
                     </div>
@@ -196,14 +196,14 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     {/* Табы */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0">
                         <TabsList className="bg-muted/30 p-1 rounded-2xl h-11">
-                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Calendar className="h-4 w-4" /> ГРАФИК
+                            <TabsTrigger value="schedule" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                                <Calendar className="h-3.5 w-3.5" /> ГРАФИК
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Activity className="h-4 w-4" /> РЕЙТИНГ
+                            <TabsTrigger value="analytics" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                                <Activity className="h-3.5 w-3.5" /> РЕЙТИНГ
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2">
-                                <Settings className="h-4 w-4" /> ОПЦИИ
+                            <TabsTrigger value="settings" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
+                                <Settings className="h-3.5 w-3.5" /> ОПЦИИ
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
