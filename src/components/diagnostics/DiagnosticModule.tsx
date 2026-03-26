@@ -43,28 +43,48 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     const [doctorData, setDoctorData] = useState<DoctorFormData | null>(null);
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
 
-    // Initial data setup
+    // Initial data setup — загружаем сохранённые ответы администратора из leads_crm
     useEffect(() => {
         if (open) {
-            setAdminData({
-                answers: {
-                    complaints: lead.ai_summary || "",
-                },
-                adminComment: (lead as any).comments || "",
-                paymentMethod: "Kaspi",
-                paymentStatus: "pending",
-                prepaymentAmount: "",
-                refusalReason: "",
-                confirmed: false,
-                finalFio: lead.name,
-                finalPhone: lead.phone || "",
-                complaints: lead.ai_summary || "",
-                painLocation: "",
-                painDuration: "",
-                painType: "",
-                painIntensity: "5",
-                previousTreatment: ""
-            });
+            const loadSavedAnswers = async () => {
+                let savedAnswers: Record<string, any> = { complaints: lead.ai_summary || "" };
+                let savedAdminComment = (lead as any).comments || "";
+                try {
+                    const { data: leadRow } = await (supabase as any)
+                        .from("leads_crm")
+                        .select("diagnostic_admin_answers, diagnostic_admin_comment")
+                        .eq("id", lead.id)
+                        .single();
+                    if (leadRow?.diagnostic_admin_answers) {
+                        savedAnswers = typeof leadRow.diagnostic_admin_answers === "string"
+                            ? JSON.parse(leadRow.diagnostic_admin_answers)
+                            : leadRow.diagnostic_admin_answers;
+                    }
+                    if (leadRow?.diagnostic_admin_comment) {
+                        savedAdminComment = leadRow.diagnostic_admin_comment;
+                    }
+                } catch (e) {
+                    // поля могут не существовать — используем дефолты
+                }
+                setAdminData({
+                    answers: savedAnswers,
+                    adminComment: savedAdminComment,
+                    paymentMethod: "Kaspi",
+                    paymentStatus: "pending",
+                    prepaymentAmount: "",
+                    refusalReason: "",
+                    confirmed: false,
+                    finalFio: lead.name,
+                    finalPhone: lead.phone || "",
+                    complaints: (savedAnswers as any).complaints || lead.ai_summary || "",
+                    painLocation: "",
+                    painDuration: "",
+                    painType: "",
+                    painIntensity: "5",
+                    previousTreatment: ""
+                });
+            };
+            loadSavedAnswers();
             fetchQuestions();
         }
     }, [open, lead.id]);
@@ -205,6 +225,22 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
             if (prescriptionData?.decision === "refused" && updateData.refusal_reason) {
                 updateData.ai_summary = (updateData.ai_summary || lead.ai_summary || "") + `\n[Отказ: ${updateData.refusal_reason}]`;
+            }
+
+            // Сохраняем ответы администратора в leads_crm (если режим не doctor)
+            if (mode !== "doctor" && adminData?.answers) {
+                try {
+                    await (supabase as any)
+                        .from("leads_crm")
+                        .update({
+                            diagnostic_admin_answers: adminData.answers,
+                            diagnostic_admin_comment: adminData.adminComment || ""
+                        })
+                        .eq("id", lead.id);
+                } catch (e) {
+                    // поля могут не существовать в текущей схеме — игнорируем
+                    console.warn("diagnostic_admin_answers column missing, skipping save");
+                }
             }
 
             let { error: updateError } = await (supabase as any)
