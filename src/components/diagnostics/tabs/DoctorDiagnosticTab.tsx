@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Lead } from "../../crm/KanbanBoard";
 import { AdminFormData, Question } from "./AdminDiagnosticTab";
+import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -23,18 +24,16 @@ export interface DoctorQuestion {
 }
 
 export const DEFAULT_DOCTOR_QUESTIONS: DoctorQuestion[] = [
-    { id: "main_complaint", label: "Основная жалоба", section: "complaints", type: "textarea" },
-    { id: "add_complaints", label: "Доп. жалобы", section: "complaints", type: "text" },
-    { id: "duration", label: "Длительность", section: "complaints", type: "text" },
-    { id: "triggers", label: "Что усиливает или уменьшает боль?", section: "complaints", type: "text" },
-    { id: "visual_exam", label: "Визуальная оценка", section: "exam", type: "textarea" },
-    { id: "palpation", label: "Пальпация и тесты", section: "exam", type: "textarea" },
-    { id: "diagnosis", label: "Предварительное заключение / Диагноз", section: "exam", type: "text" },
-    { id: "procedure_type", label: "Вид процедуры", section: "procedure", type: "text" },
-    { id: "procedure_reaction", label: "Реакция пациента после процедуры", section: "procedure", type: "textarea" },
-    { id: "recommended_course", label: "Рекомендованный курс лечения (Пакет)", section: "conclusion", type: "text" },
-    { id: "conclusion_comments", label: "Скрытый комментарий (для клиники)", section: "conclusion", type: "textarea" },
+    { id: "flex_forward", label: "Когда вы наклоняетесь вперед, боль усиливается или становится легче?", section: "complaints", type: "textarea" },
+    { id: "flex_back", label: "А если прогнуться назад, что происходит с болью?", section: "complaints", type: "textarea" },
+    { id: "sitting_pain", label: "Когда вы долго сидите, боль: усиливается / появляется / остаётся без изменений", section: "complaints", type: "textarea" },
+    { id: "walking_relief", label: "Если немного походить или размяться, становится легче?", section: "complaints", type: "textarea" },
+    { id: "movement_difficulty", label: "Есть ли движения, которые сейчас неприятно или сложно выполнять?", section: "exam", type: "textarea" },
+    { id: "avoidance", label: "Иногда пациенты начинают подсознательно избегать некоторых движений. Вы замечали такое за собой?", section: "exam", type: "textarea" },
+    { id: "neurological", label: "Бывает ли: резкая простреливающая боль при движении / ощущение натяжения в ноге или руке / усиление напряжения мышц?", section: "exam", type: "textarea" },
+    { id: "weakness", label: "Иногда пациенты чувствуют слабость в руке или ноге. Вы замечали что-то подобное?", section: "exam", type: "textarea" },
 ];
+
 
 export interface DoctorFormData {
     answers: Record<string, any>;
@@ -356,22 +355,24 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         <div className="space-y-4 animate-in fade-in pb-10 max-w-4xl mx-auto w-full">
              {/* Collapsible Admin Summary Box */}
              {adminData && (
-                <Collapsible open={adminInfoOpen} onOpenChange={setAdminInfoOpen}>
-                    <CollapsibleTrigger asChild>
-                        <div className="px-4 py-3 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-primary/10 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                    <Info className="h-3.5 w-3.5" />
-                                </div>
-                                <h3 className="font-bold text-primary text-xs uppercase tracking-widest">Информация от администратора</h3>
+                <div className="border border-primary/20 rounded-3xl overflow-hidden bg-primary/[0.02] shadow-sm mb-6">
+                    <div className="px-5 py-4 bg-primary/5 flex items-center justify-between border-b border-primary/10">
+                        <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                                <Info className="h-4 w-4" />
                             </div>
-                            {adminInfoOpen ? <ChevronUp className="h-4 w-4 text-primary" /> : <ChevronDown className="h-4 w-4 text-primary" />}
+                            <div>
+                                <h3 className="font-black text-primary text-[10px] uppercase tracking-[0.2em]">Данные от администратора</h3>
+                                <p className="text-[9px] text-primary/60 font-bold uppercase tracking-wider mt-0.5">Собрано на этапе 1</p>
+                            </div>
                         </div>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                        <div className="mt-1 border border-primary/10 rounded-2xl bg-primary/[0.02] animate-in slide-in-from-top-1 duration-200">
-                            {/* All admin questions with answers */}
-                            <div className="divide-y divide-primary/10">
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-none text-[9px] font-black px-2.5 py-0.5">
+                            ШАГ 1: READY
+                        </Badge>
+                    </div>
+                    <div>
+                        {/* All admin questions with answers */}
+                        <div className="divide-y divide-primary/5">
                                 {adminQuestions.length > 0 ? (
                                     adminQuestions.map((q, idx) => {
                                         const answer = adminData.answers?.[q.id];
@@ -420,15 +421,16 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                     </div>
                                 )}
                             </div>
-                        </div>
-                    </CollapsibleContent>
-                </Collapsible>
+                    </div>
+                </div>
             )}
 
-            {renderQuestionsSection("complaints", "1. Жалобы и анамнез", FileText)}
-            {renderQuestionsSection("exam", "2. Объективный осмотр", Stethoscope)}
-            {renderQuestionsSection("procedure", "3. Первая процедура", Zap)}
-            {renderQuestionsSection("conclusion", "4. План лечения и итог", Activity)}
+            {renderQuestionsSection("complaints", "1. Жалобы и двигательные тесты", FileText)}
+            {renderQuestionsSection("exam", "2. Функциональная оценка и симптомы", Activity)}
+            
+            {/* Скрываем пустые секции если в них нет вопросов */}
+            {questions.some(q => q.section === "procedure") && renderQuestionsSection("procedure", "3. Первая процедура", Zap)}
+            {questions.some(q => q.section === "conclusion") && renderQuestionsSection("conclusion", "4. План лечения и итог", Stethoscope)}
 
             {!readOnly && (
                 <div className="flex justify-end pt-4">

@@ -172,7 +172,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-                <div className="lg:col-span-12 xl:col-span-6 flex flex-row items-center gap-4 bg-card p-5 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
+                <div className="lg:col-span-12 xl:col-span-6 flex flex-row flex-wrap items-center gap-y-3 gap-x-4 bg-card p-5 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40" />
                     
                     {/* Иконка врача */}
@@ -181,8 +181,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     </div>
 
                     {/* Имя + бейджи */}
-                    <div className="flex-1 min-w-0 overflow-hidden">
-                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight whitespace-nowrap overflow-visible">{doctor.name}</h2>
+                    <div className="flex-1 min-w-[200px]">
+                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight">{doctor.name}</h2>
                         <div className="flex gap-1.5 mt-1.5">
                             <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 whitespace-nowrap shrink-0">
                                 {doctor.specialty}
@@ -194,7 +194,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     </div>
 
                     {/* Табы */}
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 ml-auto lg:ml-0">
                         <TabsList className="bg-muted/30 p-1 rounded-2xl h-11">
                             <TabsTrigger value="schedule" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
                                 <Calendar className="h-3.5 w-3.5" /> ГРАФИК
