@@ -875,23 +875,27 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </div>
 
 
-                {/* Источник — показываем оффер и CTA из параметра btn */}
+                {/* Источник — оффер + CTA */}
                 {(() => {
                   const rawSource = (lead.source || "").trim();
-                  let offer = "—";
-                  let cta: string | null = null;
+
+                  // Очищаем строку от технических шумов
+                  const cleanText = (s: string) =>
+                    s.replace(/_/g, " ")                    // подчёркивания → пробелы
+                     .replace(/^(cta|btn|hero|popup)\s+/gi, "")  // убираем технические префиксы в начале
+                     .replace(/\s{2,}/g, " ")
+                     .trim();
+
+                  let offer = "";
+                  let cta = "";
 
                   try {
-                    // Парсим source как URL query string
                     const params = new URLSearchParams(rawSource);
                     const btn = params.get("btn");
 
                     if (btn) {
-                      // btn вида "hero_v2_грыжи_спина_шея" или "hero_записаться_на_диагностику"
-                      // Разбиваем по "_" и ищем где начинается CTA (глагол/действие)
-                      // Эвристика: CTA начинается с таких слов как записаться, узнать, получить, оставить, заказать, попробовать, скачать
-                      const ctaKeywords = ["записаться", "узнать", "получить", "оставить", "заказать", "попробовать", "скачать", "записаться_на", "cta", "кнопка", "btn"];
                       const parts = btn.split("_");
+                      const ctaKeywords = ["записаться", "узнать", "получить", "оставить", "заказать", "скачать", "cta", "кнопка"];
                       let ctaStart = -1;
                       for (let i = 0; i < parts.length; i++) {
                         if (ctaKeywords.some(k => parts.slice(i).join("_").toLowerCase().startsWith(k))) {
@@ -900,44 +904,48 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                         }
                       }
                       if (ctaStart > 0) {
-                        offer = parts.slice(0, ctaStart).join("_");
-                        cta = parts.slice(ctaStart).join(" ");
+                        offer = cleanText(parts.slice(0, ctaStart).join("_"));
+                        cta = cleanText(parts.slice(ctaStart).join("_"));
                       } else {
-                        // Нет явного CTA — весь btn = оффер
-                        offer = btn;
+                        offer = cleanText(btn);
                       }
                     } else if (rawSource && !rawSource.includes("=")) {
-                      // Исходный формат "Оффер | CTA"
                       const pipeIdx = rawSource.indexOf("|");
                       if (pipeIdx !== -1) {
-                        offer = rawSource.slice(0, pipeIdx).trim();
-                        cta = rawSource.slice(pipeIdx + 1).trim().replace(/^utm_content=/i, "").trim() || null;
+                        offer = cleanText(rawSource.slice(0, pipeIdx));
+                        cta = cleanText(rawSource.slice(pipeIdx + 1).replace(/^utm_content=/i, ""));
                       } else {
-                        offer = rawSource;
+                        offer = cleanText(rawSource);
                       }
-                    } else if (rawSource && !rawSource.includes("=")) {
-                      offer = rawSource;
                     }
                   } catch {
-                    offer = rawSource || "—";
+                    offer = cleanText(rawSource);
                   }
+
+                  if (!offer && !cta) return null;
 
                   return (
                     <div className="py-1.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 text-muted-foreground shrink-0">
-                          <Globe className="h-3.5 w-3.5 mt-0.5" />
-                          <span className="text-xs">Источник</span>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 min-w-0">
-                          <span className="text-xs font-bold text-primary text-right leading-snug break-words">
-                            {offer}
-                          </span>
-                          {cta && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-semibold text-primary/90 tracking-wide text-right">
-                              🖱 {cta}
-                            </span>
-                          )}
+                      <div className="flex items-start gap-2">
+                        <Globe className="h-3.5 w-3.5 mt-1 text-muted-foreground shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">Источник</p>
+                          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 space-y-1.5">
+                            {offer && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium w-10 shrink-0">Оффер</span>
+                                <span className="text-xs font-semibold text-primary leading-snug">{offer}</span>
+                              </div>
+                            )}
+                            {cta && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium w-10 shrink-0">CTA</span>
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground/80 leading-snug">
+                                  🖱 {cta}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
