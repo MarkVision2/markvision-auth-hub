@@ -11,6 +11,7 @@ export interface Workspace {
 }
 
 export const HQ_ID = "7e175bca-c8bd-49de-b348-4acc348e5a91";
+// HQ is the default workspace for MarkVision AI
 const HQ: Workspace = { id: HQ_ID, name: "MarkVision AI", type: "agency" };
 
 function loadCachedProjects(): Workspace[] {
