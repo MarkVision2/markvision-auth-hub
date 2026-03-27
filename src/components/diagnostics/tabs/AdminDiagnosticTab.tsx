@@ -406,7 +406,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <div className={cn(
                                         "flex items-center justify-center h-12 w-12 rounded-[22px] text-xs font-black transition-all duration-500 border-2",
                                         isCurrent ? "border-primary bg-primary shadow-xl shadow-primary/30 text-white scale-110" :
-                                        isCompleted ? "bg-primary border-primary text-white" : "border-border/60 bg-white text-muted-foreground/40"
+                                        isCompleted ? "bg-primary border-primary text-white" : "border-border/60 bg-secondary/10 text-muted-foreground/40"
                                     )}>
                                         {isCompleted ? <Check className="h-5 w-5 stroke-[3]" /> : s.id}
                                     </div>
@@ -458,9 +458,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                         <div className="grid gap-6">
                             {questions.map((q, qIndex) => (
-                                <div key={q.id} className="group/q bg-white border border-border/40 hover:border-primary/30 rounded-[32px] p-6 transition-all hover:shadow-xl hover:shadow-primary/5 relative">
+                                <div key={q.id} className="group/q bg-card border border-border/20 hover:border-primary/30 rounded-[32px] p-6 transition-all hover:shadow-xl hover:shadow-black/20 relative">
                                     <div className="flex items-start gap-6">
-                                        <div className="h-10 w-10 rounded-2xl bg-primary/5 text-primary flex flex-col items-center justify-center shrink-0 border border-primary/10 group-hover/q:scale-110 transition-transform">
+                                        <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex flex-col items-center justify-center shrink-0 border border-primary/20 group-hover/q:scale-110 transition-transform">
                                             <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-40">Q</span>
                                             <span className="text-sm font-black leading-none">{qIndex + 1}</span>
                                         </div>
@@ -528,7 +528,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                                         "h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
                                                                         isSelected
                                                                             ? "border-primary bg-primary shadow-lg shadow-primary/20 text-white"
-                                                                            : "border-border/40 bg-white text-muted-foreground/40 hover:border-primary/20",
+                                                                            : "border-border/20 bg-secondary/20 text-muted-foreground/40 hover:border-primary/20",
                                                                         !readOnly && "cursor-pointer"
                                                                     )}
                                                                     onClick={() => {
@@ -735,7 +735,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                 <div className="p-10 rounded-[40px] bg-secondary/10 border-none relative overflow-hidden group">
                                     <div className="relative z-10 space-y-6">
                                         <div className="flex items-center gap-4">
-                                            <div className="h-14 w-14 rounded-3xl bg-white shadow-xl flex items-center justify-center">
+                                            <div className="h-14 w-14 rounded-3xl bg-background shadow-xl flex items-center justify-center border border-border/20">
                                                 <Smartphone className="h-7 w-7 text-[#00A2E8]" />
                                             </div>
                                             <div>
@@ -787,7 +787,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                         "flex-1 flex items-center justify-between p-7 rounded-[32px] border-2 transition-all duration-300",
                                                         formData.paymentStatus === item.id 
                                                             ? "border-primary bg-primary shadow-2xl shadow-primary/20 text-white translate-x-2" 
-                                                            : "border-border/30 bg-white hover:border-primary/20",
+                                                            : "border-border/20 bg-card hover:border-primary/20",
                                                         !readOnly && "cursor-pointer"
                                                     )}
                                                 >

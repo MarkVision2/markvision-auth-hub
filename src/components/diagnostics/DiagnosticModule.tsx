@@ -461,16 +461,16 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* Main Content Area */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-[#fafafa]">
+                    <div className="flex-1 flex flex-col overflow-hidden bg-background/50">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-8 pt-6 pb-0 bg-background shrink-0 z-10">
-                                <TabsList className="bg-secondary/20 p-1.5 h-16 rounded-[24px] border border-border/40 gap-2 flex w-full max-w-3xl">
+                                <TabsList className="bg-secondary/10 p-1.5 h-16 rounded-[24px] border border-border/20 gap-2 flex w-full max-w-3xl">
                                     {mode !== "doctor" && (
                                         <TabsTrigger 
                                             value="admin" 
-                                            className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
+                                            className="flex-1 rounded-2xl h-full data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:shadow-black/20 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                         >
-                                            <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
                                                 <ClipboardList className="h-4 w-4 text-primary" />
                                             </div>
                                             I. Сбор анамнеза
@@ -480,18 +480,18 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                         <>
                                             <TabsTrigger 
                                                 value="doctor" 
-                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
+                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:shadow-black/20 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                             >
-                                                <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
                                                     <Stethoscope className="h-4 w-4 text-primary" />
                                                 </div>
                                                 II. Врачебный осмотр
                                             </TabsTrigger>
                                             <TabsTrigger 
                                                 value="prescription" 
-                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-background data-[state=active]:shadow-lg data-[state=active]:shadow-black/5 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
+                                                className="flex-1 rounded-2xl h-full data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-lg data-[state=active]:shadow-black/20 gap-3 font-black text-[10px] uppercase tracking-widest transition-all"
                                             >
-                                                <div className="h-8 w-8 rounded-xl bg-primary/5 flex items-center justify-center">
+                                                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
                                                     <FileText className="h-4 w-4 text-primary" />
                                                 </div>
                                                 III. Протокол лечения
@@ -505,7 +505,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                 <div className="p-8 min-h-full">
                                     {mode !== "doctor" && (
                                         <TabsContent value="admin" className="m-0 focus-visible:outline-none">
-                                            <div className="bg-white border border-border/40 rounded-[40px] shadow-sm p-8">
+                                            <div className="bg-card border border-border/20 rounded-[40px] shadow-2xl shadow-black/20 p-8">
                                                 <AdminDiagnosticTab 
                                                     lead={lead} 
                                                     data={adminData} 

@@ -222,8 +222,8 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                     <span className="text-[10px] uppercase font-black text-primary/40 tracking-[0.2em] block">Программа процедур</span>
                     {hasWeeks ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="p-4 bg-background border border-border/20 rounded-2xl relative overflow-hidden group/week">
-                                <div className="absolute -right-2 -top-2 h-12 w-12 bg-primary/5 rounded-full flex items-center justify-center opacity-20 group-hover/week:scale-110 transition-transform">
+                            <div className="p-4 bg-secondary/5 border border-border/20 rounded-2xl relative overflow-hidden group/week">
+                                <div className="absolute -right-2 -top-2 h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center opacity-20 group-hover/week:scale-110 transition-transform">
                                     <span className="text-xl font-black">1</span>
                                 </div>
                                 <span className="text-[10px] uppercase font-black text-primary tracking-widest block mb-3">Неделя 1</span>
@@ -235,8 +235,8 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                                     ))}
                                 </ul>
                             </div>
-                            <div className="p-4 bg-background border border-border/20 rounded-2xl relative overflow-hidden group/week">
-                                <div className="absolute -right-2 -top-2 h-12 w-12 bg-primary/5 rounded-full flex items-center justify-center opacity-20 group-hover/week:scale-110 transition-transform">
+                            <div className="p-4 bg-secondary/5 border border-border/20 rounded-2xl relative overflow-hidden group/week">
+                                <div className="absolute -right-2 -top-2 h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center opacity-20 group-hover/week:scale-110 transition-transform">
                                     <span className="text-xl font-black">2</span>
                                 </div>
                                 <span className="text-[10px] uppercase font-black text-primary tracking-widest block mb-3">Неделя 2</span>
@@ -574,8 +574,8 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                     {/* Summary & Action */}
                     <div className="space-y-8 animate-in slide-in-from-bottom-8 duration-700">
                         {selectedPkg && (
-                            <div className="relative overflow-hidden p-1 bg-gradient-to-br from-primary/30 to-emerald-500/30 rounded-[48px] shadow-2xl">
-                                <div className="bg-white/95 backdrop-blur-xl rounded-[44px] p-10 flex flex-col md:flex-row md:items-center justify-between gap-10 relative">
+                            <div className="relative overflow-hidden p-1 bg-gradient-to-br from-primary/30 to-emerald-500/30 rounded-[48px] shadow-2xl shadow-black/40">
+                                <div className="bg-card/95 backdrop-blur-xl rounded-[44px] p-10 flex flex-col md:flex-row md:items-center justify-between gap-10 relative border border-white/5">
                                     <div className="space-y-8 flex-1">
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">

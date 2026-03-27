@@ -279,7 +279,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         return (
             <div className="bg-card border border-border/40 rounded-[32px] overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/20">
                 <div 
-                    className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-secondary/5 transition-colors"
+                    className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-secondary/10 transition-colors"
                     onClick={() => toggleSection(section)}
                 >
                     <div className="flex items-center gap-4">
@@ -309,7 +309,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                 </div>
                 
                 {isOpen && (
-                    <div className="divide-y divide-border/20 border-t border-border/20 bg-secondary/[0.02] animate-in slide-in-from-top-2 duration-300">
+                    <div className="divide-y divide-border/20 border-t border-border/20 bg-secondary/5 animate-in slide-in-from-top-2 duration-300">
                         {sectionQuestions.length === 0 ? (
                             <div className="px-6 py-10 text-center opacity-40">
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Нет вопросов в этой секции</p>
@@ -366,19 +366,19 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
     return (
         <div className="space-y-6 animate-in fade-in pb-12 max-w-5xl mx-auto w-full">
              {/* Redesigned Admin Data: High-density compact card */}
-             {adminData && (
-                <div className="bg-primary/5 border border-primary/20 rounded-[40px] overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="px-8 py-5 bg-primary/10 flex items-center justify-between border-b border-primary/20">
+            {adminData && (
+                <div className="bg-secondary/5 border border-border/20 rounded-[40px] overflow-hidden shadow-2xl shadow-black/20 hover:shadow-black/30 transition-shadow duration-300">
+                    <div className="px-8 py-5 bg-secondary/10 flex items-center justify-between border-b border-border/20">
                         <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-2xl bg-primary shadow-lg shadow-primary/20 text-white flex items-center justify-center">
+                            <div className="h-10 w-10 rounded-2xl bg-primary/20 shadow-lg shadow-black/10 text-primary flex items-center justify-center">
                                 <Info className="h-5 w-5" />
                             </div>
                             <div>
-                                <h3 className="font-black text-primary text-xs uppercase tracking-[0.2em] leading-tight">Данные от администратора</h3>
-                                <p className="text-[10px] text-primary/60 font-black uppercase tracking-wider mt-1">Опрос на этапе регистрации</p>
+                                <h3 className="font-black text-foreground text-xs uppercase tracking-[0.2em] leading-tight">Данные от администратора</h3>
+                                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider mt-1">Опрос на этапе регистрации</p>
                             </div>
                         </div>
-                        <Badge className="bg-white text-primary hover:bg-white text-[10px] font-black px-4 py-1.5 rounded-full shadow-sm">
+                        <Badge className="bg-primary text-white hover:bg-primary/90 text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-primary/20">
                             READY
                         </Badge>
                     </div>
