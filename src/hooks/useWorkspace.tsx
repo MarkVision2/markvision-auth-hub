@@ -44,26 +44,59 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Workspace[]>(loadCachedProjects);
 
   const refreshProjects = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("id, name")
-      .order("name");
+    try {
+      // 1. Fetch from projects table (primary source)
+      const { data: projectsData, error: projectsError } = await supabase
+        .from("projects")
+        .select("id, name")
+        .order("name");
 
-    if (error) {
-      console.warn("WorkspaceProvider: projects fetch error:", error.message);
-      return;
-    }
+      // 2. Fetch from clients_config as fallback/merging
+      const { data: clientsData, error: clientsError } = await (supabase as any)
+        .from("clients_config")
+        .select("id, client_name, project_id")
+        .eq("is_active", true);
 
-    if (data) {
-      const mapped = data
-        .filter(p => p.id !== HQ_ID) // HQ is prepended separately
-        .map(p => ({
-          id: p.id,
-          name: p.name,
-          type: "client" as const,
-        }));
-      setProjects(mapped);
-      localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(mapped));
+      if (projectsError && clientsError) {
+        console.warn("WorkspaceProvider: both fetches failed", projectsError, clientsError);
+        return;
+      }
+
+      const foundIds = new Set<string>();
+      const combined: Workspace[] = [];
+
+      // Add actual projects
+      if (projectsData && Array.isArray(projectsData)) {
+        (projectsData as any[]).forEach(p => {
+          if (!p.id || p.id === HQ_ID || foundIds.has(p.id)) return;
+          foundIds.add(p.id);
+          combined.push({
+            id: p.id,
+            name: p.name || "Unnamed Project",
+            type: "client"
+          });
+        });
+      }
+
+      // Add clients that might not be in the projects list (due to RLS or missing rows)
+      if (clientsData && Array.isArray(clientsData)) {
+        (clientsData as any[]).forEach((c: any) => {
+          const id = c.project_id || c.id;
+          if (!id || id === HQ_ID || foundIds.has(id)) return;
+          foundIds.add(id);
+          combined.push({
+            id: id,
+            name: c.client_name || "Unnamed Client",
+            type: "client"
+          });
+        });
+      }
+
+      const sorted = combined.sort((a, b) => a.name.localeCompare(b.name));
+      setProjects(sorted);
+      localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(sorted));
+    } catch (err) {
+      console.error("WorkspaceProvider: unexpected error:", err);
     }
   }, []);
 
@@ -85,7 +118,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const createProject = useCallback(async (name: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("projects")
         .insert({ name })
         .select()
@@ -94,11 +127,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
 
       // Add project creator to project_members
-      if (user) {
-        const { error: memberError } = await supabase
+      if (user && data) {
+        const { error: memberError } = await (supabase as any)
           .from("project_members")
           .insert({
-            project_id: data.id,
+            project_id: (data as any).id,
             user_id: user.id
           });
 
@@ -108,9 +141,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       await refreshProjects();
-      if (data) {
-        setActiveId(data.id);
-        return data.id;
+      if (data && (data as any).id) {
+        setActiveId((data as any).id);
+        return (data as any).id;
       }
       return null;
     } catch (err: unknown) {
