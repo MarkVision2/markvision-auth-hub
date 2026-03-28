@@ -169,15 +169,15 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     }, [monthlyAppointments, todayAppointments]);
 
     return (
-        <div className="flex flex-col gap-6 h-full">
+        <div className="flex flex-col gap-4 h-full">
             {/* Top Stats & Profile Bar */}
             <div className="flex shrink-0">
-                <div className="w-full flex-1 flex flex-col sm:flex-row flex-wrap lg:items-center gap-y-4 gap-x-6 bg-card p-6 rounded-[40px] border border-border/60 shadow-sm relative overflow-hidden">
+                <div className="w-full flex-1 flex flex-col sm:flex-row flex-wrap lg:items-center gap-y-3 gap-x-4 bg-card p-4 rounded-[32px] border border-border/60 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-2 h-full bg-primary/40" />
                     
                     {/* Иконка врача */}
-                    <div className="h-16 w-16 rounded-[22px] bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner ml-2">
-                        <Stethoscope className="h-8 w-8 text-primary" />
+                    <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner ml-2">
+                        <Stethoscope className="h-6 w-6 text-primary" />
                     </div>
 
                     {/* Имя + бейджи */}
@@ -207,7 +207,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                 </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 min-h-0 flex-1">
+            <div className="flex flex-col lg:flex-row gap-4 min-h-0 flex-1">
                 {/* Main Content Area */}
                 <div className={cn(
                     "flex-1 min-w-0 space-y-4 transition-all duration-500",
@@ -267,12 +267,12 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     )}
 
                     {activeTab === "overview" && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                                 {/* Рейтинг Врача */}
-                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/30 p-6 rounded-[40px] shadow-xl shadow-amber-500/20 text-white relative overflow-hidden group">
+                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/30 p-5 rounded-[32px] shadow-xl shadow-amber-500/20 text-white relative overflow-hidden group">
                                     <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
-                                        <Trophy className="h-32 w-32" />
+                                        <Trophy className="h-28 w-28" />
                                     </div>
                                     <div className="relative z-10">
                                         <div className="flex items-center justify-between mb-4">
@@ -290,9 +290,9 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 </div>
 
                                 {/* Воронка: Количество пациентов */}
-                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group col-span-1 md:col-span-1 xl:col-span-1">
+                                <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group col-span-1 md:col-span-1 xl:col-span-1">
                                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
-                                        <Users className="h-32 w-32" />
+                                        <Users className="h-28 w-28" />
                                     </div>
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="h-10 w-10 rounded-[20px] bg-blue-500/10 text-blue-500 flex items-center justify-center shadow-inner">
@@ -319,7 +319,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 </div>
 
                                 {/* Сумма продаж */}
-                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
                                         <Briefcase className="h-24 w-24" />
                                     </div>
@@ -339,7 +339,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 </div>
 
                                 {/* Бонусы (Процент) */}
-                                <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-4 opacity-[0.04] group-hover:scale-110 transition-transform text-emerald-500">
                                         <TrendingUp className="h-24 w-24" />
                                     </div>
@@ -359,8 +359,8 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 </div>
                             </div>
 
-                            <div className="bg-card border border-border/60 rounded-[40px] p-8 shadow-sm">
-                                <div className="flex items-center justify-between mb-8">
+                            <div className="bg-card border border-border/60 rounded-[32px] p-5 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                                             <ClipboardList className="h-4 w-4" />
