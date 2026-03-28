@@ -636,9 +636,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                         </div>
 
                         {/* 2. Prepayment Policy & Status Selection */}
-                        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
                             {/* Left: Prepayment Details & Action Selection */}
-                            <div className="space-y-8">
+                            <div className="lg:col-span-3 space-y-8">
                                 <div className="p-8 rounded-[40px] bg-secondary/5 border border-white/5 space-y-6 relative overflow-hidden">
                                     <div className="flex items-start gap-5 relative z-10">
                                         <div className="h-14 w-14 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
@@ -708,7 +708,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             </div>
 
                             {/* Right: Conditional Action Area */}
-                            <div className="space-y-6 min-h-[400px]">
+                            <div className="lg:col-span-2 space-y-6 min-h-[400px]">
                                 {/* CASE: PENDING (Default or Selected) */}
                                 {(formData.paymentStatus === "pending" || !formData.paymentStatus) && (
                                     <div className="p-8 rounded-[40px] bg-primary shadow-2xl shadow-primary/20 space-y-8 animate-in zoom-in-95 duration-500 h-full flex flex-col justify-center">

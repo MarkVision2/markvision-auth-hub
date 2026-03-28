@@ -133,8 +133,8 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
 
     return (
         <div className="w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                {/* Left Column: Doctor & Date */}
+            <div className="flex flex-col gap-6">
+                {/* Top Section: Doctor & Date */}
                 <div className="space-y-6">
                     {/* Doctor Selection */}
                     <div className="space-y-3">
@@ -194,8 +194,8 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                     </div>
                 </div>
 
-                {/* Right Column: Time Slots & Confirmation */}
-                <div className="space-y-6">
+                {/* Bottom Section: Time Slots & Confirmation */}
+                <div className="space-y-6 pt-2 border-t border-border/40">
                     <div className={cn("space-y-4 transition-opacity duration-300", !date && "opacity-40 pointer-events-none")}>
                         <div className="flex items-center justify-between">
                             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/5 border border-primary/10 text-[9px] uppercase font-bold tracking-widest text-primary">
@@ -204,7 +204,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                             {isLoadingSlots && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                         </div>
                         
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                             {availableSlots.length > 0 ? (
                                 availableSlots.map(t => (
                                     <button
@@ -221,7 +221,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                                     </button>
                                 ))
                             ) : date ? (
-                                <div className="col-span-3 py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-border/60">
+                                <div className="col-span-4 sm:col-span-5 py-8 text-center bg-secondary/10 rounded-2xl border border-dashed border-border/60">
                                     <p className="text-[11px] text-muted-foreground font-medium italic">
                                         Нет свободного времени на эту дату
                                     </p>
@@ -231,7 +231,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
 
                         {!date && (
                             <p className="text-[10px] text-muted-foreground text-center italic py-4">
-                                Выберите дату на календаре слева
+                                Выберите дату в календаре выше
                             </p>
                         )}
                     </div>
