@@ -23,7 +23,7 @@ import {
   MapPin, DollarSign, ExternalLink, Clock, FileText, Plus,
   Globe, Hash, Loader2, Check, CheckCheck, Trash2, Copy, Sparkles,
   Timer, PhoneCall, PhoneOff, MicOff, Mic, Star, AlertTriangle,
-  Stethoscope, Edit2, Ban
+  Stethoscope, Edit2, Ban, ChevronDown
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -684,29 +684,15 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
         <div className="flex flex-1 overflow-hidden">
           {/* LEFT — Досье */}
           <div className="w-[35%] border-r border-border overflow-y-auto">
-            <div className="px-5 py-3 border-b border-border space-y-2">
+            <div className="px-4 py-3 border-b border-border space-y-2">
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs border-border h-9 gap-1.5 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-medium"
-                  onClick={handleStartCall}
-                  disabled={isCallActive}
-                >
-                  <PhoneCall className="h-3.5 w-3.5" /> Позвонить
+                <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1.5 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-medium" onClick={handleStartCall} disabled={isCallActive}>
+                  <PhoneCall className="h-3 w-3" /> Позвонить
                 </Button>
-                <Button variant="outline" size="sm" className="text-xs border-border h-9 gap-1.5 text-[hsl(var(--status-good))]">
-                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                <Button variant="outline" size="sm" className="text-xs border-border h-8 gap-1.5 text-[hsl(var(--status-good))]">
+                  <MessageCircle className="h-3 w-3" /> WhatsApp
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-[10px] border-border h-9 gap-1.5 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-bold uppercase tracking-widest"
-                onClick={() => setDiagnosticOpen(true)}
-              >
-                <Stethoscope className="h-4 w-4" /> Запись на диагностику
-              </Button>
               <div className="grid grid-cols-2 gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
@@ -785,6 +771,14 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 <Button
                   variant="outline"
                   size="sm"
+                  className="text-xs border-border h-8 gap-1 bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 font-medium uppercase tracking-wider"
+                  onClick={() => setDiagnosticOpen(true)}
+                >
+                  <Stethoscope className="h-3 w-3" /> Диагностика
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
                   onClick={async () => {
                     try {
@@ -801,38 +795,39 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                     }
                   }}
                 >
-                  <Timer className="h-3 w-3" /> LTV
+                  <Timer className="h-3 w-3" /> В отложенные
                 </Button>
               </div>
             </div>
 
-            <div className="px-5 py-3 border-b border-border">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Воронка</label>
-              <Tabs value={pipeline} onValueChange={async (v) => {
-                setPipeline(v);
-                const defaultStage = v === "doctor" ? "Лечение начато" : "Новая заявка";
-                setStage(defaultStage);
-                await (supabase as any).from("leads_crm").update({ status: defaultStage }).eq("id", lead.id);
-                onLeadUpdated?.();
-              }} className="mt-1.5">
-                <TabsList className="h-8 bg-secondary/50 w-full">
-                  <TabsTrigger value="main" className="text-[10px] flex-1">Основная</TabsTrigger>
-                  <TabsTrigger value="doctor" className="text-[10px] flex-1">Врача</TabsTrigger>
-                </TabsList>
-              </Tabs>
+            <div className="px-4 py-2 border-b border-border space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Tabs value={pipeline} onValueChange={async (v) => {
+                    setPipeline(v);
+                    const defaultStage = v === "doctor" ? "Лечение начато" : "Новая заявка";
+                    setStage(defaultStage);
+                    await (supabase as any).from("leads_crm").update({ status: defaultStage }).eq("id", lead.id);
+                    onLeadUpdated?.();
+                  }} className="w-full">
+                    <TabsList className="h-7 bg-secondary/50 w-full p-0.5">
+                      <TabsTrigger value="main" className="text-[10px] flex-1 py-1">Основная</TabsTrigger>
+                      <TabsTrigger value="doctor" className="text-[10px] flex-1 py-1">Врача</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                <div className="flex-1">
+                  <Select value={stage} onValueChange={handleStageChange}>
+                    <SelectTrigger className="h-7 bg-secondary/50 border-border text-[11px] font-medium"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(pipeline === "doctor" ? DOCTOR_STAGES : MAIN_STAGES).map((s) => <SelectItem key={s} value={s} className="text-[11px] font-medium">{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
-            <div className="px-5 py-3 border-b border-border">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Этап воронки</label>
-              <Select value={stage} onValueChange={handleStageChange}>
-                <SelectTrigger className="mt-1.5 bg-secondary/50 border-border text-sm h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(pipeline === "doctor" ? DOCTOR_STAGES : MAIN_STAGES).map((s) => <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="px-5 py-3 border-b border-border space-y-2.5">
+            <div className="px-4 py-2 border-b border-border space-y-1">
               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Детали</label>
               <div className="space-y-1.5">
                 {/* Сумма — Editable */}
@@ -875,82 +870,101 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </div>
 
 
-                {/* Источник — оффер + CTA */}
-                {(() => {
-                  const rawSource = (lead.source || "").trim();
+                <details className="group [&_summary::-webkit-details-marker]:hidden border border-border/40 rounded-lg bg-secondary/20 overflow-hidden">
+                  <summary className="flex items-center justify-between cursor-pointer px-3 py-2 text-[10px] text-muted-foreground hover:bg-secondary/40 transition-colors select-none">
+                    <span className="font-semibold uppercase tracking-wider flex items-center gap-1.5"><Globe className="h-3 w-3" /> Детали источника и UTM</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-open:rotate-180" />
+                  </summary>
+                  <div className="px-3 pb-3 space-y-3 pt-1 border-t border-border/30 bg-background/50">
+                    {(() => {
+                      const rawSource = (lead.source || "").trim();
 
-                  // Очищаем строку от технических шумов
-                  const cleanText = (s: string) =>
-                    s.replace(/_/g, " ")                    // подчёркивания → пробелы
-                     .replace(/^(cta|btn|hero|popup)\s+/gi, "")  // убираем технические префиксы в начале
-                     .replace(/\s{2,}/g, " ")
-                     .trim();
+                      // Очищаем строку от технических шумов
+                      const cleanText = (s: string) =>
+                        s.replace(/_/g, " ")                    // подчёркивания → пробелы
+                         .replace(/^(cta|btn|hero|popup)\s+/gi, "")  // убираем технические префиксы в начале
+                         .replace(/\s{2,}/g, " ")
+                         .trim();
 
-                  let offer = "";
-                  let cta = "";
+                      let offer = "";
+                      let cta = "";
 
-                  try {
-                    const params = new URLSearchParams(rawSource);
-                    const btn = params.get("btn");
+                      try {
+                        const params = new URLSearchParams(rawSource);
+                        const btn = params.get("btn");
 
-                    if (btn) {
-                      const parts = btn.split("_");
-                      const ctaKeywords = ["записаться", "узнать", "получить", "оставить", "заказать", "скачать", "cta", "кнопка"];
-                      let ctaStart = -1;
-                      for (let i = 0; i < parts.length; i++) {
-                        if (ctaKeywords.some(k => parts.slice(i).join("_").toLowerCase().startsWith(k))) {
-                          ctaStart = i;
-                          break;
+                        if (btn) {
+                          const parts = btn.split("_");
+                          const ctaKeywords = ["записаться", "узнать", "получить", "оставить", "заказать", "скачать", "cta", "кнопка"];
+                          let ctaStart = -1;
+                          for (let i = 0; i < parts.length; i++) {
+                            if (ctaKeywords.some(k => parts.slice(i).join("_").toLowerCase().startsWith(k))) {
+                              ctaStart = i;
+                              break;
+                            }
+                          }
+                          if (ctaStart > 0) {
+                            offer = cleanText(parts.slice(0, ctaStart).join("_"));
+                            cta = cleanText(parts.slice(ctaStart).join("_"));
+                          } else {
+                            offer = cleanText(btn);
+                          }
+                        } else if (rawSource && !rawSource.includes("=")) {
+                          const pipeIdx = rawSource.indexOf("|");
+                          if (pipeIdx !== -1) {
+                            offer = cleanText(rawSource.slice(0, pipeIdx));
+                            cta = cleanText(rawSource.slice(pipeIdx + 1).replace(/^utm_content=/i, ""));
+                          } else {
+                            offer = cleanText(rawSource);
+                          }
                         }
-                      }
-                      if (ctaStart > 0) {
-                        offer = cleanText(parts.slice(0, ctaStart).join("_"));
-                        cta = cleanText(parts.slice(ctaStart).join("_"));
-                      } else {
-                        offer = cleanText(btn);
-                      }
-                    } else if (rawSource && !rawSource.includes("=")) {
-                      const pipeIdx = rawSource.indexOf("|");
-                      if (pipeIdx !== -1) {
-                        offer = cleanText(rawSource.slice(0, pipeIdx));
-                        cta = cleanText(rawSource.slice(pipeIdx + 1).replace(/^utm_content=/i, ""));
-                      } else {
+                      } catch {
                         offer = cleanText(rawSource);
                       }
-                    }
-                  } catch {
-                    offer = cleanText(rawSource);
-                  }
 
-                  if (!offer && !cta) return null;
+                      if (!offer && !cta) return null;
 
-                  return (
-                    <div className="py-1.5">
-                      <div className="flex items-start gap-2">
-                        <Globe className="h-3.5 w-3.5 mt-1 text-muted-foreground shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">Источник</p>
-                          <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-3 py-2 space-y-1.5">
+                      return (
+                        <div className="space-y-1.5">
+                          <p className="text-[9px] text-muted-foreground uppercase font-black">Связка рекламы</p>
+                          <div className="rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 space-y-1">
                             {offer && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium w-10 shrink-0">Оффер</span>
-                                <span className="text-xs font-semibold text-primary leading-snug">{offer}</span>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[9px] text-muted-foreground uppercase font-black shrink-0 mt-0.5">Оффер</span>
+                                <span className="text-[11px] font-bold text-primary leading-tight">{offer}</span>
                               </div>
                             )}
                             {cta && (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium w-10 shrink-0">CTA</span>
-                                <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground/80 leading-snug">
-                                  🖱 {cta}
-                                </span>
+                              <div className="flex items-start gap-2">
+                                <span className="text-[9px] text-muted-foreground uppercase font-black shrink-0 mt-0.5">CTA</span>
+                                <span className="text-[11px] font-medium text-foreground/80 leading-tight">🖱 {cta}</span>
                               </div>
                             )}
                           </div>
                         </div>
+                      );
+                    })()}
+
+                    <div className="space-y-1">
+                      <p className="text-[9px] text-muted-foreground uppercase font-black">UTM-метки</p>
+                      <div className="space-y-0.5">
+                        {[
+                          { label: "Source", value: (lead as any).utm_source },
+                          { label: "Campaign", value: lead.utm_campaign },
+                          { label: "Medium", value: (lead as any).utm_medium },
+                          { label: "Content", value: (lead as any).utm_content },
+                          { label: "Term", value: (lead as any).utm_term },
+                        ].map((utm) => utm.value && (
+                          <div key={utm.label} className="flex items-center gap-2">
+                            <Hash className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                            <span className="text-[9px] text-muted-foreground w-12">{utm.label}:</span>
+                            <span className="text-[10px] font-medium text-foreground/80 truncate">{utm.value}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  );
-                })()}
+                  </div>
+                </details>
 
                 {[
                   { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
@@ -980,27 +994,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 ))}
               </div>
 
-              <Separator className="my-2 bg-border/40" />
-
-              <div className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1">UTM Метки</p>
-                {[
-                  { label: "Источник (utm_source)", value: (lead as any).utm_source },
-                  { label: "Кампания (utm_campaign)", value: lead.utm_campaign },
-                  { label: "Тип трафика (utm_medium)", value: (lead as any).utm_medium },
-                  { label: "Контент (utm_content)", value: (lead as any).utm_content },
-                  { label: "Ключевое слово (utm_term)", value: (lead as any).utm_term },
-                ].map((utm) => utm.value && (
-                  <div key={utm.label} className="flex flex-col py-1">
-                    <span className="text-[9px] text-muted-foreground">{utm.label}</span>
-                    <span className="text-xs font-medium text-foreground/70 truncate">{utm.value}</span>
-                  </div>
-                ))}
-                {!(lead as any).utm_source && !(lead as any).utm_medium && !(lead as any).utm_content && !(lead as any).utm_term && (
-                  <p className="text-[10px] text-muted-foreground italic">UTM-метки отсутствуют</p>
-                )}
-              </div>
-            </div>
+             </div>
 
             {/* AI Analysis / Last Call Result */}
             <div className="px-5 py-3">
