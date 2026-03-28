@@ -10,6 +10,7 @@ import Automations from "@/components/crm/Automations";
 import AddLeadSheet from "@/components/crm/AddLeadSheet";
 import TodayTasksPanel from "@/components/crm/TodayTasksPanel";
 import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type AITask } from "@/components/crm/types";
 import {
@@ -48,7 +49,6 @@ export default function CrmSystem() {
   const { active } = useWorkspace();
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [prevLeadsCount, setPrevLeadsCount] = useState(0);
   const [tasks, setTasks] = useState<AITask[]>([]);
 
   useEffect(() => {
@@ -56,6 +56,7 @@ export default function CrmSystem() {
       setLeads([]);
       return;
     }
+    let isMounted = true;
     const load = async () => {
       try {
         let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
@@ -63,12 +64,14 @@ export default function CrmSystem() {
 
         const { data, error } = await query.order("created_at", { ascending: false });
         if (error) throw error;
-        if (data) {
-          setPrevLeadsCount(leads.length);
+        if (data && isMounted) {
           setLeads(data);
         }
-      } catch (err: unknown) {
+      } catch (err: any) {
         console.error("CRM leads fetch error:", err);
+        if (isMounted) {
+          toast({ title: "Ошибка загрузки CRM", description: err?.message || "Не удалось загрузить лиды", variant: "destructive" });
+        }
       }
     };
     load();
@@ -76,7 +79,7 @@ export default function CrmSystem() {
       .channel("crm_kpi_rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => { isMounted = false; supabase.removeChannel(ch); };
   }, [active.id]);
 
   const handleTaskGenerated = useCallback((task: AITask) => {
@@ -117,7 +120,7 @@ export default function CrmSystem() {
 
   return (
     <DashboardLayout breadcrumb="CRM Система">
-      <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-7rem)]">
+      <div className="flex flex-col h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] min-h-0">
         {/* ─── Header ─── */}
         <div className="flex items-center justify-between shrink-0 mb-6">
           <div className="flex items-center gap-4">

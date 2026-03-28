@@ -98,7 +98,7 @@ const DiagnosticsDashboardPage = () => {
       if (l.status === "Визит совершен" || l.pipeline === "doctor") {
         map[doctor].count++;
         map[doctor].revenue += (Number(l.amount) || 0);
-        (l.prescribed_packages as string[] || []).forEach(p => map[doctor].packages.add(p));
+        ((l.prescribed_packages as string[]) || []).forEach(p => { if (p) map[doctor].packages.add(p); });
       }
     });
     return Object.entries(map).sort((a, b) => b[1].revenue - a[1].revenue);

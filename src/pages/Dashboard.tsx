@@ -148,6 +148,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetch() {
       setLoading(true);
       try {
@@ -180,16 +181,17 @@ export default function Dashboard() {
           clientsData = data || [];
         }
 
-        // agency_metrics_view already returns all totals (spend, meta_leads, impressions, clicks, followers, is_agency, etc.)
-        // from clients_config which is kept in sync by recalculate_client_totals RPC
+        if (!isMounted) return;
         setClients(clientsData);
       } catch (e: any) {
+        if (!isMounted) return;
         toast({ title: "Ошибка", description: e.message, variant: "destructive" });
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     fetch();
+    return () => { isMounted = false; };
   }, [active.id]);
 
   const [agencyFinance, setAgencyFinance] = useState<{ mrr: number; costs: number } | null>(null);
@@ -244,6 +246,9 @@ export default function Dashboard() {
     })();
 
   const aggregateClientData = (clientList: ClientMetric[], id: string, name: string) => {
+    if (!clientList || !Array.isArray(clientList)) {
+      return { client_id: id, project_id: id, client_name: name, is_active: true, spend: 0, meta_leads: 0, revenue: 0, visits: 0, sales: 0, impressions: 0, clicks: 0, followers: 0, cpl: 0, cpv: 0, cac: 0 } as any;
+    }
     const list = clientList.filter(c => c.is_agency === false);
     const spend = list.reduce((s, c) => s + (c.spend ?? 0), 0);
     const leads = list.reduce((s, c) => s + (c.meta_leads ?? 0), 0);

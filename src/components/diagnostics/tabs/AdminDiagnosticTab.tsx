@@ -385,9 +385,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
     };
 
     const stages = [
-        { id: 1, title: "Опрос" },
-        { id: 2, title: "Презентация и Оплата" },
-        { id: 3, title: "Завершение" },
+        { id: 1, title: "Опрос", icon: ClipboardList },
+        { id: 2, title: "Презентация и Оплата", icon: CreditCard },
+        { id: 3, title: "Завершение", icon: CheckCircle2 },
     ];
 
     // Inline edit states for Step 4
@@ -397,44 +397,63 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
     return (
         <div className="flex flex-col h-full space-y-10 animate-in fade-in pb-16 max-w-6xl mx-auto w-full">
-            {/* High-End Progress Stepper */}
-            <div className="relative px-4 py-8 bg-secondary/10 rounded-[40px] border border-border/20 shadow-inner">
+            {/* Premium Progress Stepper */}
+            <div className="relative px-6 py-8 bg-gradient-to-br from-secondary/15 via-secondary/5 to-transparent rounded-[32px] border border-border/30 shadow-inner">
                 <div className="flex items-center justify-between relative z-10 max-w-2xl mx-auto w-full">
                     {stages.map((s, i) => {
                         const isCurrent = step === s.id;
                         const isCompleted = step > s.id;
+                        const StepIcon = s.icon;
                         return (
                             <React.Fragment key={s.id}>
                                 <div className="flex flex-col items-center gap-3 group">
                                     <div className={cn(
-                                        "flex items-center justify-center h-12 w-12 rounded-[22px] text-xs font-black transition-all duration-500 border-2",
-                                        isCurrent ? "border-primary bg-primary shadow-xl shadow-primary/30 text-white scale-110" :
-                                        isCompleted ? "bg-primary border-primary text-white" : "border-border/60 bg-secondary/10 text-muted-foreground/40"
+                                        "relative flex items-center justify-center transition-all duration-500 border-2",
+                                        isCurrent
+                                            ? "h-16 w-16 rounded-[24px] border-primary bg-primary shadow-2xl shadow-primary/40 text-white scale-105"
+                                            : isCompleted
+                                                ? "h-14 w-14 rounded-[20px] bg-primary border-primary text-white"
+                                                : "h-14 w-14 rounded-[20px] border-border/40 bg-secondary/10 text-muted-foreground/30"
                                     )}>
-                                        {isCompleted ? <Check className="h-5 w-5 stroke-[3]" /> : s.id}
+                                        {isCompleted ? (
+                                            <Check className="h-6 w-6 stroke-[3]" />
+                                        ) : (
+                                            <StepIcon className={cn("h-6 w-6", isCurrent && "h-7 w-7")} />
+                                        )}
+                                        {isCurrent && (
+                                            <div className="absolute -inset-1 rounded-[28px] border-2 border-primary/30 animate-pulse pointer-events-none" />
+                                        )}
                                     </div>
-                                    <span className={cn(
-                                        "text-[9px] font-black uppercase tracking-[0.2em] transition-colors duration-300",
-                                        isCurrent ? "text-primary" : "text-muted-foreground/40"
-                                    )}>
-                                        {s.title}
-                                    </span>
+                                    <div className="text-center">
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-[0.15em] transition-colors duration-300 block",
+                                            isCurrent ? "text-primary" : isCompleted ? "text-primary/60" : "text-muted-foreground/30"
+                                        )}>
+                                            {s.title}
+                                        </span>
+                                        <span className={cn(
+                                            "text-[9px] font-bold transition-colors duration-300 block mt-0.5",
+                                            isCurrent ? "text-primary/50" : "text-transparent"
+                                        )}>
+                                            Шаг {s.id} из {stages.length}
+                                        </span>
+                                    </div>
                                 </div>
                                 {i < stages.length - 1 && (
-                                    <div className="flex-1 px-4 mb-6">
-                                        <div className={cn(
-                                            "h-[3px] rounded-full transition-all duration-700",
-                                            isCompleted ? "bg-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]" : "bg-border/30"
-                                        )} />
+                                    <div className="flex-1 px-4 mb-10">
+                                        <div className="relative h-[4px] rounded-full overflow-hidden bg-border/20">
+                                            <div className={cn(
+                                                "absolute inset-y-0 left-0 rounded-full transition-all duration-700",
+                                                isCompleted
+                                                    ? "w-full bg-gradient-to-r from-primary to-primary/80 shadow-[0_0_12px_rgba(var(--primary),0.4)]"
+                                                    : "w-0 bg-primary"
+                                            )} />
+                                        </div>
                                     </div>
                                 )}
                             </React.Fragment>
                         );
                     })}
-                </div>
-                {/* Subtle background glow for the active step */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none overflow-hidden rounded-[40px]">
-                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
                 </div>
             </div>
 
@@ -641,32 +660,38 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 ml-4">ВЫБЕРИТЕ РЕЗУЛЬТАТ ЭТАПА</Label>
                                     <div className="grid grid-cols-3 gap-4">
                                         {[
-                                            { id: "pending", label: "Ожидание оплаты", desc: "В ожидании клика", color: "amber", icon: Clock },
-                                            { id: "paid", label: "Оплачено", desc: "Запись подтверждена", color: "emerald", icon: CheckCircle2 },
-                                            { id: "declined", label: "Отказ", desc: "Клиент отказался", color: "rose", icon: X },
+                                            { id: "pending", label: "Ожидание оплаты", desc: "В ожидании клика", icon: Clock,
+                                              selectedClass: "border-amber-500 bg-amber-500 shadow-2xl shadow-amber-500/40 text-white scale-[1.03]",
+                                              iconBgClass: "bg-amber-500/10", iconColorClass: "text-amber-500" },
+                                            { id: "paid", label: "Оплачено", desc: "Запись подтверждена", icon: CheckCircle2,
+                                              selectedClass: "border-emerald-500 bg-emerald-500 shadow-2xl shadow-emerald-500/40 text-white scale-[1.03]",
+                                              iconBgClass: "bg-emerald-500/10", iconColorClass: "text-emerald-500" },
+                                            { id: "declined", label: "Отказ", desc: "Клиент отказался", icon: X,
+                                              selectedClass: "border-rose-500 bg-rose-500 shadow-2xl shadow-rose-500/40 text-white scale-[1.03]",
+                                              iconBgClass: "bg-rose-500/10", iconColorClass: "text-rose-500" },
                                         ].map((item) => (
                                             <button
                                                 key={item.id}
-                                                onClick={() => setFormData({ 
-                                                    ...formData, 
+                                                onClick={() => setFormData({
+                                                    ...formData,
                                                     paymentStatus: item.id as any,
                                                     refusalReason: item.id === "declined" ? formData.refusalReason : "",
                                                     prepaymentAmount: item.id === "paid" ? "5000" : ""
                                                 })}
                                                 className={cn(
                                                     "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border-2 transition-all duration-300",
-                                                    formData.paymentStatus === item.id 
-                                                        ? `border-${item.color}-500 bg-${item.color}-500 shadow-2xl shadow-${item.color}-500/40 text-white scale-[1.03]` 
+                                                    formData.paymentStatus === item.id
+                                                        ? item.selectedClass
                                                         : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20",
                                                 )}
                                             >
                                                 <div className={cn(
                                                     "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors duration-300",
-                                                    formData.paymentStatus === item.id ? "bg-white/20" : `bg-${item.color}-500/10`
+                                                    formData.paymentStatus === item.id ? "bg-white/20" : item.iconBgClass
                                                 )}>
                                                     <item.icon className={cn(
                                                         "h-6 w-6",
-                                                        formData.paymentStatus === item.id ? "text-white" : `text-${item.color}-500`
+                                                        formData.paymentStatus === item.id ? "text-white" : item.iconColorClass
                                                     )} />
                                                 </div>
                                                 <div className="text-center">
@@ -778,8 +803,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                             </div>
                                         </div>
 
-                                        <div className="p-2 bg-white rounded-[32px] shadow-2xl overflow-hidden shadow-emerald-950/20">
-                                            <div className="bg-white p-4">
+                                        <div className="p-2 bg-card rounded-[32px] shadow-2xl overflow-hidden shadow-emerald-950/20 border border-border/30">
+                                            <div className="bg-card p-4">
                                                 <BookingWidget
                                                     selectedDate={formData.bookingDate}
                                                     selectedTime={formData.bookingTime}

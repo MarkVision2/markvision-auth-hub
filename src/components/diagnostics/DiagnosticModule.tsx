@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList, CheckCircle2
+  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList, CheckCircle2, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 import { Lead } from "../crm/KanbanBoard";
 import { AdminDiagnosticTab, AdminFormData, Question, DEFAULT_QUESTIONS } from "./tabs/AdminDiagnosticTab";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 import { useAuth } from "@/hooks/useAuth";
 
 interface DiagnosticModuleProps {
@@ -42,6 +43,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     const [adminData, setAdminData] = useState<AdminFormData | null>(null);
     const [doctorData, setDoctorData] = useState<DoctorFormData | null>(null);
     const [prescriptionData, setPrescriptionData] = useState<PrescriptionFormData | null>(null);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     // Initial data setup — загружаем сохранённые ответы администратора из leads_crm
     useEffect(() => {
@@ -403,7 +405,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none">
                 {/* Header: Premium Glassmorphism Effect */}
-                <DialogHeader className="px-8 py-5 border-b border-border/40 shrink-0 bg-background/80 backdrop-blur-xl z-20 flex flex-row items-center justify-between shadow-sm">
+                <DialogHeader className="px-8 py-5 border-b border-border/40 shrink-0 bg-background/80 backdrop-blur-xl glass-enabled z-20 flex flex-row items-center justify-between shadow-sm">
                     <div className="flex items-center gap-6">
                         <div className="h-12 w-12 rounded-[20px] bg-primary/10 flex items-center justify-center shadow-inner group/icon">
                             <Activity className="h-6 w-6 text-primary group-hover/icon:scale-110 transition-transform" />
@@ -543,99 +545,116 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                         </Tabs>
                     </div>
 
-                    {/* Right Sidebar: Premium Patient Summary */}
-                    <div className="w-[340px] border-l border-border/40 bg-background shrink-0 flex flex-col shadow-2xl z-10">
-                        <div className="p-6 border-b border-border/40 flex items-center gap-4 bg-secondary/5">
-                            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="text-xs font-black uppercase tracking-widest">Паспорт пациента</h3>
-                                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Quick Reference Card</p>
-                            </div>
+                    {/* Right Sidebar: Collapsible Patient Summary */}
+                    <div className={cn(
+                        "border-l border-border/40 bg-background shrink-0 flex flex-col shadow-2xl z-10 transition-all duration-300",
+                        sidebarCollapsed ? "w-[52px]" : "w-[320px]"
+                    )}>
+                        <div className="p-4 border-b border-border/40 flex items-center gap-3 bg-secondary/5 shrink-0">
+                            <button
+                                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                                className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors shrink-0"
+                            >
+                                {sidebarCollapsed ? <PanelRightOpen className="h-4 w-4 text-primary" /> : <PanelRightClose className="h-4 w-4 text-primary" />}
+                            </button>
+                            {!sidebarCollapsed && (
+                                <div className="min-w-0">
+                                    <h3 className="text-[10px] font-black uppercase tracking-widest truncate">Паспорт пациента</h3>
+                                </div>
+                            )}
                         </div>
-                        <div className="flex-1 overflow-y-auto">
-                            <div className="p-6 space-y-8">
-                                <div className="space-y-4">
-                                    <div className="p-5 bg-secondary/5 border border-border/30 rounded-[24px] space-y-4">
-                                        <div>
-                                            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1.5 opacity-50">Полное имя</p>
-                                            <p className="font-black text-sm uppercase tracking-tight">{lead.name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1.5 opacity-50">Контактная связь</p>
-                                            <p className="font-black text-sm flex items-center gap-3">
-                                                <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                                                    <Phone className="h-3 w-3" />
+                        {!sidebarCollapsed && (
+                            <>
+                                <div className="flex-1 overflow-y-auto">
+                                    <div className="p-5 space-y-6">
+                                        <div className="p-4 bg-secondary/5 border border-border/30 rounded-[20px] space-y-3">
+                                            <div>
+                                                <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1 opacity-50">Полное имя</p>
+                                                <p className="font-black text-sm uppercase tracking-tight">{lead.name}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-1 opacity-50">Контактная связь</p>
+                                                <div className="font-black text-sm flex items-center gap-2">
+                                                    <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+                                                        <Phone className="h-3 w-3" />
+                                                    </div>
+                                                    <span>{lead.phone || "—"}</span>
                                                 </div>
-                                                {lead.phone || "—"}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-5 bg-primary/[0.03] border border-primary/10 rounded-[24px] shadow-inner">
-                                        <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-2.5">Запланированный визит</p>
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-2xl bg-white border border-primary/10 flex flex-col items-center justify-center shadow-sm">
-                                                <span className="text-[8px] font-black text-primary uppercase leading-none mb-0.5">Мар</span>
-                                                <span className="text-lg font-black text-foreground leading-none">26</span>
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-black text-foreground tabular-nums">
-                                                    {lead.scheduled_at ? format(new Date(lead.scheduled_at), "HH:mm") : "—"}
-                                                </span>
-                                                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Четверг, сегодня</span>
+                                        </div>
+
+                                        <div className="p-4 bg-primary/[0.03] border border-primary/10 rounded-[20px] shadow-inner">
+                                            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] mb-2">Запланированный визит</p>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-2xl bg-card border border-primary/10 flex flex-col items-center justify-center shadow-sm shrink-0">
+                                                    {lead.scheduled_at ? (
+                                                        <>
+                                                            <span className="text-[8px] font-black text-primary uppercase leading-none mb-0.5">{format(new Date(lead.scheduled_at), "MMM", { locale: ru })}</span>
+                                                            <span className="text-lg font-black text-foreground leading-none">{format(new Date(lead.scheduled_at), "dd")}</span>
+                                                        </>
+                                                    ) : (
+                                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-foreground tabular-nums">
+                                                        {lead.scheduled_at ? format(new Date(lead.scheduled_at), "HH:mm") : "—"}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                        {lead.scheduled_at ? format(new Date(lead.scheduled_at), "EEEE", { locale: ru }) : "Не назначен"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                                <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Первичные данные</h4>
+                                            </div>
+
+                                            <div className="space-y-3 p-4 bg-secondary/10 rounded-[24px] border border-border/20">
+                                                <div className="space-y-1">
+                                                    <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Основная жалоба</p>
+                                                    <div className="p-2.5 bg-background border border-border/40 rounded-xl">
+                                                        <p className="text-[11px] font-bold text-foreground leading-relaxed">{adminData?.complaints || "Данные отсутствуют"}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Комментарий админа</p>
+                                                    <div className="p-2.5 bg-background border border-border/40 rounded-xl">
+                                                        <p className="text-[11px] font-bold text-foreground leading-relaxed italic">"{adminData?.adminComment || "Нет комментариев"}"</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-1">
+                                                    <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1 mb-1.5">Статус платежа</p>
+                                                    <div className={cn(
+                                                        "px-3 py-2 rounded-xl border flex items-center justify-between",
+                                                        adminData?.paymentStatus === 'paid'
+                                                            ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-600"
+                                                            : "border-amber-500/20 bg-amber-500/5 text-amber-600"
+                                                    )}>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest">Предоплата</span>
+                                                        {adminData?.paymentStatus === 'paid'
+                                                            ? <CheckCircle2 className="h-4 w-4" />
+                                                            : <Clock className="h-4 w-4" />
+                                                        }
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 px-1">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                                        <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Первичные данные</h4>
-                                    </div>
-                                    
-                                    <div className="space-y-3 p-5 bg-secondary/10 rounded-[32px] border border-border/20">
-                                        <div className="space-y-1.5">
-                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Основная жалоба</p>
-                                            <div className="p-3 bg-background border border-border/40 rounded-2xl">
-                                                <p className="text-[11px] font-bold text-foreground leading-relaxed">{adminData?.complaints || "Данные отсутствуют"}</p>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1">Комментарий админа</p>
-                                            <div className="p-3 bg-background border border-border/40 rounded-2xl">
-                                                <p className="text-[11px] font-bold text-foreground leading-relaxed italic">"{adminData?.adminComment || "Нет комментариев"}"</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="pt-2">
-                                            <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest pl-1 mb-2">Статус платежа</p>
-                                            <div className={cn(
-                                                "px-4 py-2.5 rounded-2xl border flex items-center justify-between",
-                                                adminData?.paymentStatus === 'paid' 
-                                                    ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-600" 
-                                                    : "border-amber-500/20 bg-amber-500/5 text-amber-600"
-                                            )}>
-                                                <span className="text-[10px] font-black uppercase tracking-widest">Предоплата</span>
-                                                {adminData?.paymentStatus === 'paid' 
-                                                    ? <CheckCircle2 className="h-4 w-4" /> 
-                                                    : <Clock className="h-4 w-4" />
-                                                }
-                                            </div>
-                                        </div>
+                                <div className="p-4 bg-secondary/10 border-t border-border/40">
+                                    <div className="flex items-center gap-2 text-muted-foreground/40">
+                                        <Activity className="h-3.5 w-3.5" />
+                                        <span className="text-[9px] font-black uppercase tracking-widest">Medical Workstation v2.0</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <div className="p-6 bg-secondary/10 border-t border-border/40">
-                            <div className="flex items-center gap-3 text-muted-foreground/40 hover:text-primary transition-colors cursor-help group/help">
-                                <Activity className="h-4 w-4 group-hover/help:animate-pulse" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Medical Workstation v2.0</span>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </DialogContent>

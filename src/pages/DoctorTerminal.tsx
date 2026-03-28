@@ -77,6 +77,7 @@ const DoctorTerminal = () => {
         setWeekCounts(counts);
       } catch (e) {
         console.error("Error fetching week counts:", e);
+        toast({ title: "Ошибка", description: "Не удалось загрузить расписание", variant: "destructive" });
       }
     };
     fetchWeekCounts();
@@ -112,6 +113,7 @@ const DoctorTerminal = () => {
       specialty: formData.specialty,
       workingDays: formData.workingDays,
       workingHours: formData.workingHours,
+      userId: user?.id,
     };
 
     const updatedTeam = [...team, newDoctor];
@@ -296,12 +298,20 @@ const DoctorTerminal = () => {
         <div className="flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
-            <Input 
+            <Input
               placeholder="Поиск по ФИО или направлению..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10 rounded-xl bg-card border-border/50 h-11"
+              className="pl-10 pr-10 rounded-xl bg-card border-border/50 h-11"
             />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-muted flex items-center justify-center hover:bg-muted-foreground/20 transition-colors"
+              >
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
           </div>
           <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-secondary/30 rounded-xl border border-border/40">
             <Users className="h-4 w-4 text-primary" />
@@ -335,7 +345,7 @@ const DoctorTerminal = () => {
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
                   <span className="text-lg font-bold text-primary">
-                    {doc.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                    {(doc.name || "").split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -362,7 +372,7 @@ const DoctorTerminal = () => {
                 <div className="flex items-start gap-3 text-xs">
                   <Calendar className="h-3.5 w-3.5 mt-1.5 text-primary/60 shrink-0" />
                   <div className="flex-1">
-                    <div className="grid grid-cols-5 gap-1">
+                    <div className="grid grid-cols-5 gap-1 overflow-x-auto min-w-0">
                       {allWeekDays.map(day => {
                         const isWorking = doc.workingDays?.includes(day);
                         const count = weekCounts[doc.name]?.[day] || 0;

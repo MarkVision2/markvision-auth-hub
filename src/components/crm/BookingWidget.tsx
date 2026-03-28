@@ -133,7 +133,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
 
     return (
         <div className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 {/* Left Column: Doctor & Date */}
                 <div className="space-y-6">
                     {/* Doctor Selection */}
