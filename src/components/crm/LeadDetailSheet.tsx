@@ -827,6 +827,37 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
               </div>
             </div>
 
+            {/* AI Analysis / Last Call Result — MOVED HERE FOR VISIBILITY */}
+            <div className="px-4 py-2 border-b border-border">
+              {callHistory.length > 0 ? (
+                <AiCallResultCard record={callHistory[0]} />
+              ) : (
+                <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3 space-y-2 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-2 opacity-[0.05] group-hover:rotate-12 transition-transform">
+                    <Sparkles className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">Анализ AI</span>
+                  </div>
+                  <p className="text-[11px] text-foreground/70 leading-relaxed font-medium">
+                    {lead.ai_summary || "Результаты AI-анализа появятся здесь после первого звонка."}
+                  </p>
+                  {score > 0 && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <div className="flex-1 h-1 rounded-full bg-primary/10 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ${score >= 80 ? "bg-emerald-500" : score >= 50 ? "bg-amber-500" : "bg-primary"}`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-black text-primary/60 tabular-nums">{score}%</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="px-4 py-2 border-b border-border space-y-1">
               <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Детали</label>
               <div className="space-y-1.5">
@@ -996,33 +1027,6 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
              </div>
 
-            {/* AI Analysis / Last Call Result */}
-            <div className="px-5 py-3">
-              {callHistory.length > 0 ? (
-                <AiCallResultCard record={callHistory[0]} />
-              ) : (
-                <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Анализ</span>
-                  </div>
-                  <p className="text-xs text-foreground/70 leading-relaxed">
-                    {lead.ai_summary || "AI-анализ ещё не выполнен. Нажмите «Позвонить» для запуска анализа."}
-                  </p>
-                  {score > 0 && (
-                    <div className="flex items-center gap-2 pt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${score >= 80 ? "bg-[hsl(var(--status-critical))]" : score >= 50 ? "bg-[hsl(var(--status-warning))]" : "bg-primary"}`}
-                          style={{ width: `${score}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] font-mono text-muted-foreground">{score}%</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* RIGHT — Chat / Notes / Calls */}

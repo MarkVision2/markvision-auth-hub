@@ -169,21 +169,21 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             <button
               disabled={!isSuperadmin}
               className={cn(
-                "h-14 flex items-center gap-3 px-3 w-full rounded-[20px] transition-all duration-300 group min-h-[56px] border",
-                isSuperadmin ? "hover:bg-accent/50 hover:border-border/60 hover:shadow-sm cursor-pointer border-transparent bg-card/60 backdrop-blur-md shadow-sm" : "cursor-default opacity-80 border-transparent bg-transparent"
+                "h-14 flex items-center gap-3 px-3 w-full rounded-[22px] transition-all duration-300 group min-h-[56px] border",
+                isSuperadmin ? "hover:bg-primary/5 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 cursor-pointer border-transparent bg-card/40 backdrop-blur-md shadow-sm" : "cursor-default opacity-80 border-transparent bg-transparent"
               )}
             >
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 flex items-center justify-center shrink-0 shadow-md shadow-primary/20 relative overflow-hidden">
-                <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
-                <span className="text-primary-foreground font-black text-[12px] uppercase tracking-wider relative z-10">{active.name.slice(0, 2)}</span>
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 flex items-center justify-center shrink-0 shadow-lg shadow-primary/30 relative overflow-hidden group-hover:scale-105 transition-transform">
+                <div className="absolute inset-0 bg-white/30 w-1/3 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+                <span className="text-primary-foreground font-black text-[13px] uppercase tracking-wider relative z-10">{active.name.slice(0, 2)}</span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-bold text-foreground truncate tracking-tight">{active.name}</p>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 truncate">
-                  {active.id === HQ_ID ? "Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
+                <p className="text-sm font-black text-foreground truncate tracking-tight">{active.name}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 truncate">
+                  {active.id === HQ_ID ? "Центральный узел" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
                 </p>
               </div>
-              {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/40 shrink-0 group-hover:text-foreground transition-colors" />}
+              {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/30 shrink-0 group-hover:text-primary transition-colors" />}
             </button>
           </PopoverTrigger>
         <PopoverContent
@@ -316,20 +316,20 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                       end={item.end}
                       onClick={onNavigate}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group/link relative overflow-hidden",
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-black transition-all duration-300 group/link relative overflow-hidden border",
                         isActive
-                          ? "text-primary font-bold bg-primary/10 shadow-sm shadow-primary/5 border border-primary/20"
-                          : "text-muted-foreground/80 hover:text-foreground hover:bg-card hover:shadow-sm hover:border-border/60 border border-transparent"
+                          ? "text-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.05)] border-primary/20"
+                          : "text-muted-foreground/60 hover:text-foreground hover:bg-card hover:border-border/60 border-transparent"
                       )}
                       activeClassName=""
                     >
-                      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-300", isActive ? "h-5 bg-primary" : "h-0 bg-transparent")} />
+                      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-500 shadow-[0_0_10px_rgba(var(--primary),0.8)]", isActive ? "h-6 bg-primary" : "h-0 bg-transparent")} />
                       <item.icon
                         size={17}
                         strokeWidth={isActive ? 2.5 : 2}
-                        className={cn("transition-colors duration-200 shrink-0 relative z-10", isActive ? "text-primary filter drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "")}
+                        className={cn("transition-all duration-300 shrink-0 relative z-10", isActive ? "text-primary scale-110 drop-shadow-[0_0_12px_rgba(var(--primary),0.6)]" : "group-hover/link:text-primary group-hover/link:scale-110")}
                       />
-                      <span className="tracking-tight truncate relative z-10">{item.title}</span>
+                      <span className="tracking-tight truncate relative z-10 uppercase text-[11px] font-black">{item.title}</span>
                     </NavLink>
                   );
                 })}

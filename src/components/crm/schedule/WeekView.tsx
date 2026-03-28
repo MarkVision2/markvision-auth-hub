@@ -114,8 +114,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                 <div className="grid grid-cols-[80px_repeat(7,minmax(130px,1fr))] relative">
                     {ALL_HOURS.map((hour) => (
                         <React.Fragment key={hour}>
-                            <div className="h-[68px] border-r border-border flex items-start justify-center pt-2 sticky left-0 bg-secondary z-20 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">
-                                <span className="text-[10px] font-black text-muted-foreground tabular-nums">
+                            <div className="h-[54px] border-r border-border flex items-start justify-center pt-1 sticky left-0 bg-secondary z-20 shadow-[2px_0_10px_rgba(0,0,0,0.05)]">
+                                <span className="text-[9px] font-black text-muted-foreground tabular-nums">
                                     {hour}:00
                                 </span>
                             </div>
@@ -132,7 +132,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                         key={`${i}-${hour}`} 
                                         onClick={() => !appt && isWorking && onAddAppointment(day, hourStr)}
                                         className={cn(
-                                            "h-[68px] border-r border-b border-border relative group transition-all p-1",
+                                            "h-[54px] border-r border-b border-border relative group transition-all p-0.5",
                                             !isWorking && "bg-secondary/30 bg-dashed opacity-30 cursor-not-allowed",
                                             isWorking && !appt && "hover:bg-primary/[0.02] cursor-pointer"
                                         )}
@@ -144,26 +144,26 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                                     onEditAppointment(appt);
                                                 }}
                                                 className={cn(
-                                                    "absolute inset-1 p-1.5 rounded-xl border transition-all duration-300 cursor-pointer flex flex-col group/appt hover:scale-[1.02] hover:shadow-xl hover:z-10 shadow-sm overflow-hidden",
+                                                    "absolute inset-0.5 p-1 rounded-lg border transition-all duration-300 cursor-pointer flex flex-col group/appt hover:scale-[1.02] hover:shadow-xl hover:z-10 shadow-sm overflow-hidden",
                                                     getDateStyles(appt.date)
                                                 )}
                                             >
                                                 <div className="flex items-start justify-between gap-1 leading-none">
-                                                    <span className="text-[10px] font-black leading-tight break-words line-clamp-1 truncate w-full">
+                                                    <span className="text-[9px] font-black leading-tight break-words line-clamp-1 truncate w-full">
                                                         {appt.patient}
                                                     </span>
-                                                    <span className="text-[9px] font-black opacity-60 tabular-nums shrink-0">{appt.time}</span>
+                                                    <span className="text-[8px] font-black opacity-60 tabular-nums shrink-0">{appt.time}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 mt-auto">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0 animate-pulse", getDateIndicator(appt.date))} />
-                                                    <span className="text-[8px] uppercase font-black opacity-80 tracking-widest truncate">{appt.type}</span>
+                                                    <div className={cn("h-1 w-1 rounded-full shrink-0 animate-pulse", getDateIndicator(appt.date))} />
+                                                    <span className="text-[8px] uppercase font-bold opacity-80 tracking-widest truncate">{appt.type}</span>
                                                 </div>
                                             </div>
                                         ) : isWorking && (
                                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                                <div className="flex items-center gap-2 scale-90 group-hover:scale-100 transition-transform">
-                                                    <div className="h-6 w-6 rounded-lg bg-primary text-white flex items-center justify-center shadow-md shadow-primary/20">
-                                                        <Plus className="h-4 w-4" />
+                                                <div className="flex items-center gap-2 scale-75 group-hover:scale-100 transition-transform">
+                                                    <div className="h-5 w-5 rounded-md bg-primary text-white flex items-center justify-center shadow-md shadow-primary/20">
+                                                        <Plus className="h-3 w-3" />
                                                     </div>
                                                 </div>
                                             </div>

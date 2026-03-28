@@ -156,12 +156,15 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
     const stats = useMemo(() => {
         const totalMonth = monthlyAppointments.length;
+        // Только первичные приемы
         const diagnostics = monthlyAppointments.filter(a => 
             a.type === "Диагностика" || a.lead?.is_diagnostic
         ).length;
+        // Только те, кто перешел к лечению (продажи)
         const treatments = monthlyAppointments.filter(a => 
-            a.type === "Приём" || a.status === "completed"
+            a.lead?.status === "Лечение начато" || (Number(a.lead?.amount) > 0 && a.status === "completed")
         ).length;
+        
         const todayTotal = todayAppointments.length;
         const todayCompleted = todayAppointments.filter(a => a.status === "completed").length;
         const todayRemaining = todayTotal - todayCompleted;
