@@ -344,51 +344,68 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                                     <div 
                                         key={pkg.id}
                                         className={cn(
-                                            "border-[3px] rounded-[32px] transition-all duration-300 overflow-hidden group/pkg",
-                                            isSelected ? "border-primary bg-primary/[0.03] shadow-xl shadow-primary/10" : "border-border/60 bg-card hover:border-primary/20"
+                                            "relative border-[3px] rounded-[40px] transition-all duration-500 overflow-hidden group/pkg",
+                                            isSelected 
+                                                ? "border-primary bg-gradient-to-br from-primary/[0.08] to-transparent shadow-2xl shadow-primary/20 scale-[1.02] z-10" 
+                                                : "border-border/40 bg-background/60 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:bg-card/80"
                                         )}
                                     >
+                                        {/* Background Glow */}
+                                        {isSelected && <div className="absolute inset-0 bg-primary/5 blur-3xl pointer-events-none" />}
+
                                         {/* Package header - click to select */}
                                         <div 
-                                            className="p-6 cursor-pointer relative"
+                                            className="p-8 cursor-pointer relative z-10"
                                             onClick={() => setFormData({...formData, packageId: pkg.id})}
                                         >
                                             {isSelected && (
-                                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-primary text-white text-[9px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-primary/30 uppercase tracking-[0.2em] transform transition-transform group-hover/pkg:scale-110">
+                                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-gradient-to-r from-primary to-blue-500 text-white text-[9px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-primary/30 uppercase tracking-[0.2em] animate-in slide-in-from-top-2">
                                                     Выбрано
                                                 </div>
                                             )}
                                             
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-2xl bg-background flex items-center justify-center text-2xl shadow-sm group-hover/pkg:scale-110 transition-transform">
+                                                    <div className="flex items-center gap-5">
+                                                        <div className={cn(
+                                                            "h-14 w-14 rounded-[22px] flex items-center justify-center text-3xl transition-transform duration-500",
+                                                            isSelected ? "scale-110 bg-background shadow-xl shadow-primary/20 rotate-3" : "bg-card shadow-inner group-hover/pkg:scale-105 group-hover/pkg:shadow-md"
+                                                        )}>
                                                             {pkg.icon}
                                                         </div>
                                                         <div>
-                                                            <span className="font-black text-sm uppercase tracking-widest">{pkg.name}</span>
-                                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">{pkg.subtitle}</p>
+                                                            <span className={cn(
+                                                                "font-black text-lg uppercase tracking-widest leading-none block mb-1.5 transition-colors",
+                                                                isSelected ? "text-primary" : "text-foreground group-hover/pkg:text-primary/80"
+                                                            )}>{pkg.name}</span>
+                                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">{pkg.subtitle}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className={cn(
-                                                    "h-7 w-7 rounded-2xl border-2 flex items-center justify-center shrink-0 mt-1 transition-all duration-500",
-                                                    isSelected ? "border-primary bg-primary shadow-lg shadow-primary/30 rotate-0" : "border-border/40 rotate-[45deg]"
+                                                    "h-8 w-8 rounded-[10px] border-[3px] flex items-center justify-center shrink-0 mt-2 transition-all duration-500 ring-4",
+                                                    isSelected ? "border-primary bg-primary ring-primary/20 shadow-lg shadow-primary/40 rotate-0 scale-110" : "border-border/40 bg-transparent ring-transparent group-hover/pkg:border-primary/40 rotate-12"
                                                 )}>
-                                                    {isSelected && <Check className="h-4 w-4 text-white" />}
+                                                    {isSelected && <Check className="h-5 w-5 text-white animate-in zoom-in-50 duration-300" />}
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-center justify-between mt-6 pl-[52px]">
-                                                <span className="text-2xl font-black text-foreground tabular-nums group-hover/pkg:text-primary transition-colors">{pkg.priceDisplay}</span>
+                                            <div className="flex items-center justify-between mt-8 pl-[76px]">
+                                                <span className={cn(
+                                                    "text-3xl font-black tabular-nums tracking-tight transition-colors",
+                                                    isSelected ? "text-foreground drop-shadow-sm" : "text-foreground/80 group-hover/pkg:text-foreground"
+                                                )}>{pkg.priceDisplay}</span>
                                                 <Button 
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-8 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10 flex items-center gap-2"
+                                                    className={cn(
+                                                        "h-10 px-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all gap-2",
+                                                        isSelected ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-secondary/20 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                                    )}
                                                     onClick={(e) => { e.stopPropagation(); setExpandedPackage(isExpanded ? null : pkg.id); }}
                                                 >
                                                     {isExpanded ? "Свернуть" : "Детали"}
-                                                    <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-300", isExpanded ? "rotate-180" : "rotate-0")} />
+                                                    <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isExpanded ? "rotate-180" : "rotate-0")} />
                                                 </Button>
                                             </div>
                                         </div>

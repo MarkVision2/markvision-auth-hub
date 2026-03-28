@@ -145,7 +145,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 </DialogTitle>
                                 <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
-                                    {isEditing ? `ID записи: #${appointment.id?.slice(0,8)}` : "Заполнение данных о визите"}
+                                    {isEditing ? "Редактирование данных визита" : "Заполнение данных о визите"}
                                 </DialogDescription>
                             </div>
                         </div>
@@ -325,7 +325,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className={`grid gap-2 ${mode === "doctor" ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"}`}
+                                className="grid gap-3 grid-cols-2"
                             >
                             {(mode === "doctor" ? DOCTOR_STATUSES : STATUSES).map((item) => {
                                     const isActive = formData.status === item.id;
@@ -333,19 +333,19 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     let dotColor = "";
                                     
                                     if (item.id === "planned" && isActive) {
-                                        activeClasses = "bg-amber-500/10 border-amber-500/30 shadow-inner";
+                                        activeClasses = "bg-amber-500/10 border-amber-500/40 shadow-inner";
                                         dotColor = "bg-amber-500";
                                     } else if (item.id === "completed" && isActive) {
-                                        activeClasses = "bg-emerald-500/10 border-emerald-500/30 shadow-inner";
+                                        activeClasses = "bg-emerald-500/10 border-emerald-500/40 shadow-inner";
                                         dotColor = "bg-emerald-500";
                                     } else if (item.id === "thinking" && isActive) {
-                                        activeClasses = "bg-blue-500/10 border-blue-500/30 shadow-inner";
+                                        activeClasses = "bg-blue-500/10 border-blue-500/40 shadow-inner";
                                         dotColor = "bg-blue-500";
                                     } else if (item.id === "no-show" && isActive) {
-                                        activeClasses = "bg-rose-500/10 border-rose-500/30 shadow-inner";
+                                        activeClasses = "bg-rose-500/10 border-rose-500/40 shadow-inner";
                                         dotColor = "bg-rose-500";
                                     } else {
-                                        activeClasses = "bg-secondary/20 border-border/40 hover:bg-secondary/40";
+                                        activeClasses = "bg-secondary/20 border-border/40 hover:bg-secondary/50 hover:border-border/60";
                                     }
 
                                     return (
@@ -353,22 +353,27 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "relative flex flex-col items-center justify-center p-3 rounded-2xl border cursor-pointer transition-all duration-300 group min-h-[70px]",
+                                                "relative flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-300 group",
                                                 activeClasses,
-                                                isActive ? "ring-2 ring-offset-2 ring-offset-background" : ""
+                                                isActive ? "ring-2 ring-primary/20 ring-offset-1 ring-offset-background" : ""
                                             )}
                                         >
                                             <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
                                             {isActive && (
-                                                <div className="absolute top-2 right-2 flex h-2 w-2">
+                                                <div className="absolute top-3 right-3 flex h-2 w-2">
                                                     <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-40", dotColor)}></span>
                                                     <span className={cn("relative inline-flex rounded-full h-2 w-2", dotColor)}></span>
                                                 </div>
                                             )}
-                                            <item.icon className={cn("h-4 w-4 mb-1.5 transition-transform group-hover:scale-110", isActive ? item.color : "text-muted-foreground/40")} />
+                                            <div className={cn(
+                                                "h-8 w-8 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0", 
+                                                isActive ? "bg-background shadow-sm" : "bg-secondary/50"
+                                            )}>
+                                                <item.icon className={cn("h-4 w-4", isActive ? item.color : "text-muted-foreground/50")} />
+                                            </div>
                                             <span className={cn(
-                                                "text-[8px] font-black uppercase tracking-tight text-center leading-tight", 
-                                                isActive ? item.color : "text-muted-foreground/60"
+                                                "text-[10px] font-black uppercase tracking-[0.05em] leading-tight pr-2", 
+                                                isActive ? item.color : "text-muted-foreground/70 group-hover:text-foreground"
                                             )}>
                                                 {item.label}
                                             </span>

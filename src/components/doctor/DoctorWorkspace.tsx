@@ -26,7 +26,7 @@ interface DoctorWorkspaceProps {
 
 export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initialDoctor }) => {
     const [doctor, setDoctor] = useState<TeamMember>(initialDoctor);
-    const [activeTab, setActiveTab] = useState("schedule");
+    const [activeTab, setActiveTab] = useState("overview");
     const [view, setView] = useState<"week" | "month">("week");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isSaving, setIsSaving] = useState(false);
@@ -196,14 +196,11 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     {/* Табы */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 ml-auto lg:ml-0">
                         <TabsList className="bg-muted/30 p-1 rounded-2xl h-11">
-                            <TabsTrigger value="schedule" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
-                                <Calendar className="h-3.5 w-3.5" /> ГРАФИК
+                            <TabsTrigger value="overview" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2 transition-all">
+                                <Activity className="h-4 w-4" /> ЛИЧНЫЙ КАБИНЕТ
                             </TabsTrigger>
-                            <TabsTrigger value="analytics" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
-                                <Activity className="h-3.5 w-3.5" /> РЕЙТИНГ
-                            </TabsTrigger>
-                            <TabsTrigger value="settings" className="rounded-xl px-3 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-1.5">
-                                <Settings className="h-3.5 w-3.5" /> ОПЦИИ
+                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2 transition-all">
+                                <Calendar className="h-4 w-4" /> РАСПИСАНИЕ
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>

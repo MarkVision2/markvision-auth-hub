@@ -28,7 +28,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(start, i));
     const today = startOfDay(new Date());
 
-    const ALL_HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 - 21:00
+    const ALL_HOURS = Array.from({ length: 12 }, (_, i) => i + 7); // 07:00 - 18:00
 
     const isWorkingHour = (day: Date, hour: number) => {
         const dName = format(day, "eeeee", { locale: ru }); // Пн, Вт etc

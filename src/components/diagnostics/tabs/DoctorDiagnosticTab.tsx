@@ -316,17 +316,18 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                             </div>
                         ) : (
                             sectionQuestions.map(q => (
-                                <div key={q.id} className="group/row hover:bg-background transition-colors">
-                                    <div className="px-6 py-5 flex flex-col md:flex-row md:items-start gap-4">
-                                        <div className="md:w-[240px] shrink-0 pt-1">
-                                            <Label className="text-[11px] uppercase font-black tracking-[0.1em] text-muted-foreground leading-snug group-hover/row:text-primary transition-colors">{q.label}</Label>
-                                            {q.required && <span className="text-destructive ml-1">*</span>}
+                                <div key={q.id} className="group/row hover:bg-background/40 transition-colors border-b border-border/10 last:border-0">
+                                    <div className="px-8 py-6 flex flex-col gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0 group-hover/row:bg-primary group-hover/row:animate-pulse transition-all" />
+                                            <Label className="text-[12px] uppercase font-black tracking-widest text-foreground group-hover/row:text-primary transition-colors leading-[1.4]">{q.label}</Label>
+                                            {q.required && <span className="text-destructive font-black">*</span>}
                                         </div>
-                                        <div className="flex-1 min-w-0 relative">
+                                        <div className="relative pl-[18px]">
                                             {q.type === "textarea" ? (
                                                 <Textarea
-                                                    placeholder="Введите подробный ответ..."
-                                                    className="bg-background border-border/40 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 min-h-[100px] text-sm resize-none rounded-2xl p-4 transition-all shadow-sm group-hover/row:shadow-md"
+                                                    placeholder="Напишите ответ здесь..."
+                                                    className="bg-card border-border/40 focus:border-primary/40 focus:ring-4 focus:ring-primary/10 min-h-[120px] text-sm font-bold resize-none rounded-[24px] p-5 transition-all shadow-inner group-hover/row:border-primary/30 group-hover/row:shadow-md"
                                                     value={formData.answers[q.id] || ""}
                                                     onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
                                                     disabled={readOnly}
@@ -334,7 +335,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                             ) : (
                                                 <Input
                                                     placeholder="Введите значение..."
-                                                    className="bg-background border-border/40 h-12 rounded-xl px-4 text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all shadow-sm group-hover/row:shadow-md"
+                                                    className="bg-card border-border/40 h-14 rounded-[20px] px-6 text-sm font-bold focus:border-primary/40 focus:ring-4 focus:ring-primary/10 transition-all shadow-inner group-hover/row:border-primary/30 group-hover/row:shadow-md"
                                                     value={formData.answers[q.id] || ""}
                                                     onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
                                                     disabled={readOnly}
@@ -392,12 +393,14 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                         ? (Array.isArray(answer) ? answer.join(', ') : String(answer))
                                         : '—';
                                     return (
-                                        <div key={q.id} className="space-y-1.5 group/info transition-all">
-                                            <span className="text-[10px] uppercase font-black text-primary/50 tracking-widest group-hover/info:text-primary transition-colors truncate block">{q.label}</span>
-                                            <p className={cn(
-                                                "text-xs font-bold leading-relaxed",
-                                                answer ? "text-foreground" : "text-muted-foreground/30 italic"
-                                            )}>{displayVal}</p>
+                                        <div key={q.id} className="flex flex-col gap-3 group/info transition-all bg-background/80 border border-border/30 rounded-[28px] p-6 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                                            <span className="text-[9px] uppercase font-black text-primary/50 tracking-[0.2em] group-hover/info:text-primary leading-[1.3] transition-colors line-clamp-2">{q.label}</span>
+                                            <div className="flex-1 flex items-end">
+                                                <p className={cn(
+                                                    "text-sm font-black leading-snug",
+                                                    answer ? "text-foreground" : "text-muted-foreground/30 italic"
+                                                )}>{displayVal}</p>
+                                            </div>
                                         </div>
                                     );
                                 })
@@ -405,9 +408,11 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                 adminData.answers && Object.entries(adminData.answers).slice(0, 9).map(([key, val]) => {
                                     if (!val) return null;
                                     return (
-                                        <div key={key} className="space-y-1.5 group/info transition-all">
-                                            <span className="text-[10px] uppercase font-black text-primary/50 tracking-widest group-hover/info:text-primary transition-colors truncate block">{key.replace(/_/g, ' ')}</span>
-                                            <p className="text-xs font-bold leading-relaxed">{String(val)}</p>
+                                        <div key={key} className="flex flex-col gap-3 group/info transition-all bg-background/80 border border-border/30 rounded-[28px] p-6 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                                            <span className="text-[9px] uppercase font-black text-primary/50 tracking-[0.2em] group-hover/info:text-primary leading-[1.3] transition-colors line-clamp-2">{key.replace(/_/g, ' ')}</span>
+                                            <div className="flex-1 flex items-end">
+                                                <p className="text-sm font-black leading-snug text-foreground">{String(val)}</p>
+                                            </div>
                                         </div>
                                     );
                                 })

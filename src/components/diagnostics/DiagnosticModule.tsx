@@ -78,6 +78,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     confirmed: false,
                     finalFio: lead.name,
                     finalPhone: lead.phone || "",
+                    invoicePhone: lead.phone || "",
                     complaints: (savedAnswers as any).complaints || lead.ai_summary || "",
                     painLocation: "",
                     painDuration: "",
@@ -403,9 +404,16 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none">
+            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none relative">
+                {/* Aurora Background Effects */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                    <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[130px] opacity-60 animate-pulse" style={{ animationDuration: '8s' }} />
+                    <div className="absolute top-[20%] -right-[10%] w-[50%] h-[70%] rounded-full bg-sky-500/10 blur-[150px] opacity-40 animate-pulse" style={{ animationDuration: '12s' }} />
+                    <div className="absolute -bottom-[20%] left-[20%] w-[70%] h-[60%] rounded-full bg-indigo-500/10 blur-[140px] opacity-30 animate-pulse" style={{ animationDuration: '10s' }} />
+                </div>
+
                 {/* Header: Premium Glassmorphism Effect */}
-                <DialogHeader className="px-8 py-5 border-b border-border/40 shrink-0 bg-background/80 backdrop-blur-xl glass-enabled z-20 flex flex-row items-center justify-between shadow-sm">
+                <DialogHeader className="px-8 py-5 border-b border-white/5 shrink-0 bg-background/60 backdrop-blur-2xl glass-enabled z-20 flex flex-row items-center justify-between shadow-2xl relative">
                     <div className="flex items-center gap-6">
                         <div className="h-12 w-12 rounded-[20px] bg-primary/10 flex items-center justify-center shadow-inner group/icon">
                             <Activity className="h-6 w-6 text-primary group-hover/icon:scale-110 transition-transform" />
@@ -461,11 +469,11 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden relative z-10">
                     {/* Main Content Area */}
-                    <div className="flex-1 flex flex-col overflow-hidden bg-background/50">
+                    <div className="flex-1 flex flex-col overflow-hidden bg-transparent">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                            <div className="px-8 pt-6 pb-0 bg-background shrink-0 z-10">
+                            <div className="px-8 pt-6 pb-0 bg-transparent shrink-0 z-10">
                                 <TabsList className="bg-secondary/10 p-1.5 h-16 rounded-[24px] border border-border/20 gap-2 flex w-full max-w-3xl">
                                     {mode !== "doctor" && (
                                         <TabsTrigger 
@@ -547,7 +555,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
                     {/* Right Sidebar: Collapsible Patient Summary */}
                     <div className={cn(
-                        "border-l border-border/40 bg-background shrink-0 flex flex-col shadow-2xl z-10 transition-all duration-300",
+                        "border-l border-white/5 bg-background/60 backdrop-blur-xl shrink-0 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.5)] z-10 transition-all duration-300 relative",
                         sidebarCollapsed ? "w-[52px]" : "w-[320px]"
                     )}>
                         <div className="p-4 border-b border-border/40 flex items-center gap-3 bg-secondary/5 shrink-0">
