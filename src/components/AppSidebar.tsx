@@ -163,24 +163,29 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
   return (
     <>
       {/* ── Workspace Switcher ── */}
-      <Popover open={wsOpen && isSuperadmin} onOpenChange={setWsOpen}>
-        <PopoverTrigger asChild>
-          <button
-            disabled={!isSuperadmin}
-            className={cn(
-              "h-14 flex items-center gap-3 px-4 shrink-0 w-full transition-colors group min-h-[56px]",
-              isSuperadmin ? "hover:bg-accent/30 cursor-pointer" : "cursor-default opacity-80"
-            )}
-          >
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-[13px] font-semibold text-foreground truncate">{active.name}</p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {active.id === HQ_ID ? "Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
-              </p>
-            </div>
-            {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" />}
-          </button>
-        </PopoverTrigger>
+      <div className="p-4 shrink-0">
+        <Popover open={wsOpen && isSuperadmin} onOpenChange={setWsOpen}>
+          <PopoverTrigger asChild>
+            <button
+              disabled={!isSuperadmin}
+              className={cn(
+                "h-14 flex items-center gap-3 px-3 w-full rounded-[20px] transition-all duration-300 group min-h-[56px] border",
+                isSuperadmin ? "hover:bg-accent/50 hover:border-border/60 hover:shadow-sm cursor-pointer border-transparent bg-card/60 backdrop-blur-md shadow-sm" : "cursor-default opacity-80 border-transparent bg-transparent"
+              )}
+            >
+              <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 flex items-center justify-center shrink-0 shadow-md shadow-primary/20 relative overflow-hidden">
+                <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
+                <span className="text-primary-foreground font-black text-[12px] uppercase tracking-wider relative z-10">{active.name.slice(0, 2)}</span>
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm font-bold text-foreground truncate tracking-tight">{active.name}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 truncate">
+                  {active.id === HQ_ID ? "Все данные" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
+                </p>
+              </div>
+              {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/40 shrink-0 group-hover:text-foreground transition-colors" />}
+            </button>
+          </PopoverTrigger>
         <PopoverContent
           side="right"
           align="start"
@@ -230,6 +235,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
           )}
         </PopoverContent>
       </Popover>
+      </div>
 
       {/* ── Create Project Dialog ── */}
       <Dialog open={createProjectOpen} onOpenChange={setCreateProjectOpen}>
@@ -277,15 +283,15 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
       <Separator className="bg-border/50" />
 
       {/* ── Nav groups ── */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-4 custom-scrollbar">
         {visibleGroups.map((group) => {
           const isExpanded = expandedGroups[group.label] !== false;
           
           return (
-            <div key={group.label} className="space-y-1">
+            <div key={group.label} className="space-y-1.5">
               <button
                 onClick={() => toggleGroup(group.label)}
-                className="w-full flex items-center justify-between px-3 py-2 text-[10px] font-black tracking-[0.1em] text-muted-foreground/60 hover:text-foreground transition-colors uppercase select-none group/header"
+                className="w-full flex items-center justify-between px-2 py-1 text-[9px] font-black tracking-[0.2em] text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors uppercase select-none group/header"
               >
                 <span>{group.label}</span>
                 <div className="opacity-0 group-hover/header:opacity-100 transition-opacity">
@@ -310,19 +316,20 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                       end={item.end}
                       onClick={onNavigate}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 group/link",
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 group/link relative overflow-hidden",
                         isActive
-                          ? "bg-primary/8 text-primary font-semibold"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                          ? "text-primary font-bold bg-primary/10 shadow-sm shadow-primary/5 border border-primary/20"
+                          : "text-muted-foreground/80 hover:text-foreground hover:bg-card hover:shadow-sm hover:border-border/60 border border-transparent"
                       )}
                       activeClassName=""
                     >
+                      <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-300", isActive ? "h-5 bg-primary" : "h-0 bg-transparent")} />
                       <item.icon
                         size={17}
-                        strokeWidth={isActive ? 2.2 : 1.8}
-                        className="transition-colors duration-150 shrink-0"
+                        strokeWidth={isActive ? 2.5 : 2}
+                        className={cn("transition-colors duration-200 shrink-0 relative z-10", isActive ? "text-primary filter drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "")}
                       />
-                      <span className="tracking-tight truncate">{item.title}</span>
+                      <span className="tracking-tight truncate relative z-10">{item.title}</span>
                     </NavLink>
                   );
                 })}
@@ -333,28 +340,29 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
       </nav>
 
       {/* ── Footer ── */}
-      <div className="shrink-0 px-3 pb-4 space-y-1">
-        <Separator className="mb-3" />
-        <NavLink
-          to="/settings"
-          onClick={onNavigate}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150 min-h-[44px]"
-          activeClassName="bg-primary/10 text-primary"
-        >
-          <Settings size={18} strokeWidth={1.8} />
-          <span>Настройки</span>
-        </NavLink>
-
-        <div className="flex items-center gap-3 px-3 py-2 mt-1">
-          <Avatar className="h-8 w-8">
-            {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || "Avatar"} />}
-            <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">{profile.full_name || "Admin"}</p>
-            <p className="text-[11px] text-muted-foreground capitalize">{role.replace("_", " ")}</p>
+      <div className="shrink-0 p-4 space-y-2 mt-auto">
+        <div className="bg-card/40 backdrop-blur-md rounded-[20px] border border-border/40 p-1.5 shadow-sm transition-all duration-300 hover:border-border/80">
+          <NavLink
+            to="/settings"
+            onClick={onNavigate}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-bold text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-all duration-200 min-h-[44px] group"
+            activeClassName="bg-primary/10 text-primary shadow-sm"
+          >
+            <Settings size={18} strokeWidth={2} className="group-hover:rotate-45 transition-transform duration-300" />
+            <span>Настройки</span>
+          </NavLink>
+  
+          <div className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl hover:bg-accent/40 transition-colors cursor-pointer group">
+            <Avatar className="h-9 w-9 border border-border/50 shadow-sm group-hover:border-primary/30 transition-colors bg-background">
+              {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || "Avatar"} />}
+              <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-black">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-bold text-foreground truncate tracking-tight">{profile.full_name || "Admin"}</p>
+              <p className="text-[9px] text-muted-foreground/70 uppercase tracking-widest font-black truncate mt-0.5">{role.replace("_", " ")}</p>
+            </div>
           </div>
         </div>
       </div>
