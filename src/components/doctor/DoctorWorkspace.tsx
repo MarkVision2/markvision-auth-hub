@@ -171,69 +171,39 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Stats & Profile Bar */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 shrink-0">
-                <div className="lg:col-span-12 xl:col-span-6 flex flex-row flex-wrap items-center gap-y-3 gap-x-4 bg-card p-5 rounded-[32px] border border-border shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-primary/40" />
+            <div className="flex shrink-0">
+                <div className="w-full flex-1 flex flex-col sm:flex-row flex-wrap lg:items-center gap-y-4 gap-x-6 bg-card p-6 rounded-[40px] border border-border/60 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-primary/40" />
                     
                     {/* Иконка врача */}
-                    <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner ml-2">
-                        <Stethoscope className="h-7 w-7 text-primary" />
+                    <div className="h-16 w-16 rounded-[22px] bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 shadow-inner ml-2">
+                        <Stethoscope className="h-8 w-8 text-primary" />
                     </div>
 
                     {/* Имя + бейджи */}
                     <div className="flex-1 min-w-[200px]">
-                        <h2 className="text-lg font-black tracking-tight text-foreground leading-tight">{doctor.name}</h2>
-                        <div className="flex gap-1.5 mt-1.5">
-                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 whitespace-nowrap shrink-0">
+                        <h2 className="text-xl font-black tracking-tight text-foreground leading-tight">{doctor.name}</h2>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 whitespace-nowrap">
                                 {doctor.specialty}
                             </Badge>
-                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-2.5 py-0.5 bg-background/50 whitespace-nowrap shrink-0">
+                            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-border/50 px-3 py-1 bg-background/50 whitespace-nowrap">
                                 КАБ. {doctor.office || "—"}
                             </Badge>
                         </div>
                     </div>
 
-                    {/* Табы */}
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 ml-auto lg:ml-0">
-                        <TabsList className="bg-muted/30 p-1 rounded-2xl h-11">
-                            <TabsTrigger value="overview" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2 transition-all">
-                                <Activity className="h-4 w-4" /> ЛИЧНЫЙ КАБИНЕТ
+                    {/* Табы навигации */}
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+                        <TabsList className="bg-muted/40 p-1.5 rounded-[22px] h-14 w-full sm:w-auto shadow-inner">
+                            <TabsTrigger value="overview" className="rounded-xl px-6 h-11 text-xs font-black uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md gap-2 transition-all">
+                                <Activity className="h-4 w-4" /> Личный кабинет
                             </TabsTrigger>
-                            <TabsTrigger value="schedule" className="rounded-xl px-4 text-xs font-black uppercase tracking-tight data-[state=active]:bg-background data-[state=active]:shadow-sm gap-2 transition-all">
-                                <Calendar className="h-4 w-4" /> РАСПИСАНИЕ
+                            <TabsTrigger value="schedule" className="rounded-xl px-6 h-11 text-xs font-black uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md gap-2 transition-all">
+                                <Calendar className="h-4 w-4" /> Расписание
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
-                </div>
-
-                <div className="lg:col-span-4 xl:col-span-2 bg-primary/5 border border-primary/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-primary/10 transition-all cursor-default overflow-hidden">
-                    <div className="min-w-0">
-                        <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mb-1 truncate">Пациенты в месяце</p>
-                        <p className="text-2xl font-black text-primary tabular-nums tracking-tighter">{stats.totalMonth}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform shrink-0">
-                        <Activity className="h-5 w-5" />
-                    </div>
-                </div>
-
-                <div className="lg:col-span-4 xl:col-span-2 bg-amber-500/5 border border-amber-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-amber-500/10 transition-all cursor-default text-amber-600 overflow-hidden">
-                    <div className="min-w-0">
-                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1 truncate">Диагностик</p>
-                        <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.diagnostics}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform shrink-0">
-                        <ClipboardList className="h-5 w-5" />
-                    </div>
-                </div>
-
-                <div className="lg:col-span-4 xl:col-span-2 bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-[32px] flex items-center justify-between group hover:bg-emerald-500/10 transition-all cursor-default text-emerald-600 overflow-hidden">
-                    <div className="min-w-0">
-                        <p className="text-[10px] font-black opacity-60 uppercase tracking-[0.2em] mb-1 truncate">Курс лечения</p>
-                        <p className="text-2xl font-black tabular-nums tracking-tighter">{stats.treatments}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform shrink-0">
-                        <CheckCircle2 className="h-5 w-5" />
-                    </div>
                 </div>
             </div>
 
@@ -244,7 +214,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     activeTab !== "settings" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 hidden"
                 )}>
                     {activeTab === "schedule" && (
-                        <>
+                        <div className="flex flex-col bg-background border-t border-border/40 -mx-6 lg:-mx-8 -mb-6 h-[calc(100vh-220px)] min-h-[500px]">
                             <ScheduleHeader
                                 view={view as any}
                                 onViewChange={(v: any) => setView(v)}
@@ -255,7 +225,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                 hideDoctorSelector={true}
                             />
 
-                            <div className="border border-border/40 rounded-[40px] overflow-hidden shadow-2xl shadow-primary/5 bg-background h-[calc(100vh-340px)] min-h-[450px] relative ring-1 ring-border/5">
+                            <div className="flex-1 overflow-hidden relative">
                                 {loadingAppts && (
                                     <div className="absolute inset-0 bg-background/60 backdrop-blur-md z-30 flex items-center justify-center">
                                         <div className="flex flex-col items-center gap-3">
@@ -293,7 +263,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                     />
                                 )}
                             </div>
-                        </>
+                        </div>
                     )}
 
                     {activeTab === "overview" && (
@@ -319,24 +289,33 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                                     </div>
                                 </div>
 
-                                {/* Количество диагностик */}
-                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                {/* Воронка: Количество пациентов */}
+                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group col-span-1 md:col-span-1 xl:col-span-1">
                                     <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
-                                        <Users className="h-24 w-24" />
+                                        <Users className="h-32 w-32" />
                                     </div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-[20px] bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                                            <ClipboardList className="h-5 w-5" />
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="h-10 w-10 rounded-[20px] bg-blue-500/10 text-blue-500 flex items-center justify-center shadow-inner">
+                                            <Users className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black">ПЛАН 40</Badge>
+                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black shadow-sm ring-1 ring-blue-500/20">В ЭТОМ МЕСЯЦЕ</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Проведено диагностик</p>
-                                    <h4 className="text-4xl font-black mt-1 tracking-tighter">
-                                        {appointments.filter(a => a.lead?.is_diagnostic).length}
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-2">Пациентов всего</p>
+                                    <h4 className="text-4xl font-black mt-1 tracking-tighter text-blue-500">
+                                        {stats.totalMonth}
                                     </h4>
-                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1 uppercase tracking-widest">
-                                        +5% с прошлой недели
-                                    </p>
+                                    
+                                    <div className="mt-4 flex gap-4 border-t border-border/40 pt-3 relative z-10">
+                                        <div className="flex-1">
+                                            <p className="text-[9px] font-black text-muted-foreground/80 uppercase tracking-widest mb-0.5">Диагностик</p>
+                                            <p className="text-lg font-black tabular-nums text-foreground">{stats.diagnostics}</p>
+                                        </div>
+                                        <div className="w-px bg-border/40" />
+                                        <div className="flex-1">
+                                            <p className="text-[9px] font-black text-muted-foreground/80 uppercase tracking-widest mb-0.5">На лечении</p>
+                                            <p className="text-lg font-black tabular-nums text-foreground">{stats.treatments}</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Сумма продаж */}
@@ -438,101 +417,7 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                     )}
                 </div>
 
-                {/* Sidebar: Today's Focus */}
-                {activeTab === "schedule" && (
-                    <div className="w-full lg:w-[360px] flex flex-col gap-4 animate-in slide-in-from-right-4 duration-500">
-                        <div className="bg-card border border-border/60 rounded-[40px] p-6 shadow-sm flex flex-col h-[calc(100vh-340px)] min-h-[450px]">
-                            <div className="flex items-center justify-between mb-6 shrink-0">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                    <h3 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Пациенты сегодня</h3>
-                                </div>
-                                <Badge variant="secondary" className="bg-primary/5 text-primary text-[10px] font-black border-none">
-                                    {stats.todayRemaining} ОСТАЛОСЬ
-                                </Badge>
-                            </div>
 
-                            <div className="flex-1 overflow-y-auto pr-1 -mr-1 custom-scrollbar space-y-3">
-                                {todayAppointments.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-40">
-                                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                            <User className="h-8 w-8" />
-                                        </div>
-                                        <p className="text-xs font-bold text-muted-foreground">На сегодня записей нет</p>
-                                    </div>
-                                ) : (
-                                    todayAppointments.map((appt, i) => {
-                                        const isNext = appt.status === "planned" && 
-                                            (!todayAppointments[i-1] || todayAppointments[i-1].status === "completed");
-                                        
-                                        return (
-                                            <div 
-                                                key={appt.id} 
-                                                className={cn(
-                                                    "group p-4 rounded-3xl border transition-all duration-300 relative overflow-hidden",
-                                                    appt.status === "completed" 
-                                                        ? "bg-secondary/10 border-border/30 opacity-60 grayscale-[0.5]" 
-                                                        : isNext 
-                                                            ? "bg-primary/[0.03] border-primary/30 ring-1 ring-primary/20 shadow-lg shadow-primary/5" 
-                                                            : "bg-background border-border/50 hover:border-primary/30 hover:shadow-md"
-                                                )}
-                                            >
-                                                {isNext && <div className="absolute top-0 left-0 w-1 h-full bg-primary" />}
-                                                
-                                                <div className="flex items-start justify-between gap-3 relative z-10">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className={cn(
-                                                                "text-[10px] font-black tabular-nums tracking-tighter px-1.5 py-0.5 rounded-md",
-                                                                appt.status === "completed" ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"
-                                                            )}>
-                                                                {appt.time}
-                                                            </span>
-                                                            <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest truncate">{appt.type}</span>
-                                                        </div>
-                                                        <h4 className="text-sm font-black text-foreground group-hover:text-primary transition-colors truncate">
-                                                            {appt.patient}
-                                                        </h4>
-                                                        <p className="text-[10px] font-medium text-muted-foreground mt-0.5 truncate">{appt.service}</p>
-                                                    </div>
-                                                    
-                                                    <div className="flex flex-col gap-2">
-                                                        <Button 
-                                                            size="icon" 
-                                                            variant="ghost" 
-                                                            className="h-8 w-8 rounded-xl hover:bg-primary hover:text-white transition-all shadow-sm"
-                                                            onClick={() => {
-                                                                setSelectedAppt(appt);
-                                                                setIsApptModalOpen(true);
-                                                            }}
-                                                        >
-                                                            <ExternalLink className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button 
-                                                            size="icon" 
-                                                            variant="ghost" 
-                                                            className="h-8 w-8 rounded-xl text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all shadow-sm"
-                                                            onClick={() => window.open(`https://wa.me/${appt.phone.replace(/\D/g,'')}`, '_blank')}
-                                                        >
-                                                            <MessageCircle className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-
-                            <Button 
-                                className="w-full mt-4 h-12 rounded-2xl bg-secondary/50 hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest gap-2 shrink-0 border border-border/40"
-                                onClick={() => setActiveTab("settings")}
-                            >
-                                <Settings className="h-4 w-4" /> Управление графиком
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Settings Area */}
                 {activeTab === "settings" && (
