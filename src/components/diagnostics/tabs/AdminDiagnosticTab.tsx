@@ -579,189 +579,219 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                 {/* STEP 2: Presentation & Payment Selection */}
                 {step === 2 && (
-                    <div className="animate-in fade-in slide-in-from-right-4 space-y-10 max-w-6xl mx-auto w-full">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <Star className="h-5 w-5" />
+                    <div className="animate-in fade-in slide-in-from-right-4 space-y-12 max-w-6xl mx-auto w-full">
+                        {/* 1. Diagnostic Value Proposition (The Package) */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-sm font-black uppercase tracking-[0.3em] text-primary/60">ЧТО ВХОДИТ В ДИАГНОСТИКУ</h3>
+                                    <h2 className="text-3xl font-black uppercase tracking-tight text-foreground">Комплексное обследование</h2>
                                 </div>
-                                <div>
-                                    <h2 className="text-xl font-bold tracking-tight uppercase">2. Презентация и Оплата</h2>
-                                    <p className="text-sm text-muted-foreground font-medium">Покажите пользу диагностики и выберите статус оплаты.</p>
+                                <div className="px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20 backdrop-blur-md">
+                                    <span className="text-xs font-black text-primary uppercase tracking-widest">СТОИМОСТЬ: 15 000 ₸ </span>
                                 </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                {[
+                                    { icon: Stethoscope, title: "Терапевт", desc: "Общий осмотр, анамнез и давление." },
+                                    { icon: Activity, title: "Реабилитолог", desc: "Тесты подвижности и позвоночника." },
+                                    { icon: FileSearch, title: "Анализ МРТ", desc: "Понятный разбор ваших снимков." },
+                                    { icon: Zap, title: "Процедура", desc: "Первый сеанс для снятия боли." },
+                                    { icon: ClipboardList, title: "План лечения", desc: "Пошаговая стратегия восстановления." }
+                                ].map((item, i) => (
+                                    <div key={i} className="relative group p-6 rounded-[32px] bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-primary/30 transition-all duration-300">
+                                        <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/20 transition-all">
+                                            <item.icon className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <h4 className="text-xs font-black text-foreground uppercase tracking-wider">{item.title}</h4>
+                                            <p className="text-[10px] text-muted-foreground font-medium leading-relaxed uppercase opacity-80">{item.desc}</p>
+                                        </div>
+                                        <div className="absolute top-4 right-4 h-4 w-4 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
+                                            <Check className="h-2.5 w-2.5 text-emerald-500" />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Presentation Cards (Value propositions) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {[
-                                { icon: Stethoscope, title: "Терапевт", desc: "Общий осмотр, анамнез." },
-                                { icon: Activity, title: "Реабилитолог", desc: "Позвоночник, подвижность." },
-                                { icon: FileSearch, title: "Анализ МРТ", desc: "Разбор ваших МРТ/результатов." },
-                                { icon: Zap, title: "Процедура", desc: "Первая процедура для боли." }
-                            ].map((item, i) => (
-                                <div key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-primary/[0.06] transition-all cursor-default group">
-                                    <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                                        <item.icon className="h-4 w-4" />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                        <h4 className="text-xs font-bold text-foreground leading-tight uppercase">{item.title}</h4>
-                                        <p className="text-[10px] text-muted-foreground font-medium">{item.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Invoice & Status Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 items-start">
-                            {/* Left: Invoice Controls */}
-                            <div className="p-8 rounded-[40px] bg-secondary/10 border-none relative overflow-hidden group">
-                                <div className="relative z-10 space-y-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-2xl bg-background shadow-xl flex items-center justify-center border border-border/20">
-                                            <Smartphone className="h-6 w-6 text-[#00A2E8]" />
+                        {/* 2. Prepayment Policy & Status Selection */}
+                        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 items-start">
+                            {/* Left: Prepayment Details & Action Selection */}
+                            <div className="space-y-8">
+                                <div className="p-8 rounded-[40px] bg-secondary/5 border border-white/5 space-y-6 relative overflow-hidden">
+                                    <div className="flex items-start gap-5 relative z-10">
+                                        <div className="h-14 w-14 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                                            <Info className="h-7 w-7" />
                                         </div>
-                                        <div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#00A2E8]">KASPI.KZ</span>
-                                            <h3 className="text-lg font-black uppercase tracking-tight">Счет на оплату</h3>
-                                        </div>
-                                    </div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] leading-relaxed text-muted-foreground/60">
-                                        Предоплата 5 000 ₸. Входит в стоимость диагностики. Оплата подтверждает серьезность намерений.
-                                    </p>
-                                    
-                                    <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-black tracking-widest text-muted-foreground/60 ml-1">НОМЕР ДЛЯ СЧЕТА</Label>
-                                            <Input 
-                                                value={formData.invoicePhone}
-                                                onChange={e => setFormData({ ...formData, invoicePhone: e.target.value })}
-                                                placeholder="+7 (___) ___-__-__"
-                                                className="h-12 bg-white border-none rounded-2xl px-5 text-sm font-black"
-                                            />
+                                            <h3 className="text-lg font-black uppercase tracking-tight">Политика бронирования</h3>
+                                            <p className="text-xs text-muted-foreground uppercase font-medium leading-relaxed tracking-wider opacity-70">
+                                                Для фиксации времени специалиста требуется гарантийный взнос <span className="text-foreground font-black">5 000 ₸</span>. 
+                                                Эта сумма <span className="text-emerald-500 font-black">вычитается из общей стоимости</span> диагностики при оплате в клинике.
+                                                Взнос возвращается при отмене записи за 24 часа.
+                                            </p>
                                         </div>
-                                        <Button 
-                                            variant="outline" 
-                                            className="w-full h-14 rounded-2xl gap-3 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all text-[11px] font-black uppercase tracking-widest"
-                                            onClick={() => toast({ title: "СЧЕТ ОТПРАВЛЕН", description: `Запрос на 5 000 ₸ отправлен на ${formData.invoicePhone}` })}
-                                        >
-                                            <MessageSquare className="h-4 w-4" /> Отправить счет
-                                        </Button>
+                                    </div>
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                                </div>
+
+                                <div className="space-y-4">
+                                    <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 ml-4">ВЫБЕРИТЕ РЕЗУЛЬТАТ ЭТАПА</Label>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        {[
+                                            { id: "pending", label: "Ожидание оплаты", desc: "В ожидании клика", color: "amber", icon: Clock },
+                                            { id: "paid", label: "Оплачено", desc: "Запись подтверждена", color: "emerald", icon: CheckCircle2 },
+                                            { id: "declined", label: "Отказ", desc: "Клиент отказался", color: "rose", icon: X },
+                                        ].map((item) => (
+                                            <button
+                                                key={item.id}
+                                                onClick={() => setFormData({ 
+                                                    ...formData, 
+                                                    paymentStatus: item.id as any,
+                                                    refusalReason: item.id === "declined" ? formData.refusalReason : "",
+                                                    prepaymentAmount: item.id === "paid" ? "5000" : ""
+                                                })}
+                                                className={cn(
+                                                    "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border-2 transition-all duration-300",
+                                                    formData.paymentStatus === item.id 
+                                                        ? `border-${item.color}-500 bg-${item.color}-500 shadow-2xl shadow-${item.color}-500/40 text-white scale-[1.03]` 
+                                                        : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20",
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors duration-300",
+                                                    formData.paymentStatus === item.id ? "bg-white/20" : `bg-${item.color}-500/10`
+                                                )}>
+                                                    <item.icon className={cn(
+                                                        "h-6 w-6",
+                                                        formData.paymentStatus === item.id ? "text-white" : `text-${item.color}-500`
+                                                    )} />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[11px] font-black uppercase tracking-wider">{item.label}</p>
+                                                    <p className={cn(
+                                                        "text-[9px] font-black uppercase tracking-widest opacity-40 mt-0.5",
+                                                        formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
+                                                    )}>{item.desc}</p>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Right: Status Selection */}
-                            <div className="space-y-6">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-4">Выберите результат этапа</Label>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {[
-                                        { id: "pending", label: "Ожидание оплаты", desc: "Оплатит позже", color: "amber", icon: Clock },
-                                        { id: "paid", label: "Оплачено", desc: "Подтверждено", color: "emerald", icon: CheckCircle2 },
-                                        { id: "declined", label: "Отказ", desc: "Не согласен", color: "rose", icon: X },
-                                    ].map((item) => (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => setFormData({ 
-                                                ...formData, 
-                                                paymentStatus: item.id as any,
-                                                refusalReason: item.id === "declined" ? formData.refusalReason : "",
-                                                prepaymentAmount: item.id === "paid" ? "5000" : ""
-                                            })}
-                                            className={cn(
-                                                "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border-2 transition-all duration-300",
-                                                formData.paymentStatus === item.id 
-                                                    ? `border-${item.color}-500 bg-${item.color}-500 shadow-2xl shadow-${item.color}-500/20 text-white scale-105` 
-                                                    : "border-border/20 bg-card hover:border-primary/20",
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors duration-300",
-                                                formData.paymentStatus === item.id ? "bg-white/20" : `bg-${item.color}-500/10`
-                                            )}>
-                                                <item.icon className={cn(
-                                                    "h-6 w-6",
-                                                    formData.paymentStatus === item.id ? "text-white" : `text-${item.color}-500`
-                                                )} />
+                            {/* Right: Conditional Action Area */}
+                            <div className="space-y-6 min-h-[400px]">
+                                {/* CASE: PENDING (Default or Selected) */}
+                                {(formData.paymentStatus === "pending" || !formData.paymentStatus) && (
+                                    <div className="p-8 rounded-[40px] bg-primary shadow-2xl shadow-primary/20 space-y-8 animate-in zoom-in-95 duration-500 h-full flex flex-col justify-center">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-14 w-14 rounded-3xl bg-white/10 flex items-center justify-center border border-white/20 backdrop-blur-md">
+                                                <Smartphone className="h-7 w-7 text-white" />
                                             </div>
-                                            <div className="text-center">
-                                                <p className="text-[11px] font-black uppercase tracking-wider">{item.label}</p>
-                                                <p className={cn(
-                                                    "text-[9px] font-black uppercase tracking-widest opacity-40 mt-0.5",
-                                                    formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
-                                                )}>{item.desc}</p>
+                                            <div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-white/60">КАСПИ СЧЕТ</span>
+                                                <h3 className="text-xl font-black uppercase tracking-tight text-white">Выбор оплаты</h3>
                                             </div>
-                                        </button>
-                                    ))}
-                                </div>
+                                        </div>
+                                        
+                                        <div className="space-y-5">
+                                            <div className="space-y-2">
+                                                <Label className="text-[10px] font-black tracking-widest text-white/60 ml-1 uppercase">ТЕЛЕФОН ДЛЯ СЧЕТА</Label>
+                                                <Input 
+                                                    value={formData.invoicePhone}
+                                                    onChange={e => setFormData({ ...formData, invoicePhone: e.target.value })}
+                                                    placeholder="+7 (___) ___-__-__"
+                                                    className="h-14 bg-white/10 border-white/10 rounded-2xl px-6 text-white text-lg font-black placeholder:text-white/20 focus:ring-2 focus:ring-white/20"
+                                                />
+                                            </div>
+                                            <Button 
+                                                className="w-full h-16 rounded-2xl gap-3 bg-white text-primary hover:bg-white/90 transition-all text-xs font-black uppercase tracking-widest shadow-xl shadow-black/10"
+                                                onClick={() => toast({ title: "СЧЕТ В ПУТИ", description: `Запрос на оплату отправлен на ${formData.invoicePhone}` })}
+                                            >
+                                                <MessageSquare className="h-5 w-5" /> ОТПРАВИТЬ СЧЕТ
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
 
-                                {/* Conditional View: REFUSAL REASONS */}
+                                {/* CASE: REFUSAL REASONS */}
                                 {formData.paymentStatus === "declined" && (
-                                    <div className="p-8 rounded-[32px] bg-rose-500/5 border border-rose-500/10 space-y-4 animate-in slide-in-from-top-4 duration-300">
-                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-rose-600 ml-1">Укажите причину отказа</Label>
-                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                                    <div className="p-8 rounded-[40px] bg-rose-500/10 border border-rose-500/20 space-y-6 animate-in slide-in-from-right-4 duration-500 h-full">
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <div className="h-12 w-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center">
+                                                <ShieldAlert className="h-6 w-6" />
+                                            </div>
+                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-rose-500">Причина отказа</h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-2">
                                             {["Дорого", "Другой город", "Подумает", "Не сейчас", "Другое"].map(reason => (
                                                 <button
                                                     key={reason}
                                                     onClick={() => setFormData({ ...formData, refusalReason: reason })}
                                                     className={cn(
-                                                        "h-10 px-4 rounded-xl text-[10px] font-bold uppercase transition-all",
+                                                        "h-14 px-6 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between",
                                                         formData.refusalReason === reason 
-                                                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" 
-                                                            : "bg-white border border-rose-500/20 text-rose-600 hover:bg-rose-50/10"
+                                                            ? "bg-rose-500 text-white" 
+                                                            : "bg-rose-500/5 text-rose-600 hover:bg-rose-500/10 border border-rose-500/10"
                                                     )}
                                                 >
                                                     {reason}
+                                                    {formData.refusalReason === reason && <Check className="h-4 w-4" />}
                                                 </button>
                                             ))}
                                         </div>
                                         {formData.refusalReason === "Другое" && (
                                             <Input 
-                                                placeholder="Своя причина..."
+                                                placeholder="Укажите свою причину..."
                                                 value={formData.refusalReasonOther || ""}
                                                 onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
-                                                className="bg-white border-rose-500/40 rounded-xl h-12 text-sm"
+                                                className="bg-white/5 border-rose-500/30 rounded-2xl h-14 text-sm font-bold text-rose-500"
                                             />
                                         )}
                                     </div>
                                 )}
 
-                                {/* Conditional View: PAID (AMOUNT + BOOKING) */}
+                                {/* CASE: PAID (AMOUNT + BOOKING) */}
                                 {formData.paymentStatus === "paid" && (
-                                    <div className="p-8 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 space-y-8 animate-in slide-in-from-top-4 duration-300">
-                                        <div className="flex items-center justify-between border-b border-emerald-500/10 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
-                                                    <CreditCard className="h-5 w-5" />
+                                    <div className="p-8 rounded-[40px] bg-emerald-500/10 border border-emerald-500/20 space-y-8 animate-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-12 w-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                                    <CreditCard className="h-6 w-6" />
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-sm font-black uppercase tracking-wide text-emerald-600">Подтверждение и Запись</h3>
-                                                    <p className="text-[10px] font-bold uppercase text-emerald-500/60 tracking-wider">Оплата подтверждена, выберите время приема</p>
+                                                <div className="space-y-0.5">
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-emerald-500">Оплата принята</h3>
+                                                    <p className="text-[10px] uppercase font-bold text-emerald-500/60 tracking-wider">Подтвердите сумму и выберите время</p>
                                                 </div>
                                             </div>
                                             <div className="w-32">
-                                                <Label className="text-[9px] uppercase font-bold text-emerald-600 mb-1 block">Сумма (₸)</Label>
+                                                <Label className="text-[9px] uppercase font-black text-emerald-500 mb-1.5 block tracking-widest ml-1">СУММА (₸)</Label>
                                                 <Input 
                                                     type="number"
                                                     value={formData.prepaymentAmount}
                                                     onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
-                                                    className="h-10 bg-white border-emerald-500/40 font-black text-emerald-600 text-center"
+                                                    className="h-12 bg-white/10 border-emerald-500/30 font-black text-emerald-500 text-center rounded-xl text-lg focus:ring-emerald-500/20"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="p-6 bg-white rounded-[24px] shadow-sm border border-border/40">
-                                            <BookingWidget
-                                                selectedDate={formData.bookingDate}
-                                                selectedTime={formData.bookingTime}
-                                                selectedDoctor={formData.bookingDoctor}
-                                                onBookingChange={(booking) => setFormData({ 
-                                                    ...formData, 
-                                                    bookingDate: booking.date, 
-                                                    bookingTime: booking.time,
-                                                    bookingDoctor: booking.doctor
-                                                })}
-                                            />
+                                        <div className="p-2 bg-white rounded-[32px] shadow-2xl overflow-hidden shadow-emerald-950/20">
+                                            <div className="bg-white p-4">
+                                                <BookingWidget
+                                                    selectedDate={formData.bookingDate}
+                                                    selectedTime={formData.bookingTime}
+                                                    selectedDoctor={formData.bookingDoctor}
+                                                    onBookingChange={(booking) => setFormData({ 
+                                                        ...formData, 
+                                                        bookingDate: booking.date, 
+                                                        bookingTime: booking.time,
+                                                        bookingDoctor: booking.doctor
+                                                    })}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
