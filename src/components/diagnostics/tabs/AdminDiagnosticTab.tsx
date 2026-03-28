@@ -115,6 +115,7 @@ export interface AdminFormData {
     confirmed: boolean;
     finalFio: string;
     finalPhone: string;
+    invoicePhone: string;
     mriCtHistory?: string;
     // Legacy mapping (to avoid breaking exports)
     complaints: string;
@@ -253,7 +254,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
     lead, data, questions, onQuestionsChange, onChange, onNext, readOnly = false, onSave 
 }) => {
     const [step, setStep] = useState(1);
-    const totalSteps = 4;
+    const totalSteps = 3;
     // const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
 
     const [formData, setFormData] = useState<AdminFormData>(data || {
@@ -273,6 +274,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         confirmed: false,
         finalFio: lead.name || "",
         finalPhone: lead.phone || "",
+        invoicePhone: lead.phone || "",
     });
 
     const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -311,7 +313,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
     const nextStep = () => {
         if (validateStage(step)) {
-            if (step === 3 && formData.paymentStatus === "declined") {
+            if (step === 2 && formData.paymentStatus === "declined") {
                 handleConfirm();
             } else {
                 setStep((s) => Math.min(s + 1, totalSteps));
@@ -331,18 +333,20 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         // Other steps validation stays similar
         switch (currentStep) {
             case 2:
-                if (!formData.bookingDate || !formData.bookingTime || !formData.bookingDoctor) {
-                    toast({ title: "Внимание", description: "Для перехода укажите время и врача", variant: "destructive" });
-                    return false;
-                }
-                break;
-            case 3:
                 if (!formData.paymentStatus) {
                     toast({ title: "Внимание", description: "Выберите статус оплаты", variant: "destructive" });
                     return false;
                 }
+                if (formData.paymentStatus === "paid" && (!formData.bookingDate || !formData.bookingTime || !formData.bookingDoctor)) {
+                    toast({ title: "Внимание", description: "Для подтвержденной оплаты необходимо выбрать время и врача", variant: "destructive" });
+                    return false;
+                }
+                if (formData.paymentStatus === "declined" && !formData.refusalReason) {
+                    toast({ title: "Внимание", description: "Укажите причину отказа", variant: "destructive" });
+                    return false;
+                }
                 break;
-            case 4:
+            case 3:
                 if (!formData.finalFio || !formData.finalPhone) {
                     toast({ title: "Внимание", description: "Заполните ФИО и телефон пациента", variant: "destructive" });
                     return false;
@@ -353,7 +357,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
     };
 
     const handleConfirm = () => {
-        const stageToValidate = (step === 3 && formData.paymentStatus === "declined") ? 3 : 4;
+        const stageToValidate = (step === 2 && formData.paymentStatus === "declined") ? 2 : 3;
         if (validateStage(stageToValidate)) {
             setFormData(prev => ({ ...prev, confirmed: true }));
             if (formData.paymentStatus === "declined") {
@@ -382,9 +386,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
     const stages = [
         { id: 1, title: "Опрос" },
-        { id: 2, title: "Запись" },
-        { id: 3, title: "Предоплата" },
-        { id: 4, title: "Завершение" },
+        { id: 2, title: "Презентация и Оплата" },
+        { id: 3, title: "Завершение" },
     ];
 
     // Inline edit states for Step 4
@@ -574,139 +577,192 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* STEP 2 */}
+                {/* STEP 2: Presentation & Payment Selection */}
                 {step === 2 && (
-                    <div className="animate-in fade-in slide-in-from-right-4 space-y-8 max-w-6xl mx-auto w-full">
+                    <div className="animate-in fade-in slide-in-from-right-4 space-y-10 max-w-6xl mx-auto w-full">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
                                     <Star className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold tracking-tight uppercase">2. Презентация и назначение</h2>
-                                    <p className="text-sm text-muted-foreground font-medium">Покажите ценность обследования и выберите удобное время.</p>
+                                    <h2 className="text-xl font-bold tracking-tight uppercase">2. Презентация и Оплата</h2>
+                                    <p className="text-sm text-muted-foreground font-medium">Покажите пользу диагностики и выберите статус оплаты.</p>
                                 </div>
                             </div>
-
-                            <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-                                <DialogTrigger asChild>
-                                    <Button size="lg" className="h-12 px-8 gap-3 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]">
-                                        <Calendar className="h-5 w-5" />
-                                        {formData.bookingDate && formData.bookingTime ? "Изменить запись" : "Запись на прием"}
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[900px] p-0 border-none bg-background overflow-hidden rounded-[32px] shadow-2xl">
-                                    <DialogHeader className="p-8 bg-primary/5 border-b border-primary/10">
-                                        <DialogTitle className="text-2xl font-bold text-primary flex items-center gap-3">
-                                            <Calendar className="h-6 w-6" /> Запись на прием
-                                        </DialogTitle>
-                                        <DialogDescription className="text-muted-foreground font-medium">
-                                            Выберите врача, дату и свободное время. Все изменения сохраняются автоматически.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="p-8">
-                                        <BookingWidget
-                                            selectedDate={formData.bookingDate}
-                                            selectedTime={formData.bookingTime}
-                                            selectedDoctor={formData.bookingDoctor}
-                                            onBookingChange={(booking) => setFormData({ 
-                                                ...formData, 
-                                                bookingDate: booking.date, 
-                                                bookingTime: booking.time,
-                                                bookingDoctor: booking.doctor
-                                            })}
-                                        />
-                                        
-                                        <div className="mt-8 pt-6 border-t border-border/50 flex justify-end">
-                                            <Button 
-                                                onClick={() => setIsBookingOpen(false)}
-                                                className="h-12 px-10 rounded-xl bg-primary hover:bg-primary/90 text-sm font-bold uppercase tracking-widest shadow-lg shadow-primary/10"
-                                            >
-                                                Подтвердить и закрыть
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </DialogContent>
-                            </Dialog>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {/* Presentation Cards (Value propositions) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                             {[
-                                {
-                                    icon: Stethoscope,
-                                    title: "Осмотр терапевта",
-                                    desc: "Общий осмотр, давление, пульс, анамнез для исключения факторов."
-                                },
-                                {
-                                    icon: Activity,
-                                    title: "Осмотр реабилитолога",
-                                    desc: "Диагностика позвоночника, подвижности и нервных реакций."
-                                },
-                                {
-                                    icon: UserCheck,
-                                    title: "Функциональные тесты",
-                                    desc: "Тестовые движения для выявления блоков и перегрузок."
-                                },
-                                {
-                                    icon: FileSearch,
-                                    title: "Анализ обследований",
-                                    desc: "Разбор ваших МРТ/КТ/Рентген на понятном языке."
-                                },
-                                {
-                                    icon: ClipboardList,
-                                    title: "Рекомендации",
-                                    desc: "Причины боли, допустимые нагрузки и ограничения."
-                                },
-                                {
-                                    icon: ShieldCheck,
-                                    title: "План лечения",
-                                    desc: "Пошаговый индивидуальный план восстановления."
-                                },
-                                {
-                                    icon: Zap,
-                                    title: "Первая процедура",
-                                    desc: "Сразу после диагностики для быстрого снижения боли."
-                                }
+                                { icon: Stethoscope, title: "Терапевт", desc: "Общий осмотр, анамнез." },
+                                { icon: Activity, title: "Реабилитолог", desc: "Позвоночник, подвижность." },
+                                { icon: FileSearch, title: "Анализ МРТ", desc: "Разбор ваших МРТ/результатов." },
+                                { icon: Zap, title: "Процедура", desc: "Первая процедура для боли." }
                             ].map((item, i) => (
-                                <div key={i} className="flex flex-col gap-3 p-5 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-primary/[0.08] hover:shadow-md hover:border-primary/20 transition-all cursor-default group">
-                                    <div className="h-11 w-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                        <item.icon className="h-5 w-5" />
+                                <div key={i} className="flex flex-col gap-2 p-4 rounded-2xl bg-primary/[0.03] border border-primary/5 hover:bg-primary/[0.06] transition-all cursor-default group">
+                                    <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                        <item.icon className="h-4 w-4" />
                                     </div>
-                                    <div className="space-y-1.5">
-                                        <h4 className="text-sm font-bold text-foreground leading-tight uppercase tracking-tight">{item.title}</h4>
-                                        <p className="text-xs text-muted-foreground leading-relaxed font-medium">{item.desc}</p>
+                                    <div className="space-y-0.5">
+                                        <h4 className="text-xs font-bold text-foreground leading-tight uppercase">{item.title}</h4>
+                                        <p className="text-[10px] text-muted-foreground font-medium">{item.desc}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-                            <div className="p-5 rounded-2xl bg-secondary/20 border border-border/40 space-y-3">
-                                <Label className="text-xs uppercase font-bold tracking-widest text-muted-foreground ml-1">Комментарий для врача</Label>
-                                <Textarea
-                                    placeholder="Детали: что именно беспокоит, есть ли результаты анализов..."
-                                    className="bg-transparent border-none focus:ring-0 h-20 text-sm font-medium resize-none p-0"
-                                    value={formData.adminComment}
-                                    onChange={(e) => setFormData({ ...formData, adminComment: e.target.value })}
-                                    disabled={readOnly}
-                                />
-                            </div>
-                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center gap-3">
-                                {formData.bookingDate && formData.bookingTime ? (
-                                    <div className="space-y-1.5">
-                                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest">Текущая запись</p>
-                                        <p className="text-sm font-bold text-primary flex items-center gap-2">
-                                            <Calendar className="h-4 w-4" />
-                                            {format(formData.bookingDate, "dd.MM.yyyy")} в {formData.bookingTime}
-                                        </p>
-                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                                            <User className="h-3.5 w-3.5" /> {formData.bookingDoctor || "Врач не выбран"}
-                                        </p>
+                        {/* Invoice & Status Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8 items-start">
+                            {/* Left: Invoice Controls */}
+                            <div className="p-8 rounded-[40px] bg-secondary/10 border-none relative overflow-hidden group">
+                                <div className="relative z-10 space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 rounded-2xl bg-background shadow-xl flex items-center justify-center border border-border/20">
+                                            <Smartphone className="h-6 w-6 text-[#00A2E8]" />
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#00A2E8]">KASPI.KZ</span>
+                                            <h3 className="text-lg font-black uppercase tracking-tight">Счет на оплату</h3>
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 text-muted-foreground italic">
-                                        <HeartPulse className="h-5 w-5" />
-                                        <span className="text-sm font-medium">Запись ещё не назначена</span>
+                                    <p className="text-[11px] font-black uppercase tracking-[0.15em] leading-relaxed text-muted-foreground/60">
+                                        Предоплата 5 000 ₸. Входит в стоимость диагностики. Оплата подтверждает серьезность намерений.
+                                    </p>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black tracking-widest text-muted-foreground/60 ml-1">НОМЕР ДЛЯ СЧЕТА</Label>
+                                            <Input 
+                                                value={formData.invoicePhone}
+                                                onChange={e => setFormData({ ...formData, invoicePhone: e.target.value })}
+                                                placeholder="+7 (___) ___-__-__"
+                                                className="h-12 bg-white border-none rounded-2xl px-5 text-sm font-black"
+                                            />
+                                        </div>
+                                        <Button 
+                                            variant="outline" 
+                                            className="w-full h-14 rounded-2xl gap-3 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all text-[11px] font-black uppercase tracking-widest"
+                                            onClick={() => toast({ title: "СЧЕТ ОТПРАВЛЕН", description: `Запрос на 5 000 ₸ отправлен на ${formData.invoicePhone}` })}
+                                        >
+                                            <MessageSquare className="h-4 w-4" /> Отправить счет
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Status Selection */}
+                            <div className="space-y-6">
+                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-4">Выберите результат этапа</Label>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {[
+                                        { id: "pending", label: "Ожидание оплаты", desc: "Оплатит позже", color: "amber", icon: Clock },
+                                        { id: "paid", label: "Оплачено", desc: "Подтверждено", color: "emerald", icon: CheckCircle2 },
+                                        { id: "declined", label: "Отказ", desc: "Не согласен", color: "rose", icon: X },
+                                    ].map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => setFormData({ 
+                                                ...formData, 
+                                                paymentStatus: item.id as any,
+                                                refusalReason: item.id === "declined" ? formData.refusalReason : "",
+                                                prepaymentAmount: item.id === "paid" ? "5000" : ""
+                                            })}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border-2 transition-all duration-300",
+                                                formData.paymentStatus === item.id 
+                                                    ? `border-${item.color}-500 bg-${item.color}-500 shadow-2xl shadow-${item.color}-500/20 text-white scale-105` 
+                                                    : "border-border/20 bg-card hover:border-primary/20",
+                                            )}
+                                        >
+                                            <div className={cn(
+                                                "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors duration-300",
+                                                formData.paymentStatus === item.id ? "bg-white/20" : `bg-${item.color}-500/10`
+                                            )}>
+                                                <item.icon className={cn(
+                                                    "h-6 w-6",
+                                                    formData.paymentStatus === item.id ? "text-white" : `text-${item.color}-500`
+                                                )} />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-[11px] font-black uppercase tracking-wider">{item.label}</p>
+                                                <p className={cn(
+                                                    "text-[9px] font-black uppercase tracking-widest opacity-40 mt-0.5",
+                                                    formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
+                                                )}>{item.desc}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Conditional View: REFUSAL REASONS */}
+                                {formData.paymentStatus === "declined" && (
+                                    <div className="p-8 rounded-[32px] bg-rose-500/5 border border-rose-500/10 space-y-4 animate-in slide-in-from-top-4 duration-300">
+                                        <Label className="text-[10px] uppercase font-bold tracking-widest text-rose-600 ml-1">Укажите причину отказа</Label>
+                                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                                            {["Дорого", "Другой город", "Подумает", "Не сейчас", "Другое"].map(reason => (
+                                                <button
+                                                    key={reason}
+                                                    onClick={() => setFormData({ ...formData, refusalReason: reason })}
+                                                    className={cn(
+                                                        "h-10 px-4 rounded-xl text-[10px] font-bold uppercase transition-all",
+                                                        formData.refusalReason === reason 
+                                                            ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" 
+                                                            : "bg-white border border-rose-500/20 text-rose-600 hover:bg-rose-50/10"
+                                                    )}
+                                                >
+                                                    {reason}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {formData.refusalReason === "Другое" && (
+                                            <Input 
+                                                placeholder="Своя причина..."
+                                                value={formData.refusalReasonOther || ""}
+                                                onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
+                                                className="bg-white border-rose-500/40 rounded-xl h-12 text-sm"
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Conditional View: PAID (AMOUNT + BOOKING) */}
+                                {formData.paymentStatus === "paid" && (
+                                    <div className="p-8 rounded-[32px] bg-emerald-500/5 border border-emerald-500/10 space-y-8 animate-in slide-in-from-top-4 duration-300">
+                                        <div className="flex items-center justify-between border-b border-emerald-500/10 pb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
+                                                    <CreditCard className="h-5 w-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black uppercase tracking-wide text-emerald-600">Подтверждение и Запись</h3>
+                                                    <p className="text-[10px] font-bold uppercase text-emerald-500/60 tracking-wider">Оплата подтверждена, выберите время приема</p>
+                                                </div>
+                                            </div>
+                                            <div className="w-32">
+                                                <Label className="text-[9px] uppercase font-bold text-emerald-600 mb-1 block">Сумма (₸)</Label>
+                                                <Input 
+                                                    type="number"
+                                                    value={formData.prepaymentAmount}
+                                                    onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
+                                                    className="h-10 bg-white border-emerald-500/40 font-black text-emerald-600 text-center"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 bg-white rounded-[24px] shadow-sm border border-border/40">
+                                            <BookingWidget
+                                                selectedDate={formData.bookingDate}
+                                                selectedTime={formData.bookingTime}
+                                                selectedDoctor={formData.bookingDoctor}
+                                                onBookingChange={(booking) => setFormData({ 
+                                                    ...formData, 
+                                                    bookingDate: booking.date, 
+                                                    bookingTime: booking.time,
+                                                    bookingDoctor: booking.doctor
+                                                })}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -714,169 +770,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* STEP 3 */}
+
+                {/* STEP 3: SUMMARY */}
                 {step === 3 && (
-                    <div className="animate-in fade-in slide-in-from-right-4 space-y-10">
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                                    <CreditCard className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-semibold tracking-tight">3. Предоплата и гарантия визита</h2>
-                                    <p className="text-muted-foreground">Подтвердите серьезность намерений пациента через внесение задатка.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 items-start">
-                            {/* Left: Messaging/Action */}
-                            <div className="space-y-6">
-                                <div className="p-10 rounded-[40px] bg-secondary/10 border-none relative overflow-hidden group">
-                                    <div className="relative z-10 space-y-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-14 w-14 rounded-3xl bg-background shadow-xl flex items-center justify-center border border-border/20">
-                                                <Smartphone className="h-7 w-7 text-[#00A2E8]" />
-                                            </div>
-                                            <div>
-                                                <span className="text-xs font-black uppercase tracking-widest text-[#00A2E8]">Platform</span>
-                                                <h3 className="text-xl font-black uppercase tracking-tight">Kaspi.kz Payment</h3>
-                                            </div>
-                                        </div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.15em] leading-relaxed text-muted-foreground/60">
-                                            Отправьте ссылку на оплату через WhatsApp. Это стандартная процедура клиники для фиксации времени и подтверждения серьезности намерений.
-                                        </p>
-                                        <Button 
-                                            variant="outline" 
-                                            className="w-full h-16 rounded-3xl gap-3 border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all text-xs font-black uppercase tracking-widest shadow-lg shadow-[#25D366]/10"
-                                            onClick={() => {
-                                                toast({
-                                                    title: "ССЫЛКА ОТПРАВЛЕНА",
-                                                    description: "Ссылка на оплату Kaspi отправлена в WhatsApp",
-                                                });
-                                            }}
-                                        >
-                                            <MessageSquare className="h-5 w-5" /> Отправить в WhatsApp
-                                        </Button>
-                                    </div>
-                                    {/* Abstract background elements */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-primary/10 transition-colors" />
-                                </div>
-                            </div>
-
-                            {/* Right: Status Selection */}
-                            <div className="space-y-6">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 ml-4">Текущий статус транзакции</Label>
-                                <RadioGroup
-                                    value={formData.paymentStatus}
-                                    onValueChange={(val: "pending" | "paid" | "declined") => !readOnly && setFormData({ ...formData, paymentStatus: val })}
-                                    className="grid grid-cols-1 gap-4"
-                                    disabled={readOnly}
-                                >
-                                    {[
-                                        { id: "pending", label: "Ожидание", desc: "Счет выставлен, ждем подтверждения", color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-                                        { id: "paid", label: "Оплачено", desc: "Предоплата получена и подтверждена", color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-                                        { id: "declined", label: "Отказ", desc: "Пациент отказался вносить задаток", color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20" },
-                                    ].map((item) => (
-                                        <div key={item.id} className="space-y-4">
-                                            <div className="flex items-center">
-                                                <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
-                                                <Label
-                                                    htmlFor={item.id}
-                                                    className={cn(
-                                                        "flex-1 flex items-center justify-between p-7 rounded-[32px] border-2 transition-all duration-300",
-                                                        formData.paymentStatus === item.id 
-                                                            ? "border-primary bg-primary shadow-2xl shadow-primary/20 text-white translate-x-2" 
-                                                            : "border-border/20 bg-card hover:border-primary/20",
-                                                        !readOnly && "cursor-pointer"
-                                                    )}
-                                                >
-                                                    <div className="flex items-center gap-5">
-                                                        <div className={cn(
-                                                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-colors duration-300",
-                                                            formData.paymentStatus === item.id ? "bg-white/20" : item.bg
-                                                        )}>
-                                                            <div className={cn(
-                                                                "h-3 w-3 rounded-full transition-colors duration-300",
-                                                                formData.paymentStatus === item.id ? "bg-white" : item.color.replace('text', 'bg')
-                                                            )} />
-                                                        </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
-                                                            <span className={cn(
-                                                                "text-[9px] font-black uppercase tracking-widest opacity-40",
-                                                                formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
-                                                            )}>{item.desc}</span>
-                                                        </div>
-                                                    </div>
-                                                    {formData.paymentStatus === item.id && (
-                                                        <CheckCircle2 className="h-6 w-6 text-white animate-in zoom-in" />
-                                                    )}
-                                                </Label>
-                                            </div>
-
-                                            {/* Sub-inputs with micro-animations */}
-                                            {formData.paymentStatus === "paid" && item.id === "paid" && (
-                                                <div className="px-4 animate-in slide-in-from-top-4 duration-500">
-                                                    <div className="p-8 rounded-[32px] bg-emerald-500/5 border border-emerald-500/20 space-y-4">
-                                                        <Label className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600">Сумма предоплаты (₸)</Label>
-                                                        <Input 
-                                                            type="number"
-                                                            placeholder="9990"
-                                                            value={formData.prepaymentAmount}
-                                                            onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
-                                                            className="h-16 bg-white border-none rounded-2xl px-6 text-xl font-black text-emerald-600 focus:ring-2 focus:ring-emerald-500/20 shadow-xl shadow-emerald-500/5"
-                                                            disabled={readOnly}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                                {formData.paymentStatus === "declined" && item.id === "declined" && (
-                                                    <div className="px-2 animate-in slide-in-from-top-2 duration-300">
-                                                        <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 space-y-3">
-                                                            <Label className="text-[10px] uppercase font-bold tracking-widest text-rose-600">Причина отказа</Label>
-                                                            <Select 
-                                                                value={formData.refusalReason} 
-                                                                onValueChange={val => setFormData({ ...formData, refusalReason: val })}
-                                                                disabled={readOnly}
-                                                            >
-                                                                <SelectTrigger className="h-10 bg-background border-rose-500/20 focus:ring-rose-500 font-medium">
-                                                                    <SelectValue placeholder="Выберите причину" />
-                                                                </SelectTrigger>
-                                                                <SelectContent className="rounded-xl">
-                                                                    <SelectItem value="Дорого">Дорого</SelectItem>
-                                                                    <SelectItem value="Другой город">Другой город</SelectItem>
-                                                                    <SelectItem value="Подумает">Подумает</SelectItem>
-                                                                    <SelectItem value="Не сейчас">Не сейчас</SelectItem>
-                                                                    <SelectItem value="Другое">Другое</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-
-                                                            {formData.refusalReason === "Другое" && (
-                                                                <div className="pt-2 animate-in slide-in-from-top-1 duration-200">
-                                                                    <Input 
-                                                                        placeholder="Укажите свою причину..."
-                                                                        value={formData.refusalReasonOther || ""}
-                                                                        onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
-                                                                        className="h-10 bg-background border-rose-500/20 focus:ring-rose-500"
-                                                                        disabled={readOnly}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </RadioGroup>
-                                </div>
-                            </div>
-                        </div>
-                )}
-
-                {/* STEP 4 */}
-                {step === 4 && (
                     <div className="animate-in fade-in slide-in-from-right-4 space-y-10">
                         <div className="space-y-3">
                             <div className="flex items-center gap-3">
@@ -884,7 +780,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <Flag className="h-6 w-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-semibold tracking-tight">4. Финал и подтверждение</h2>
+                                    <h2 className="text-2xl font-semibold tracking-tight">3. Финал и подтверждение</h2>
                                     <p className="text-muted-foreground">Обязательно перепроверьте данные перед передачей врачу.</p>
                                 </div>
                             </div>
@@ -947,10 +843,10 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <div className="flex justify-between items-center">
                                         <Label className="text-xs text-muted-foreground">Предоплата</Label>
                                         {editBookingData ? (
-                                            <Button variant="link" size="sm" onClick={() => setStep(3)}>Изменить</Button>
+                                            <Button variant="link" size="sm" onClick={() => setStep(2)}>Изменить</Button>
                                         ) : (
                                             <p className={cn("font-semibold text-right", formData.paymentStatus === "paid" ? "text-emerald-500" : "text-amber-500")}>
-                                                {formData.paymentStatus === "paid" ? "Оплачено" : "Ожидается"}
+                                                {formData.paymentStatus === "paid" ? "Оплачено" : formData.paymentStatus === "declined" ? "Отказ" : "Ожидается"}
                                             </p>
                                         )}
                                     </div>
@@ -991,7 +887,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
             </div>
 
             {/* Bottom Nav */}
-            {step < 4 && (
+            {step < 3 && (
                 <div className="flex items-center justify-between max-w-4xl mx-auto w-full pt-8 border-t border-border mt-8">
                     <Button
                         variant="ghost"
