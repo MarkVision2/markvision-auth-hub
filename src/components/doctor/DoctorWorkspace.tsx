@@ -5,7 +5,7 @@ import {
   Calendar, Settings, Clock, User, Phone, Building, 
   Briefcase, Save, Loader2, Activity, CheckCircle2,
   ExternalLink, MessageCircle, ShieldAlert, ClipboardList,
-  FileDown, Stethoscope
+  FileDown, Stethoscope, Trophy, Wallet, TrendingUp, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -296,57 +296,86 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                         </>
                     )}
 
-                    {activeTab === "analytics" && (
+                    {activeTab === "overview" && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                {/* Рейтинг Врача */}
+                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/30 p-6 rounded-[40px] shadow-xl shadow-amber-500/20 text-white relative overflow-hidden group">
+                                    <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
+                                        <Trophy className="h-32 w-32" />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="h-10 w-10 rounded-[20px] bg-white/20 backdrop-blur-sm flex items-center justify-center text-white shadow-inner">
+                                                <Trophy className="h-5 w-5" />
+                                            </div>
+                                            <Badge variant="outline" className="bg-white/20 text-white border-none text-[9px] font-black backdrop-blur-sm shadow-sm ring-1 ring-white/30">МЕСЯЦ</Badge>
+                                        </div>
+                                        <p className="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-1">Рейтинг клиники</p>
+                                        <div className="flex items-end gap-2">
+                                            <h4 className="text-4xl font-black drop-shadow-md tracking-tighter">ТОП-1</h4>
+                                        </div>
+                                        <p className="text-[10px] font-black mt-2 text-white/90 uppercase tracking-widest bg-black/10 inline-block px-2 py-0.5 rounded-md">Лучшая конверсия</p>
+                                    </div>
+                                </div>
+
+                                {/* Количество диагностик */}
+                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                                        <Users className="h-24 w-24" />
+                                    </div>
                                     <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                        <div className="h-10 w-10 rounded-[20px] bg-blue-500/10 text-blue-500 flex items-center justify-center">
                                             <ClipboardList className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black">МЕСЯЦ</Badge>
+                                        <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black">ПЛАН 40</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Диагностик проведено</p>
-                                    <h4 className="text-3xl font-black mt-1">
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Проведено диагностик</p>
+                                    <h4 className="text-4xl font-black mt-1 tracking-tighter">
                                         {appointments.filter(a => a.lead?.is_diagnostic).length}
                                     </h4>
-                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                                        +12% к прошлому периоду
+                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1 uppercase tracking-widest">
+                                        +5% с прошлой недели
                                     </p>
                                 </div>
 
-                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
-                                            <Activity className="h-5 w-5" />
-                                        </div>
-                                        <Badge variant="outline" className="bg-purple-500/5 text-purple-500 border-none text-[9px] font-black">KPI</Badge>
-                                    </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Конверсия в лечение</p>
-                                    <h4 className="text-3xl font-black mt-1">
-                                        {Math.round((appointments.filter(a => a.status === "completed").length / (appointments.length || 1)) * 100)}%
-                                    </h4>
-                                    <p className="text-[10px] text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                                        Цель: 65%
-                                    </p>
-                                </div>
-
-                                <div className="bg-card border border-border/60 p-6 rounded-[32px] shadow-sm relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                                {/* Сумма продаж */}
+                                <div className="bg-card border border-border/60 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
                                         <Briefcase className="h-24 w-24" />
                                     </div>
                                     <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                        <div className="h-10 w-10 rounded-[20px] bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                            <Wallet className="h-5 w-5" />
+                                        </div>
+                                        <Badge variant="outline" className="bg-indigo-500/5 text-indigo-500 border-none text-[9px] font-black">ВЫРУЧКА</Badge>
+                                    </div>
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Сумма продаж</p>
+                                    <h4 className="text-3xl font-black mt-1 text-indigo-600 truncate tracking-tighter">
+                                        {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0))} ₸
+                                    </h4>
+                                    <p className="text-[10px] text-muted-foreground font-black mt-2 uppercase tracking-widest">
+                                        Конверсия: {Math.round((appointments.filter(a => a.status === "completed").length / (appointments.length || 1)) * 100)}%
+                                    </p>
+                                </div>
+
+                                {/* Бонусы (Процент) */}
+                                <div className="bg-emerald-500/5 border border-emerald-500/20 p-6 rounded-[40px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.04] group-hover:scale-110 transition-transform text-emerald-500">
+                                        <TrendingUp className="h-24 w-24" />
+                                    </div>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="h-10 w-10 rounded-[20px] bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center relative z-10 group-hover:scale-105 transition-transform">
                                             <Save className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-none text-[9px] font-black">БОНУС 10%</Badge>
+                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none text-[9px] font-black">БОНУС 10%</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Ваши бонусы</p>
-                                    <h4 className="text-3xl font-black mt-1 text-emerald-600">
+                                    <p className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest">К выплате</p>
+                                    <h4 className="text-3xl font-black mt-1 text-emerald-600 tracking-tighter">
                                         {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0) * 0.1)} ₸
                                     </h4>
-                                    <p className="text-[10px] text-muted-foreground font-bold mt-2 truncate">
-                                        Выручка: {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0))} ₸
+                                    <p className="text-[10px] text-emerald-600 font-black mt-2 uppercase tracking-widest bg-emerald-500/10 inline-block px-2 py-0.5 rounded-md">
+                                        Ваш личный бонус
                                     </p>
                                 </div>
                             </div>
