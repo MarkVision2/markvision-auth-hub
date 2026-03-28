@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageCircle, CreditCard, Calendar, MapPin, Check, Ban, Phone, DollarSign, Globe, ChevronDown, TrendingUp, Trash2, Pencil, Layout, Stethoscope } from "lucide-react";
+import { MessageCircle, CreditCard, Calendar, MapPin, Check, Ban, Phone, DollarSign, Globe, ChevronDown, TrendingUp, Trash2, Pencil, Layout, Stethoscope, Search, Filter } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import LeadDetailSheet from "./LeadDetailSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Tooltip, TooltipContent, TooltipTrigger, TooltipProvider,
 } from "@/components/ui/tooltip";
@@ -107,9 +108,10 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
 
   return (
     <div
-      className="group bg-card border rounded-lg px-3 py-2.5 cursor-grab active:cursor-grabbing border-border/50 hover:border-primary/40 hover:bg-card/80 transition-all duration-150"
+      className="group bg-card border rounded-2xl p-3.5 cursor-grab active:cursor-grabbing border-border/60 hover:border-primary/40 hover:bg-card/90 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 relative overflow-hidden"
       onClick={() => onCardClick(lead)}
     >
+      <div className={`absolute top-0 right-0 w-16 h-16 ${accentBgMap[stage.accent]} blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
       {/* Row 1: Avatar + Name + Time */}
       <div className="flex items-center gap-2">
         <div className={`h-7 w-7 rounded-full ${accentBgMap[stage.accent]} flex items-center justify-center shrink-0`}>
@@ -146,7 +148,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
           </span>
         )}
         {lead.utm_campaign && (
-          <span className="text-[9px] px-1.5 py-[1px] rounded bg-secondary/80 text-muted-foreground/70 truncate max-w-[80px]">
+          <span className="text-[9px] font-black tracking-widest px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground uppercase truncate max-w-[80px]">
             {lead.utm_campaign}
           </span>
         )}
@@ -185,6 +187,8 @@ export default function KanbanBoard() {
   const [activePipeline, setActivePipeline] = useState<string>("main");
   const [pendingScheduleLead, setPendingScheduleLead] = useState<Lead | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [scoreFilter, setScoreFilter] = useState("all");
 
   useEffect(() => {
     setStages(loadStages(active.id, activePipeline));
@@ -347,8 +351,20 @@ export default function KanbanBoard() {
   };
 
   const filteredSummarizedLeads = useMemo(() => {
-    return leads.filter(l => (l.pipeline || "main") === activePipeline);
-  }, [leads, activePipeline]);
+    return leads.filter(l => {
+      if ((l.pipeline || "main") !== activePipeline) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const nMatch = (l.name || "").toLowerCase().includes(q);
+        const pMatch = (l.phone || "").toLowerCase().includes(q);
+        if (!nMatch && !pMatch) return false;
+      }
+      if (scoreFilter === "hot" && (l.ai_score || 0) < 80) return false;
+      if (scoreFilter === "warm" && ((l.ai_score || 0) < 50 || (l.ai_score || 0) >= 80)) return false;
+      if (scoreFilter === "cold" && (l.ai_score || 0) >= 50) return false;
+      return true;
+    });
+  }, [leads, activePipeline, searchQuery, scoreFilter]);
 
   const totalAmount = useMemo(() => {
     return filteredSummarizedLeads.reduce((s, l) => s + (Number(l.amount) || 0), 0);
@@ -362,11 +378,7 @@ export default function KanbanBoard() {
   const leadsByStatus = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     for (const stage of stages) map[stage.key] = [];
-    const filteredLeads = leads.filter(l => {
-        const p = l.pipeline || "main";
-        return p === activePipeline;
-    });
-    for (const lead of filteredLeads) {
+    for (const lead of filteredSummarizedLeads) {
       const key = lead.status || (activePipeline === "main" ? "Новая заявка" : "Лечение начато");
       if (map[key]) {
         map[key].push(lead);
@@ -398,22 +410,30 @@ export default function KanbanBoard() {
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
         {/* Summary bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 px-1 shrink-0">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Лидов</p>
-                <p className="text-sm font-bold text-foreground">{filteredSummarizedLeads.length}</p>
-              </div>
-            </div>
-            <div className="h-8 w-px bg-border hidden md:block" />
-            <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Сумма</p>
-              <p className="text-sm font-bold text-foreground tabular-nums">{fmt(totalAmount)} ₸</p>
-            </div>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 px-1 shrink-0">
+          <div className="flex-1 flex items-center gap-3">
+             <div className="relative w-full max-w-[280px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Поиск по имени или телефону..."
+                  className="pl-9 h-11 bg-card/60 backdrop-blur-md border-border/60 rounded-2xl focus-visible:ring-primary focus-visible:ring-1 shadow-sm text-sm transition-all"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+             </div>
+             
+             <Select value={scoreFilter} onValueChange={setScoreFilter}>
+               <SelectTrigger className="w-[140px] h-11 bg-card/60 backdrop-blur-md border-border/60 rounded-2xl shadow-sm text-sm">
+                 <Filter className="h-4 w-4 text-muted-foreground mr-2 shrink-0" />
+                 <SelectValue placeholder="AI-Score" />
+               </SelectTrigger>
+               <SelectContent className="rounded-xl border-border/50">
+                 <SelectItem value="all">Все лиды</SelectItem>
+                 <SelectItem value="hot"><span className="flex items-center gap-2">🔥 Горячие &gt;80</span></SelectItem>
+                 <SelectItem value="warm"><span className="flex items-center gap-2">🌤 Теплые 50-80</span></SelectItem>
+                 <SelectItem value="cold"><span className="flex items-center gap-2">❄️ Холодные &lt;50</span></SelectItem>
+               </SelectContent>
+             </Select>
           </div>
 
           <div className="flex items-center gap-4">
@@ -436,7 +456,7 @@ export default function KanbanBoard() {
               </TabsList>
             </Tabs>
             
-            <div className="hidden lg:flex items-center gap-1 ml-4 bg-background/50 p-1.5 rounded-xl border border-border/40">
+            <div className="hidden lg:flex items-center gap-1.5 ml-4 bg-card/60 backdrop-blur-md p-2 rounded-2xl border border-border/50 shadow-inner">
               {stages.map(s => {
                 const count = (leadsByStatus[s.key] || []).length;
                 const pct = leads.length ? (count / leads.length) * 100 : 0;
@@ -466,12 +486,13 @@ export default function KanbanBoard() {
             const isEditing = editingStage === stage.key;
 
             return (
-              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-secondary/30 rounded-xl p-2 transition-all duration-300 border border-border/50 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[270px] w-[270px]"}`}>
+              <div key={stage.key} className={`shrink-0 flex flex-col h-full bg-background/40 backdrop-blur-xl shadow-lg shadow-black/5 rounded-[32px] p-2.5 transition-all duration-300 border border-border/60 ${collapsed ? "min-w-[48px] w-[48px]" : "min-w-[280px] w-[280px]"}`}>
                 {/* Column header */}
                 <div
-                  className={`group/header rounded-xl p-3 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0`}
+                  className={`group/header rounded-[24px] p-3.5 mb-3 bg-gradient-to-b ${stage.gradient} border border-border/50 cursor-pointer select-none shrink-0 shadow-sm relative overflow-hidden`}
                   onClick={() => collapsed && toggleCollapse(stage.key)}
                 >
+                  <div className={`absolute -right-4 -top-4 w-16 h-16 ${accentBgMap[stage.accent]} opacity-20 blur-2xl rounded-full`} />
                   {collapsed ? (
                     <div className="flex flex-col items-center gap-2 py-2">
                       <Icon className={`h-4 w-4 ${accentTextMap[stage.accent]}`} />
@@ -574,10 +595,14 @@ export default function KanbanBoard() {
                         {provided.placeholder}
 
                         {stageLeads.length === 0 && !snapshot.isDraggingOver && (
-                          <div className="border border-dashed border-border/60 rounded-xl h-32 flex flex-col items-center justify-center gap-2 glass">
-                            <Icon className={`h-5 w-5 ${accentTextMap[stage.accent]} opacity-30`} />
-                            <span className="text-[11px] text-muted-foreground/60">Данных пока нет</span>
-                            <span className="text-[9px] text-muted-foreground/30">Перетащите карточку сюда</span>
+                          <div className="border-2 border-dashed border-border/40 rounded-2xl h-36 flex flex-col items-center justify-center gap-3 bg-card/20 mx-1 mt-2">
+                            <div className={`h-12 w-12 rounded-full ${accentBgMap[stage.accent]} flex items-center justify-center opacity-60`}>
+                                <Icon className={`h-5 w-5 ${accentTextMap[stage.accent]}`} />
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Пусто</span>
+                                <span className="block text-[9px] font-bold text-muted-foreground/40 leading-tight">Перетащите<br/>карточку сюда</span>
+                            </div>
                           </div>
                         )}
                       </div>

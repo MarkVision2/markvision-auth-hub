@@ -134,9 +134,10 @@ export default function CrmSystem() {
           </div>
           <Button
             onClick={() => setAddLeadOpen(true)}
-            className="h-11 px-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 gap-2"
+            className="h-12 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-500 text-white font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all gap-2 border border-emerald-400/50 relative overflow-hidden group"
           >
-            <Plus className="h-4 w-4" /> Новый лид
+            <div className="absolute inset-0 bg-white/20 w-1/2 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+            <Plus className="h-4 w-4" /> НОВЫЙ ЛИД
           </Button>
         </div>
 
@@ -209,18 +210,18 @@ export default function CrmSystem() {
         <div className="flex-1 min-h-0 flex flex-col">
           <Tabs defaultValue="kanban" className="flex-1 flex flex-col min-h-0">
             <div className="flex items-center justify-between gap-4 mb-4 shrink-0">
-              <TabsList className="h-11 bg-secondary/30 border border-border p-1 rounded-xl">
-                <TabsTrigger value="kanban" className="h-9 px-4 text-sm font-medium rounded-lg gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                  <Kanban className="h-4 w-4" /> Воронка
+              <TabsList className="h-14 bg-card border border-border/60 p-1.5 rounded-[20px] shadow-sm inline-flex">
+                <TabsTrigger value="kanban" className="h-11 px-5 text-xs font-black uppercase tracking-widest rounded-xl gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all">
+                  <Kanban className="h-4 w-4" /> ВОРОНКА
                 </TabsTrigger>
-                <TabsTrigger value="chats" className="h-9 px-4 text-sm font-medium rounded-lg gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                  <MessageCircle className="h-4 w-4" /> Чаты
+                <TabsTrigger value="chats" className="h-11 px-5 text-xs font-black uppercase tracking-widest rounded-xl gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all">
+                  <MessageCircle className="h-4 w-4" /> ЧАТЫ
                 </TabsTrigger>
-                <TabsTrigger value="clients" className="h-9 px-4 text-sm font-medium rounded-lg gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                  <Database className="h-4 w-4" /> База клиентов
+                <TabsTrigger value="clients" className="h-11 px-5 text-xs font-black uppercase tracking-widest rounded-xl gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all">
+                  <Database className="h-4 w-4" /> БАЗА КЛИЕНТОВ
                 </TabsTrigger>
-                <TabsTrigger value="automations" className="h-9 px-4 text-sm font-medium rounded-lg gap-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-                  <Cpu className="h-4 w-4" /> Автоматизации
+                <TabsTrigger value="automations" className="h-11 px-5 text-xs font-black uppercase tracking-widest rounded-xl gap-2 data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md border border-transparent data-[state=active]:border-border/50 transition-all">
+                  <Cpu className="h-4 w-4" /> АВТОМАТИЗАЦИИ
                 </TabsTrigger>
               </TabsList>
               
