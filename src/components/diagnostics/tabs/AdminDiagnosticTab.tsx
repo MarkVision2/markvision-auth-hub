@@ -607,7 +607,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <h2 className="text-3xl font-black uppercase tracking-tight text-foreground">Комплексное обследование</h2>
                                 </div>
                                 <div className="px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20 backdrop-blur-md">
-                                    <span className="text-xs font-black text-primary uppercase tracking-widest">СТОИМОСТЬ: 15 000 ₸ </span>
+                                    <span className="text-xs font-black text-primary uppercase tracking-widest">СТОИМОСТЬ: 9 900 ₸ </span>
                                 </div>
                             </div>
 
