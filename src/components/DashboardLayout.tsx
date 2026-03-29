@@ -2,7 +2,7 @@ import { ReactNode, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Sun, Moon, Sparkles, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useTheme } from "@/hooks/useTheme";
 import AppSidebar, { SidebarContentInner } from "@/components/AppSidebar";
 import NotificationBell from "@/components/NotificationBell";
@@ -30,6 +30,7 @@ export default function DashboardLayout({ children, breadcrumb, noPadding }: Das
       {/* Mobile drawer */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-r border-border flex flex-col">
+          <SheetTitle className="sr-only">Навигация</SheetTitle>
           <SidebarContentInner onNavigate={() => setMobileMenuOpen(false)} />
         </SheetContent>
       </Sheet>

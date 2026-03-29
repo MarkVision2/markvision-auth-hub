@@ -130,23 +130,21 @@ const DiagnosticsDashboardPage = () => {
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
               {stats.map((stat) => (
-                <div key={stat.title} className="group relative overflow-hidden rounded-[32px] border border-border/60 bg-card p-6 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
-                  <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform">
-                    <stat.icon className="h-20 w-20" />
+                <div key={stat.title} className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                  <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover:scale-110 transition-transform">
+                    <stat.icon className="h-14 w-14" />
                   </div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg shadow-black/5", stat.bg, stat.color)}>
-                      <stat.icon className="w-6 h-6" />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center", stat.bg, stat.color)}>
+                      <stat.icon className="w-4.5 h-4.5" />
                     </div>
-                    <Badge variant="outline" className="border-none bg-secondary/30 text-[9px] font-black tracking-widest px-2 py-0.5 uppercase opacity-60">Live</Badge>
+                    <Badge variant="outline" className="border-none bg-secondary/30 text-[8px] font-black tracking-widest px-1.5 py-0 uppercase opacity-50">Live</Badge>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{stat.title}</span>
-                    <div className="text-3xl font-black text-foreground tabular-nums tracking-tighter">{stat.value}</div>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1.5">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{stat.title}</span>
+                  <div className="text-2xl font-black text-foreground tabular-nums tracking-tighter mt-1">{stat.value}</div>
+                  <div className="mt-2 flex items-center gap-1.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wide">{stat.trend}</p>
                   </div>
@@ -154,10 +152,10 @@ const DiagnosticsDashboardPage = () => {
               ))}
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-5 lg:grid-cols-2">
               {/* Admins Table */}
-              <div className="rounded-[40px] border border-border/60 bg-card p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
+              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
                   <div className="space-y-1">
                     <h3 className="text-lg font-black tracking-tight flex items-center gap-3">
                       <div className="h-8 w-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
@@ -170,9 +168,9 @@ const DiagnosticsDashboardPage = () => {
                   <Award className="h-6 w-6 text-yellow-500 opacity-20" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {adminStats.length === 0 ? (
-                    <div className="py-12 text-center text-xs font-bold text-muted-foreground opacity-40 italic">Нет данных по администраторам</div>
+                    <div className="py-8 text-center text-xs font-bold text-muted-foreground opacity-40 italic">Нет данных по администраторам</div>
                   ) : (
                     adminStats.map(([name, data], i) => (
                       <div key={name} className="group relative">
@@ -199,8 +197,8 @@ const DiagnosticsDashboardPage = () => {
               </div>
 
               {/* Doctors Table */}
-              <div className="rounded-[40px] border border-border/60 bg-card p-8 shadow-sm">
-                <div className="flex items-center justify-between mb-8">
+              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
                   <div className="space-y-1">
                     <h3 className="text-lg font-black tracking-tight flex items-center gap-3">
                       <div className="h-8 w-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
@@ -213,18 +211,18 @@ const DiagnosticsDashboardPage = () => {
                   <TrendingUp className="h-6 w-6 text-emerald-500 opacity-20" />
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-4">
                    {doctorStats.length === 0 ? (
-                    <div className="py-12 text-center text-xs font-bold text-muted-foreground opacity-40 italic">Нет данных по врачам</div>
+                    <div className="py-8 text-center text-xs font-bold text-muted-foreground opacity-40 italic">Нет данных по врачам</div>
                   ) : (
                     doctorStats.map(([name, data], i) => (
-                      <div key={name} className="p-5 rounded-3xl border border-border/40 hover:border-primary/30 transition-all group overflow-hidden relative">
-                         <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:rotate-12 transition-transform">
-                            <Briefcase className="h-12 w-12" />
+                      <div key={name} className="p-4 rounded-2xl border border-border/40 hover:border-primary/30 transition-all group overflow-hidden relative">
+                         <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover:rotate-12 transition-transform">
+                            <Briefcase className="h-10 w-10" />
                          </div>
-                         <div className="flex items-start justify-between mb-4">
+                         <div className="flex items-start justify-between mb-3">
                            <div className="flex items-center gap-3">
-                              <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
+                              <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-sm">
                                 {name[0]}
                               </div>
                               <div>

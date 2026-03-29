@@ -273,40 +273,42 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                                 {/* Рейтинг Врача */}
-                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 border border-amber-400/30 p-5 rounded-[32px] shadow-xl shadow-amber-500/20 text-white relative overflow-hidden group">
-                                    <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-500">
+                                <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform text-amber-500">
                                         <Trophy className="h-28 w-28" />
                                     </div>
                                     <div className="relative z-10">
                                         <div className="flex items-center justify-between mb-4">
-                                            <div className="h-10 w-10 rounded-[20px] bg-white/20 backdrop-blur-sm flex items-center justify-center text-white shadow-inner">
+                                            <div className="h-10 w-10 rounded-[20px] bg-amber-500/10 text-amber-500 flex items-center justify-center shadow-inner">
                                                 <Trophy className="h-5 w-5" />
                                             </div>
-                                            <Badge variant="outline" className="bg-white/20 text-white border-none text-[9px] font-black backdrop-blur-sm shadow-sm ring-1 ring-white/30">МЕСЯЦ</Badge>
+                                            <Badge variant="outline" className="bg-amber-500/5 text-amber-500 border-none text-[9px] font-black shadow-sm ring-1 ring-amber-500/20">МЕСЯЦ</Badge>
                                         </div>
-                                        <p className="text-[10px] font-black text-amber-100 uppercase tracking-widest mb-1">Рейтинг клиники</p>
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Рейтинг клиники</p>
                                         <div className="flex items-end gap-2">
-                                            <h4 className="text-4xl font-black drop-shadow-md tracking-tighter">ТОП-1</h4>
+                                            <h4 className="text-4xl font-black mt-1 tracking-tighter text-foreground">ТОП-1</h4>
                                         </div>
-                                        <p className="text-[10px] font-black mt-2 text-white/90 uppercase tracking-widest bg-black/10 inline-block px-2 py-0.5 rounded-md">Лучшая конверсия</p>
+                                        <p className="text-[10px] font-black mt-2 text-muted-foreground uppercase tracking-widest bg-secondary/30 inline-block px-2 py-0.5 rounded-md">Лучшая конверсия</p>
                                     </div>
                                 </div>
 
                                 {/* Воронка: Количество пациентов */}
                                 <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group col-span-1 md:col-span-1 xl:col-span-1">
-                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform text-blue-500">
                                         <Users className="h-28 w-28" />
                                     </div>
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center justify-between mb-2 absolute top-5 left-5 right-5">
                                         <div className="h-10 w-10 rounded-[20px] bg-blue-500/10 text-blue-500 flex items-center justify-center shadow-inner">
                                             <Users className="h-5 w-5" />
                                         </div>
                                         <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-none text-[9px] font-black shadow-sm ring-1 ring-blue-500/20">В ЭТОМ МЕСЯЦЕ</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mt-2">Пациентов всего</p>
-                                    <h4 className="text-4xl font-black mt-1 tracking-tighter text-blue-500">
-                                        {stats.totalMonth}
-                                    </h4>
+                                    <div className="mt-14 relative z-10">
+                                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Пациентов всего</p>
+                                        <h4 className="text-4xl font-black mt-1 tracking-tighter text-foreground">
+                                            {stats.totalMonth}
+                                        </h4>
+                                    </div>
                                     
                                     <div className="mt-4 flex gap-4 border-t border-border/40 pt-3 relative z-10">
                                         <div className="flex-1">
@@ -323,40 +325,40 @@ export const DoctorWorkspace: React.FC<DoctorWorkspaceProps> = ({ doctor: initia
 
                                 {/* Сумма продаж */}
                                 <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform text-indigo-500">
                                         <Briefcase className="h-24 w-24" />
                                     </div>
                                     <div className="flex items-center justify-between mb-4">
                                         <div className="h-10 w-10 rounded-[20px] bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
                                             <Wallet className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="bg-indigo-500/5 text-indigo-500 border-none text-[9px] font-black">ВЫРУЧКА</Badge>
+                                        <Badge variant="outline" className="bg-indigo-500/5 text-indigo-500 border-none text-[9px] font-black shadow-sm ring-1 ring-indigo-500/20">ВЫРУЧКА</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Сумма продаж</p>
-                                    <h4 className="text-3xl font-black mt-1 text-indigo-600 truncate tracking-tighter">
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Сумма продаж</p>
+                                    <h4 className="text-3xl font-black mt-1 text-foreground truncate tracking-tighter">
                                         {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0))} ₸
                                     </h4>
-                                    <p className="text-[10px] text-muted-foreground font-black mt-2 uppercase tracking-widest">
+                                    <p className="text-[10px] font-black mt-2 text-muted-foreground uppercase tracking-widest bg-secondary/30 inline-block px-2 py-0.5 rounded-md">
                                         Конверсия: {Math.round((appointments.filter(a => a.status === "completed").length / (appointments.length || 1)) * 100)}%
                                     </p>
                                 </div>
 
                                 {/* Бонусы (Процент) */}
-                                <div className="bg-emerald-500/5 border border-emerald-500/20 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-[0.04] group-hover:scale-110 transition-transform text-emerald-500">
+                                <div className="bg-card border border-border/60 p-5 rounded-[32px] shadow-sm relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform text-emerald-500">
                                         <TrendingUp className="h-24 w-24" />
                                     </div>
                                     <div className="flex items-center justify-between mb-4">
-                                        <div className="h-10 w-10 rounded-[20px] bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center relative z-10 group-hover:scale-105 transition-transform">
+                                        <div className="h-10 w-10 rounded-[20px] bg-emerald-500/10 text-emerald-500 shadow-inner flex items-center justify-center relative z-10 group-hover:scale-105 transition-transform">
                                             <Save className="h-5 w-5" />
                                         </div>
-                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-none text-[9px] font-black">БОНУС 10%</Badge>
+                                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-none text-[9px] font-black shadow-sm ring-1 ring-emerald-500/20">БОНУС 10%</Badge>
                                     </div>
-                                    <p className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest">К выплате</p>
-                                    <h4 className="text-3xl font-black mt-1 text-emerald-600 tracking-tighter">
+                                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">К выплате</p>
+                                    <h4 className="text-3xl font-black mt-1 text-foreground tracking-tighter">
                                         {formatAmount(appointments.filter(a => a.status === "completed").reduce((s, a) => s + (Number(a.lead?.amount) || 0), 0) * 0.1)} ₸
                                     </h4>
-                                    <p className="text-[10px] text-emerald-600 font-black mt-2 uppercase tracking-widest bg-emerald-500/10 inline-block px-2 py-0.5 rounded-md">
+                                    <p className="text-[10px] font-black mt-2 text-muted-foreground uppercase tracking-widest bg-secondary/30 inline-block px-2 py-0.5 rounded-md">
                                         Ваш личный бонус
                                     </p>
                                 </div>

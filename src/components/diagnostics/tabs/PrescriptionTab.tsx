@@ -344,10 +344,10 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
                                     <div 
                                         key={pkg.id}
                                         className={cn(
-                                            "relative border-[3px] rounded-[40px] transition-all duration-500 overflow-hidden group/pkg",
+                                            "relative border-2 rounded-[28px] transition-all duration-300 overflow-hidden group/pkg",
                                             isSelected 
-                                                ? "border-primary bg-gradient-to-br from-primary/[0.08] to-transparent shadow-2xl shadow-primary/20 scale-[1.02] z-10" 
-                                                : "border-border/40 bg-background/60 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:bg-card/80"
+                                                ? "border-primary bg-primary/[0.02] shadow-xl shadow-primary/10 z-10" 
+                                                : "border-border/40 bg-background/60 hover:border-primary/30 hover:bg-card/80"
                                         )}
                                     >
                                         {/* Background Glow */}
@@ -355,51 +355,51 @@ export const PrescriptionTab: React.FC<Props> = ({ lead, doctorData, data, onCha
 
                                         {/* Package header - click to select */}
                                         <div 
-                                            className="p-8 cursor-pointer relative z-10"
+                                            className="p-6 cursor-pointer relative z-10"
                                             onClick={() => setFormData({...formData, packageId: pkg.id})}
                                         >
                                             {isSelected && (
-                                                <div className="absolute top-0 right-10 -translate-y-1/2 bg-gradient-to-r from-primary to-blue-500 text-white text-[9px] font-black px-4 py-1.5 rounded-full shadow-lg shadow-primary/30 uppercase tracking-[0.2em] animate-in slide-in-from-top-2">
+                                                <div className="absolute top-0 right-6 -translate-y-1/2 bg-gradient-to-r from-primary to-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full shadow-md uppercase tracking-[0.1em] animate-in slide-in-from-top-2">
                                                     Выбрано
                                                 </div>
                                             )}
                                             
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-5">
+                                                    <div className="flex items-center gap-4">
                                                         <div className={cn(
-                                                            "h-14 w-14 rounded-[22px] flex items-center justify-center text-3xl transition-transform duration-500",
-                                                            isSelected ? "scale-110 bg-background shadow-xl shadow-primary/20 rotate-3" : "bg-card shadow-inner group-hover/pkg:scale-105 group-hover/pkg:shadow-md"
+                                                            "h-12 w-12 rounded-2xl flex items-center justify-center text-2xl transition-transform duration-300 shrink-0",
+                                                            isSelected ? "scale-105 bg-background shadow-md shadow-primary/10 rotate-3" : "bg-card shadow-inner group-hover/pkg:scale-105"
                                                         )}>
                                                             {pkg.icon}
                                                         </div>
                                                         <div>
                                                             <span className={cn(
-                                                                "font-black text-lg uppercase tracking-widest leading-none block mb-1.5 transition-colors",
+                                                                "font-bold text-sm uppercase tracking-wider block mb-0.5 transition-colors",
                                                                 isSelected ? "text-primary" : "text-foreground group-hover/pkg:text-primary/80"
                                                             )}>{pkg.name}</span>
-                                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">{pkg.subtitle}</p>
+                                                            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{pkg.subtitle}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className={cn(
-                                                    "h-8 w-8 rounded-[10px] border-[3px] flex items-center justify-center shrink-0 mt-2 transition-all duration-500 ring-4",
-                                                    isSelected ? "border-primary bg-primary ring-primary/20 shadow-lg shadow-primary/40 rotate-0 scale-110" : "border-border/40 bg-transparent ring-transparent group-hover/pkg:border-primary/40 rotate-12"
+                                                    "h-6 w-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-1 transition-all duration-300",
+                                                    isSelected ? "border-primary bg-primary shadow-sm shadow-primary/30 rotate-0 scale-105" : "border-border/40 bg-transparent group-hover/pkg:border-primary/40 rotate-12"
                                                 )}>
-                                                    {isSelected && <Check className="h-5 w-5 text-white animate-in zoom-in-50 duration-300" />}
+                                                    {isSelected && <Check className="h-4 w-4 text-white animate-in zoom-in-50 duration-300" />}
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-center justify-between mt-8 pl-[76px]">
+                                            <div className="flex items-center justify-between mt-6 pl-[64px]">
                                                 <span className={cn(
-                                                    "text-3xl font-black tabular-nums tracking-tight transition-colors",
+                                                    "text-xl font-bold tabular-nums tracking-tight transition-colors",
                                                     isSelected ? "text-foreground drop-shadow-sm" : "text-foreground/80 group-hover/pkg:text-foreground"
                                                 )}>{pkg.priceDisplay}</span>
                                                 <Button 
                                                     variant="ghost"
                                                     size="sm"
                                                     className={cn(
-                                                        "h-10 px-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all gap-2",
+                                                        "h-9 px-4 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all gap-1.5",
                                                         isSelected ? "bg-primary/10 text-primary hover:bg-primary/20" : "bg-secondary/20 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                     )}
                                                     onClick={(e) => { e.stopPropagation(); setExpandedPackage(isExpanded ? null : pkg.id); }}

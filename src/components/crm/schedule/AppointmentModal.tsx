@@ -132,11 +132,10 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[32px] bg-background shadow-2xl">
                 {/* Header Section */}
-                <div className="bg-gradient-to-br from-primary/10 via-background to-background px-8 py-6 border-b border-border/40 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+                <div className="bg-background px-8 py-6 border-b border-border/40 relative overflow-hidden">
                     <DialogHeader>
                         <div className="flex items-center gap-5 relative z-10">
-                            <div className="h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shadow-inner border border-primary/20">
+                            <div className="h-14 w-14 rounded-2xl bg-secondary/20 text-muted-foreground flex items-center justify-center border border-border/40">
                                 {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
                             </div>
                             <div className="flex flex-col">
@@ -144,7 +143,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     {isEditing ? "Изменить запись" : "Новая запись"}
                                 </DialogTitle>
                                 <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-border" />
                                     {isEditing ? "Редактирование данных визита" : "Заполнение данных о визите"}
                                 </DialogDescription>
                             </div>
@@ -156,7 +155,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     {/* Patient Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-1">
-                            <div className="w-1 h-4 bg-primary rounded-full" />
+                            <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
                             <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Данные пациента</Label>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -166,7 +165,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 </div>
                                 <Input 
                                     placeholder="Поиск по ФИО..." 
-                                    className="h-12 pl-11 rounded-2xl bg-secondary/30 border-border/50 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
+                                    className="h-12 pl-11 rounded-2xl bg-secondary/10 border-border/40 font-bold focus:ring-1 focus:ring-primary/30 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
                                     value={formData.patientName}
                                     onChange={(e) => handlePatientSearch(e.target.value)}
                                     onBlur={() => setTimeout(() => setShowResults(false), 200)}
@@ -196,7 +195,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     </div>
                                     <Input 
                                         placeholder="Номер телефона" 
-                                        className="h-12 pl-11 rounded-2xl bg-secondary/30 border-border/50 font-bold focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
+                                        className="h-12 pl-11 rounded-2xl bg-secondary/10 border-border/40 font-bold focus:ring-1 focus:ring-primary/30 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
                                         value={formData.phone}
                                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
                                     />
@@ -204,7 +203,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 <Button
                                     variant="outline"
                                     size="icon"
-                                    className="h-12 w-12 rounded-2xl bg-[#25D366]/5 border-[#25D366]/20 text-[#25D366] hover:bg-[#25D366] hover:text-white shrink-0 transition-all shadow-sm"
+                                    className="h-12 w-12 rounded-2xl bg-secondary/10 border-border/40 text-emerald-500/70 hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/40 shrink-0 transition-all"
                                     onClick={() => window.open(`https://wa.me/${formData.phone.replace(/\D/g,'')}`, '_blank')}
                                 >
                                     <MessageSquare className="h-5 w-5" />
@@ -216,15 +215,15 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     {/* Visit Details Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-1">
-                            <div className="w-1 h-4 bg-primary rounded-full" />
+                            <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
                             <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Детали визита</Label>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <div className="h-14 flex items-center justify-between px-5 rounded-2xl bg-card border border-border/60 font-bold text-sm cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all shadow-sm group">
+                                    <div className="h-14 flex items-center justify-between px-5 rounded-2xl bg-secondary/10 border border-border/40 font-bold text-sm cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all group">
                                         <div className="flex items-center gap-4">
-                                            <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                            <div className="h-9 w-9 rounded-xl bg-secondary/20 text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                                 <CalendarIcon className="h-4 w-4" />
                                             </div>
                                             <span className="text-foreground">{format(formData.date, "d MMMM yyyy", { locale: ru })}</span>
@@ -243,9 +242,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             </Popover>
 
                             <Select value={formData.time} onValueChange={(val) => setFormData({...formData, time: val})}>
-                                <SelectTrigger className="h-14 px-5 rounded-2xl bg-card border border-border/60 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] shadow-sm group">
+                                <SelectTrigger className="h-14 px-5 rounded-2xl bg-secondary/10 border border-border/40 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] group">
                                     <div className="flex items-center gap-4">
-                                        <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                        <div className="h-9 w-9 rounded-xl bg-secondary/20 text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                             <Clock className="h-4 w-4" />
                                         </div>
                                         <SelectValue />
@@ -297,9 +296,9 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         </div>
 
                         <Select value={formData.service || "primary"} onValueChange={(val) => setFormData({...formData, service: val})}>
-                            <SelectTrigger className="h-14 px-5 rounded-2xl bg-card border border-border/60 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] shadow-sm group">
+                            <SelectTrigger className="h-14 px-5 rounded-2xl bg-secondary/10 border border-border/40 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] group">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-9 w-9 rounded-xl bg-primary/5 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                    <div className="h-9 w-9 rounded-xl bg-secondary/20 text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-all">
                                         <Stethoscope className="h-4 w-4" />
                                     </div>
                                     <SelectValue placeholder="Тип приёма" />
@@ -319,7 +318,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
                                 <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Статус</Label>
                             </div>
                             <RadioGroup 
@@ -333,19 +332,19 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     let dotColor = "";
                                     
                                     if (item.id === "planned" && isActive) {
-                                        activeClasses = "bg-amber-500/10 border-amber-500/40 shadow-inner";
+                                        activeClasses = "bg-amber-500/5 border-amber-500/30";
                                         dotColor = "bg-amber-500";
                                     } else if (item.id === "completed" && isActive) {
-                                        activeClasses = "bg-emerald-500/10 border-emerald-500/40 shadow-inner";
+                                        activeClasses = "bg-emerald-500/5 border-emerald-500/30";
                                         dotColor = "bg-emerald-500";
                                     } else if (item.id === "thinking" && isActive) {
-                                        activeClasses = "bg-blue-500/10 border-blue-500/40 shadow-inner";
+                                        activeClasses = "bg-blue-500/5 border-blue-500/30";
                                         dotColor = "bg-blue-500";
                                     } else if (item.id === "no-show" && isActive) {
-                                        activeClasses = "bg-rose-500/10 border-rose-500/40 shadow-inner";
+                                        activeClasses = "bg-rose-500/5 border-rose-500/30";
                                         dotColor = "bg-rose-500";
                                     } else {
-                                        activeClasses = "bg-secondary/20 border-border/40 hover:bg-secondary/50 hover:border-border/60";
+                                        activeClasses = "bg-secondary/10 border-border/40 hover:bg-secondary/20 hover:border-border/60";
                                     }
 
                                     return (
@@ -355,19 +354,18 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             className={cn(
                                                 "relative flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-300 group",
                                                 activeClasses,
-                                                isActive ? "ring-2 ring-primary/20 ring-offset-1 ring-offset-background" : ""
+                                                isActive ? "ring-1 ring-primary/20 ring-offset-0" : ""
                                             )}
                                         >
                                             <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
                                             {isActive && (
-                                                <div className="absolute top-3 right-3 flex h-2 w-2">
-                                                    <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-40", dotColor)}></span>
-                                                    <span className={cn("relative inline-flex rounded-full h-2 w-2", dotColor)}></span>
+                                                <div className="absolute top-3 right-3 h-2 w-2">
+                                                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", dotColor)}></span>
                                                 </div>
                                             )}
                                             <div className={cn(
-                                                "h-8 w-8 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0", 
-                                                isActive ? "bg-background shadow-sm" : "bg-secondary/50"
+                                                "h-8 w-8 rounded-xl flex items-center justify-center transition-transform shrink-0", 
+                                                isActive ? "bg-background border border-border/50 shadow-sm" : "bg-secondary/30"
                                             )}>
                                                 <item.icon className={cn("h-4 w-4", isActive ? item.color : "text-muted-foreground/50")} />
                                             </div>
@@ -385,12 +383,12 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="w-1 h-4 bg-primary rounded-full" />
+                                <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
                                 <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Заметки</Label>
                             </div>
                             <Textarea 
                                 placeholder="Особенности пациента, жалобы..." 
-                                className="bg-secondary/20 border-border/40 rounded-2xl p-4 min-h-[105px] font-bold text-xs leading-relaxed resize-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40 shadow-inner"
+                                className="bg-secondary/10 border-border/40 rounded-2xl p-4 min-h-[105px] font-bold text-xs leading-relaxed resize-none focus:ring-1 focus:ring-primary/30 focus:border-primary transition-all placeholder:font-medium placeholder:text-muted-foreground/40"
                                 value={formData.comment}
                                 onChange={(e) => setFormData({...formData, comment: e.target.value})}
                             />
@@ -403,10 +401,10 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         {isEditing && (
                             <Button 
                                 variant="outline"
-                                className="h-12 px-6 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-primary/5 border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-lg shadow-primary/10 flex items-center gap-2 group border-2"
+                                className="h-12 px-6 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-secondary/10 border-border/40 text-muted-foreground hover:bg-primary hover:text-white transition-all flex items-center gap-2 group"
                                 onClick={() => setIsDiagnosticOpen(true)}
                             >
-                                <ExternalLink className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                                <ExternalLink className="h-4 w-4" />
                                 Провести осмотр
                             </Button>
                         )}
@@ -422,7 +420,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         </Button>
                         <Button 
                             onClick={handleSave}
-                            className="h-12 px-10 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all hover:-translate-y-0.5"
+                            className="h-12 px-10 rounded-2xl font-black uppercase tracking-[0.1em] text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-[1.02]"
                         >
                             {isEditing ? "Обновить запись" : "Создать запись"}
                         </Button>

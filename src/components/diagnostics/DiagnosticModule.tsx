@@ -555,7 +555,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
                     {/* Right Sidebar: Collapsible Patient Summary */}
                     <div className={cn(
-                        "border-l border-white/5 bg-background/60 backdrop-blur-xl shrink-0 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.5)] z-10 transition-all duration-300 relative",
+                        "border-l border-white/5 bg-background/60 backdrop-blur-xl glass-enabled shrink-0 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.5)] z-10 transition-all duration-300 relative",
                         sidebarCollapsed ? "w-[52px]" : "w-[320px]"
                     )}>
                         <div className="p-4 border-b border-border/40 flex items-center gap-3 bg-secondary/5 shrink-0">

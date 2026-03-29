@@ -384,8 +384,8 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                         </Badge>
                     </div>
                     
-                    <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-10">
+                    <div className="px-6 py-6 sm:px-8 bg-background/30">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {adminQuestions.length > 0 ? (
                                 adminQuestions.map((q) => {
                                     const answer = adminData.answers?.[q.id];
@@ -393,12 +393,12 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                         ? (Array.isArray(answer) ? answer.join(', ') : String(answer))
                                         : '—';
                                     return (
-                                        <div key={q.id} className="flex flex-col gap-3 group/info transition-all bg-background/80 border border-border/30 rounded-[28px] p-6 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-                                            <span className="text-[9px] uppercase font-black text-primary/50 tracking-[0.2em] group-hover/info:text-primary leading-[1.3] transition-colors line-clamp-2">{q.label}</span>
+                                        <div key={q.id} className="flex flex-col gap-2 p-5 rounded-2xl bg-secondary/10 border border-border/10 hover:border-primary/20 hover:bg-secondary/20 transition-all">
+                                            <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider leading-snug">{q.label}</span>
                                             <div className="flex-1 flex items-end">
                                                 <p className={cn(
-                                                    "text-sm font-black leading-snug",
-                                                    answer ? "text-foreground" : "text-muted-foreground/30 italic"
+                                                    "text-[13px] font-bold",
+                                                    answer ? "text-foreground" : "text-muted-foreground/40 italic"
                                                 )}>{displayVal}</p>
                                             </div>
                                         </div>
@@ -408,10 +408,10 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                 adminData.answers && Object.entries(adminData.answers).slice(0, 9).map(([key, val]) => {
                                     if (!val) return null;
                                     return (
-                                        <div key={key} className="flex flex-col gap-3 group/info transition-all bg-background/80 border border-border/30 rounded-[28px] p-6 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-                                            <span className="text-[9px] uppercase font-black text-primary/50 tracking-[0.2em] group-hover/info:text-primary leading-[1.3] transition-colors line-clamp-2">{key.replace(/_/g, ' ')}</span>
+                                        <div key={key} className="flex flex-col gap-2 p-5 rounded-2xl bg-secondary/10 border border-border/10 hover:border-primary/20 hover:bg-secondary/20 transition-all">
+                                            <span className="text-[10px] font-bold text-muted-foreground/80 uppercase tracking-wider leading-snug">{key.replace(/_/g, ' ')}</span>
                                             <div className="flex-1 flex items-end">
-                                                <p className="text-sm font-black leading-snug text-foreground">{String(val)}</p>
+                                                <p className="text-[13px] font-bold text-foreground">{String(val)}</p>
                                             </div>
                                         </div>
                                     );
@@ -420,7 +420,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                         </div>
                         
                         {adminData.adminComment && (
-                            <div className="mt-8 p-5 bg-amber-500/10 border border-amber-500/20 rounded-[28px] flex gap-4 items-start relative overflow-hidden group/comment">
+                            <div className="mt-6 p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex gap-4 items-start relative overflow-hidden group/comment">
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover/comment:scale-110 transition-transform">
                                     <Activity className="h-16 w-16 text-amber-600" />
                                 </div>

@@ -122,7 +122,7 @@ export default function CrmSystem() {
     <DashboardLayout breadcrumb="CRM Система">
       <div className="flex flex-col h-[calc(100vh-5rem)] md:h-[calc(100vh-6rem)] min-h-0">
         {/* ─── Header ─── */}
-        <div className="flex items-center justify-between shrink-0 mb-6">
+        <div className="flex items-center justify-between shrink-0 mb-4">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/60 flex items-center justify-center shadow-lg shadow-primary/20">
               <Zap className="h-6 w-6 text-primary-foreground" />
@@ -142,7 +142,7 @@ export default function CrmSystem() {
         </div>
 
         {/* ─── KPI Cards ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 shrink-0 mb-3">
           {kpiCards.map((kpi, idx) => {
             const colors = colorMap[kpi.color];
             return (
@@ -239,6 +239,7 @@ export default function CrmSystem() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col border-l border-border bg-background">
+                  <SheetTitle className="sr-only">Задачи на сегодня</SheetTitle>
                   <div className="h-full overflow-y-auto">
                     <TodayTasksPanel
                       tasks={tasks}
