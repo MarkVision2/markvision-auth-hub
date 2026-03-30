@@ -63,7 +63,7 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin", "client_admin", "client_manager"],
     items: [
       { title: "CRM Система", path: "/crm", icon: Users, requiredPerm: "crm" },
-      { title: "Сетка Расписания", path: "/schedule", icon: CalendarClock, requiredPerm: "crm" },
+      { title: "Сетка Расписания", path: "/schedule", icon: CalendarClock, requiredPerm: "schedule" },
       { title: "AI-РОП", path: "/ai-rop", icon: ShieldCheck, requiredPerm: "ai_rop" },
       { title: "Контроль качества", path: "/quality", icon: HeartHandshake, requiredPerm: "quality" },
       { title: "Генератор LTV", path: "/retention", icon: Repeat, requiredPerm: "retention" },

@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { cn } from "@/lib/utils";
 import {
   Settings, Users, Shield, Plug, UserPlus, Pencil, Copy, Eye, EyeOff,
-  ChevronRight, HeartPulse, Bell,
+  ChevronRight, HeartPulse, Bell, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { createAdminClient } from "@/lib/supabase-admin";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── Tab components ── */
 import TeamTab from "./settings/TeamTab";
@@ -33,7 +36,7 @@ import SystemHealthTab from "./settings/SystemHealthTab";
 import {
   type RoleKey, type TeamMember,
   ROLE_LABELS, ROLE_PRESETS, PERM_GROUPS, ALL_KEYS,
-  loadTeam, saveTeam,
+  loadTeam, saveTeam, fetchTeamMembers,
 } from "./settings/types";
 
 /* ── Sub-menu items ── */
@@ -51,11 +54,15 @@ type SubTab = typeof SUB_TABS[number]["key"];
 /* ── Page ── */
 export default function SettingsPage() {
   const { role, isClientManager } = useRole();
+  const { active } = useWorkspace();
   const [activeTab, setActiveTab] = useState<SubTab>(isClientManager ? "general" : "team");
   const [team, setTeam] = useState<TeamMember[]>(loadTeam);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => { saveTeam(team); }, [team]);
+  useEffect(() => {
+    fetchTeamMembers().then(setTeam);
+  }, []);
 
   /* Sheet state */
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -95,27 +102,97 @@ export default function SettingsPage() {
     setFormPerms(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim() || !formEmail.trim()) {
       toast({ title: "Заполните имя и email", variant: "destructive" });
       return;
     }
-    if (editingMember) {
-      setTeam(prev => prev.map(m => m.id === editingMember.id
-        ? { ...m, name: formName, email: formEmail, role: formRole, permissions: formPerms }
-        : m
-      ));
-      toast({ title: "Сотрудник обновлён" });
-    } else {
-      const newMember: TeamMember = {
-        id: crypto.randomUUID(),
-        name: formName, email: formEmail, role: formRole,
-        status: "invited", lastLogin: null, permissions: formPerms,
-      };
-      setTeam(prev => [...prev, newMember]);
-      toast({ title: "Приглашение отправлено", description: `${formEmail}` });
+    
+    setLoading(true);
+
+    try {
+      if (editingMember) {
+        // Update existing profile (mock-like but real query)
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+             full_name: formName,
+             role: formRole,
+             permissions: formPerms,
+          } as any)
+          .eq("email", formEmail as any);
+
+        if (error) throw error;
+
+        setTeam(prev => prev.map(m => m.id === editingMember.id
+          ? { ...m, name: formName, role: formRole, permissions: formPerms }
+          : m
+        ));
+        toast({ title: "Сотрудник обновлён" });
+      } else {
+        if (!formPassword) {
+          toast({ title: "Введите пароль для нового сотрудника", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+
+        // 1. Create user in Supabase Auth (without signing out current admin)
+        const adminClient = createAdminClient();
+        const { data: authRes, error: authError } = await adminClient.auth.signUp({
+          email: formEmail,
+          password: formPassword,
+          options: {
+            data: { 
+              full_name: formName,
+              role: formRole,
+              project_id: active.id,
+            }
+          }
+        });
+
+        if (authError) throw authError;
+        if (!authRes.user) throw new Error("Не удалось создать пользователя");
+
+        // 2. Profile should be created automatically by a trigger, but we update extra fields
+        const { error: profError } = await supabase
+          .from("profiles")
+          .update({
+            role: formRole,
+            permissions: formPerms,
+          } as any)
+          .eq("id", authRes.user.id as any);
+
+        if (profError) console.error("Profile update failed:", profError);
+
+        // 3. Link user to project
+        const { error: memberError } = await supabase
+          .from("project_members")
+          .insert({
+            user_id: authRes.user.id,
+            project_id: active.id,
+          } as any);
+
+        if (memberError) console.error("Project membership failed:", memberError);
+
+        const newMember: TeamMember = {
+          id: authRes.user.id,
+          name: formName, email: formEmail, role: formRole,
+          status: "invited", lastLogin: null, permissions: formPerms,
+        };
+        setTeam(prev => [...prev, newMember]);
+        
+        // Final success
+        toast({ 
+          title: "Сотрудник добавлен", 
+          description: `Аккаунт для ${formEmail} создан. Пришлите ему пароль: ${formPassword}` 
+        });
+      }
+      setSheetOpen(false);
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setSheetOpen(false);
   };
 
   const handleDelete = () => {
@@ -302,8 +379,8 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Button onClick={handleSave} className="w-full gap-2 mt-2">
-              <Shield size={15} />
+            <Button onClick={handleSave} className="w-full gap-2 mt-2" disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield size={15} />}
               {editingMember ? "Сохранить изменения" : "Сохранить доступы"}
             </Button>
           </div>

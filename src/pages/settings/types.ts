@@ -1,6 +1,6 @@
 import {
     LayoutDashboard, Briefcase, Target, Wand2, Radar, ShieldCheck,
-    Activity, Coins, FileBarChart, Users,
+    Activity, Coins, FileBarChart, Users, Calendar,
 } from "lucide-react";
 
 /* ── Role presets ── */
@@ -53,6 +53,7 @@ export const PERM_GROUPS: PermGroup[] = [
         label: "Продажи и Сервис", emoji: "💬",
         modules: [
             { key: "crm", label: "CRM Система", icon: Users },
+            { key: "schedule", label: "Сетка расписания", icon: Calendar },
             { key: "ai_rop", label: "AI-РОП", icon: ShieldCheck },
             { key: "quality", label: "Контроль качества", icon: Activity },
             { key: "retention", label: "Генератор LTV", icon: Activity },
@@ -79,9 +80,9 @@ export const ALL_KEYS = PERM_GROUPS.flatMap(g => g.modules.map(m => m.key));
 
 export const ROLE_PRESETS: Record<RoleKey, string[]> = {
     superadmin: [...ALL_KEYS],
-    client_admin: ["hq", "accounts", "ads", "content", "autoposting", "spy", "crm", "analytics", "scoreboard", "finance", "ai_reports"],
-    client_manager: ["crm"],
-    doctor: ["analytics"],
+    client_admin: ["hq", "accounts", "ads", "content", "autoposting", "spy", "crm", "schedule", "analytics", "scoreboard", "finance", "ai_reports"],
+    client_manager: ["crm", "schedule"],
+    doctor: ["analytics", "schedule"],
 };
 
 /* ── Team member type ── */
@@ -142,4 +143,31 @@ export function loadTeam(): TeamMember[] {
 
 export function saveTeam(team: TeamMember[]) {
     localStorage.setItem("mv_team_members", JSON.stringify(team));
+}
+
+import { supabase } from "@/integrations/supabase/client";
+
+export async function fetchTeamMembers(): Promise<TeamMember[]> {
+    try {
+        const { data, error } = await supabase
+            .from("profiles")
+            .select("*");
+
+        if (error) throw error;
+
+        if (data) {
+            return data.map((p: any) => ({
+                id: p.id,
+                name: p.full_name || "Без имени",
+                email: p.email || "",
+                role: (p.role as RoleKey) || "client_manager",
+                status: "active", // Based on profile existence
+                lastLogin: p.updated_at ? new Date(p.updated_at).toLocaleDateString() : null,
+                permissions: (p.permissions as string[]) || ROLE_PRESETS[p.role as RoleKey] || [],
+            }));
+        }
+    } catch (err) {
+        console.error("Error fetching team members:", err);
+    }
+    return loadTeam(); // Fallback to mock/local
 }

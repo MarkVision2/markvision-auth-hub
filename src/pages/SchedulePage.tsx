@@ -28,10 +28,11 @@ const SchedulePage = () => {
     // If the user is a doctor, they should only see their own schedule by default
     useEffect(() => {
         if (isDoctor && user) {
-            const team = loadTeam();
-            const me = team.find(m => m.userId === user.id || m.email === user.email);
-            if (me) {
-                setSelectedDoctorId(me.name);
+            // In a real system, we'd use the doctor's name or ID from their profile
+            // For now, we use the name from user_metadata or email as a fallback
+            const name = (user.user_metadata?.full_name as string) || (user.email as string);
+            if (name) {
+                setSelectedDoctorId(name);
             }
         }
     }, [isDoctor, user]);
