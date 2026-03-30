@@ -88,7 +88,10 @@ export default function SettingsPage() {
 
   const openEdit = (m: TeamMember) => {
     setEditingMember(m);
-    setFormName(m.name); setFormEmail(m.email); setFormPassword("");
+    setFormName(m.name);
+    // Strip the internal suffix if present for a cleaner UI
+    setFormEmail(m.email.replace("@staff.mv", "")); 
+    setFormPassword("");
     setFormRole(m.role); setFormPerms([...m.permissions]);
     setShowPassword(false); setSheetOpen(true);
   };
@@ -110,6 +113,9 @@ export default function SettingsPage() {
     
     setLoading(true);
 
+    // Internally map login to a fake email if it's not already an email
+    const finalEmail = formEmail.includes("@") ? formEmail : `${formEmail}@staff.mv`;
+
     try {
       if (editingMember) {
         // Update existing profile (mock-like but real query)
@@ -120,7 +126,7 @@ export default function SettingsPage() {
              role: formRole,
              permissions: formPerms,
           } as any)
-          .eq("email", formEmail as any);
+          .eq("email", finalEmail as any);
 
         if (error) throw error;
 
@@ -139,7 +145,7 @@ export default function SettingsPage() {
         // 1. Create user in Supabase Auth (without signing out current admin)
         const adminClient = createAdminClient();
         const { data: authRes, error: authError } = await adminClient.auth.signUp({
-          email: formEmail,
+          email: finalEmail,
           password: formPassword,
           options: {
             data: { 
@@ -176,8 +182,8 @@ export default function SettingsPage() {
 
         const newMember: TeamMember = {
           id: authRes.user.id,
-          name: formName, email: formEmail, role: formRole,
-          status: "invited", lastLogin: null, permissions: formPerms,
+          name: formName, email: finalEmail, role: formRole,
+          status: "active", lastLogin: null, permissions: formPerms,
         };
         setTeam(prev => [...prev, newMember]);
         
@@ -204,7 +210,7 @@ export default function SettingsPage() {
 
   const filtered = team.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.email.toLowerCase().includes(search.toLowerCase())
+    m.email.toLowerCase().replace("@staff.mv", "").includes(search.toLowerCase())
   );
 
   return (
@@ -285,8 +291,8 @@ export default function SettingsPage() {
                   <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="Иван Иванов" className="bg-accent/30 border-border/30" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Email (логин)</Label>
-                  <Input value={formEmail} onChange={e => setFormEmail(e.target.value)} placeholder="ivan@company.com" type="email" className="bg-accent/30 border-border/30" />
+                  <Label className="text-xs text-muted-foreground">Логин (без пробелов)</Label>
+                  <Input value={formEmail} onChange={e => setFormEmail(e.target.value.toLowerCase().trim())} placeholder="ivan_doc" className="bg-accent/30 border-border/30" />
                 </div>
                 {!editingMember && (
                   <div className="space-y-1.5">

@@ -41,9 +41,15 @@ const AuthPage = () => {
     }
     setLoading(true);
 
+    // If the input doesn't contain '@', treat it as a login and append @staff.mv
+    const finalEmail = email.includes("@") ? email : `${email}@staff.mv`;
+
     try {
       if (activeTab === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ 
+          email: finalEmail, 
+          password 
+        });
         if (error) {
           toast({ title: "Ошибка входа", description: error.message, variant: "destructive" });
           return;
@@ -51,7 +57,7 @@ const AuthPage = () => {
         navigate("/dashboard");
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
+          email: finalEmail,
           password,
           options: {
             emailRedirectTo: window.location.origin,
@@ -196,12 +202,12 @@ const AuthPage = () => {
             )}
 
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Email или Логин</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@agency.com"
+                placeholder="ivan_doc или ivan@markvision.kz"
                 className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder-muted-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
