@@ -353,39 +353,75 @@ export default function SettingsPage() {
                 <span className="ml-auto text-[11px] text-muted-foreground/60">{formPerms.length}/{ALL_KEYS.length} модулей</span>
               </div>
 
-              <div className="space-y-5">
-                {PERM_GROUPS.map(group => (
-                  <div key={group.label}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
-                      {group.emoji} {group.label}
-                    </p>
-                    <div className="space-y-0.5">
-                      {group.modules.map(mod => {
-                        const enabled = formPerms.includes(mod.key);
-                        return (
-                          <div
-                            key={mod.key}
-                            className={cn(
-                              "flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors",
-                              enabled ? "bg-primary/5" : "bg-transparent hover:bg-accent/30"
-                            )}
-                          >
-                            <div className="flex items-center gap-3">
-                              <mod.icon size={15} className={enabled ? "text-primary" : "text-muted-foreground/50"} />
-                              <span className={cn("text-sm", enabled ? "text-foreground" : "text-muted-foreground/60")}>{mod.label}</span>
+              <div className="space-y-8">
+                {PERM_GROUPS.map(group => {
+                  const groupKeys = group.modules.map(m => m.key);
+                  const allSelected = groupKeys.every(k => formPerms.includes(k));
+                  const someSelected = groupKeys.some(k => formPerms.includes(k)) && !allSelected;
+
+                  const toggleGroup = () => {
+                    if (allSelected) {
+                      setFormPerms(prev => prev.filter(k => !groupKeys.includes(k)));
+                    } else {
+                      setFormPerms(prev => [...new Set([...prev, ...groupKeys])]);
+                    }
+                  };
+
+                  return (
+                    <div key={group.label} className="space-y-3">
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] font-black uppercase tracking-widest text-primary/70">
+                          {group.emoji} {group.label}
+                        </p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={toggleGroup}
+                          className="h-6 px-2 text-[10px] font-bold uppercase hover:bg-primary/10 hover:text-primary transition-colors"
+                        >
+                          {allSelected ? "Снять все" : "Выбрать все"}
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1">
+                        {group.modules.map(mod => {
+                          const enabled = formPerms.includes(mod.key);
+                          return (
+                            <div
+                              key={mod.key}
+                              className={cn(
+                                "flex items-center justify-between px-3 py-3 rounded-xl border transition-all duration-200",
+                                enabled 
+                                  ? "bg-primary/5 border-primary/20 shadow-sm" 
+                                  : "bg-card/30 border-border/20 hover:border-border/40"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "h-8 w-8 rounded-lg flex items-center justify-center transition-colors",
+                                  enabled ? "bg-primary/10 text-primary" : "bg-muted/30 text-muted-foreground/40"
+                                )}>
+                                  <mod.icon size={16} />
+                                </div>
+                                <div className="space-y-0.5">
+                                  <span className={cn("text-sm font-bold block", enabled ? "text-foreground" : "text-muted-foreground/60")}>
+                                    {mod.label}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground/40 block">Раздел {group.label.toLowerCase()}</span>
+                                </div>
+                              </div>
+                              <Switch
+                                checked={enabled}
+                                onCheckedChange={() => togglePerm(mod.key)}
+                                className="data-[state=checked]:bg-primary"
+                                disabled={formRole === "client_manager" && mod.key !== "crm"}
+                              />
                             </div>
-                            <Switch
-                              checked={enabled}
-                              onCheckedChange={() => togglePerm(mod.key)}
-                              className="data-[state=checked]:bg-primary"
-                              disabled={formRole === "client_manager" && mod.key !== "crm"}
-                            />
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

@@ -9,6 +9,10 @@ export interface Workspace {
   type: "agency" | "client";
   /** Maps to clients_config.client_name for client workspaces */
   clientName?: string;
+  currency?: string;
+  timezone?: string;
+  language?: string;
+  logoUrl?: string;
 }
 
 export const HQ_ID = "7e175bca-c8bd-49de-b348-4acc348e5a91";
@@ -53,7 +57,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       // If superadmin, fetch all. Otherwise filter by membership.
       let query = supabase
         .from("projects")
-        .select("id, name")
+        .select("id, name, logo_url, currency, timezone, language")
         .order("name");
 
       if (!isSuperadmin) {
@@ -93,7 +97,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           combined.push({
             id: p.id,
             name: p.name || "Unnamed Project",
-            type: "client"
+            type: "client",
+            logoUrl: p.logo_url,
+            currency: p.currency,
+            timezone: p.timezone,
+            language: p.language
           });
         });
       }
