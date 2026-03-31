@@ -87,30 +87,18 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
     const [doctorsList, setDoctorsList] = useState<TeamMember[]>([]);
 
+    // Combined Initialization & State Management
     useEffect(() => {
-        async function loadDoctors() {
-            const data = await fetchTeamMembers();
-            setDoctorsList(data.filter(m => m.role === "doctor"));
-            
-            // If we're creating a new appointment and a doctor is already selected in the schedule
-            if (!isEditing && !formData.doctorName && appointment?.doctorId && appointment?.doctorId !== "all") {
-                const doc = data.find(m => m.name === appointment.doctorId);
-                if (doc) {
-                    setFormData(prev => ({ 
-                        ...prev, 
-                        doctorName: doc.name,
-                        officeName: doc.office || prev.officeName
-                    }));
-                }
-            }
-        }
-        loadDoctors();
-    }, [open]);
+        if (!open) return;
 
-    // Reset state when modal opens
-    useEffect(() => {
-        if (open) {
-            setFormData({
+        async function initModal() {
+            // 1. Load team members (doctors)
+            const team = await fetchTeamMembers();
+            const doctors = team.filter(m => m.role === "doctor");
+            setDoctorsList(doctors);
+
+            // 2. Prepare initial form state
+            const initialData = {
                 patientName: appointment?.patient || "",
                 phone: appointment?.phone || "",
                 service: appointment?.service || "",
@@ -120,10 +108,23 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 time: appointment?.time || selectedTime || "09:00",
                 doctorName: appointment?.doctor || "",
                 officeName: appointment?.cabinet || "",
-            });
+            };
+
+            // 3. Handle auto-selection for NEW appointments
+            if (!isEditing && !initialData.doctorName && appointment?.doctorId && appointment?.doctorId !== "all") {
+                const doc = doctors.find(m => m.name === appointment.doctorId);
+                if (doc) {
+                    initialData.doctorName = doc.name;
+                    initialData.officeName = doc.office || "";
+                }
+            }
+
+            setFormData(initialData);
             setShowResults(false);
             setSearchResults([]);
         }
+
+        initModal();
     }, [open, appointment, selectedDate, selectedTime]);
 
     const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
@@ -406,16 +407,16 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                     let dotColor = "";
                                     
                                     if (item.id === "planned" && isActive) {
-                                        activeClasses = "bg-amber-500/5 border-amber-500/30";
+                                        activeClasses = "bg-amber-500/5 border-amber-500/30 ring-1 ring-amber-500/20";
                                         dotColor = "bg-amber-500";
                                     } else if (item.id === "completed" && isActive) {
-                                        activeClasses = "bg-emerald-500/5 border-emerald-500/30";
+                                        activeClasses = "bg-emerald-500/5 border-emerald-500/30 ring-1 ring-emerald-500/20";
                                         dotColor = "bg-emerald-500";
                                     } else if (item.id === "thinking" && isActive) {
-                                        activeClasses = "bg-blue-500/5 border-blue-500/30";
+                                        activeClasses = "bg-blue-500/5 border-blue-500/30 ring-1 ring-blue-500/20";
                                         dotColor = "bg-blue-500";
                                     } else if (item.id === "no-show" && isActive) {
-                                        activeClasses = "bg-rose-500/5 border-rose-500/30";
+                                        activeClasses = "bg-rose-500/5 border-rose-500/30 ring-1 ring-rose-500/20";
                                         dotColor = "bg-rose-500";
                                     } else {
                                         activeClasses = "bg-secondary/10 border-border/40 hover:bg-secondary/20 hover:border-border/60";
@@ -426,29 +427,35 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "relative flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-300 group",
-                                                activeClasses,
-                                                isActive ? "ring-1 ring-primary/20 ring-offset-0" : ""
+                                                "relative flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all duration-300 group overflow-hidden",
+                                                activeClasses
                                             )}
                                         >
                                             <RadioGroupItem value={item.id} id={item.id} className="sr-only" />
+                                            <div className={cn(
+                                                "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0", 
+                                                isActive ? "bg-background border border-border/50 shadow-md scale-105" : "bg-secondary/30"
+                                            )}>
+                                                <item.icon className={cn("h-5 w-5", isActive ? item.color : "text-muted-foreground/50")} />
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className={cn(
+                                                    "text-[10px] font-black uppercase tracking-tight leading-none truncate", 
+                                                    isActive ? item.color : "text-muted-foreground/70 group-hover:text-foreground"
+                                                )}>
+                                                    {item.label}
+                                                </span>
+                                                {isActive && (
+                                                    <span className="text-[8px] font-bold text-muted-foreground/30 uppercase tracking-widest mt-1">Ок</span>
+                                                )}
+                                            </div>
                                             {isActive && (
-                                                <div className="absolute top-3 right-3 h-2 w-2">
-                                                    <span className={cn("relative inline-flex rounded-full h-1.5 w-1.5", dotColor)}></span>
+                                                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full">
+                                                    <span className={cn("relative flex h-1.5 w-1.5 rounded-full", dotColor)}>
+                                                       <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", dotColor)}></span>
+                                                    </span>
                                                 </div>
                                             )}
-                                            <div className={cn(
-                                                "h-8 w-8 rounded-xl flex items-center justify-center transition-transform shrink-0", 
-                                                isActive ? "bg-background border border-border/50 shadow-sm" : "bg-secondary/30"
-                                            )}>
-                                                <item.icon className={cn("h-4 w-4", isActive ? item.color : "text-muted-foreground/50")} />
-                                            </div>
-                                            <span className={cn(
-                                                "text-[10px] font-black uppercase tracking-[0.05em] leading-tight pr-2", 
-                                                isActive ? item.color : "text-muted-foreground/70 group-hover:text-foreground"
-                                            )}>
-                                                {item.label}
-                                            </span>
                                         </Label>
                                     );
                                 })}

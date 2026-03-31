@@ -11,10 +11,12 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { loadTeam } from "@/pages/settings/types";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 const SchedulePage = () => {
     const { user } = useAuth();
     const { isDoctor, isSuperadmin, isClientAdmin, isClientManager } = useRole();
+    const { active } = useWorkspace();
     
     const [view, setView] = useState<"day" | "week" | "month">("week");
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -87,9 +89,42 @@ const SchedulePage = () => {
         : appointments.filter(a => a.doctorId === selectedDoctorId);
 
     const handleSaveAppointment = async (data: any) => {
-        // Implementation for manual saving if needed
-        // For now, we rely on the DiagnosticMap to save data
-        setIsModalOpen(false);
+        setIsLoading(true);
+        try {
+            // Adjust the date for storage (combine date and time)
+            const [hours, minutes] = data.time.split(":").map(Number);
+            const scheduled_at = new Date(data.date);
+            scheduled_at.setHours(hours, minutes, 0, 0);
+
+            const payload: any = {
+                name: data.patientName || "Без имени",
+                phone: data.phone || "",
+                status: data.status === "completed" ? "Завершен" : "Записан на диагностику",
+                comments: data.comment || "",
+                scheduled_at: scheduled_at.toISOString(),
+                doctor_name: data.doctorName || selectedDoctorId,
+                ai_summary: data.service || "Первичный прием",
+                project_id: active?.id || "default"
+            };
+
+            if (activeAppointment?.id) {
+                payload.id = activeAppointment.id;
+            }
+
+            const { error } = await supabase
+                .from("leads_crm")
+                .upsert(payload);
+
+            if (error) throw error;
+
+            toast({ title: "Успех", description: "Запись успешно сохранена" });
+            fetchAppointments();
+            setIsModalOpen(false);
+        } catch (err: any) {
+            toast({ title: "Ошибка", description: "Не удалось сохранить запись: " + err.message, variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
