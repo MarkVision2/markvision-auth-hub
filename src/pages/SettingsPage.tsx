@@ -74,6 +74,10 @@ export default function SettingsPage() {
   const [formPassword, setFormPassword] = useState("");
   const [formRole, setFormRole] = useState<RoleKey>("client_admin");
   const [formPerms, setFormPerms] = useState<string[]>(ROLE_PRESETS.client_admin);
+  const [formSpecialty, setFormSpecialty] = useState("");
+  const [formOffice, setFormOffice] = useState("");
+  const [formWorkingDays, setFormWorkingDays] = useState<string[]>(["Пн", "Вт", "Ср", "Чт", "Пт"]);
+  const [formWorkingHours, setFormWorkingHours] = useState("09:00 - 18:00");
   const [showPassword, setShowPassword] = useState(false);
 
   /* Delete dialog */
@@ -83,6 +87,8 @@ export default function SettingsPage() {
     setEditingMember(null);
     setFormName(""); setFormEmail(""); setFormPassword("");
     setFormRole("client_admin"); setFormPerms([...ROLE_PRESETS.client_admin]);
+    setFormSpecialty(""); setFormOffice(""); setFormWorkingDays(["Пн", "Вт", "Ср", "Чт", "Пт"]);
+    setFormWorkingHours("09:00 - 18:00");
     setShowPassword(false); setSheetOpen(true);
   };
 
@@ -93,6 +99,10 @@ export default function SettingsPage() {
     setFormEmail(m.email.replace("@markvision-staff.io", "")); 
     setFormPassword("");
     setFormRole(m.role); setFormPerms([...m.permissions]);
+    setFormSpecialty(m.specialty || "");
+    setFormOffice(m.office || "");
+    setFormWorkingDays(m.workingDays || ["Пн", "Вт", "Ср", "Чт", "Пт"]);
+    setFormWorkingHours(m.workingHours || "09:00 - 18:00");
     setShowPassword(false); setSheetOpen(true);
   };
 
@@ -129,13 +139,26 @@ export default function SettingsPage() {
              full_name: formName,
              role: formRole,
              permissions: formPerms,
+             specialty: formSpecialty,
+             office: formOffice,
+             working_days: formWorkingDays,
+             working_hours: formWorkingHours,
           } as any)
           .eq("email", finalEmail as any);
 
         if (error) throw error;
 
         setTeam(prev => prev.map(m => m.id === editingMember.id
-          ? { ...m, name: formName, role: formRole, permissions: formPerms }
+          ? { 
+              ...m, 
+              name: formName, 
+              role: formRole, 
+              permissions: formPerms,
+              specialty: formSpecialty,
+              office: formOffice,
+              workingDays: formWorkingDays,
+              workingHours: formWorkingHours,
+            }
           : m
         ));
         toast({ title: "Сотрудник обновлён" });
@@ -169,6 +192,10 @@ export default function SettingsPage() {
           .update({
             role: formRole,
             permissions: formPerms,
+            specialty: formSpecialty,
+            office: formOffice,
+            working_days: formWorkingDays,
+            working_hours: formWorkingHours,
           } as any)
           .eq("id", authRes.user.id as any);
 
@@ -188,6 +215,8 @@ export default function SettingsPage() {
           id: authRes.user.id,
           name: formName, email: finalEmail, role: formRole,
           status: "active", lastLogin: null, permissions: formPerms,
+          specialty: formSpecialty, office: formOffice, 
+          workingDays: formWorkingDays, workingHours: formWorkingHours,
         };
         setTeam(prev => [...prev, newMember]);
         
@@ -338,6 +367,43 @@ export default function SettingsPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {/* Doctor Specific Fields */}
+                {formRole === 'doctor' && (
+                  <div className="pt-2 grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Специализация</Label>
+                      <Input value={formSpecialty} onChange={e => setFormSpecialty(e.target.value)} placeholder="Хирург" className="bg-accent/30 border-border/30" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Кабинет №</Label>
+                      <Input value={formOffice} onChange={e => setFormOffice(e.target.value)} placeholder="101" className="bg-accent/30 border-border/30" />
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                       <Label className="text-xs text-muted-foreground">График работы (Дни)</Label>
+                       <div className="flex flex-wrap gap-1.5 mt-1">
+                         {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(day => (
+                           <button
+                             key={day}
+                             onClick={() => setFormWorkingDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])}
+                             className={cn(
+                               "px-2 py-1 rounded text-[10px] font-bold border transition-all",
+                               formWorkingDays.includes(day) 
+                                 ? "bg-primary text-primary-foreground border-primary" 
+                                 : "bg-accent/30 border-border/30 text-muted-foreground hover:border-primary/40"
+                             )}
+                           >
+                             {day}
+                           </button>
+                         ))}
+                       </div>
+                    </div>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs text-muted-foreground">Часы работы</Label>
+                      <Input value={formWorkingHours} onChange={e => setFormWorkingHours(e.target.value)} placeholder="09:00 - 18:00" className="bg-accent/30 border-border/30" />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

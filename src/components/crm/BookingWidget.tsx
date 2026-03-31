@@ -3,7 +3,7 @@ import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Calendar, User, Clock, Check, Loader2, DoorOpen } from "lucide-react";
-import { loadTeam, TeamMember } from "@/pages/settings/types";
+import { fetchTeamMembers, TeamMember } from "@/pages/settings/types";
 import { format, parse, addHours, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +34,11 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
     useEffect(() => {
-        setTeam(loadTeam());
+        async function init() {
+            const data = await fetchTeamMembers();
+            setTeam(data);
+        }
+        init();
     }, []);
 
     // Fetch booked slots when doctor or date changes

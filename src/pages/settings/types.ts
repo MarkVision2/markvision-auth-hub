@@ -164,6 +164,10 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
                 status: "active", // Based on profile existence
                 lastLogin: p.updated_at ? new Date(p.updated_at).toLocaleDateString() : null,
                 permissions: (p.permissions as string[]) || ROLE_PRESETS[p.role as RoleKey] || [],
+                specialty: p.specialty || "",
+                office: p.office || "",
+                workingDays: p.working_days || ["Пн", "Вт", "Ср", "Чт", "Пт"],
+                workingHours: p.working_hours || "09:00 - 18:00",
             }));
         }
     } catch (err) {
