@@ -17,7 +17,7 @@ import {
     Calendar as CalendarIcon, Clock, User, 
     Phone, MessageSquare, Briefcase, CheckCircle2,
     ShieldAlert, XCircle, Search, ExternalLink, Plus,
-    ChevronDown, Stethoscope
+    ChevronDown, Stethoscope, Building
 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { DiagnosticModule } from "../../diagnostics/DiagnosticModule";
 import { Lead } from "../KanbanBoard";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { fetchTeamMembers, TeamMember } from "@/pages/settings/types";
 
 interface AppointmentModalProps {
     open: boolean;
@@ -80,7 +81,31 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         comment: appointment?.comment || "",
         date: appointment?.date || selectedDate || new Date(),
         time: appointment?.time || selectedTime || "09:00",
+        doctorName: appointment?.doctor || "",
+        officeName: appointment?.cabinet || "",
     });
+
+    const [doctorsList, setDoctorsList] = useState<TeamMember[]>([]);
+
+    useEffect(() => {
+        async function loadDoctors() {
+            const data = await fetchTeamMembers();
+            setDoctorsList(data.filter(m => m.role === "doctor"));
+            
+            // If we're creating a new appointment and a doctor is already selected in the schedule
+            if (!isEditing && !formData.doctorName && appointment?.doctorId && appointment?.doctorId !== "all") {
+                const doc = data.find(m => m.name === appointment.doctorId);
+                if (doc) {
+                    setFormData(prev => ({ 
+                        ...prev, 
+                        doctorName: doc.name,
+                        officeName: doc.office || prev.officeName
+                    }));
+                }
+            }
+        }
+        loadDoctors();
+    }, [open]);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -93,6 +118,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 comment: appointment?.comment || "",
                 date: appointment?.date || selectedDate || new Date(),
                 time: appointment?.time || selectedTime || "09:00",
+                doctorName: appointment?.doctor || "",
+                officeName: appointment?.cabinet || "",
             });
             setShowResults(false);
             setSearchResults([]);
@@ -312,6 +339,53 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                 ))}
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Doctor & Cabinet Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1 h-4 bg-muted-foreground/30 rounded-full" />
+                            <Label className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.15em]">Специалист и кабинет</Label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Select 
+                                    value={formData.doctorName} 
+                                    onValueChange={(val) => {
+                                        setFormData(prev => ({ ...prev, doctorName: val }));
+                                        const doc = doctorsList.find(d => d.name === val);
+                                        if (doc?.office) setFormData(prev => ({ ...prev, officeName: doc.office! }));
+                                    }}
+                                >
+                                    <SelectTrigger className="h-14 px-5 rounded-2xl bg-secondary/10 border-border/40 font-bold transition-all hover:border-primary/40 hover:bg-primary/[0.02] group">
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-9 w-9 rounded-xl bg-secondary/20 text-muted-foreground flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                <User className="h-4 w-4" />
+                                            </div>
+                                            <SelectValue placeholder="Выберите врача" />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border border-border shadow-2xl p-2 bg-card/95 backdrop-blur-xl">
+                                        {doctorsList.map(doc => (
+                                            <SelectItem key={doc.id} value={doc.name} className="rounded-xl py-3 px-4 font-bold cursor-pointer hover:bg-primary/5 focus:bg-primary/5 mb-1 last:mb-0 transition-all">
+                                                {doc.name} ({doc.specialty || "Врач"})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5 relative group">
+                                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                                    <Building className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                </div>
+                                <Input 
+                                    placeholder="Кабинет" 
+                                    className="h-14 pl-11 rounded-2xl bg-secondary/10 border-border/40 font-bold focus:ring-1 focus:ring-primary/30 focus:border-primary transition-all"
+                                    value={formData.officeName}
+                                    onChange={(e) => setFormData({...formData, officeName: e.target.value})}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Status & Comment Section */}

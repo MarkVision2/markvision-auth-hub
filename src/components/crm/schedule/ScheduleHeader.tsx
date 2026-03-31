@@ -13,7 +13,8 @@ import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, endOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
-import { loadTeam } from "@/pages/settings/types";
+import { loadTeam, fetchTeamMembers, TeamMember } from "@/pages/settings/types";
+import { useState, useEffect } from "react";
 
 interface ScheduleHeaderProps {
     view: "day" | "week" | "month";
@@ -31,17 +32,24 @@ export const ScheduleHeader: React.FC<ScheduleHeaderProps> = ({
     selectedDoctorId, onDoctorChange,
     hideDoctorSelector = false
 }) => {
-    const team = loadTeam();
-    const doctors = [
-        { id: "all", name: "Все врачи", specialty: "Медицинский центр" },
-        ...team
-            .filter(m => m.role === "doctor")
-            .map(m => ({
-                id: m.name, // Use name for consistency with leads_crm table
-                name: m.name,
-                specialty: m.specialty || "Врач"
-            }))
-    ];
+    const [doctors, setDoctors] = useState<{ id: string; name: string; specialty: string }[]>([
+        { id: "all", name: "Все врачи", specialty: "Медицинский центр" }
+    ]);
+
+    useEffect(() => {
+        async function init() {
+            const team = await fetchTeamMembers();
+            const filtered = team
+                .filter(m => m.role === "doctor")
+                .map(m => ({
+                    id: m.name,
+                    name: m.name,
+                    specialty: m.specialty || "Врач"
+                }));
+            setDoctors([{ id: "all", name: "Все врачи", specialty: "Медицинский центр" }, ...filtered]);
+        }
+        init();
+    }, []);
 
     const handlePrev = () => {
         const newDate = new Date(selectedDate);

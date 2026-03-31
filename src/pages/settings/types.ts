@@ -104,9 +104,7 @@ export interface TeamMember {
 }
 
 export const INITIAL_TEAM: TeamMember[] = [
-    { id: "1", name: "Владелец", email: "admin@markvision.io", role: "superadmin", status: "active", lastLogin: "Сегодня, 12:04", permissions: [...ALL_KEYS] },
-    { id: "2", name: "Директор Клиники", email: "director@clinic.io", role: "client_admin", status: "active", lastLogin: "Вчера, 18:32", permissions: ROLE_PRESETS.client_admin },
-    { id: "3", name: "Менеджер", email: "manager@clinic.io", role: "client_manager", status: "active", lastLogin: "07 мар, 09:15", permissions: ROLE_PRESETS.client_manager },
+    { id: "1", name: "Администратор", email: "admin@markvision.io", role: "superadmin", status: "active", lastLogin: "Сегодня", permissions: [...ALL_KEYS] },
 ];
 
 export function loadTeam(): TeamMember[] {
