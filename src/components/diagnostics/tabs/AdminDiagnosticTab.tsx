@@ -257,6 +257,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
     const { isClientManager } = useRole();
     const canManageQuestions = !isClientManager && !readOnly;
     const [step, setStep] = useState(1);
+    const [attemptedNext, setAttemptedNext] = useState(false);
     const totalSteps = 3;
     // const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
 
@@ -315,7 +316,9 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
     };
 
     const nextStep = () => {
+        setAttemptedNext(true);
         if (validateStage(step)) {
+            setAttemptedNext(false); // Reset for next stage
             if (step === 2 && formData.paymentStatus === "declined") {
                 handleConfirm();
             } else {
@@ -329,7 +332,13 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         if (currentStep === 1) {
             const missing = questions.filter(q => q.required && !formData.answers[q.id]);
             if (missing.length > 0) {
-                toast({ title: "Внимание", description: `Заполните обязательное поле: "${missing[0].label}"`, variant: "destructive" });
+                const labels = missing.map(m => m.label).slice(0, 3).join(", ");
+                const suffix = missing.length > 3 ? " и другие" : "";
+                toast({ 
+                    title: "Заполните обязательные поля", 
+                    description: `Необходимо ответить на: ${labels}${suffix}`, 
+                    variant: "destructive" 
+                });
                 return false;
             }
         }
@@ -482,119 +491,156 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                         </div>
 
                         <div className="grid gap-6">
-                            {questions.map((q, qIndex) => (
-                                <div key={q.id} className="group/q bg-card border border-border/20 hover:border-primary/30 rounded-[32px] p-6 transition-all hover:shadow-xl hover:shadow-black/20 relative">
-                                    <div className="flex items-start gap-6">
-                                        <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex flex-col items-center justify-center shrink-0 border border-primary/20 group-hover/q:scale-110 transition-transform">
-                                            <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-40">Q</span>
-                                            <span className="text-sm font-black leading-none">{qIndex + 1}</span>
-                                        </div>
+                            {questions.map((q, qIndex) => {
+                                const isMissing = attemptedNext && q.required && !formData.answers[q.id];
+                                return (
+                                    <div 
+                                        key={q.id} 
+                                        className={cn(
+                                            "group/q bg-card border rounded-[32px] p-6 transition-all relative",
+                                            isMissing 
+                                                ? "border-destructive/50 bg-destructive/5 shadow-lg shadow-destructive/20" 
+                                                : "border-border/20 hover:border-primary/30 hover:shadow-xl hover:shadow-black/20"
+                                        )}
+                                    >
+                                        <div className="flex items-start gap-6">
+                                            <div className={cn(
+                                                "h-10 w-10 rounded-2xl flex flex-col items-center justify-center shrink-0 border transition-all",
+                                                isMissing 
+                                                    ? "bg-destructive/10 text-destructive border-destructive/20 scale-105" 
+                                                    : "bg-primary/10 text-primary border-primary/20 group-hover/q:scale-110"
+                                            )}>
+                                                <span className="text-[10px] font-black uppercase leading-none mb-0.5 opacity-40">Q</span>
+                                                <span className="text-sm font-black leading-none">{qIndex + 1}</span>
+                                            </div>
 
-                                        <div className="flex-1 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <Label className="text-[13px] font-black uppercase tracking-widest text-foreground/80 leading-relaxed">
-                                                    {q.label}
-                                                    {q.required && <span className="text-primary ml-1.5">*</span>}
-                                                </Label>
-                                                
-                                                {canManageQuestions && (
-                                                    <div className="flex items-center gap-1 opacity-0 group-hover/q:opacity-100 transition-opacity">
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-primary hover:bg-primary/5"
-                                                            onClick={() => {
-                                                                const el = document.getElementById(`q-editor-${q.id}`);
-                                                                if (el) el.classList.toggle('hidden');
+                                            <div className="flex-1 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <Label className={cn(
+                                                        "text-[13px] font-black uppercase tracking-widest leading-relaxed",
+                                                        isMissing ? "text-destructive" : "text-foreground/80"
+                                                    )}>
+                                                        {q.label}
+                                                        {q.required && <span className="text-primary ml-1.5">*</span>}
+                                                        {isMissing && <span className="ml-3 px-2 py-0.5 rounded-md bg-destructive text-white text-[9px] font-black uppercase animate-pulse">Обязательно</span>}
+                                                    </Label>
+                                                    
+                                                    {canManageQuestions && (
+                                                        <div className="flex items-center gap-1 opacity-0 group-hover/q:opacity-100 transition-opacity">
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-primary hover:bg-primary/5"
+                                                                onClick={() => {
+                                                                    const el = document.getElementById(`q-editor-${q.id}`);
+                                                                    if (el) el.classList.toggle('hidden');
+                                                                }}
+                                                            >
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/5"
+                                                                onClick={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Answer Input */}
+                                                <div className="relative">
+                                                    {q.type === "textarea" ? (
+                                                        <Textarea
+                                                            placeholder="ВВЕДИТЕ РАЗВЕРНУТЫЙ ОТВЕТ..."
+                                                            className={cn(
+                                                                "h-24 border-none rounded-2xl p-5 text-[11px] font-black uppercase tracking-widest focus:ring-1 placeholder:text-muted-foreground/20 shadow-inner resize-none transition-all",
+                                                                isMissing 
+                                                                    ? "bg-destructive/5 ring-1 ring-destructive/30 focus:ring-destructive" 
+                                                                    : "bg-secondary/5 focus:ring-primary/20"
+                                                            )}
+                                                            value={formData.answers[q.id] || ""}
+                                                            onChange={(e) => {
+                                                                setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } });
+                                                                if (e.target.value.trim() && isMissing) setAttemptedNext(false);
                                                             }}
-                                                        >
-                                                            <Edit2 className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            className="h-8 w-8 rounded-xl text-muted-foreground/30 hover:text-destructive hover:bg-destructive/5"
-                                                            onClick={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Answer Input */}
-                                            <div className="relative">
-                                                {q.type === "textarea" ? (
-                                                    <Textarea
-                                                        placeholder="ВВЕДИТЕ РАЗВЕРНУТЫЙ ОТВЕТ..."
-                                                        className="h-24 bg-secondary/5 border-none rounded-2xl p-5 text-[11px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/20 shadow-inner resize-none"
-                                                        value={formData.answers[q.id] || ""}
-                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                        disabled={readOnly}
-                                                    />
-                                                ) : q.type === "text" ? (
-                                                    <Input
-                                                        placeholder="ОТВЕТ ПАЦИЕНТА..."
-                                                        className="h-14 bg-secondary/5 border-none rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/20 shadow-inner"
-                                                        value={formData.answers[q.id] || ""}
-                                                        onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
-                                                        disabled={readOnly}
-                                                    />
-                                                ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {q.options.map((opt) => {
-                                                            const isSelected = q.type === "radio"
-                                                                ? formData.answers[q.id] === opt.id
-                                                                : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
-                                                            return (
-                                                                <button
-                                                                    key={opt.id}
-                                                                    className={cn(
-                                                                        "h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
-                                                                        isSelected
-                                                                            ? "border-primary bg-primary shadow-lg shadow-primary/20 text-white"
-                                                                            : "border-border/20 bg-secondary/20 text-muted-foreground/40 hover:border-primary/20",
-                                                                        !readOnly && "cursor-pointer"
-                                                                    )}
-                                                                    onClick={() => {
-                                                                        if (readOnly) return;
-                                                                        if (q.type === "radio") {
-                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
-                                                                        } else {
-                                                                            const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
-                                                                            const newVal = current.includes(opt.id)
-                                                                                ? current.filter((i: string) => i !== opt.id)
-                                                                                : [...current, opt.id];
-                                                                            setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
-                                                                        }
-                                                                    }}
-                                                                    disabled={readOnly}
-                                                                >
-                                                                    {isSelected && <Check className="h-4 w-4 inline mr-2" />}
-                                                                    {opt.label}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                ) : null}
+                                                            disabled={readOnly}
+                                                        />
+                                                    ) : q.type === "text" ? (
+                                                        <Input
+                                                            placeholder="ОТВЕТ ПАЦИЕНТА..."
+                                                            className={cn(
+                                                                "h-14 border-none rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:ring-1 placeholder:text-muted-foreground/20 shadow-inner transition-all",
+                                                                isMissing 
+                                                                    ? "bg-destructive/5 ring-1 ring-destructive/30 focus:ring-destructive" 
+                                                                    : "bg-secondary/5 focus:ring-primary/20"
+                                                            )}
+                                                            value={formData.answers[q.id] || ""}
+                                                            onChange={(e) => {
+                                                                setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } });
+                                                                if (e.target.value.trim() && isMissing) setAttemptedNext(false);
+                                                            }}
+                                                            disabled={readOnly}
+                                                        />
+                                                    ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {q.options.map((opt) => {
+                                                                const isSelected = q.type === "radio"
+                                                                    ? formData.answers[q.id] === opt.id
+                                                                    : (Array.isArray(formData.answers[q.id]) && formData.answers[q.id].includes(opt.id));
+                                                                return (
+                                                                    <button
+                                                                        key={opt.id}
+                                                                        className={cn(
+                                                                            "h-12 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                                                                            isSelected
+                                                                                ? "border-primary bg-primary shadow-lg shadow-primary/20 text-white"
+                                                                                : "border-border/20 bg-secondary/20 text-muted-foreground/40 hover:border-primary/20",
+                                                                            !readOnly && "cursor-pointer"
+                                                                        )}
+                                                                        onClick={() => {
+                                                                            if (readOnly) return;
+                                                                            if (q.type === "radio") {
+                                                                                setFormData({ ...formData, answers: { ...formData.answers, [q.id]: opt.id } });
+                                                                            } else {
+                                                                                const current = Array.isArray(formData.answers[q.id]) ? formData.answers[q.id] : [];
+                                                                                const newVal = current.includes(opt.id)
+                                                                                    ? current.filter((i: string) => i !== opt.id)
+                                                                                    : [...current, opt.id];
+                                                                                setFormData({ ...formData, answers: { ...formData.answers, [q.id]: newVal } });
+                                                                            }
+                                                                            if (isMissing) setAttemptedNext(false);
+                                                                        }}
+                                                                        disabled={readOnly}
+                                                                    >
+                                                                        {isSelected && <Check className="h-4 w-4 inline mr-2" />}
+                                                                        {opt.label}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : null}
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Inline editor */}
+                                        {canManageQuestions && (
+                                            <div id={`q-editor-${q.id}`} className="hidden pt-6">
+                                                <QuestionEditor
+                                                    question={q}
+                                                    onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
+                                                    onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
+                                                    onMoveUp={() => moveQuestion(qIndex, 'up')}
+                                                    onMoveDown={() => moveQuestion(qIndex, 'down')}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {/* Inline editor */}
-                                    {canManageQuestions && (
-                                        <div id={`q-editor-${q.id}`} className="hidden pt-6">
-                                            <QuestionEditor
-                                                question={q}
-                                                onUpdate={(updated) => onQuestionsChange(questions.map(item => item.id === q.id ? updated : item))}
-                                                onDelete={() => onQuestionsChange(questions.filter(item => item.id !== q.id))}
-                                                onMoveUp={() => moveQuestion(qIndex, 'up')}
-                                                onMoveDown={() => moveQuestion(qIndex, 'down')}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}

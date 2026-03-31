@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 export interface DoctorQuestion {
     id: string;
@@ -232,6 +233,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
         mainComplaint: "",
         recommendedCourse: "",
     });
+    const [attemptedNext, setAttemptedNext] = useState(false);
 
     const [openSections, setOpenSections] = useState<string[]>(["complaints", "exam", "procedure", "conclusion"]);
 
@@ -266,6 +268,25 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                 onQuestionsChange(newQuestions);
             }
         }
+    };
+
+    const handleComplete = () => {
+        setAttemptedNext(true);
+        const missing = questions.filter(q => q.required && !formData.answers[q.id]);
+        if (missing.length > 0) {
+            const labels = missing.map(m => m.label).slice(0, 3).join(", ");
+            const suffix = missing.length > 3 ? " и другие" : "";
+            toast({
+                title: "Заполните обязательные поля",
+                description: `Остались пустые пункты: ${labels}${suffix}`,
+                variant: "destructive"
+            });
+            // Open sections with missing fields
+            const missingSections = Array.from(new Set(missing.map(q => q.section)));
+            setOpenSections(prev => Array.from(new Set([...prev, ...missingSections])));
+            return;
+        }
+        onComplete();
     };
 
     const toggleSection = (section: string) => {
@@ -322,25 +343,49 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                 <div key={q.id} className="group/row hover:bg-background/40 transition-colors border-b border-border/10 last:border-0">
                                     <div className="px-8 py-6 flex flex-col gap-4">
                                         <div className="flex items-start gap-3">
-                                            <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/40 shrink-0 group-hover/row:bg-primary group-hover/row:animate-pulse transition-all" />
-                                            <Label className="text-[12px] uppercase font-black tracking-widest text-foreground group-hover/row:text-primary transition-colors leading-[1.4]">{q.label}</Label>
-                                            {q.required && <span className="text-destructive font-black">*</span>}
+                                            <div className={cn(
+                                                "mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 transition-all",
+                                                attemptedNext && q.required && !formData.answers[q.id] 
+                                                    ? "bg-destructive animate-pulse scale-125" 
+                                                    : "bg-primary/40 group-hover/row:bg-primary"
+                                            )} />
+                                            <Label className={cn(
+                                                "text-[12px] uppercase font-black tracking-widest transition-colors leading-[1.4]",
+                                                attemptedNext && q.required && !formData.answers[q.id] ? "text-destructive" : "text-foreground group-hover/row:text-primary"
+                                            )}>{q.label}</Label>
+                                            {q.required && <span className={cn("font-black", attemptedNext && !formData.answers[q.id] ? "text-destructive" : "text-primary")}>*</span>}
                                         </div>
                                         <div className="relative pl-[18px]">
                                             {q.type === "textarea" ? (
                                                 <Textarea
                                                     placeholder="Напишите ответ здесь..."
-                                                    className="bg-card border-border/40 focus:border-primary/40 focus:ring-4 focus:ring-primary/10 min-h-[120px] text-sm font-bold resize-none rounded-[24px] p-5 transition-all shadow-inner group-hover/row:border-primary/30 group-hover/row:shadow-md"
+                                                    className={cn(
+                                                        "bg-card focus:ring-4 text-sm font-bold resize-none rounded-[24px] p-5 transition-all shadow-inner group-hover/row:shadow-md",
+                                                        attemptedNext && q.required && !formData.answers[q.id]
+                                                            ? "border-destructive/50 ring-2 ring-destructive/10 focus:border-destructive focus:ring-destructive/20"
+                                                            : "border-border/40 focus:border-primary/40 focus:ring-primary/10 group-hover/row:border-primary/30"
+                                                    )}
                                                     value={formData.answers[q.id] || ""}
-                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    onChange={(e) => {
+                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } });
+                                                        if (e.target.value.trim() && attemptedNext) setAttemptedNext(false);
+                                                    }}
                                                     disabled={readOnly}
                                                 />
                                             ) : (
                                                 <Input
                                                     placeholder="Введите значение..."
-                                                    className="bg-card border-border/40 h-14 rounded-[20px] px-6 text-sm font-bold focus:border-primary/40 focus:ring-4 focus:ring-primary/10 transition-all shadow-inner group-hover/row:border-primary/30 group-hover/row:shadow-md"
+                                                    className={cn(
+                                                        "bg-card h-14 rounded-[20px] px-6 text-sm font-bold focus:ring-4 transition-all shadow-inner group-hover/row:shadow-md",
+                                                        attemptedNext && q.required && !formData.answers[q.id]
+                                                            ? "border-destructive/50 ring-2 ring-destructive/10 focus:border-destructive focus:ring-destructive/20"
+                                                            : "border-border/40 focus:border-primary/40 focus:ring-primary/10 group-hover/row:border-primary/30"
+                                                    )}
                                                     value={formData.answers[q.id] || ""}
-                                                    onChange={(e) => setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } })}
+                                                    onChange={(e) => {
+                                                        setFormData({ ...formData, answers: { ...formData.answers, [q.id]: e.target.value } });
+                                                        if (e.target.value.trim() && attemptedNext) setAttemptedNext(false);
+                                                    }}
                                                     disabled={readOnly}
                                                 />
                                             )}
@@ -451,8 +496,13 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
             {!readOnly && (
                 <div className="flex justify-end pt-8">
                     <Button 
-                        onClick={onComplete}
-                        className="h-16 px-10 rounded-[28px] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase gap-3 shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                        onClick={handleComplete}
+                        className={cn(
+                            "h-16 px-10 rounded-[28px] text-white font-black text-xs uppercase gap-3 shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] group",
+                            attemptedNext && questions.some(q => q.required && !formData.answers[q.id])
+                                ? "bg-destructive shadow-destructive/30"
+                                : "bg-primary hover:bg-primary/90 shadow-primary/30"
+                        )}
                     >
                         Перейти к листу назначения
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
