@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── Tab components ── */
@@ -170,8 +170,7 @@ export default function SettingsPage() {
         }
 
         // 1. Create user in Supabase Auth (without signing out current admin)
-        const adminClient = createAdminClient();
-        const { data: authRes, error: authError } = await adminClient.auth.signUp({
+        const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp({
           email: finalEmail,
           password: formPassword,
           options: {

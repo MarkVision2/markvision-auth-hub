@@ -7,17 +7,17 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 /**
  * A non-persisting Supabase client used for administrative tasks 
  * like creating new users without signing out the current admin.
+ * 
+ * Consolidated into a single instance to avoid 'Multiple GoTrueClient' warnings.
  */
-export const createAdminClient = () => {
-  return createClient<Database>(
-    SUPABASE_URL as string, 
-    SUPABASE_PUBLISHABLE_KEY as string, 
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    }
-  );
-};
+export const supabaseAdmin = createClient<Database>(
+  SUPABASE_URL as string, 
+  SUPABASE_PUBLISHABLE_KEY as string, 
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  }
+);

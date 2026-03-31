@@ -13,7 +13,7 @@ import {
   loadTeam, saveTeam, type TeamMember, ROLE_PRESETS, fetchTeamMembers
 } from "@/pages/settings/types";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { createAdminClient } from "@/lib/supabase-admin";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -115,8 +115,7 @@ const DoctorTerminal = () => {
       const finalEmail = formData.email.includes("@") ? formData.email : `${formData.email}@markvision-staff.io`;
 
       // 1. Create In Supabase Auth
-      const adminClient = createAdminClient();
-      const { data: authRes, error: authError } = await adminClient.auth.signUp({
+      const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp({
         email: finalEmail,
         password: formData.password,
         options: {
