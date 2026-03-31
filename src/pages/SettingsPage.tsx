@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── Tab components ── */
@@ -162,8 +163,8 @@ export default function SettingsPage() {
         ));
         toast({ title: "Сотрудник обновлён" });
       } else {
-        // 1. Create user in Supabase Auth (with all metadata)
-        const { data: authRes, error: authError } = await supabase.auth.signUp({
+        // 1. Create user in Supabase Auth (without signing out current admin)
+        const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp({
           email: finalEmail,
           password: formPassword,
           options: {
@@ -171,11 +172,6 @@ export default function SettingsPage() {
               full_name: formName,
               role: formRole,
               project_id: active.id,
-              permissions: formPerms,
-              specialty: formSpecialty,
-              office: formOffice,
-              working_days: formWorkingDays,
-              working_hours: formWorkingHours,
             }
           }
         });
@@ -183,13 +179,27 @@ export default function SettingsPage() {
         if (authError) throw authError;
         if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
-        // 2. Profile should be created automatically by a trigger. 
-        // We no longer attempt to update non-existent profile columns (office, specialty, etc.)
-        // metadata in Auth table is the source of truth for these.
-        toast({ 
-          title: "Сотрудник создан", 
-          description: "Для активации сессии администратора может потребоваться обновление страницы." 
-        });
+        // 2. Profile update (REQUIRED: Run the SQL migration first!)
+        const { error: profError } = await supabase
+          .from("profiles")
+          .update({
+            role: formRole,
+            permissions: formPerms,
+            specialty: formSpecialty,
+            office: formOffice,
+            working_days: formWorkingDays,
+            working_hours: formWorkingHours,
+          } as any)
+          .eq("id", authRes.user.id as any);
+
+        if (profError) {
+          console.error("Profile update failed:", profError);
+          toast({ 
+            title: "Ошибка обновления профиля", 
+            description: "Убедитесь, что миграция базы данных добавлена в Supabase SQL Editor.",
+            variant: "destructive"
+          });
+        }
 
         // 3. Link user to project
         const { error: memberError } = await supabase
