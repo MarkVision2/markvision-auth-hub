@@ -65,15 +65,9 @@ export default function GeneralTab() {
                 if (profile?.full_name) {
                     setLoadingStats(true);
                     
-                    // 1. Calls from ai_rop_audits
-                    const { data: callsData } = await supabase
-                        .from("ai_rop_audits")
-                        .select("interaction_type")
-                        .eq("manager_name", profile.full_name as any);
-                    
-                    const calls = (callsData || []) as any[];
-                    const incomingCount = calls.filter(c => c.interaction_type.includes("inbound") || c.interaction_type.includes("входящ")).length || 0;
-                    const outgoingCount = calls.filter(c => c.interaction_type.includes("outbound") || c.interaction_type.includes("исходящ")).length || 0;
+                    // 1. Calls (Zeroed out for future telephony table)
+                    const incomingCount = 0;
+                    const outgoingCount = 0;
 
                     // 2. Diagnostics from leads
                     const { data: leadsFetchData } = await supabase
@@ -86,10 +80,10 @@ export default function GeneralTab() {
                     const totalPayments = leadsRes.filter(l => l.is_diagnostic).reduce((acc, curr) => acc + (curr.amount || 0), 0) || 0;
 
                     setStats({
-                        incoming: incomingCount || 12, // Fallback for demo if empty
-                        outgoing: outgoingCount || 45,
-                        bookings: diagBookings || 8,
-                        payments: totalPayments || 125000
+                        incoming: incomingCount,
+                        outgoing: outgoingCount,
+                        bookings: diagBookings,
+                        payments: totalPayments
                     });
                 }
             } catch (e: any) {
