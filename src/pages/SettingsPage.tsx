@@ -90,7 +90,7 @@ export default function SettingsPage() {
     setEditingMember(m);
     setFormName(m.name);
     // Strip the internal suffix if present for a cleaner UI
-    setFormEmail(m.email.replace("@staff.mv", "")); 
+    setFormEmail(m.email.replace("@markvision-staff.io", "")); 
     setFormPassword("");
     setFormRole(m.role); setFormPerms([...m.permissions]);
     setShowPassword(false); setSheetOpen(true);
@@ -113,8 +113,11 @@ export default function SettingsPage() {
     
     setLoading(true);
 
+    const cleanLogin = formEmail.trim().toLowerCase();
     // Internally map login to a fake email if it's not already an email
-    const finalEmail = formEmail.includes("@") ? formEmail : `${formEmail}@staff.mv`;
+    const finalEmail = cleanLogin.includes("@") ? cleanLogin : `${cleanLogin}@markvision-staff.io`;
+
+    console.log("Creating/Updating user with mapped email:", finalEmail);
 
     try {
       if (editingMember) {
@@ -136,8 +139,8 @@ export default function SettingsPage() {
         ));
         toast({ title: "Сотрудник обновлён" });
       } else {
-        if (!formPassword) {
-          toast({ title: "Введите пароль для нового сотрудника", variant: "destructive" });
+        if (!formPassword || formPassword.length < 6) {
+          toast({ title: "Слишком короткий пароль", description: "Пароль должен быть не менее 6 символов", variant: "destructive" });
           setLoading(false);
           return;
         }
@@ -190,7 +193,7 @@ export default function SettingsPage() {
         // Final success
         toast({ 
           title: "Сотрудник добавлен", 
-          description: `Аккаунт для ${formEmail} создан. Пришлите ему пароль: ${formPassword}` 
+          description: `Аккаунт для ${cleanLogin} создан. Пришлите ему пароль: ${formPassword}` 
         });
       }
       setSheetOpen(false);
@@ -210,7 +213,7 @@ export default function SettingsPage() {
 
   const filtered = team.filter(m =>
     m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.email.toLowerCase().replace("@staff.mv", "").includes(search.toLowerCase())
+    m.email.toLowerCase().replace("@markvision-staff.io", "").includes(search.toLowerCase())
   );
 
   return (

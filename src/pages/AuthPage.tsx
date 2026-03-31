@@ -41,8 +41,11 @@ const AuthPage = () => {
     }
     setLoading(true);
 
-    // If the input doesn't contain '@', treat it as a login and append @staff.mv
-    const finalEmail = email.includes("@") ? email : `${email}@staff.mv`;
+    const cleanInput = email.trim().toLowerCase();
+    // If the input doesn't contain '@', treat it as a login and append @markvision-staff.io
+    const finalEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@markvision-staff.io`;
+
+    console.log("Attempting login with mapped email:", finalEmail);
 
     try {
       if (activeTab === "login") {
