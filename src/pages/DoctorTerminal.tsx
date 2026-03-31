@@ -13,7 +13,6 @@ import {
   loadTeam, saveTeam, type TeamMember, ROLE_PRESETS, fetchTeamMembers
 } from "@/pages/settings/types";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -114,8 +113,8 @@ const DoctorTerminal = () => {
     try {
       const finalEmail = formData.email.includes("@") ? formData.email : `${formData.email}@markvision-staff.io`;
 
-      // 1. Create In Supabase Auth
-      const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp({
+      // 1. Create In Supabase Auth (with metadata)
+      const { data: authRes, error: authError } = await supabase.auth.signUp({
         email: finalEmail,
         password: formData.password,
         options: {
@@ -123,6 +122,10 @@ const DoctorTerminal = () => {
             full_name: formData.name,
             role: "doctor",
             project_id: active.id,
+            specialty: formData.specialty,
+            office: formData.office,
+            working_days: formData.workingDays,
+            working_hours: formData.workingHours,
           }
         }
       });
@@ -130,20 +133,8 @@ const DoctorTerminal = () => {
       if (authError) throw authError;
       if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
-      // 2. Update Profile with Doctor Metadata
-      const { error: profError } = await supabase
-        .from("profiles")
-        .update({
-          role: "doctor",
-          permissions: ROLE_PRESETS.doctor,
-          specialty: formData.specialty,
-          office: formData.office,
-          working_days: formData.workingDays,
-          working_hours: formData.workingHours,
-        } as any)
-        .eq("id", authRes.user.id as any);
-
-      if (profError) throw profError;
+      // 2. Profile and mapping are created automatically or handled via metadata
+      toast({ title: "Врач добавлен", description: "Для активации сессии может потребоваться обновление страницы." });
 
       // 3. Link to Project
       const { error: memberError } = await supabase
