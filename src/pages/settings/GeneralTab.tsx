@@ -75,8 +75,8 @@ export default function GeneralTab() {
                 .eq("id", userId as any);
             if (profErr) throw profErr;
 
-            // 2. Update Project Settings
-            if (active) {
+            // 2. Update Project Settings - Only for Admins
+            if (active && isAdmin) {
                 const { error: projErr } = await supabase
                     .from("projects")
                     .update({
