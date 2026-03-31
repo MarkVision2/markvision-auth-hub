@@ -2,18 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
     Settings, Users, Upload, Phone, Briefcase,
-    Globe, Coins, Clock, Globe2, Languages, Image as ImageIcon,
-    Plus, ChevronRight, Loader2
+    Image as ImageIcon, Plus, Loader2
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-
-import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue 
-} from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
 export default function GeneralTab() {
@@ -30,9 +25,6 @@ export default function GeneralTab() {
     // Project Settings
     const [projectName, setProjectName] = useState("");
     const [projectLogo, setProjectLogo] = useState<string | null>(null);
-    const [currency, setCurrency] = useState("₸");
-    const [timezone, setTimezone] = useState("Asia/Almaty");
-    const [language, setLanguage] = useState("ru");
 
     const fileRef = useRef<HTMLInputElement>(null);
     const logoRef = useRef<HTMLInputElement>(null);
@@ -47,8 +39,8 @@ export default function GeneralTab() {
 
                 const { data, error } = await supabase
                     .from("profiles")
-                    .select("full_name, company_name, phone, avatar_url")
-                    .eq("id", user.id)
+                    .select("full_name, phone, avatar_url")
+                    .eq("id", user.id as any)
                     .single();
                 if (error) throw error;
                 const profile = data as any;
@@ -60,18 +52,15 @@ export default function GeneralTab() {
                 if (active) {
                     setProjectName(active.name || "");
                     setProjectLogo(active.logoUrl || null);
-                    setCurrency(active.currency || "₸");
-                    setTimezone(active.timezone || "Asia/Almaty");
-                    setLanguage(active.language || "ru");
                 }
             } catch (e: any) {
-                toast({ title: "Ошибка загрузки", description: e.message, variant: "destructive" });
+                toast({ title: "Ошибка загрузки", description: e.message || "Неизвестная ошибка", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
         }
         load();
-    }, []);
+    }, [active]);
 
     const handleSave = async () => {
         if (!userId) return;
@@ -84,7 +73,7 @@ export default function GeneralTab() {
                     full_name: name.trim(),
                     phone: phone.trim(),
                 } as any)
-                .eq("id", userId);
+                .eq("id", userId as any);
             if (profErr) throw profErr;
 
             // 2. Update Project Settings
@@ -94,11 +83,8 @@ export default function GeneralTab() {
                     .update({
                         name: projectName.trim(),
                         logo_url: projectLogo,
-                        currency: currency,
-                        timezone: timezone,
-                        language: language,
-                    })
-                    .eq("id", active.id);
+                    } as any)
+                    .eq("id", active.id as any);
                 if (projErr) throw projErr;
                 await refreshProjects();
             }
@@ -144,14 +130,19 @@ export default function GeneralTab() {
 
             const { error: profErr } = await supabase
                 .from("profiles")
-                .update({ avatar_url: url })
-                .eq("id", userId);
+                .update({ avatar_url: url } as any)
+                .eq("id", userId as any);
             if (profErr) throw profErr;
 
             setAvatarUrl(url);
             toast({ title: "Фото обновлено" });
         } catch (e: any) {
-            toast({ title: "Ошибка загрузки", description: e.message, variant: "destructive" });
+            console.error("Avatar Upload Error:", e);
+            toast({ 
+                title: "Ошибка загрузки", 
+                description: e.message || "Убедитесь, что бакет 'avatars' существует и публичен.", 
+                variant: "destructive" 
+            });
         } finally {
             setUploading(false);
         }
@@ -170,7 +161,12 @@ export default function GeneralTab() {
             setProjectLogo(`${publicUrl}?t=${Date.now()}`);
             toast({ title: "Логотип проекта загружен" });
         } catch (e: any) {
-            toast({ title: "Ошибка логотипа", description: e.message, variant: "destructive" });
+            console.error("Logo Upload Error:", e);
+            toast({ 
+                title: "Ошибка логотипа", 
+                description: e.message || "Ошибка записи в хранилище Supabase", 
+                variant: "destructive" 
+            });
         } finally {
             setUploading(false);
         }
@@ -242,16 +238,6 @@ export default function GeneralTab() {
                             </div>
                         </div>
                     </div>
-
-                    <div className="rounded-2xl border border-border/30 bg-primary/5 p-6 space-y-4 border-dashed">
-                       <div className="flex items-center gap-3">
-                           <Globe size={18} className="text-primary" />
-                           <p className="text-sm font-bold">Публичный профиль</p>
-                       </div>
-                       <p className="text-xs text-muted-foreground leading-relaxed">
-                           Эти данные будут видны вашим коллегам в разделе команды и при совместной работе над проектами.
-                       </p>
-                    </div>
                 </div>
 
                 {/* Section: Project Config */}
@@ -293,77 +279,7 @@ export default function GeneralTab() {
                                 <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Название проекта</Label>
                                 <Input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-background/50 border-border/30 h-10 transition-all focus:bg-background" disabled={loading} />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-1.5">
-                                    <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Валюта</Label>
-                                    <Select value={currency} onValueChange={setCurrency}>
-                                        <SelectTrigger className="bg-background/50 border-border/30 h-10">
-                                            <div className="flex items-center gap-2">
-                                                <Coins size={14} className="text-primary/60" />
-                                                <SelectValue />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="₸">₸ (KZT)</SelectItem>
-                                            <SelectItem value="$">$ (USD)</SelectItem>
-                                            <SelectItem value="€">€ (EUR)</SelectItem>
-                                            <SelectItem value="Br">Br (BYN)</SelectItem>
-                                            <SelectItem value="₽">₽ (RUB)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-1.5">
-                                    <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Язык</Label>
-                                    <Select value={language} onValueChange={setLanguage}>
-                                        <SelectTrigger className="bg-background/50 border-border/30 h-10">
-                                            <div className="flex items-center gap-2">
-                                                <Languages size={14} className="text-primary/60" />
-                                                <SelectValue />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="ru">Русский</SelectItem>
-                                            <SelectItem value="kk">Қазақша</SelectItem>
-                                            <SelectItem value="en">English</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div className="grid gap-1.5">
-                                <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Часовой пояс</Label>
-                                <Select value={timezone} onValueChange={setTimezone}>
-                                    <SelectTrigger className="bg-background/50 border-border/30 h-10">
-                                        <div className="flex items-center gap-2">
-                                            <Clock size={14} className="text-primary/60" />
-                                            <SelectValue />
-                                        </div>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Asia/Almaty">Almaty (GMT+5)</SelectItem>
-                                        <SelectItem value="Asia/Astana">Astana (GMT+5)</SelectItem>
-                                        <SelectItem value="Europe/Moscow">Moscow (GMT+3)</SelectItem>
-                                        <SelectItem value="UTC">UTC (GMT+0)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
                         </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-border/30 bg-card/40 p-5 flex items-center justify-between group cursor-default shadow-sm transition-all hover:bg-card/60">
-                        <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
-                                <Globe2 size={20} className="text-orange-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-bold">Публичный URL</p>
-                                <p className="text-xs text-muted-foreground">markvision.kz/dashboard</p>
-                            </div>
-                        </div>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground/40 hover:text-primary">
-                            <ChevronRight size={18} />
-                        </Button>
                     </div>
                 </div>
             </div>
