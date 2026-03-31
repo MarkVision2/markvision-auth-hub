@@ -10,9 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useRole } from "@/hooks/useRole";
 
 export default function GeneralTab() {
     const { active, refreshProjects } = useWorkspace() as any;
+    const { role } = useRole();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -20,13 +22,11 @@ export default function GeneralTab() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
-    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     
     // Project Settings
     const [projectName, setProjectName] = useState("");
     const [projectLogo, setProjectLogo] = useState<string | null>(null);
 
-    const fileRef = useRef<HTMLInputElement>(null);
     const logoRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -39,14 +39,13 @@ export default function GeneralTab() {
 
                 const { data, error } = await supabase
                     .from("profiles")
-                    .select("full_name, phone, avatar_url")
+                    .select("full_name, phone")
                     .eq("id", user.id as any)
                     .single();
                 if (error) throw error;
                 const profile = data as any;
                 setName(profile?.full_name || "");
                 setPhone(profile?.phone || "");
-                setAvatarUrl(profile?.avatar_url || null);
 
                 // Load active project settings
                 if (active) {
@@ -104,50 +103,6 @@ export default function GeneralTab() {
         }
     };
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !userId) return;
-        if (file.size > 2 * 1024 * 1024) {
-            toast({ title: "Файл слишком большой", description: "Макс. 2 МБ", variant: "destructive" });
-            return;
-        }
-
-        setUploading(true);
-        try {
-            const ext = file.name.split(".").pop();
-            const path = `${userId}/avatar.${ext}`;
-
-            const { error: upErr } = await supabase.storage
-                .from("avatars")
-                .upload(path, file, { upsert: true });
-            if (upErr) throw upErr;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from("avatars")
-                .getPublicUrl(path);
-
-            const url = `${publicUrl}?t=${Date.now()}`;
-
-            const { error: profErr } = await supabase
-                .from("profiles")
-                .update({ avatar_url: url } as any)
-                .eq("id", userId as any);
-            if (profErr) throw profErr;
-
-            setAvatarUrl(url);
-            toast({ title: "Фото обновлено" });
-        } catch (e: any) {
-            console.error("Avatar Upload Error:", e);
-            toast({ 
-                title: "Ошибка загрузки", 
-                description: e.message || "Убедитесь, что бакет 'avatars' существует и публичен.", 
-                variant: "destructive" 
-            });
-        } finally {
-            setUploading(false);
-        }
-    };
-
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !active) return;
@@ -155,22 +110,36 @@ export default function GeneralTab() {
         try {
             const ext = file.name.split(".").pop();
             const path = `projects/${active.id}/logo.${ext}`;
-            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+            
+            // To ensure we can overwrite, we might need to remove old one or use upsert
+            const { error: upErr } = await supabase.storage
+                .from("avatars")
+                .upload(path, file, { 
+                    upsert: true,
+                    cacheControl: '3600'
+                });
+            
             if (upErr) throw upErr;
-            const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+            
+            const { data: { publicUrl } } = supabase.storage
+                .from("avatars")
+                .getPublicUrl(path);
+                
             setProjectLogo(`${publicUrl}?t=${Date.now()}`);
             toast({ title: "Логотип проекта загружен" });
         } catch (e: any) {
             console.error("Logo Upload Error:", e);
             toast({ 
                 title: "Ошибка логотипа", 
-                description: e.message || "Ошибка записи в хранилище Supabase", 
+                description: e.message || "Ошибка записи в хранилище Supabase. Возможно, не хватает прав (RLS).", 
                 variant: "destructive" 
             });
         } finally {
             setUploading(false);
         }
     };
+
+    const isAdmin = role === "superadmin" || role === "client_admin";
 
     const initials = name
         ? name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
@@ -200,23 +169,13 @@ export default function GeneralTab() {
                             <h2 className="text-sm font-black uppercase tracking-widest text-foreground/80">Личный профиль</h2>
                         </div>
 
-                        <div className="flex items-center gap-6">
-                            <div className="relative group">
-                                <Avatar className="h-20 w-20 ring-4 ring-background shadow-xl">
-                                    {avatarUrl && <AvatarImage src={avatarUrl} alt="Avatar" />}
-                                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-black">{initials}</AvatarFallback>
-                                </Avatar>
-                                <button 
-                                    onClick={() => fileRef.current?.click()}
-                                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer border-2 border-background"
-                                >
-                                    <Upload size={14} />
-                                </button>
-                                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-base font-black border border-primary/20">
+                                {initials}
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-foreground">Фото профиля</p>
-                                <p className="text-[11px] text-muted-foreground leading-relaxed">Настройте свой аватар для <br/>лучшей узнаваемости в команде</p>
+                            <div className="space-y-0.5">
+                                <p className="text-sm font-bold text-foreground">Данные сотрудника</p>
+                                <p className="text-[11px] text-muted-foreground leading-relaxed">Основная информация вашего профиля <br/>в системе</p>
                             </div>
                         </div>
 
@@ -259,14 +218,18 @@ export default function GeneralTab() {
                                         <ImageIcon size={30} className="text-muted-foreground/20" />
                                     )}
                                 </div>
-                                <button 
-                                    onClick={() => logoRef.current?.click()}
-                                    className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-background border border-border/40 text-muted-foreground flex items-center justify-center shadow-md hover:text-primary transition-all cursor-pointer"
-                                    title="Загрузить лого"
-                                >
-                                    <Plus size={14} />
-                                </button>
-                                <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                                {isAdmin && (
+                                    <>
+                                        <button 
+                                            onClick={() => logoRef.current?.click()}
+                                            className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-background border border-border/40 text-muted-foreground flex items-center justify-center shadow-md hover:text-primary transition-all cursor-pointer"
+                                            title="Загрузить лого"
+                                        >
+                                            <Plus size={14} />
+                                        </button>
+                                        <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                                    </>
+                                )}
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm font-bold text-foreground">Логотип проекта</p>
