@@ -172,8 +172,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [user, refreshProjects]);
 
-  const workspaces = useMemo(() => [HQ, ...projects], [projects]);
-  const active = useMemo(() => workspaces.find(w => w.id === activeId) || HQ, [workspaces, activeId]);
+  const workspaces = useMemo(() => {
+    // Superadmins see HQ + all other projects. 
+    // Others ONLY see what they are members of (already filtered in projects state)
+    if (isSuperadmin) return [HQ, ...projects];
+    return projects;
+  }, [projects, isSuperadmin]);
+
+  const active = useMemo(() => {
+    const found = workspaces.find(w => w.id === activeId);
+    if (found) return found;
+    // Fallback if the activeId is not in accessible workspaces
+    return workspaces.length > 0 ? workspaces[0] : HQ;
+  }, [workspaces, activeId]);
+
   const contextValue = useMemo(() => ({
     workspaces,
     active,
