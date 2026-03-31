@@ -413,7 +413,6 @@ export default function SettingsPage() {
                                 checked={enabled}
                                 onCheckedChange={() => togglePerm(mod.key)}
                                 className="data-[state=checked]:bg-primary"
-                                disabled={formRole === "client_manager" && mod.key !== "crm"}
                               />
                             </div>
                           );
