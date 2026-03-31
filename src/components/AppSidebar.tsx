@@ -3,7 +3,7 @@ import {
   Zap, LayoutDashboard, Briefcase, Target, Wand2, Radar,
   Users, ShieldCheck, Settings, Activity, Coins, FileText,
   ChevronsUpDown, Check, TableProperties, Receipt, CalendarClock, HeartHandshake, Repeat,
-  Bot, Plus, Stethoscope, ChevronDown, ChevronRight
+  Bot, Plus, Stethoscope, ChevronDown, ChevronRight, LogOut
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -352,7 +352,7 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             <span>Настройки</span>
           </NavLink>
   
-          <div className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl hover:bg-accent/40 transition-colors cursor-pointer group">
+          <div className="flex items-center gap-3 px-3 py-2.5 mt-1 rounded-xl hover:bg-accent/40 transition-colors group relative pr-10">
             <Avatar className="h-9 w-9 border border-border/50 shadow-sm group-hover:border-primary/30 transition-colors bg-background">
               {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt={profile.full_name || "Avatar"} />}
               <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-black">
@@ -363,6 +363,17 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
               <p className="text-[13px] font-bold text-foreground truncate tracking-tight">{profile.full_name || "Admin"}</p>
               <p className="text-[9px] text-muted-foreground/70 uppercase tracking-widest font-black truncate mt-0.5">{role.replace("_", " ")}</p>
             </div>
+            
+            <button 
+              onClick={async () => {
+                await supabase.auth.signOut();
+                toast({ title: "Выход выполнен" });
+              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all duration-200"
+              title="Выйти"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </div>
