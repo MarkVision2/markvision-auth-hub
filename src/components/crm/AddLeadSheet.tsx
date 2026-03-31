@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import { Phone, AlertCircle } from "lucide-react";
+import { fetchTeamMembers, type TeamMember } from "@/pages/settings/types";
 
 
 
@@ -33,8 +34,15 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
   });
   const [saving, setSaving] = useState(false);
 
-  const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
-  const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
+  const [doctorsList, setDoctorsList] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const team = await fetchTeamMembers();
+      setDoctorsList(team.filter(m => m.role === "doctor"));
+    }
+    load();
+  }, []);
 
   const handleCreate = async () => {
     if (!form.name.trim()) { toast({ title: "Укажите имя клиента" }); return; }
@@ -140,21 +148,35 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Врач</label>
-                <Select value={form.doctor_name} onValueChange={v => setForm(f => ({ ...f, doctor_name: v }))}>
+                <Select 
+                  value={form.doctor_name} 
+                  onValueChange={v => {
+                    setForm(f => ({ ...f, doctor_name: v }));
+                    const doc = doctorsList.find(d => d.name === v);
+                    if (doc?.office) setForm(f => ({ ...f, office_name: doc.office! }));
+                  }}
+                >
                   <SelectTrigger className="mt-1 bg-secondary/50 border-border text-xs h-9"><SelectValue placeholder="Врач" /></SelectTrigger>
-                  <SelectContent>
-                    {DOCTORS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  <SelectContent className="rounded-xl border-border shadow-2xl">
+                    {doctorsList.map(d => (
+                      <SelectItem key={d.id} value={d.name} className="rounded-lg py-2 font-bold focus:bg-primary/5">
+                        <div className="flex flex-col">
+                          <span>{d.name}</span>
+                          {d.specialty && <span className="text-[9px] text-muted-foreground opacity-70 font-medium">{d.specialty}</span>}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Кабинет</label>
-                <Select value={form.office_name} onValueChange={v => setForm(f => ({ ...f, office_name: v }))}>
-                  <SelectTrigger className="mt-1 bg-secondary/50 border-border text-xs h-9"><SelectValue placeholder="Кабинет" /></SelectTrigger>
-                  <SelectContent>
-                    {OFFICES.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Input 
+                  className="mt-1 bg-secondary/50 border-border text-xs h-9" 
+                  placeholder="№" 
+                  value={form.office_name} 
+                  onChange={e => setForm(f => ({ ...f, office_name: e.target.value }))} 
+                />
               </div>
             </div>
           )}

@@ -31,7 +31,7 @@ import { toast } from "@/hooks/use-toast";
 import type { Lead } from "./KanbanBoard";
 import type { CallRecord, AITask } from "./types";
 import { DiagnosticModule } from "../diagnostics/DiagnosticModule";
-import { loadTeam } from "@/pages/settings/types";
+import { fetchTeamMembers, type TeamMember } from "@/pages/settings/types";
 
 interface LeadDetailSheetProps {
   lead: Lead | null;
@@ -229,8 +229,19 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
 
-  const DOCTORS = ["Иванов И.И.", "Петров П.П.", "Сидоров С.С.", "Смирнова А.В."];
-  const OFFICES = ["Кабинет 101", "Кабинет 102", "Кабинет 203", "Кабинет 205"];
+  const [doctorsList, setDoctorsList] = useState<TeamMember[]>([]);
+  const [isFetchingDoctors, setIsFetchingDoctors] = useState(false);
+
+  useEffect(() => {
+    async function loadDoctors() {
+      setIsFetchingDoctors(true);
+      const team = await fetchTeamMembers();
+      setDoctorsList(team.filter(m => m.role === "doctor"));
+      setIsFetchingDoctors(false);
+    }
+    loadDoctors();
+  }, []);
+
   const TIME_SLOTS = Array.from({ length: 20 }, (_, i) => {
     const hour = Math.floor(i / 2) + 9;
     const min = i % 2 === 0 ? "00" : "30";
@@ -740,25 +751,37 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-[10px] text-muted-foreground uppercase font-medium">Врач</label>
-                          <Select value={doctorName} onValueChange={setDoctorName}>
+                          <Select 
+                            value={doctorName} 
+                            onValueChange={(val) => {
+                              setDoctorName(val);
+                              const doc = doctorsList.find(d => d.name === val);
+                              if (doc?.office) setOfficeName(doc.office);
+                            }}
+                          >
                             <SelectTrigger className="h-8 text-xs bg-secondary/30 border-border">
-                              <SelectValue placeholder="Выбрать" />
+                              <SelectValue placeholder={isFetchingDoctors ? "..." : "Выбрать"} />
                             </SelectTrigger>
-                            <SelectContent>
-                              {DOCTORS.map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}
+                            <SelectContent className="rounded-xl border-border shadow-2xl">
+                              {doctorsList.map(d => (
+                                <SelectItem key={d.id} value={d.name} className="text-xs rounded-lg font-bold">
+                                  <div className="flex flex-col">
+                                    <span>{d.name}</span>
+                                    {d.specialty && <span className="text-[9px] text-muted-foreground opacity-70">{d.specialty}</span>}
+                                  </div>
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="space-y-1.5">
                           <label className="text-[10px] text-muted-foreground uppercase font-medium">Кабинет</label>
-                          <Select value={officeName} onValueChange={setOfficeName}>
-                            <SelectTrigger className="h-8 text-xs bg-secondary/30 border-border">
-                              <SelectValue placeholder="Выбрать" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {OFFICES.map(o => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                          <Input 
+                            value={officeName} 
+                            onChange={(e) => setOfficeName(e.target.value)}
+                            placeholder="№" 
+                            className="h-8 text-xs bg-secondary/30 border-border focus:ring-1 focus:ring-primary/20" 
+                          />
                         </div>
                       </div>
 
@@ -1004,8 +1027,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                   { icon: MapPin, label: "Кабинет", value: (() => {
                     if (lead.office_name) return lead.office_name;
                     if (lead.doctor_name) {
-                      const team = loadTeam();
-                      const doc = team.find(m => m.name === lead.doctor_name);
+                      const doc = doctorsList.find(m => m.name === lead.doctor_name);
                       if (doc?.office) return `Кабинет ${doc.office}`;
                     }
                     return "—";
