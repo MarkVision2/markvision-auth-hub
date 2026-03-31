@@ -78,13 +78,6 @@ export interface ClientFinance {
     billingStatus: "paid" | "upcoming" | "overdue";
 }
 
-export interface FinanceTeamMember {
-    id: string;
-    name: string;
-    role: string;
-    salary: number;
-}
-
 export const defaultServices = ["Таргет", "СММ", "Маркетинг", "Контент", "SEO", "Разработка", "Дизайн", "CRM"];
 
 export const billingLabels: Record<string, { text: string; cls: string }> = {

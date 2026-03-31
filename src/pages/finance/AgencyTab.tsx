@@ -108,19 +108,18 @@ export default function AgencyTab() {
 
     const fetchData = useCallback(async () => {
         try {
-            let clientsQuery = supabase.from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true);
+            let clientsQuery = (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true);
             if (active.id !== HQ_ID) {
                 clientsQuery = clientsQuery.eq("project_id", active.id);
             }
             const { data: clients } = await clientsQuery;
-            const { data: allServices } = await supabase.from("finance_client_services").select("*");
-            const { data: allBilling } = await supabase.from("finance_client_billing").select("*");
-            const { data: teamData } = await supabase.from("finance_team").select("*").order("created_at");
+            const { data: allServices } = await (supabase as any).from("finance_client_services").select("*");
+            const { data: allBilling } = await (supabase as any).from("finance_client_billing").select("*");
 
             if (clients) {
-                const mapped: ClientFinance[] = clients.map(c => {
-                    const svcs = (allServices || []).filter(s => s.client_config_id === c.id).map(s => ({ name: s.service_name, price: Number(s.price) }));
-                    const billing = (allBilling || []).find(b => b.client_config_id === c.id);
+                const mapped: ClientFinance[] = clients.map((c: any) => {
+                    const svcs = (allServices || []).filter((s: any) => s.client_config_id === c.id).map((s: any) => ({ name: s.service_name, price: Number(s.price) }));
+                    const billing = (allBilling || []).find((b: any) => b.client_config_id === c.id);
                     return {
                         id: c.id, name: c.client_name, services: svcs,
                         expenses: billing ? Number(billing.expenses) : 0,
@@ -129,9 +128,6 @@ export default function AgencyTab() {
                     };
                 });
                 setClientsData(mapped);
-            }
-            if (teamData) {
-                setTeam(teamData.map(t => ({ id: t.id, name: t.name, role: t.role, salary: Number(t.salary) })));
             }
         } catch (err) {
             console.error("Finance fetch error:", err);
@@ -143,16 +139,16 @@ export default function AgencyTab() {
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const saveServices = async (clientId: string, svcs: ClientService[]) => {
-        await supabase.from("finance_client_services").delete().eq("client_config_id", clientId);
+        await (supabase as any).from("finance_client_services").delete().eq("client_config_id", clientId);
         if (svcs.length > 0) {
-            await supabase.from("finance_client_services").insert(
+            await (supabase as any).from("finance_client_services").insert(
                 svcs.map(s => ({ client_config_id: clientId, service_name: s.name, price: s.price }))
             );
         }
     };
 
     const saveBilling = async (clientId: string, expenses: number, nextBilling: string, billingStatus: string) => {
-        await supabase.from("finance_client_billing").upsert({
+        await (supabase as any).from("finance_client_billing").upsert({
             client_config_id: clientId, expenses,
             next_billing: nextBilling || null, billing_status: billingStatus,
             updated_at: new Date().toISOString(),
@@ -161,7 +157,7 @@ export default function AgencyTab() {
 
     const handleAddClient = async () => {
         if (!newClient.name) return;
-        const { data: inserted } = await supabase.from("clients_config").insert({ client_name: newClient.name }).select("id").single();
+        const { data: inserted } = await (supabase as any).from("clients_config").insert({ client_name: newClient.name }).select("id").single();
         if (inserted) {
             if (newClient.services.length > 0) await saveServices(inserted.id, newClient.services);
             await saveBilling(inserted.id, 0, newClient.nextBilling, "upcoming");
@@ -185,24 +181,9 @@ export default function AgencyTab() {
 
     const removeClient = async (id: string) => {
         setClientsData(prev => prev.filter(c => c.id !== id));
-        await supabase.from("finance_client_services").delete().eq("client_config_id", id);
-        await supabase.from("finance_client_billing").delete().eq("client_config_id", id);
-        await supabase.from("clients_config").update({ is_active: false }).eq("id", id);
-    };
-
-    const addTeamMember = async () => {
-        const { data } = await supabase.from("finance_team").insert({ name: "Новый сотрудник", role: "Должность", salary: 0 }).select().single();
-        if (data) setTeam(prev => [...prev, { id: data.id, name: data.name, role: data.role, salary: Number(data.salary) }]);
-    };
-
-    const updateMember = async (id: string, field: keyof FinanceTeamMember, value: string | number) => {
-        setTeam(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
-        await supabase.from("finance_team").update({ [field]: value }).eq("id", id);
-    };
-
-    const removeMember = async (id: string) => {
-        setTeam(prev => prev.filter(m => m.id !== id));
-        await supabase.from("finance_team").delete().eq("id", id);
+        await (supabase as any).from("finance_client_services").delete().eq("client_config_id", id);
+        await (supabase as any).from("finance_client_billing").delete().eq("client_config_id", id);
+        await (supabase as any).from("clients_config").update({ is_active: false }).eq("id", id);
     };
 
     const addService = () => {
@@ -215,10 +196,9 @@ export default function AgencyTab() {
     const getClientRevenue = (c: ClientFinance) => c.services.reduce((s, sv) => s + sv.price, 0);
     const totalMrr = clientsData.reduce((s, c) => s + getClientRevenue(c), 0);
     const totalExpenses = clientsData.reduce((s, c) => s + c.expenses, 0);
-    const totalSalaries = team.reduce((s, m) => s + m.salary, 0);
     const taxRate = 0.10;
     const totalTax = totalMrr * taxRate;
-    const totalProfit = totalMrr - totalExpenses - totalSalaries - totalTax;
+    const totalProfit = totalMrr - totalExpenses - totalTax;
     const avgMargin = totalMrr > 0 ? Math.round((totalProfit / totalMrr) * 100) : 0;
 
     if (loading) {
@@ -228,9 +208,8 @@ export default function AgencyTab() {
     return (
         <div className="space-y-8">
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard icon={Wallet} label="MRR" value={fmtCurrency(totalMrr)} />
-                <KpiCard icon={Users} label="ФОТ команды" value={fmtCurrency(totalSalaries)} valueClass="text-destructive" />
                 <KpiCard icon={Receipt} label="Налоги (10%)" value={fmtCurrency(totalTax)} valueClass="text-status-warning" />
                 <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(totalProfit)} valueClass={totalProfit >= 0 ? "text-primary" : "text-destructive"} />
                 <KpiCard icon={Percent} label="Маржинальность" value={`${avgMargin}%`} />
@@ -377,62 +356,6 @@ export default function AgencyTab() {
                 </div>
             </Section>
 
-            {/* Team */}
-            <Section
-                title={`Команда · ${team.length} чел.`}
-                action={
-                    <Button variant="ghost" size="sm" className="text-xs text-primary gap-1.5 h-8" onClick={addTeamMember}>
-                        <UserPlus className="h-3.5 w-3.5" /> Добавить
-                    </Button>
-                }
-            >
-                <div className="overflow-x-auto">
-                    <table className="w-full" style={{ tableLayout: "fixed" }}>
-                        <colgroup>
-                            <col style={{ width: "40%" }} />
-                            <col style={{ width: "30%" }} />
-                            <col style={{ width: "25%" }} />
-                            <col style={{ width: "5%" }} />
-                        </colgroup>
-                        <thead>
-                            <tr>
-                                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Имя</th>
-                                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Должность</th>
-                                <th className="text-left text-xs font-medium text-muted-foreground py-3 px-4">Зарплата (₸)</th>
-                                <th className="py-3 px-1" />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {team.map((m) => (
-                                <tr key={m.id} className="group hover:bg-secondary/20 transition-colors">
-                                    <td className="py-4 px-4 align-middle text-left">
-                                        <Input value={m.name} onChange={(e) => updateMember(m.id, "name", e.target.value)}
-                                            className="h-9 text-sm font-medium bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
-                                    </td>
-                                    <td className="py-4 px-4 align-middle text-left">
-                                        <Input value={m.role} onChange={(e) => updateMember(m.id, "role", e.target.value)}
-                                            className="h-9 text-sm text-muted-foreground bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
-                                    </td>
-                                    <td className="py-4 px-4 align-middle text-left">
-                                        <Input type="number" value={m.salary || ""} onChange={(e) => updateMember(m.id, "salary", Number(e.target.value))}
-                                            className="h-9 text-sm tabular-nums font-semibold bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-0 w-full" />
-                                    </td>
-                                    <td className="py-4 px-1 align-middle">
-                                        <button onClick={() => removeMember(m.id)} className="text-muted-foreground/40 hover:text-destructive transition-colors opacity-0 group-hover:opacity-100">
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            <tr className="bg-secondary/20">
-                                <td className="py-4 px-4 text-sm font-bold text-foreground text-left" colSpan={2}>Итого ФОТ</td>
-                                <td className="py-4 px-4 text-sm font-bold text-foreground tabular-nums text-left">{fmtCurrency(totalSalaries)}</td>
-                                <td />
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </Section>
         </div>
     );
 }

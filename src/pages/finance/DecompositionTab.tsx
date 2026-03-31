@@ -36,7 +36,6 @@ export default function DecompositionTab() {
     const [crDiagToSale, setCrDiagToSale] = useState(20);
     const [crLeadToDiag, setCrLeadToDiag] = useState(10);
     const [cpl, setCpl] = useState(2000);
-    const [salary, setSalary] = useState(150000);
 
     const calc = useMemo(() => {
         let sales = 0, diagnostics = 0, leads = 0, adBudget = 0, revenue = 0;
@@ -58,12 +57,12 @@ export default function DecompositionTab() {
         const costPerDiag = diagnostics > 0 ? adBudget / diagnostics : 0;
         const costPerSale = sales > 0 ? adBudget / sales : 0;
 
-        const totalCosts = adBudget + salary;
+        const totalCosts = adBudget;
         const netProfit = revenue - totalCosts;
         const romi = totalCosts > 0 ? Math.round((netProfit / totalCosts) * 100) : 0;
 
         return { sales, diagnostics, leads, adBudget, revenue, costPerDiag, costPerSale, romi, totalCosts, netProfit };
-    }, [mode, targetRevenue, targetBudget, avgCheck, crDiagToSale, crLeadToDiag, cpl, salary]);
+    }, [mode, targetRevenue, targetBudget, avgCheck, crDiagToSale, crLeadToDiag, cpl]);
 
     const funnelSteps = mode === "revenue" ? [
         { label: "Целевая выручка", value: `${fmt(targetRevenue)} ₸`, icon: DollarSign, accent: true, sub: null },
@@ -81,9 +80,7 @@ export default function DecompositionTab() {
 
     const summaryRows: SummaryRow[] = [
         { type: "header", label: "БЛОК 1: ЗАТРАТЫ" },
-        { label: "Расходы на рекламу (Бюджет)", value: `${fmt(calc.adBudget)} ₸` },
-        { label: "Расходы на маркетинг (Fix ЗП)", value: `${fmt(salary)} ₸` },
-        { label: "Общие инвестиции (Бюджет + ЗП)", value: `${fmt(calc.totalCosts)} ₸`, isAccent: true },
+        { label: "Расходы на рекламу (Бюджет)", value: `${fmt(calc.adBudget)} ₸`, isAccent: true },
 
         { type: "header", label: "БЛОК 2: ВОРОНКА И СТОИМОСТЬ" },
         { label: "Количество лидов", value: String(calc.leads) },
@@ -122,7 +119,6 @@ export default function DecompositionTab() {
                     mode === "revenue"
                         ? { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 }
                         : { label: "🎯 Бюджет на рекламу", value: targetBudget, onChange: setTargetBudget, suffix: "₸", step: 100000 },
-                    { label: "💼 Зарплата (Fix)", value: salary, onChange: setSalary, suffix: "₸", step: 10000 },
                     { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
                     { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
                     { label: "📊 CR диагностика → продажа", value: crDiagToSale, onChange: setCrDiagToSale, suffix: "%", step: 1 },
@@ -209,7 +205,7 @@ export default function DecompositionTab() {
                 <KpiCard icon={UserPlus} label="Лиды" value={String(calc.leads)} sub={`CR ${crLeadToDiag}% → визит`} />
                 <KpiCard icon={DollarSign} label="CPL" value={`${fmt(cpl)} ₸`} sub="Стоимость лида" />
                 <KpiCard icon={Users} label="Визиты" value={String(calc.diagnostics)} sub={`CR ${crDiagToSale}% → продажа`} />
-                <KpiCard icon={Target} label="Оплаты" value={String(calc.sales)} sub="Стоимость CAC с учетом ЗП" />
+                <KpiCard icon={Target} label="Оплаты" value={String(calc.sales)} sub="Стоимость CAC" />
                 <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-primary" sub="Прогноз по чеку и продажам" />
             </div>
 
@@ -250,7 +246,7 @@ export default function DecompositionTab() {
                                     project_id: active.id === HQ_ID ? null : active.id
                                 };
 
-                                const query = (supabase as unknown).from("monthly_plans").select("id").eq("month_year", monthYear);
+                                const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);
                                 if (active.id === HQ_ID) {
                                     query.is("project_id", null);
                                 } else {
@@ -260,11 +256,11 @@ export default function DecompositionTab() {
                                 const { data: existing } = await query.limit(1);
 
                                 if (existing && existing.length > 0) {
-                                    const { error } = await (supabase as unknown).from("monthly_plans")
+                                    const { error } = await (supabase as any).from("monthly_plans")
                                         .update(payload).eq("id", existing[0].id);
                                     if (error) throw error;
                                 } else {
-                                    const { error } = await (supabase as unknown).from("monthly_plans").insert(payload);
+                                    const { error } = await (supabase as any).from("monthly_plans").insert(payload);
                                     if (error) throw error;
                                 }
                                 toast({ title: "✅ План сохранён!", description: `${MONTHS_RU[planMonthIndex]} ${planYear} — данные перенесены в Таблицу показателей` });

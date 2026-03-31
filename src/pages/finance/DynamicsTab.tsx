@@ -18,20 +18,18 @@ interface MonthData {
     monthIndex: number;
     revenue: number;
     expenses: number;
-    salaries: number;
     tax: number;
     profit: number;
     planRevenue: number;
     planExpenses: number;
-    planSalaries: number;
     planProfit: number;
 }
 
 function generateDefaultMonths(year: number): MonthData[] {
     return monthNames.map((m, i) => ({
         month: `${m} ${year}`, monthIndex: i,
-        revenue: 0, expenses: 0, salaries: 0, tax: 0, profit: 0,
-        planRevenue: 0, planExpenses: 0, planSalaries: 0, planProfit: 0,
+        revenue: 0, expenses: 0, tax: 0, profit: 0,
+        planRevenue: 0, planExpenses: 0, planProfit: 0,
     }));
 }
 
@@ -48,37 +46,33 @@ export default function DynamicsTab() {
     const currentYear = new Date().getFullYear();
 
     const fetchAgencyData = useCallback(async () => {
-        const [{ data: clients }, { data: services }, { data: billing }, { data: team }] = await Promise.all([
-            supabase.from("clients_config").select("id").eq("is_active", true).neq("is_agency", true),
-            supabase.from("finance_client_services").select("price, client_config_id"),
-            supabase.from("finance_client_billing").select("expenses, client_config_id"),
-            supabase.from("finance_team").select("salary"),
+        const [{ data: clients }, { data: services }, { data: billing }] = await Promise.all([
+            (supabase as any).from("clients_config").select("id").eq("is_active", true).neq("is_agency", true),
+            (supabase as any).from("finance_client_services").select("price, client_config_id"),
+            (supabase as any).from("finance_client_billing").select("expenses, client_config_id"),
         ]);
-        const activeIds = new Set((clients || []).map(c => c.id));
-        setAgencyMrr((services || []).filter(s => activeIds.has(s.client_config_id)).reduce((sum, s) => sum + Number(s.price), 0));
-        setAgencyExpenses((billing || []).filter(b => activeIds.has(b.client_config_id)).reduce((sum, b) => sum + Number(b.expenses), 0));
-        setAgencyFot((team || []).reduce((sum, t) => sum + Number(t.salary), 0));
+        const activeIds = new Set((clients || []).map((c: any) => c.id));
+        setAgencyMrr((services || []).filter((s: any) => activeIds.has(s.client_config_id)).reduce((sum: number, s: any) => sum + Number(s.price), 0));
+        setAgencyExpenses((billing || []).filter((b: any) => activeIds.has(b.client_config_id)).reduce((sum: number, b: any) => sum + Number(b.expenses), 0));
     }, []);
 
-    const parseMonthRows = useCallback((rows: unknown[], y: number): MonthData[] => {
+    const parseMonthRows = useCallback((rows: any[], y: number): MonthData[] => {
         const defaults = generateDefaultMonths(y);
         if (rows && rows.length > 0) {
             rows.forEach(row => {
                 if (row.month_index >= 0 && row.month_index < 12) {
                     const revenue = Number(row.revenue);
                     const expenses = Number(row.expenses);
-                    const salaries = Number(row.salaries);
                     const tax = revenue * 0.1;
                     const planRevenue = Number(row.plan_revenue || 0);
                     const planExpenses = Number(row.plan_expenses || 0);
-                    const planSalaries = Number(row.plan_salaries || 0);
                     const planTax = planRevenue * 0.1;
                     defaults[row.month_index] = {
                         ...defaults[row.month_index],
-                        revenue, expenses, salaries, tax,
-                        profit: revenue - expenses - salaries - tax,
-                        planRevenue, planExpenses, planSalaries,
-                        planProfit: planRevenue - planExpenses - planSalaries - planTax,
+                        revenue, expenses, tax,
+                        profit: revenue - expenses - tax,
+                        planRevenue, planExpenses,
+                        planProfit: planRevenue - planExpenses - planTax,
                     };
                 }
             });
@@ -88,8 +82,8 @@ export default function DynamicsTab() {
 
     const fetchMonths = useCallback(async (y: number) => {
         const [{ data }, { data: prevData }] = await Promise.all([
-            supabase.from("finance_months").select("*").eq("year", y).order("month_index"),
-            supabase.from("finance_months").select("*").eq("year", y - 1).order("month_index"),
+            (supabase as any).from("finance_months").select("*").eq("year", y).order("month_index"),
+            (supabase as any).from("finance_months").select("*").eq("year", y - 1).order("month_index"),
         ]);
         setMonthsData(parseMonthRows(data || [], y));
         setPrevYearData(parseMonthRows(prevData || [], y - 1));
@@ -102,21 +96,19 @@ export default function DynamicsTab() {
             if (i !== idx) return m;
             const updated = { ...m, [field]: value };
             updated.tax = updated.revenue * 0.1;
-            updated.profit = updated.revenue - updated.expenses - updated.salaries - updated.tax;
+            updated.profit = updated.revenue - updated.expenses - updated.tax;
             const planTax = updated.planRevenue * 0.1;
-            updated.planProfit = updated.planRevenue - updated.planExpenses - updated.planSalaries - planTax;
+            updated.planProfit = updated.planRevenue - updated.planExpenses - planTax;
             return updated;
         }));
 
         const current = monthsData[idx];
-        await supabase.from("finance_months").upsert({
+        await (supabase as any).from("finance_months").upsert({
             year, month_index: idx,
             revenue: field === "revenue" ? value : current.revenue,
             expenses: field === "expenses" ? value : current.expenses,
-            salaries: field === "salaries" ? value : current.salaries,
             plan_revenue: field === "planRevenue" ? value : current.planRevenue,
             plan_expenses: field === "planExpenses" ? value : current.planExpenses,
-            plan_salaries: field === "planSalaries" ? value : current.planSalaries,
             updated_at: new Date().toISOString(),
         }, { onConflict: "year,month_index" });
     };
@@ -125,7 +117,6 @@ export default function DynamicsTab() {
         if (year !== currentYear) return;
         await updateMonth(currentMonth, "revenue", agencyMrr);
         await updateMonth(currentMonth, "expenses", agencyExpenses);
-        await updateMonth(currentMonth, "salaries", agencyFot);
     };
 
     const forecast = useMemo(() => {
@@ -133,15 +124,13 @@ export default function DynamicsTab() {
         if (filled.length === 0) return null;
         const avgRevenue = filled.reduce((s, m) => s + m.revenue, 0) / filled.length;
         const avgExpenses = filled.reduce((s, m) => s + m.expenses, 0) / filled.length;
-        const avgSalaries = filled.reduce((s, m) => s + m.salaries, 0) / filled.length;
         const remaining = 12 - filled.length;
         const projectedRevenue = filled.reduce((s, m) => s + m.revenue, 0) + avgRevenue * remaining;
         const projectedExpenses = filled.reduce((s, m) => s + m.expenses, 0) + avgExpenses * remaining;
-        const projectedSalaries = filled.reduce((s, m) => s + m.salaries, 0) + avgSalaries * remaining;
         const projectedTax = projectedRevenue * 0.1;
-        const projectedProfit = projectedRevenue - projectedExpenses - projectedSalaries - projectedTax;
+        const projectedProfit = projectedRevenue - projectedExpenses - projectedTax;
         const trend = filled.length >= 2 ? ((filled[filled.length - 1].revenue - filled[0].revenue) / filled[0].revenue * 100) || 0 : 0;
-        return { projectedRevenue, projectedExpenses, projectedSalaries, projectedTax, projectedProfit, avgRevenue, remaining, trend, filledCount: filled.length };
+        return { projectedRevenue, projectedExpenses, projectedTax, projectedProfit, avgRevenue, remaining, trend, filledCount: filled.length };
     }, [monthsData]);
 
     const changeYear = (delta: number) => setYear(prev => prev + delta);
@@ -149,12 +138,10 @@ export default function DynamicsTab() {
     const totals = useMemo(() => ({
         revenue: monthsData.reduce((s, m) => s + m.revenue, 0),
         expenses: monthsData.reduce((s, m) => s + m.expenses, 0),
-        salaries: monthsData.reduce((s, m) => s + m.salaries, 0),
         tax: monthsData.reduce((s, m) => s + m.tax, 0),
         profit: monthsData.reduce((s, m) => s + m.profit, 0),
         planRevenue: monthsData.reduce((s, m) => s + m.planRevenue, 0),
         planExpenses: monthsData.reduce((s, m) => s + m.planExpenses, 0),
-        planSalaries: monthsData.reduce((s, m) => s + m.planSalaries, 0),
         planProfit: monthsData.reduce((s, m) => s + m.planProfit, 0),
     }), [monthsData]);
 
@@ -170,7 +157,7 @@ export default function DynamicsTab() {
         name: m.month.split(" ")[0],
         Факт: m.revenue,
         План: m.planRevenue,
-        Расходы: m.expenses + m.salaries + m.tax,
+        Расходы: m.expenses + m.tax,
         Прибыль: m.profit,
         "Прогноз": (forecast && m.revenue === 0 && i > (forecast.filledCount - 1)) ? forecast.avgRevenue : null,
         "Прошлый год": prevYearData[i]?.revenue || 0,
@@ -209,11 +196,10 @@ export default function DynamicsTab() {
             </div>
 
             {/* KPIs */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <KpiCard icon={CircleDollarSign} label="Выручка за год" value={fmtCurrency(totals.revenue)}
                     sub={planCompletion !== null ? `${planCompletion}% от плана` : undefined} />
                 <KpiCard icon={Target} label="Расходы" value={fmtCurrency(totals.expenses)} valueClass="text-destructive" />
-                <KpiCard icon={Users} label="ФОТ" value={fmtCurrency(totals.salaries)} valueClass="text-destructive" />
                 <KpiCard icon={PiggyBank} label="Выручка (после маркетинга)" value={fmtCurrency(totals.profit)}
                     valueClass={totals.profit >= 0 ? "text-primary" : "text-destructive"}
                     sub={yoyGrowth !== null ? `${yoyGrowth >= 0 ? "+" : ""}${yoyGrowth.toFixed(0)}% к ${year - 1}` : undefined} />
@@ -267,11 +253,11 @@ export default function DynamicsTab() {
                                 <BarChart data={chartData} barGap={4} barSize={14}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                                     <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => v > 0 ? `${(v / 1000000).toFixed(1)}M` : "0"} />
+                                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v: any) => v > 0 ? `${(v / 1000000).toFixed(1)}M` : "0"} />
                                     <Tooltip
                                         contentStyle={{ background: "hsl(var(--popover))", border: "none", borderRadius: 12, fontSize: 13, padding: "10px 14px" }}
                                         labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 4 }}
-                                        formatter={(value: number) => fmtCurrency(value)}
+                                        formatter={(value: any) => fmtCurrency(value)}
                                         cursor={{ fill: "hsl(var(--muted) / 0.3)", radius: 8 }}
                                     />
                                     <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
@@ -314,11 +300,11 @@ export default function DynamicsTab() {
                                     </defs>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                                     <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => v !== 0 ? `${(v / 1000000).toFixed(1)}M` : "0"} />
+                                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v: any) => v !== 0 ? `${(v / 1000000).toFixed(1)}M` : "0"} />
                                     <Tooltip
                                         contentStyle={{ background: "hsl(var(--popover))", border: "none", borderRadius: 12, fontSize: 13, padding: "10px 14px" }}
                                         labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, marginBottom: 4 }}
-                                        formatter={(value: number) => value ? fmtCurrency(value) : "—"}
+                                        formatter={(value: any) => value ? fmtCurrency(value) : "—"}
                                     />
                                     <Area type="monotone" dataKey="Прибыль" stroke="hsl(var(--primary))" strokeWidth={2.5} fill="url(#profitGrad)" dot={{ fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2, r: 5 }} />
                                     <Area type="monotone" dataKey="Прогноз" stroke="hsl(var(--primary) / 0.4)" strokeWidth={2} strokeDasharray="6 4" fill="url(#forecastGrad)" dot={false} connectNulls={false} />
@@ -340,7 +326,6 @@ export default function DynamicsTab() {
                                 {viewMode === "plan" && <TableHead className="text-xs font-medium text-right text-muted-foreground/60">План</TableHead>}
                                 {viewMode === "plan" && <TableHead className="text-xs font-medium text-right">%</TableHead>}
                                 <TableHead className="text-xs font-medium text-right">Расходы</TableHead>
-                                <TableHead className="text-xs font-medium text-right">ФОТ</TableHead>
                                 {viewMode === "compare" && <TableHead className="text-xs font-medium text-right text-muted-foreground/60">{year - 1}</TableHead>}
                                 <TableHead className="text-xs font-medium text-right">Налоги</TableHead>
                                 <TableHead className="text-xs font-medium text-right pr-6">Прибыль</TableHead>
@@ -378,10 +363,6 @@ export default function DynamicsTab() {
                                             <Input type="number" value={m.expenses || ""} onChange={(e) => updateMonth(i, "expenses", Number(e.target.value))}
                                                 className="h-9 text-sm tabular-nums text-destructive bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[130px] ml-auto" />
                                         </TableCell>
-                                        <TableCell>
-                                            <Input type="number" value={m.salaries || ""} onChange={(e) => updateMonth(i, "salaries", Number(e.target.value))}
-                                                className="h-9 text-sm tabular-nums bg-transparent border-transparent hover:bg-secondary/50 focus:bg-secondary/50 focus:border-primary/40 rounded-lg px-2 text-right w-[130px] ml-auto" />
-                                        </TableCell>
                                         {viewMode === "compare" && (
                                             <TableCell className="text-right tabular-nums text-sm text-muted-foreground/50 pr-4">
                                                 {prevYearData[i]?.revenue > 0 ? fmtCurrency(prevYearData[i].revenue) : "—"}
@@ -408,7 +389,6 @@ export default function DynamicsTab() {
                                     </TableCell>
                                 )}
                                 <TableCell className="text-right tabular-nums text-sm font-bold text-destructive">{fmtCurrency(totals.expenses)}</TableCell>
-                                <TableCell className="text-right tabular-nums text-sm font-bold text-foreground">{fmtCurrency(totals.salaries)}</TableCell>
                                 {viewMode === "compare" && <TableCell className="text-right tabular-nums text-sm font-bold text-muted-foreground/50">{prevTotals.revenue > 0 ? fmtCurrency(prevTotals.revenue) : "—"}</TableCell>}
                                 <TableCell className="text-right tabular-nums text-sm font-bold text-status-warning">{fmtCurrency(totals.tax)}</TableCell>
                                 <TableCell className={`text-right tabular-nums text-sm font-bold pr-6 ${totals.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmtCurrency(totals.profit)}</TableCell>
