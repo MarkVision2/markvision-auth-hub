@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -222,6 +223,8 @@ const DoctorQuestionEditor = ({
 export const DoctorDiagnosticTab: React.FC<Props> = ({ 
     lead, adminData, adminQuestions = [], data, questions, onQuestionsChange, onChange, onComplete, readOnly = false 
 }) => {
+    const { isClientManager } = useRole();
+    const canManageQuestions = !isClientManager && !readOnly;
     // const [questions, setQuestions] = useState<DoctorQuestion[]>(DEFAULT_DOCTOR_QUESTIONS);
     const [formData, setFormData] = useState<DoctorFormData>(data || {
         answers: {},
@@ -292,7 +295,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                         {!readOnly && (
+                         {canManageQuestions && (
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -342,7 +345,7 @@ export const DoctorDiagnosticTab: React.FC<Props> = ({
                                                 />
                                             )}
                                             
-                                            {!readOnly && (
+                                            {canManageQuestions && (
                                                 <div className="absolute right-3 top-3 opacity-0 group-hover/row:opacity-100 transition-opacity z-10">
                                                     <DoctorQuestionEditor 
                                                         question={q}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -253,6 +254,8 @@ const QuestionActions = ({
 export const AdminDiagnosticTab: React.FC<Props> = ({ 
     lead, data, questions, onQuestionsChange, onChange, onNext, readOnly = false, onSave 
 }) => {
+    const { isClientManager } = useRole();
+    const canManageQuestions = !isClientManager && !readOnly;
     const [step, setStep] = useState(1);
     const totalSteps = 3;
     // const [questions, setQuestions] = useState<Question[]>(DEFAULT_QUESTIONS);
@@ -471,7 +474,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     <p className="text-xs text-muted-foreground">Слушайте внимательно. Ведите пациента мягко.</p>
                                 </div>
                             </div>
-                            {!readOnly && (
+                            {canManageQuestions && (
                                 <Button variant="outline" size="sm" onClick={addQuestion} className="gap-1.5 rounded-lg h-8 text-xs">
                                     <Plus className="h-3.5 w-3.5" /> Вопрос
                                 </Button>
@@ -494,7 +497,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                     {q.required && <span className="text-primary ml-1.5">*</span>}
                                                 </Label>
                                                 
-                                                {!readOnly && (
+                                                {canManageQuestions && (
                                                     <div className="flex items-center gap-1 opacity-0 group-hover/q:opacity-100 transition-opacity">
                                                         <Button
                                                             size="icon"
@@ -579,7 +582,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     </div>
 
                                     {/* Inline editor */}
-                                    {!readOnly && (
+                                    {canManageQuestions && (
                                         <div id={`q-editor-${q.id}`} className="hidden pt-6">
                                             <QuestionEditor
                                                 question={q}
