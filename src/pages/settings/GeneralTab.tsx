@@ -158,7 +158,7 @@ export default function GeneralTab() {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className={`grid grid-cols-1 ${isAdmin ? 'lg:grid-cols-2' : 'max-w-2xl mx-auto'} gap-6`}>
                 {/* Section: Personal Profile */}
                 <div className="space-y-6">
                     <div className="rounded-2xl border border-border/30 bg-card/40 backdrop-blur-md p-6 space-y-6 shadow-sm transition-all hover:border-border/60">
@@ -199,52 +199,50 @@ export default function GeneralTab() {
                     </div>
                 </div>
 
-                {/* Section: Project Config */}
-                <div className="space-y-6">
-                    <div className="rounded-2xl border border-border/30 bg-card/40 backdrop-blur-md p-6 space-y-6 shadow-sm transition-all hover:border-border/60">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Briefcase size={16} className="text-primary" />
-                            </div>
-                            <h2 className="text-sm font-black uppercase tracking-widest text-foreground/80">Конфигурация проекта</h2>
-                        </div>
-
-                        <div className="flex items-center gap-6">
-                            <div className="relative group">
-                                <div className="h-20 w-20 rounded-2xl bg-accent/30 border border-border/30 flex items-center justify-center overflow-hidden shadow-inner group-hover:border-primary/30 transition-colors">
-                                    {projectLogo ? (
-                                        <img src={projectLogo} alt="Logo" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <ImageIcon size={30} className="text-muted-foreground/20" />
-                                    )}
+                {/* Section: Project Config (Admin Only) */}
+                {isAdmin && (
+                    <div className="space-y-6">
+                        <div className="rounded-2xl border border-border/30 bg-card/40 backdrop-blur-md p-6 space-y-6 shadow-sm transition-all hover:border-border/60">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Briefcase size={16} className="text-primary" />
                                 </div>
-                                {isAdmin && (
-                                    <>
-                                        <button 
-                                            onClick={() => logoRef.current?.click()}
-                                            className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-background border border-border/40 text-muted-foreground flex items-center justify-center shadow-md hover:text-primary transition-all cursor-pointer"
-                                            title="Загрузить лого"
-                                        >
-                                            <Plus size={14} />
-                                        </button>
-                                        <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                                    </>
-                                )}
+                                <h2 className="text-sm font-black uppercase tracking-widest text-foreground/80">Конфигурация проекта</h2>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-foreground">Логотип проекта</p>
-                                <p className="text-[11px] text-muted-foreground leading-relaxed">Отображается в сайдбаре <br/>у всех участников проекта</p>
-                            </div>
-                        </div>
 
-                        <div className="space-y-4">
-                            <div className="grid gap-1.5">
-                                <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Название проекта</Label>
-                                <Input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-background/50 border-border/30 h-10 transition-all focus:bg-background" disabled={loading} />
+                            <div className="flex items-center gap-6">
+                                <div className="relative group">
+                                    <div className="h-20 w-20 rounded-2xl bg-accent/30 border border-border/30 flex items-center justify-center overflow-hidden shadow-inner group-hover:border-primary/30 transition-colors">
+                                        {projectLogo ? (
+                                            <img src={projectLogo} alt="Logo" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <ImageIcon size={30} className="text-muted-foreground/20" />
+                                        )}
+                                    </div>
+                                    <button 
+                                        onClick={() => logoRef.current?.click()}
+                                        className="absolute -top-1 -right-1 h-7 w-7 rounded-full bg-background border border-border/40 text-muted-foreground flex items-center justify-center shadow-md hover:text-primary transition-all cursor-pointer"
+                                        title="Загрузить лого"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                    <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-foreground">Логотип проекта</p>
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed">Отображается в сайдбаре <br/>у всех участников проекта</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid gap-1.5">
+                                    <Label className="text-xs font-bold text-muted-foreground/70 uppercase px-1">Название проекта</Label>
+                                    <Input value={projectName} onChange={e => setProjectName(e.target.value)} className="bg-background/50 border-border/30 h-10 transition-all focus:bg-background" disabled={loading} />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
