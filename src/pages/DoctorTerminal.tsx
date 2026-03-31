@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { 
   Activity, Users, UserPlus, Phone, Building, Briefcase, 
-  Calendar, Clock, Trash2, Check, X, Search 
+  Calendar, Clock, Trash2, Check, X, Search, Mail, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { 
-  loadTeam, saveTeam, type TeamMember, ROLE_PRESETS 
+  loadTeam, saveTeam, type TeamMember, ROLE_PRESETS, fetchTeamMembers
 } from "@/pages/settings/types";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { createAdminClient } from "@/lib/supabase-admin";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -28,20 +30,27 @@ const DoctorTerminal = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<TeamMember | null>(null);
   
   // Form state
+  const { active } = useWorkspace() as any;
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
     phone: "",
     office: "",
     specialty: "",
-    workingDays: [] as string[],
-    workingHours: "",
+    workingDays: ["Пн", "Вт", "Ср", "Чт", "Пт"] as string[],
+    workingHours: "09:00 - 18:00",
   });
 
   const daysOfWeek = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
   useEffect(() => {
-    setTeam(loadTeam());
+    async function init() {
+        const data = await fetchTeamMembers();
+        setTeam(data);
+    }
+    init();
   }, []);
 
   // Weekly appointment counts per doctor
@@ -92,46 +101,92 @@ const DoctorTerminal = () => {
     }));
   };
 
-  const handleAddDoctor = (e: React.FormEvent) => {
+  const handleAddDoctor = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!active) return;
     
-    if (!formData.name || !formData.specialty) {
+    if (!formData.name || !formData.specialty || !formData.email || !formData.password) {
       toast({ title: "Ошибка", description: "Пожалуйста, заполните основные поля", variant: "destructive" });
       return;
     }
 
-    const newDoctor: TeamMember = {
-      id: crypto.randomUUID(),
-      name: formData.name,
-      email: formData.email || `${crypto.randomUUID().slice(0, 8)}@clinic.io`,
-      role: "doctor",
-      status: "active",
-      lastLogin: null,
-      permissions: ROLE_PRESETS.doctor,
-      phone: formData.phone,
-      office: formData.office,
-      specialty: formData.specialty,
-      workingDays: formData.workingDays,
-      workingHours: formData.workingHours,
-      userId: user?.id,
-    };
+    setLoading(true);
+    try {
+      const finalEmail = formData.email.includes("@") ? formData.email : `${formData.email}@markvision-staff.io`;
 
-    const updatedTeam = [...team, newDoctor];
-    setTeam(updatedTeam);
-    saveTeam(updatedTeam);
-    
-    setShowAddForm(false);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      office: "",
-      specialty: "",
-      workingDays: [],
-      workingHours: "",
-    });
+      // 1. Create In Supabase Auth
+      const adminClient = createAdminClient();
+      const { data: authRes, error: authError } = await adminClient.auth.signUp({
+        email: finalEmail,
+        password: formData.password,
+        options: {
+          data: { 
+            full_name: formData.name,
+            role: "doctor",
+            project_id: active.id,
+          }
+        }
+      });
 
-    toast({ title: "Врач добавлен", description: `${formData.name} теперь в списке` });
+      if (authError) throw authError;
+      if (!authRes.user) throw new Error("Не удалось создать пользователя");
+
+      // 2. Update Profile with Doctor Metadata
+      const { error: profError } = await supabase
+        .from("profiles")
+        .update({
+          role: "doctor",
+          permissions: ROLE_PRESETS.doctor,
+          specialty: formData.specialty,
+          office: formData.office,
+          working_days: formData.workingDays,
+          working_hours: formData.workingHours,
+        } as any)
+        .eq("id", authRes.user.id as any);
+
+      if (profError) throw profError;
+
+      // 3. Link to Project
+      const { error: memberError } = await supabase
+        .from("project_members")
+        .insert({
+          user_id: authRes.user.id,
+          project_id: active.id,
+        } as any);
+
+      if (memberError) throw memberError;
+
+      const newDoctor: TeamMember = {
+        id: authRes.user.id,
+        name: formData.name,
+        email: finalEmail,
+        role: "doctor",
+        status: "active",
+        lastLogin: null,
+        permissions: ROLE_PRESETS.doctor,
+        phone: formData.phone,
+        office: formData.office,
+        specialty: formData.specialty,
+        workingDays: formData.workingDays,
+        workingHours: formData.workingHours,
+        userId: authRes.user.id,
+      };
+
+      setTeam(prev => [...prev.filter(m => m.id !== newDoctor.id), newDoctor]);
+      setShowAddForm(false);
+      setFormData({
+        name: "", email: "", password: "",
+        phone: "", office: "", specialty: "",
+        workingDays: ["Пн", "Вт", "Ср", "Чт", "Пт"],
+        workingHours: "09:00 - 18:00",
+      });
+
+      toast({ title: "Врач добавлен", description: `${formData.name} теперь в системе` });
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteDoctor = (id: string) => {
@@ -204,6 +259,34 @@ const DoctorTerminal = () => {
                       required
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-semibold ml-1">Логин (Email) *</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="email"
+                      placeholder="ivanov"
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="pl-10 h-10 rounded-xl bg-background/50"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pass" className="text-sm font-semibold ml-1">Пароль *</Label>
+                  <Input 
+                    id="pass"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={e => setFormData({...formData, password: e.target.value})}
+                    className="h-10 rounded-xl bg-background/50"
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -286,8 +369,9 @@ const DoctorTerminal = () => {
               </div>
 
               <div className="flex justify-end pt-2">
-                <Button type="submit" className="h-11 px-8 rounded-xl shadow-lg shadow-primary/20 font-bold uppercase tracking-wider text-xs">
-                  Сохранить врача
+                <Button type="submit" disabled={loading} className="h-11 px-8 rounded-xl shadow-lg shadow-primary/20 font-bold uppercase tracking-wider text-xs">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {loading ? "Сохранение..." : "Сохранить врача"}
                 </Button>
               </div>
             </form>

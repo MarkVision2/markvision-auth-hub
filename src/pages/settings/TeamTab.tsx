@@ -1,6 +1,6 @@
 import { 
     Search, UserPlus, Pencil, Trash2, Shield, 
-    MoreVertical, Mail, Calendar, CheckCircle2 
+    MoreVertical, Mail, Calendar, CheckCircle2, Briefcase, Building
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -101,12 +101,26 @@ export default function TeamTab({
                             </div>
 
                             {/* Card Body: Info */}
-                            <div className="space-y-1 mb-4">
-                                <h3 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{m.name}</h3>
-                                <div className="flex items-center gap-1.5 text-muted-foreground/60">
+                            <div className="space-y-1 mb-4 h-24">
+                                <h3 className="text-[15px] font-bold text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-1">{m.name}</h3>
+                                <div className="flex items-center gap-1.5 text-muted-foreground/60 mb-2">
                                     <Mail size={12} />
                                     <span className="text-[11px] truncate whitespace-nowrap">{m.email}</span>
                                 </div>
+                                {m.role === 'doctor' && (
+                                    <div className="flex flex-col gap-1.5 pt-1 border-t border-border/10">
+                                        <div className="flex items-center gap-1.5 text-primary/70">
+                                            <Briefcase size={12} />
+                                            <span className="text-[10px] font-bold uppercase tracking-wider truncate">{m.specialty || "Терапевт"}</span>
+                                        </div>
+                                        {m.office && (
+                                            <div className="flex items-center gap-1.5 text-muted-foreground/60">
+                                                <Building size={12} />
+                                                <span className="text-[10px] font-medium truncate">Кабинет {m.office}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <Separator className="bg-border/20 mb-4" />
