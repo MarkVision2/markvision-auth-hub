@@ -14,7 +14,7 @@ import { useRole } from "@/hooks/useRole";
 
 export default function GeneralTab() {
     const { active, refreshProjects } = useWorkspace() as any;
-    const { role } = useRole();
+    const { role, loading: roleLoading } = useRole();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -139,7 +139,7 @@ export default function GeneralTab() {
         }
     };
 
-    const isAdmin = role === "superadmin" || role === "client_admin";
+    const isAdmin = !roleLoading && (role === "superadmin" || role === "client_admin");
 
     const initials = name
         ? name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
