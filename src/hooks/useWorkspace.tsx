@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useRole } from "./useRole";
 
 export interface Workspace {
   id: string;
@@ -35,6 +36,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { role, isSuperadmin } = useRole();
   const [activeId, setActiveId] = useState(() => {
     const saved = localStorage.getItem("activeProjectId");
     // Migrate old virtual "hq" id to real DB id
@@ -45,11 +47,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const refreshProjects = useCallback(async () => {
     try {
+      if (!user) return;
+
       // 1. Fetch from projects table (primary source)
-      const { data: projectsData, error: projectsError } = await supabase
+      // If superadmin, fetch all. Otherwise filter by membership.
+      let query = supabase
         .from("projects")
         .select("id, name")
         .order("name");
+
+      if (!isSuperadmin) {
+        // Use an inner join via project_members to filter projects where user is a member
+        const { data: memberProjects, error: memberError } = await (supabase as any)
+          .from("project_members")
+          .select("project_id")
+          .eq("user_id", user.id);
+        
+        if (memberError) throw memberError;
+        
+        const projectIds = (memberProjects as any[])?.map(mp => mp.project_id) || [];
+        query = query.in("id", projectIds);
+      }
+
+      const { data: projectsData, error: projectsError } = await query;
 
       // 2. Fetch from clients_config as fallback/merging
       const { data: clientsData, error: clientsError } = await (supabase as any)

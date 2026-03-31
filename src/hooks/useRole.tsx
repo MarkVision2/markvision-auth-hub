@@ -20,8 +20,10 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [role, setRole] = useState<AppRole>("superadmin");
-  const [permissions, setPermissions] = useState<string[]>([...ALL_KEYS]);
+  // IMPORTANT: Default role and permissions are restricted (fail-closed)
+  // This prevents unauthenticated or errored users from getting Superadmin access.
+  const [role, setRole] = useState<AppRole>("client_manager");
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

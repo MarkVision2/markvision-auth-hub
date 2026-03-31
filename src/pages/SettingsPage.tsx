@@ -106,8 +106,9 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    if (loading) return; // Prevent double submission
     if (!formName.trim() || !formEmail.trim()) {
-      toast({ title: "Заполните имя и email", variant: "destructive" });
+      toast({ title: "Заполните имя и логин", variant: "destructive" });
       return;
     }
     
