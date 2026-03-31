@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -405,6 +405,10 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none relative !fixed !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 z-[100]">
+                <DialogHeader className="sr-only">
+                    <DialogTitle>Диагностический модуль</DialogTitle>
+                    <DialogDescription>Интерфейс для проведения медицинской диагностики и назначения лечения</DialogDescription>
+                </DialogHeader>
                 {/* Aurora Background Effects */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                     <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-primary/20 blur-[130px] opacity-60 animate-pulse" style={{ animationDuration: '8s' }} />

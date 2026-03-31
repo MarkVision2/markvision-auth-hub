@@ -24,6 +24,7 @@ import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DiagnosticModule } from "../../diagnostics/DiagnosticModule";
 import { Lead } from "../KanbanBoard";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 interface AppointmentModalProps {
     open: boolean;
@@ -69,6 +70,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     selectedDate, selectedTime, onSave, mode = "admin",
     doctorSchedule
 }) => {
+    const { active } = useWorkspace();
     const isEditing = !!appointment;
     const [formData, setFormData] = useState({
         patientName: appointment?.patient || "",
@@ -132,24 +134,22 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[32px] bg-background shadow-2xl">
                 {/* Header Section */}
-                <div className="bg-background px-8 py-6 border-b border-border/40 relative overflow-hidden">
-                    <DialogHeader>
-                        <div className="flex items-center gap-5 relative z-10">
-                            <div className="h-14 w-14 rounded-2xl bg-secondary/20 text-muted-foreground flex items-center justify-center border border-border/40">
-                                {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
-                            </div>
-                            <div className="flex flex-col">
-                                <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-                                    {isEditing ? "Изменить запись" : "Новая запись"}
-                                </DialogTitle>
-                                <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-border" />
-                                    {isEditing ? "Редактирование данных визита" : "Заполнение данных о визите"}
-                                </DialogDescription>
-                            </div>
+                <DialogHeader className="bg-background px-8 py-6 border-b border-border/40 relative overflow-hidden">
+                    <div className="flex items-center gap-5 relative z-10">
+                        <div className="h-14 w-14 rounded-2xl bg-secondary/20 text-muted-foreground flex items-center justify-center border border-border/40">
+                            {isEditing ? <Briefcase className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
                         </div>
-                    </DialogHeader>
-                </div>
+                        <div className="flex flex-col">
+                            <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
+                                {isEditing ? "Изменить запись" : "Новая запись"}
+                            </DialogTitle>
+                            <DialogDescription className="text-muted-foreground text-xs font-bold uppercase tracking-widest mt-1 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-border" />
+                                {isEditing ? "Редактирование данных визита" : "Заполнение данных о визите"}
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </DialogHeader>
 
                 <div className="px-8 py-6 space-y-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
                     {/* Patient Section */}
@@ -442,7 +442,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         phone: appointment.phone || formData.phone,
                         status: appointment.status === "completed" ? "Готов к лечению" : (appointment.status === "planned" ? "Записан" : "Новая заявка"),
                         scheduled_at: appointment.date ? (appointment.date instanceof Date ? appointment.date.toISOString() : appointment.date) : undefined,
-                        project_id: "default",
+                        project_id: active.id || "default",
                         comments: appointment.comment || formData.comment,
                         email: "",
                         source: "Schedule",
