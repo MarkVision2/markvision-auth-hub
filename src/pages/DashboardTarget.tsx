@@ -169,12 +169,15 @@ export default function DashboardTarget() {
           .eq("project_id", active.id);
         const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
+        // Ищем кабинеты по:
+        // 1. project_id совпадает с текущим проектом
+        // 2. id кабинета совпадает с ID проекта (для кабинетов без project_id, созданных из HQ)
+        // 3. кабинет расшарен через client_config_visibility
+        const orParts = [`project_id.eq.${active.id}`, `id.eq.${active.id}`];
         if (sharedIds.length > 0) {
-          const orClause = `project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`;
-          clientsQuery = (clientsQuery as any).or(orClause);
-        } else {
-          clientsQuery = clientsQuery.eq("project_id", active.id);
+          orParts.push(`id.in.(${sharedIds.join(",")})`);
         }
+        clientsQuery = (clientsQuery as any).or(orParts.join(","));
       }
 
       const { data: clientsData, error: cErr } = await (clientsQuery as any);

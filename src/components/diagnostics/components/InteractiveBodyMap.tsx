@@ -58,18 +58,6 @@ export const InteractiveBodyMap: React.FC<Props> = ({ isPrint = false }) => {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             </div>
 
-            <div className="mt-10 p-6 bg-secondary/50 backdrop-blur-sm rounded-3xl border border-border/40 w-full text-center relative z-10">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <p className="text-xs font-black text-foreground uppercase tracking-widest">
-                        Режим ручной разметки
-                    </p>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed max-w-md mx-auto font-medium">
-                    Используйте распечатанную версию Листа Назначений для точного указания зон боли вручную. 
-                    <br/>На данной карте представлены основные очаги напряжения и патологий.
-                </p>
-            </div>
         </div>
     );
 };

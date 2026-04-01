@@ -399,7 +399,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                             <RadioGroup 
                                 value={formData.status} 
                                 onValueChange={(val) => setFormData({...formData, status: val})}
-                                className="grid gap-3 grid-cols-2"
+                                className="grid gap-2 grid-cols-1"
                             >
                             {(mode === "doctor" ? DOCTOR_STATUSES : STATUSES).map((item) => {
                                     const isActive = formData.status === item.id;
@@ -427,7 +427,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             key={item.id}
                                             htmlFor={item.id}
                                             className={cn(
-                                                "relative flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all duration-300 group overflow-hidden",
+                                                "relative flex items-center gap-4 p-3 rounded-2xl border cursor-pointer transition-all duration-300 group",
                                                 activeClasses
                                             )}
                                         >
@@ -438,20 +438,20 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                                             )}>
                                                 <item.icon className={cn("h-5 w-5", isActive ? item.color : "text-muted-foreground/50")} />
                                             </div>
-                                            <div className="flex flex-col min-w-0">
+                                            <div className="flex flex-col">
                                                 <span className={cn(
-                                                    "text-[10px] font-black uppercase tracking-tight leading-none truncate", 
+                                                    "text-[11px] font-black uppercase tracking-[0.05em] leading-tight", 
                                                     isActive ? item.color : "text-muted-foreground/70 group-hover:text-foreground"
                                                 )}>
                                                     {item.label}
                                                 </span>
                                                 {isActive && (
-                                                    <span className="text-[8px] font-bold text-muted-foreground/30 uppercase tracking-widest mt-1">Ок</span>
+                                                    <span className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest mt-0.5">Выбрано</span>
                                                 )}
                                             </div>
                                             {isActive && (
-                                                <div className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full">
-                                                    <span className={cn("relative flex h-1.5 w-1.5 rounded-full", dotColor)}>
+                                                <div className="ml-auto mr-2 h-2 w-2 rounded-full">
+                                                    <span className={cn("relative flex h-2 w-2 rounded-full", dotColor)}>
                                                        <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", dotColor)}></span>
                                                     </span>
                                                 </div>

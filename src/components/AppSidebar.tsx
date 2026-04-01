@@ -46,7 +46,6 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin", "client_admin", "client_manager"],
     items: [
       { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true, requiredPerm: "hq" },
-      { title: "Рекламные кабинеты", path: "/dashboard/accounts", icon: Briefcase, requiredPerm: "accounts" },
     ],
   },
   {
