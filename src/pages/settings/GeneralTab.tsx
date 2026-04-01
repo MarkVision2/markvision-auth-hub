@@ -165,44 +165,51 @@ export default function GeneralTab() {
         try {
             const { id: projectId } = active;
 
-            // 1. Get all client configs for this project
+            // 1. Собираем все ID кабинетов, связанных с этим проектом
             const { data: configs } = await (supabase as any)
                 .from("clients_config")
                 .select("id")
-                .eq("project_id", projectId);
+                .or(`project_id.eq.${projectId},id.eq.${projectId}`);
             
             const configIds = (configs || []).map((c: any) => c.id);
 
-            // 2. Cascade delete everything linked to these configs
+            // 2. Каскадное удаление данных, привязанных к кабинетам
             if (configIds.length > 0) {
                 await (supabase as any).from("daily_data").delete().in("client_config_id", configIds);
                 await (supabase as any).from("client_config_visibility").delete().in("client_config_id", configIds);
+                // Удаляем сами кабинеты (и по ID, и по project_id)
+                await (supabase as any).from("clients_config").delete().or(`project_id.eq.${projectId},id.eq.${projectId}`);
             }
 
-            // 3. Delete directly linked project data
-            const tablesWithProjectId = [
-                "client_config_visibility",
-                "clients_config",
+            // 3. Удаляем данные, привязанные напрямую к проекту
+            const projectTables = [
                 "project_members",
                 "leads",
                 "content_tasks",
                 "monthly_plans",
-                "competitor_configs"
+                "competitor_configs",
+                "client_config_visibility" // На всякий случай еще раз по project_id
             ];
 
-            for (const table of tablesWithProjectId) {
+            for (const table of projectTables) {
                 await (supabase as any).from(table).delete().eq("project_id", projectId);
             }
             
-            // 4. Finally delete the project record
+            // 4. Финальное удаление самого проекта
             const { error } = await (supabase as any).from("projects").delete().eq("id", projectId);
             if (error) throw error;
 
             toast({ title: "Проект удален", description: `Проект «${active.name}» и все его данные стерты.` });
             
-            // Switch to HQ and clear local cache
+            // 5. Очищаем локальный кеш и переключаемся на HQ
+            localStorage.removeItem("cachedWorkspaceProjects");
             setActiveId(HQ_ID);
-            await refreshProjects();
+            
+            // Даем базе время на применение изменений перед рефрешем
+            setTimeout(async () => {
+                await refreshProjects();
+            }, 500);
+
         } catch (e: any) {
             console.error("Delete Error:", e);
             toast({ title: "Ошибка при удалении", description: e.message, variant: "destructive" });
