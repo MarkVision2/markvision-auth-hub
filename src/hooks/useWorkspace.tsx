@@ -122,24 +122,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
 
       const sorted = combined.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Update state and cache
       setProjects(sorted);
       localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(sorted));
     } catch (err) {
       console.error("WorkspaceProvider: unexpected error:", err);
     }
-  }, []);
+  }, [user, isSuperadmin]);
 
   useEffect(() => {
     if (!user) return;
-    let cancelled = false;
-    const run = async () => {
-      await refreshProjects();
-      // cancelled check prevents state updates after unmount via refreshProjects' setProjects
-      // but since refreshProjects uses setState, React handles unmounted updates gracefully
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [user, refreshProjects]);
+    refreshProjects();
+  }, [user, isSuperadmin, refreshProjects]);
 
   useEffect(() => {
     localStorage.setItem("activeProjectId", activeId);
