@@ -33,6 +33,7 @@ interface WorkspaceContextValue {
   active: Workspace;
   setActiveId: (id: string) => void;
   createProject: (name: string) => Promise<string | null>;
+  refreshProjects: () => Promise<void>;
   isAgency: boolean;
 }
 
@@ -199,8 +200,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     active,
     setActiveId,
     createProject,
+    refreshProjects,
     isAgency: active.type === "agency",
-  }), [workspaces, active, createProject]);
+  }), [workspaces, active, createProject, refreshProjects]);
 
   return (
     <WorkspaceContext.Provider value={contextValue}>

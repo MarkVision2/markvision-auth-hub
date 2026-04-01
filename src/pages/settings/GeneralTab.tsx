@@ -9,11 +9,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace } from "@/hooks/useWorkspace";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 export default function GeneralTab() {
-    const { active, refreshProjects } = useWorkspace() as any;
+    const { active, refreshProjects, setActiveId } = useWorkspace() as any;
     const { role, loading: roleLoading } = useRole();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -133,6 +145,67 @@ export default function GeneralTab() {
             toast({ title: "Настройки успешно сохранены" });
         } catch (e: any) {
             toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!active || active.id === HQ_ID) return;
+        
+        const confirmName = window.prompt(`Чтобы подтвердить удаление проекта "${active.name}", введите его название полностью:`);
+        if (confirmName !== active.name) {
+            if (confirmName !== null) {
+                toast({ title: "Удаление отменено", description: "Название введено неверно", variant: "destructive" });
+            }
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const { id: projectId } = active;
+
+            // 1. Get all client configs for this project
+            const { data: configs } = await (supabase as any)
+                .from("clients_config")
+                .select("id")
+                .eq("project_id", projectId);
+            
+            const configIds = (configs || []).map((c: any) => c.id);
+
+            // 2. Cascade delete everything linked to these configs
+            if (configIds.length > 0) {
+                await (supabase as any).from("daily_data").delete().in("client_config_id", configIds);
+                await (supabase as any).from("client_config_visibility").delete().in("client_config_id", configIds);
+            }
+
+            // 3. Delete directly linked project data
+            const tablesWithProjectId = [
+                "client_config_visibility",
+                "clients_config",
+                "project_members",
+                "leads",
+                "content_tasks",
+                "monthly_plans",
+                "competitor_configs"
+            ];
+
+            for (const table of tablesWithProjectId) {
+                await (supabase as any).from(table).delete().eq("project_id", projectId);
+            }
+            
+            // 4. Finally delete the project record
+            const { error } = await (supabase as any).from("projects").delete().eq("id", projectId);
+            if (error) throw error;
+
+            toast({ title: "Проект удален", description: `Проект «${active.name}» и все его данные стерты.` });
+            
+            // Switch to HQ and clear local cache
+            setActiveId(HQ_ID);
+            await refreshProjects();
+        } catch (e: any) {
+            console.error("Delete Error:", e);
+            toast({ title: "Ошибка при удалении", description: e.message, variant: "destructive" });
         } finally {
             setSaving(false);
         }
@@ -312,6 +385,54 @@ export default function GeneralTab() {
                     </div>
                 </div>
             </div>
+
+            {/* Section: Danger Zone (Superadmin Only) */}
+            {active && active.id !== HQ_ID && role === "superadmin" && (
+                <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.02] p-6 space-y-6 transition-all hover:border-rose-500/40">
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                            <AlertTriangle size={16} className="text-rose-500" />
+                        </div>
+                        <div className="flex-1">
+                            <h2 className="text-sm font-black uppercase tracking-widest text-rose-500">Опасная зона</h2>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">Безвозвратное удаление проекта и всех связанных с ним данных</p>
+                        </div>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="gap-2 h-10 px-4 rounded-xl font-bold bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-500/20 transition-all border-none">
+                                    <Trash2 size={15} />
+                                    Удалить проект
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-[2.5rem] border-rose-500/20 bg-card backdrop-blur-2xl p-8 max-w-md">
+                                <AlertDialogHeader className="space-y-4">
+                                    <div className="mx-auto h-16 w-16 rounded-3xl bg-rose-500/10 flex items-center justify-center">
+                                        <AlertTriangle size={32} className="text-rose-500 animate-pulse" />
+                                    </div>
+                                    <div className="text-center space-y-2">
+                                        <AlertDialogTitle className="text-2xl font-black text-foreground">Удалить проект?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-muted-foreground font-medium text-sm leading-relaxed">
+                                            Вы собираетесь навсегда удалить проект <span className="text-foreground font-bold italic">«{active.name}»</span>. <br/>
+                                            Все рекламные кабинеты, записи CRM, отчеты и настройки будут стерты без возможности восстановления.
+                                        </AlertDialogDescription>
+                                    </div>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="mt-8 gap-3 sm:justify-center">
+                                    <AlertDialogCancel className="h-12 px-6 rounded-2xl font-bold border-border hover:bg-accent text-sm">
+                                        Отмена
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction 
+                                        onClick={handleDeleteProject}
+                                        className="h-12 px-8 rounded-2xl font-black bg-rose-500 hover:bg-rose-600 text-white text-sm shadow-xl shadow-rose-500/30 border-none"
+                                    >
+                                        Да, удалить навсегда
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
