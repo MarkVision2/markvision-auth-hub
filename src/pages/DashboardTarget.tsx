@@ -587,12 +587,23 @@ export default function DashboardTarget() {
                                      <AlertDialogCancel className="rounded-xl font-bold">Отмена</AlertDialogCancel>
                                      <AlertDialogAction 
                                        onClick={async () => {
-                                         const { error } = await (supabase as any).from("clients_config").delete().eq("id", client.id);
-                                         if (!error) {
+                                         try {
+                                           const raw = rawClients.find(rc => rc.id === client.id);
+                                           const projectId = raw?.project_id;
+                                           // Каскадное удаление всех связанных данных
+                                           await (supabase as any).from("client_config_visibility").delete().eq("client_config_id", client.id);
+                                           await (supabase as any).from("daily_data").delete().eq("client_config_id", client.id);
+                                           const { error } = await (supabase as any).from("clients_config").delete().eq("id", client.id);
+                                           if (error) throw error;
+                                           // Удаляем связанный проект
+                                           if (projectId && projectId !== HQ_ID) {
+                                             await (supabase as any).from("project_members").delete().eq("project_id", projectId);
+                                             await (supabase as any).from("projects").delete().eq("id", projectId);
+                                           }
                                            toast({ title: "Удалено", description: client.name });
                                            fetchData();
-                                         } else {
-                                           toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+                                         } catch (err: any) {
+                                           toast({ title: "Ошибка", description: err.message, variant: "destructive" });
                                          }
                                        }}
                                        className="bg-destructive hover:bg-destructive/90 rounded-xl font-bold text-white shadow-lg shadow-destructive/20"
