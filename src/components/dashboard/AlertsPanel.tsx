@@ -6,7 +6,7 @@ import { AlertTriangle, ExternalLink } from "lucide-react";
 const alerts = [
   { project: "Технология позвоночника", severity: "critical" as const, badge: "Отвал карты (Meta)", action: "Написать клиенту", time: "2ч" },
   { project: "Дентал Тайм", severity: "warning" as const, badge: "ROMI < 100%", action: "Обновить креативы", time: "5ч" },
-  { project: "Kitarov Clinic", severity: "warning" as const, badge: "Выгорание аудитории", action: "Контент-Завод", time: "8ч" },
+  { project: "Центр реабилитации", severity: "warning" as const, badge: "Выгорание аудитории", action: "Контент-Завод", time: "8ч" },
   { project: "Beauty Lab", severity: "info" as const, badge: "Бюджет 90%", action: "Уведомить", time: "12ч" },
 ];
 

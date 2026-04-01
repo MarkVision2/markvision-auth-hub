@@ -13,7 +13,7 @@ const projects: Project[] = [
   { name: "Avicenna Clinic", health: "green", romi: 420, leads: 38, spend: "180K ₸", aiTasks: 56, manager: "Айгерим" },
   { name: "Beauty Lab", health: "green", romi: 350, leads: 45, spend: "200K ₸", aiTasks: 61, manager: "Данияр" },
   { name: "NeoVision Eye", health: "green", romi: 290, leads: 28, spend: "140K ₸", aiTasks: 42, manager: "Мария" },
-  { name: "Kitarov Clinic", health: "yellow", romi: 110, leads: 18, spend: "120K ₸", aiTasks: 34, manager: "Мария" },
+  { name: "Центр реабилитации", health: "yellow", romi: 110, leads: 18, spend: "120K ₸", aiTasks: 34, manager: "Мария" },
   { name: "Дентал Тайм", health: "yellow", romi: 85, leads: 12, spend: "95K ₸", aiTasks: 23, manager: "Данияр" },
   { name: "Технология позвоночника", health: "red", romi: 0, leads: 4, spend: "60K ₸", aiTasks: 8, manager: "Айгерим" },
 ];

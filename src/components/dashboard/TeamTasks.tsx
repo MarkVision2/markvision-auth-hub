@@ -10,7 +10,7 @@ const tasks: Task[] = [
   { title: "Запустить новую кампанию", project: "Beauty Lab", initials: "ДН", deadline: "Сегодня", status: "today" },
   { title: "Созвон с клиентом", project: "NeoVision Eye", initials: "МР", deadline: "15:00", status: "today" },
   { title: "Обновить креативы", project: "Дентал Тайм", initials: "ДН", deadline: "Завтра", status: "upcoming" },
-  { title: "Ревью аудиторий", project: "Kitarov Clinic", initials: "МР", deadline: "Пт", status: "upcoming" },
+  { title: "Ревью аудиторий", project: "Центр реабилитации", initials: "МР", deadline: "Пт", status: "upcoming" },
 ];
 
 const statusColors: Record<Task["status"], string> = {

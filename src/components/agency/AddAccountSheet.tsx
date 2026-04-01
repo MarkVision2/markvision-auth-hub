@@ -214,7 +214,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-card p-6 rounded-3xl border border-border/60 shadow-sm transition-all hover:shadow-md">
               <div className="md:col-span-2">
-                 <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} placeholder="Напр: Kitarov Clinic" />
+                 <Field label="Название кабинета *" value={form.client_name} onChange={(v) => updateField("client_name", v)} placeholder="Напр: Авто Сервис Павлодар" />
               </div>
               <Field label="Дневной бюджет" value={form.daily_budget} onChange={(v) => updateField("daily_budget", v)} placeholder="50000" />
               <Field label="Город" value={form.city} onChange={(v) => updateField("city", v)} placeholder="Алматы" />
