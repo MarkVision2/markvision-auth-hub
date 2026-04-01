@@ -92,7 +92,6 @@ const navGroups: NavGroup[] = [
     roles: ["superadmin"],
     items: [
       { title: "AI Управляющий", path: "/admin/ai-manager", icon: Bot, superadminOnly: true, requiredPerm: "ai_manager" },
-      { title: "Ads Manager", path: "/ads-manager", icon: Target, superadminOnly: true },
     ],
   },
 ];
