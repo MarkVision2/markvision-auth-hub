@@ -33,6 +33,7 @@ const AiManagerPage = lazy(() => import("./pages/AiManagerPage"));
 const DoctorTerminal = lazy(() => import("./pages/DoctorTerminal"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const DiagnosticsDashboardPage = lazy(() => import("./pages/DiagnosticsDashboardPage"));
+const AdsManager = lazy(() => import("./pages/AdsManager"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -86,6 +87,7 @@ const App = () => (
                       <Route path="/schedule" element={<ProtectedRoute><SchedulePage /></ProtectedRoute>} />
                       <Route path="/diagnostics" element={<ProtectedRoute><DiagnosticsDashboardPage /></ProtectedRoute>} />
                       <Route path="/doctor/terminal" element={<ProtectedRoute><DoctorTerminal /></ProtectedRoute>} />
+                      <Route path="/ads-manager" element={<ProtectedRoute><AdsManager /></ProtectedRoute>} />
                       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
