@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
 
 interface Props {
   open: boolean;
@@ -51,6 +52,7 @@ type Objective = "whatsapp" | "website" | "leadform";
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_CAMPAIGN_LAUNCH_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
 
 export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
+  const { active } = useWorkspace();
   const [clients, setClients] = useState<ClientConfig[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -111,21 +113,42 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     ? { page_id: selectedPage.page_id, page_name: selectedPage.page_name, instagram_user_id: selectedPage.instagram_user_id }
     : { page_id: selectedClient?.page_id ?? "", page_name: selectedClient?.page_name ?? "", instagram_user_id: selectedClient?.instagram_user_id ?? "" };
 
-  // Load clients
+  // Load clients — фильтруем по текущему проекту
   useEffect(() => {
     if (!open) return;
     setLoadingClients(true);
-    (supabase as any)
-      .from("clients_config")
-      .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, fb_token, city, region_key")
-      .eq("is_active", true)
-      .neq("is_agency", true)
-      .order("client_name")
-      .then(({ data, error }: any) => {
-        if (!error && data) setClients(data);
-        setLoadingClients(false);
-      });
-  }, [open]);
+
+    const loadClients = async () => {
+      let query = (supabase as any)
+        .from("clients_config")
+        .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, fb_token, city, region_key")
+        .eq("is_active", true)
+        .neq("is_agency", true)
+        .order("client_name");
+
+      // Фильтрация: в HQ — все кабинеты, в проекте — только свои
+      if (active.id !== HQ_ID) {
+        // Получаем расшаренные кабинеты
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+
+        const orParts = [`project_id.eq.${active.id}`, `id.eq.${active.id}`];
+        if (sharedIds.length > 0) {
+          orParts.push(`id.in.(${sharedIds.join(",")})`);
+        }
+        query = query.or(orParts.join(","));
+      }
+
+      const { data, error } = await query;
+      if (!error && data) setClients(data);
+      setLoadingClients(false);
+    };
+
+    loadClients();
+  }, [open, active.id]);
 
   // Load business pages when client changes
   useEffect(() => {
