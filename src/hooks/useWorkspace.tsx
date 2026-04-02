@@ -50,6 +50,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       if (!user) return;
 
+      console.log("Workspace Debug: Fetching for user", user.id, "Role:", role, "isSuperadmin:", isSuperadmin);
+
       // 1. Fetch from projects table (primary source)
       let query = supabase
         .from("projects")
@@ -57,18 +59,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         .order("created_at", { ascending: true }); // First created is 'Main'
 
       if (!isSuperadmin) {
+        console.log("Workspace Debug: User is NOT superadmin, filtering by membership");
         const { data: memberProjects, error: memberError } = await (supabase as any)
           .from("project_members")
           .select("project_id")
           .eq("user_id", user.id);
         
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error("Workspace Debug: Membership fetch error:", memberError);
+          throw memberError;
+        }
         
         const projectIds = (memberProjects as any[])?.map(mp => mp.project_id) || [];
+        console.log("Workspace Debug: Found member project IDs:", projectIds);
         query = query.in("id", projectIds);
       }
 
       const { data: projectsData, error: projectsError } = await query;
+      if (projectsError) {
+        console.error("Workspace Debug: Projects fetch error:", projectsError);
+        throw projectsError;
+      }
+
+      console.log("Workspace Debug: Found actual projects from DB:", projectsData?.length, projectsData);
 
       const foundIds = new Set<string>();
       const combined: Workspace[] = [];
