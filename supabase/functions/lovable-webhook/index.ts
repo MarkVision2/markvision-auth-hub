@@ -29,7 +29,7 @@ function formatPhone(phone: string): string {
   return `+${numbers[0]} (${numbers.slice(1, 4)}) ${numbers.slice(4, 7)}-${numbers.slice(7, 9)}-${numbers.slice(9, 11)}`;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // 1. Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -77,7 +77,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Webhook Error]:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
