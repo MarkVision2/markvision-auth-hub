@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Download, MessageCircle, Instagram, Loader2, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface ClientRow {
@@ -32,21 +32,22 @@ function sourceIcon(source: string) {
 }
 
 export default function ClientDatabase() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [search, setSearch] = useState("");
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
-    if (active.id === HQ_ID) {
+    if (isAgency || !active) {
       setClients([]);
       setLoading(false);
       return;
     }
+    const currentActiveId = active.id;
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
-      query = query.eq("project_id", active.id);
+      query = query.eq("project_id", currentActiveId);
 
       const { data, error } = await query.order("created_at", { ascending: false });
 
@@ -91,12 +92,14 @@ export default function ClientDatabase() {
   useEffect(() => { fetchClients(); }, [fetchClients]);
 
   useEffect(() => {
+    if (!active) return;
+    const currentActiveId = active.id;
     const ch = supabase
       .channel("client_db_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => fetchClients())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm", filter: `project_id=eq.${currentActiveId}` }, () => fetchClients())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [fetchClients, active.id]);
+  }, [fetchClients, active?.id]);
 
   const filtered = useMemo(
     () => clients.filter(

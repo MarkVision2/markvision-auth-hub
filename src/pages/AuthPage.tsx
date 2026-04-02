@@ -14,10 +14,8 @@ const features = [
 ];
 
 const AuthPage = () => {
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user, isReady } = useAuthReady();
@@ -42,37 +40,18 @@ const AuthPage = () => {
     setLoading(true);
 
     const cleanInput = email.trim().toLowerCase();
-    // If the input doesn't contain '@', treat it as a login and append @markvision-staff.io
     const finalEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@markvision-staff.io`;
 
-    console.log("Attempting login with mapped email:", finalEmail);
-
     try {
-      if (activeTab === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ 
-          email: finalEmail, 
-          password 
-        });
-        if (error) {
-          toast({ title: "Ошибка входа", description: error.message, variant: "destructive" });
-          return;
-        }
-        navigate("/dashboard");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: finalEmail,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { company_name: companyName, full_name: companyName },
-          },
-        });
-        if (error) {
-          toast({ title: "Ошибка регистрации", description: error.message, variant: "destructive" });
-          return;
-        }
-        toast({ title: "Проверьте почту", description: "Мы отправили письмо для подтверждения." });
+      const { error } = await supabase.auth.signInWithPassword({ 
+        email: finalEmail, 
+        password 
+      });
+      if (error) {
+        toast({ title: "Ошибка входа", description: error.message, variant: "destructive" });
+        return;
       }
+      navigate("/dashboard");
     } catch (err: any) {
       toast({ title: "Непредвиденная ошибка", description: err.message, variant: "destructive" });
     } finally {
@@ -94,7 +73,6 @@ const AuthPage = () => {
     <div className="flex min-h-screen flex-col lg:flex-row bg-background">
       {/* Left — Hero */}
       <div className="relative flex w-full items-center justify-center overflow-hidden bg-card px-8 py-16 lg:w-[55%] lg:py-0">
-        {/* Animated gradient background */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[120px]" />
           <div className="absolute -bottom-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[100px]" />
@@ -107,7 +85,6 @@ const AuthPage = () => {
           transition={{ duration: 0.6 }}
           className="relative z-10 max-w-xl"
         >
-          {/* Logo */}
           <div className="mb-10 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
               <Zap className="h-5 w-5 text-primary" />
@@ -124,7 +101,6 @@ const AuthPage = () => {
             Трафик, контент, продажи, финансы и команда — одна панель. AI следит за результатом 24/7.
           </p>
 
-          {/* Feature grid */}
           <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {features.map((f, i) => (
               <motion.div
@@ -147,7 +123,7 @@ const AuthPage = () => {
         </motion.div>
       </div>
 
-      {/* Right — Auth Form */}
+      {/* Right — Login Form */}
       <div className="flex w-full items-center justify-center px-6 py-16 lg:w-[45%] lg:py-0">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
@@ -156,54 +132,13 @@ const AuthPage = () => {
           className="w-full max-w-md"
         >
           <h2 className="mb-2 text-2xl font-bold text-foreground">
-            {activeTab === "login" ? "Добро пожаловать" : "Создать аккаунт"}
+            Добро пожаловать
           </h2>
           <p className="mb-8 text-sm text-muted-foreground">
-            {activeTab === "login"
-              ? "Войдите, чтобы продолжить работу"
-              : "Зарегистрируйтесь и начните за 2 минуты"}
+            Войдите, чтобы продолжить работу
           </p>
 
-          {/* Tabs */}
-          <div className="mb-6 flex rounded-xl border border-border bg-card p-1">
-            <button
-              onClick={() => setActiveTab("login")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                activeTab === "login"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Вход
-            </button>
-            <button
-              onClick={() => setActiveTab("signup")}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition-all ${
-                activeTab === "signup"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Регистрация
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            {activeTab === "signup" && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">
-                  Название компании
-                </label>
-                <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Digital Agency"
-                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder-muted-foreground outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-            )}
-
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Email или Логин</label>
               <input
@@ -218,11 +153,9 @@ const AuthPage = () => {
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label className="text-sm font-medium text-foreground">Пароль</label>
-                {activeTab === "login" && (
-                  <button type="button" className="text-xs text-primary hover:underline">
-                    Забыли?
-                  </button>
-                )}
+                <button type="button" className="text-xs text-primary hover:underline">
+                  Забыли?
+                </button>
               </div>
               <input
                 type="password"
@@ -242,7 +175,7 @@ const AuthPage = () => {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  {activeTab === "login" ? "Войти" : "Начать бесплатно"}
+                  Войти
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}

@@ -5,7 +5,7 @@ import { ru } from "date-fns/locale";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -202,7 +202,7 @@ function PromoAnalytics({ tasks, loading }: { tasks: RetentionTask[]; loading: b
 
 /* ── Main Page ── */
 export default function RetentionLtvPage() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [tasks, setTasks] = useState<RetentionTask[]>([]);
   const [templates, setTemplates] = useState<RetentionTemplate[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -228,16 +228,21 @@ export default function RetentionLtvPage() {
   const [convertSaving, setConvertSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (!active) {
+      setLoading(false);
+      return;
+    }
+    const currentActiveId = active.id;
     setLoading(true);
     try {
       let tasksQ = (supabase as any).from("retention_tasks").select("*, retention_templates(name)");
       let templatesQ = (supabase as any).from("retention_templates").select("*");
       let leadsQ = (supabase as any).from("leads_crm").select("id, name");
 
-      if (active.id !== HQ_ID) {
-        tasksQ = tasksQ.eq("project_id", active.id);
-        templatesQ = templatesQ.eq("project_id", active.id);
-        leadsQ = leadsQ.eq("project_id", active.id);
+      if (!isAgency) {
+        tasksQ = tasksQ.eq("project_id", currentActiveId);
+        templatesQ = templatesQ.eq("project_id", currentActiveId);
+        leadsQ = leadsQ.eq("project_id", currentActiveId);
       }
 
       const [tasksRes, templatesRes, leadsRes] = await Promise.all([
@@ -281,7 +286,7 @@ export default function RetentionLtvPage() {
     } finally {
       setLoading(false);
     }
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -291,7 +296,7 @@ export default function RetentionLtvPage() {
       toast({ title: "Заполните все поля", variant: "destructive" });
       return;
     }
-    if (active.id === HQ_ID) {
+    if (isAgency || !active) {
       toast({ title: "Ошибка", description: "Выберите проект для планирования касания", variant: "destructive" });
       return;
     }
@@ -323,7 +328,7 @@ export default function RetentionLtvPage() {
       toast({ title: "Заполните название и промпт", variant: "destructive" });
       return;
     }
-    if (active.id === HQ_ID) {
+    if (isAgency || !active) {
       toast({ title: "Ошибка", description: "Выберите проект", variant: "destructive" });
       return;
     }
@@ -371,18 +376,20 @@ export default function RetentionLtvPage() {
         .eq("id", convertTask.id);
       if (e1) throw e1;
 
-      // Update template stats
-      if (convertTask.template_id) {
-        const tpl = templates.find(t => t.id === convertTask.template_id);
-        if (tpl) {
-          const { error: e2 } = await (supabase as any)
-            .from("retention_templates")
-            .update({
-              return_count: tpl.return_count + 1,
-              revenue_generated: tpl.revenue_generated + revenue,
-            })
-            .eq("id", convertTask.template_id);
-          if (e2) throw e2;
+      if (active) {
+        // Update template stats
+        if (convertTask.template_id) {
+          const tpl = templates.find(t => t.id === convertTask.template_id);
+          if (tpl) {
+            const { error: e2 } = await (supabase as any)
+              .from("retention_templates")
+              .update({
+                return_count: tpl.return_count + 1,
+                revenue_generated: tpl.revenue_generated + revenue,
+              })
+              .eq("id", convertTask.template_id);
+            if (e2) throw e2;
+          }
         }
       }
 

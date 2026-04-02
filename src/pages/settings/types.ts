@@ -145,11 +145,28 @@ export function saveTeam(team: TeamMember[]) {
 
 import { supabase } from "@/integrations/supabase/client";
 
-export async function fetchTeamMembers(): Promise<TeamMember[]> {
+export async function fetchTeamMembers(projectId?: string): Promise<TeamMember[]> {
     try {
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*");
+        let query = (supabase as any).from("profiles").select("*");
+
+        if (projectId) {
+            // Join with project_members to filter by project
+            const { data: memberData, error: memberError } = await (supabase as any)
+                .from("project_members")
+                .select("user_id")
+                .eq("project_id", projectId);
+
+            if (memberError) throw memberError;
+            const userIds = (memberData || []).map((m: any) => m.user_id);
+            
+            if (userIds.length > 0) {
+                query = query.in("id", userIds);
+            } else {
+                return []; // No members in this project
+            }
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
 
@@ -159,7 +176,7 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
                 name: p.full_name || "Без имени",
                 email: p.email || "",
                 role: (p.role as RoleKey) || "client_manager",
-                status: "active", // Based on profile existence
+                status: "active",
                 lastLogin: p.updated_at ? new Date(p.updated_at).toLocaleDateString() : null,
                 permissions: (p.permissions as string[]) || ROLE_PRESETS[p.role as RoleKey] || [],
                 specialty: p.specialty || "",

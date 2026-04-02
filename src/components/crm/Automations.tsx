@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Plus, Zap, MessageCircle, Clock, Bell, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface Automation {
@@ -35,21 +35,24 @@ const ACTION_TYPES = [
 ];
 
 export default function Automations() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [form, setForm] = useState({ trigger_type: "stage_change", trigger_value: "", action_type: "send_whatsapp", action_detail: "", icon: "zap" });
 
   const fetchAutomations = useCallback(async () => {
+    if (!active) {
+      setLoading(false);
+      return;
+    }
+    const currentActiveId = active.id;
     setLoading(true);
     try {
       let query = (supabase as any).from("crm_automations").select("*");
 
-      if (active.id === HQ_ID) {
-        // HQ sees everything
-      } else {
-        query = query.eq("project_id", active.id);
+      if (!isAgency) {
+        query = query.eq("project_id", currentActiveId);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -60,7 +63,7 @@ export default function Automations() {
     } finally {
       setLoading(false);
     }
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => { fetchAutomations(); }, [fetchAutomations]);
 
@@ -71,9 +74,10 @@ export default function Automations() {
   };
 
   const handleCreate = async () => {
+    if (!active) return;
     if (!form.trigger_value.trim()) { toast({ title: "Укажите значение триггера" }); return; }
     const { error } = await (supabase as any).from("crm_automations").insert({
-      project_id: active.id === HQ_ID ? null : active.id,
+      project_id: isAgency ? null : active.id,
       trigger_type: form.trigger_type,
       trigger_value: form.trigger_value.trim(),
       action_type: form.action_type,

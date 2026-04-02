@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -97,7 +97,7 @@ function ServicesPopover({ client, allServices, onUpdate }: {
 
 /* ── Main AgencyTab ── */
 export default function AgencyTab() {
-    const { active } = useWorkspace();
+    const { active, isAgency } = useWorkspace();
     const [clientsData, setClientsData] = useState<ClientFinance[]>([]);
     const [team, setTeam] = useState<FinanceTeamMember[]>([]);
     const [services, setServices] = useState<string[]>(defaultServices);
@@ -107,10 +107,15 @@ export default function AgencyTab() {
     const [loading, setLoading] = useState(true);
 
     const fetchData = useCallback(async () => {
+        if (!active) {
+            setLoading(false);
+            return;
+        }
+        const currentActiveId = active.id;
         try {
             let clientsQuery = (supabase as any).from("clients_config").select("id, client_name, is_active").eq("is_active", true).neq("is_agency", true);
-            if (active.id !== HQ_ID) {
-                clientsQuery = clientsQuery.eq("project_id", active.id);
+            if (!isAgency) {
+                clientsQuery = clientsQuery.eq("project_id", currentActiveId);
             }
             const { data: clients } = await clientsQuery;
             const { data: allServices } = await (supabase as any).from("finance_client_services").select("*");
@@ -134,7 +139,7 @@ export default function AgencyTab() {
         } finally {
             setLoading(false);
         }
-    }, [active.id]);
+    }, [active?.id, isAgency]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 

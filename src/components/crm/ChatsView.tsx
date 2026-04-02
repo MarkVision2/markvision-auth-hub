@@ -15,7 +15,7 @@ import {
   CircleDot, Bell, Paperclip, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 
 interface Lead {
@@ -91,7 +91,7 @@ function getInitials(name: string) {
 }
 
 export default function ChatsView() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -109,24 +109,29 @@ export default function ChatsView() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const fetchLeads = useCallback(async () => {
+    if (!active) {
+      setLoading(false);
+      return;
+    }
+    const currentActiveId = active.id;
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("*");
 
-      if (active.id === HQ_ID) {
+      if (isAgency) {
         // HQ sees everything
       } else {
         // Client project: own + shared
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
-          .eq("project_id", active.id);
+          .eq("project_id", currentActiveId);
         const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
         if (sharedCabIds.length > 0) {
-          query = query.or(`project_id.eq.${active.id},client_config_id.in.(${sharedCabIds.join(",")})`);
+          query = query.or(`project_id.eq.${currentActiveId},client_config_id.in.(${sharedCabIds.join(",")})`);
         } else {
-          query = query.eq("project_id", active.id);
+          query = query.eq("project_id", currentActiveId);
         }
       }
 
@@ -168,9 +173,11 @@ export default function ChatsView() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   useEffect(() => {
+    if (!active) return;
+    const currentActiveId = active.id;
     const channel = supabase
       .channel("chats_leads_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchLeads())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => fetchLeads())
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "crm_messages" }, (payload: any) => {
         const newMsg = payload.new as CrmMessage;
         // Update messages if viewing this lead
@@ -185,7 +192,7 @@ export default function ChatsView() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchLeads, selectedLead, active.id]);
+  }, [fetchLeads, selectedLead, active?.id]);
 
   // Fetch messages for selected lead
   const fetchMessages = useCallback(async (leadId: string) => {

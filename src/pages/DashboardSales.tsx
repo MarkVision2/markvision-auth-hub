@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2, ChevronRight, Handshake, MessageSquare, Phone, UserCheck, DollarSign, TrendingUp, Eye, ShoppingCart, Users, Send, Clock } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
@@ -41,7 +41,7 @@ interface Lead {
 }
 
 export default function DashboardSales() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -49,9 +49,14 @@ export default function DashboardSales() {
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
+      if (!active) {
+        setLoading(false);
+        return;
+      }
+      const currentActiveId = active.id;
       let query = (supabase as any).from("leads_crm").select("*").order("created_at", { ascending: false });
-      if (active.id !== HQ_ID) {
-        query = query.eq("project_id", active.id);
+      if (!isAgency) {
+        query = query.eq("project_id", currentActiveId);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -61,7 +66,7 @@ export default function DashboardSales() {
     } finally {
       setLoading(false);
     }
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 

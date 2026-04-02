@@ -8,7 +8,7 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useRole, AppRole } from "@/hooks/useRole";
 import { cn } from "@/lib/utils";
 import {
@@ -45,7 +45,7 @@ const navGroups: NavGroup[] = [
     label: "ГЛАВНОЕ",
     roles: ["superadmin", "client_admin", "client_manager"],
     items: [
-      { title: "Штаб-квартира", path: "/dashboard", icon: LayoutDashboard, end: true, requiredPerm: "hq" },
+      { title: "Дашборд", path: "/dashboard", icon: LayoutDashboard, end: true, requiredPerm: "hq" },
     ],
   },
   {
@@ -162,7 +162,6 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
 
   return (
     <>
-      {/* ── Workspace Switcher ── */}
       <div className="p-4 shrink-0">
         <Popover open={wsOpen && isSuperadmin} onOpenChange={setWsOpen}>
           <PopoverTrigger asChild>
@@ -175,12 +174,16 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
             >
               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 flex items-center justify-center shrink-0 shadow-lg shadow-primary/30 relative overflow-hidden group-hover:scale-105 transition-transform">
                 <div className="absolute inset-0 bg-white/30 w-1/3 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_2s_infinite]" />
-                <span className="text-primary-foreground font-black text-[13px] uppercase tracking-wider relative z-10">{active.name.slice(0, 2)}</span>
+                <span className="text-primary-foreground font-black text-[13px] uppercase tracking-wider relative z-10">
+                  {active ? active.name.slice(0, 2) : "MV"}
+                </span>
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-black text-foreground truncate tracking-tight">{active.name}</p>
+                <p className="text-sm font-black text-foreground truncate tracking-tight">
+                  {active ? active.name : "Выберите проект"}
+                </p>
                 <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground/60 truncate">
-                  {active.id === HQ_ID ? "Центральный узел" : (isSuperadmin ? (isAgency ? "Все проекты" : "Клиентский проект") : "Ваш проект")}
+                  {isAgency ? "Основной проект" : (active ? "Клиентский проект" : "Система")}
                 </p>
               </div>
               {isSuperadmin && <ChevronsUpDown size={14} className="text-muted-foreground/30 shrink-0 group-hover:text-primary transition-colors" />}
@@ -204,14 +207,14 @@ function SidebarContentInner({ onNavigate }: SidebarContentInnerProps) {
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-2.5 py-2 rounded-lg transition-all duration-200 group/item",
-                  active.id === w.id ? "bg-primary/10" : "hover:bg-accent/50"
+                  active?.id === w.id ? "bg-primary/10" : "hover:bg-accent/50"
                 )}
               >
                 <span className={cn(
                   "flex-1 text-left text-[13px] truncate transition-colors",
-                  active.id === w.id ? "font-semibold text-primary" : "text-foreground group-hover:text-foreground"
+                  active?.id === w.id ? "font-semibold text-primary" : "text-foreground group-hover:text-foreground"
                 )}>{w.name}</span>
-                {active.id === w.id && <Check size={14} className="text-primary shrink-0" />}
+                {active?.id === w.id && <Check size={14} className="text-primary shrink-0" />}
               </button>
             ))}
           </div>

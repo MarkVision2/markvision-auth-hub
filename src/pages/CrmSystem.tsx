@@ -9,7 +9,7 @@ import ClientDatabase from "@/components/crm/ClientDatabase";
 import Automations from "@/components/crm/Automations";
 import AddLeadSheet from "@/components/crm/AddLeadSheet";
 import TodayTasksPanel from "@/components/crm/TodayTasksPanel";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type AITask } from "@/components/crm/types";
@@ -46,14 +46,16 @@ function fmt(n: number) {
 }
 
 export default function CrmSystem() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<AITask[]>([]);
 
   useEffect(() => {
-    if (active.id === HQ_ID) {
-      setLeads([]);
+    if (isAgency || !active) {
+      if (!isAgency && !active) {
+        setLeads([]);
+      }
       return;
     }
     let isMounted = true;

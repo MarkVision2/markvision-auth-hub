@@ -9,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { Loader2, Target, Facebook, Link2, Settings2, ShieldCheck, Database, Info, Globe, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
 
   useEffect(() => {
     async function loadVisibilities() {
+      if (!open) return;
+      const agencyProjectId = workspaces.find(w => w.type === 'agency')?.id;
+
       if (account?.id && open) {
         setForm({
           client_name: account.client_name || "",
@@ -93,36 +96,32 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
           .eq("client_config_id", account.id);
         
         if (data) {
-          const ids = data.map((v: any) => v.is_hq_sharing ? HQ_ID : v.project_id).filter(Boolean);
+          const ids = data.map((v: any) => v.is_hq_sharing ? agencyProjectId : v.project_id).filter(Boolean);
           setSelectedVisibilities(ids);
         }
       } else if (!account && open) {
         setForm(emptyForm);
-        // Default visibility is the current active project
-        setSelectedVisibilities([active.id]);
+        if (active) {
+          setSelectedVisibilities([active.id]);
+        }
       }
     }
     loadVisibilities();
-  }, [account, open, active.id]);
+  }, [account, open, active?.id]);
   const updateField = (field: string, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
-
-  const isInHq = active.id === HQ_ID;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.client_name.trim()) return;
 
-    setSaving(true);
-    let projectId = isInHq ? null : active.id;
-
-    // Fix: If adding a NEW account from HQ (MarkVision AI) and it's an AGENCY cabinet, 
-    // we MUST create a dedicated project for it first.
-    if (!account?.id && isInHq && form.is_agency) {
-      const newProjectId = await createProject(form.client_name);
-      if (newProjectId) {
-        projectId = newProjectId;
-      }
+    if (!active) {
+      toast({ title: "Ошибка", description: "Сначала добавьте проект", variant: "destructive" });
+      setSaving(false);
+      return;
     }
+
+    setSaving(true);
+    let projectId = active.id;
 
     const row: Record<string, unknown> = {
       client_name: form.client_name,
@@ -161,8 +160,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     }
 
     // Create visibility records
+    const agencyProjectId = workspaces.find(w => w.type === 'agency')?.id;
     const visRecords = selectedVisibilities.map(pid => {
-      if (pid === HQ_ID) return { client_config_id: cab.id, is_hq_sharing: true };
+      if (pid === agencyProjectId) return { client_config_id: cab.id, is_hq_sharing: true };
       return { client_config_id: cab.id, project_id: pid };
     });
 
@@ -330,12 +330,12 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
                         "h-10 w-10 rounded-xl flex items-center justify-center shadow-sm transition-colors",
                         selectedVisibilities.includes(ws.id) ? "bg-emerald-500 text-white" : "bg-background text-muted-foreground group-hover:text-emerald-500"
                       )}>
-                         {ws.id === HQ_ID ? <Target className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
+                         {ws.type === "agency" ? <Target className="h-5 w-5" /> : <Globe className="h-5 w-5" />}
                       </div>
                       <div>
                         <Label htmlFor={`vis-${ws.id}`} className="font-bold text-sm cursor-pointer block">{ws.name}</Label>
                         <p className="text-[10px] font-medium text-muted-foreground/60">
-                           {ws.id === HQ_ID ? "Главный проект (HQ)" : "Клиентский проект"}
+                           {ws.type === "agency" ? "Главный проект (Agency)" : "Клиентский проект"}
                         </p>
                       </div>
                     </div>

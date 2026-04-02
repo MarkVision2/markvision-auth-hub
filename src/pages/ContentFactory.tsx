@@ -39,7 +39,7 @@ import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
 
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ type AbEvent = {
 };
 
 export default function ContentFactory() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [pageTab, setPageTab] = useState<"scenario" | "create" | "my-content">("scenario");
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
@@ -186,19 +186,25 @@ export default function ContentFactory() {
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
+    if (!active) {
+      setLoadingHistory(false);
+      return;
+    }
+    const currentActiveId = active.id;
     setLoadingHistory(true);
     let query = (supabase as any).from("content_tasks").select("id, status, progress_text, result_urls, content_type, created_at");
 
-    if (active.id !== HQ_ID) {
-      query = query.eq("project_id", active.id);
+    if (!isAgency) {
+      query = query.eq("project_id", currentActiveId);
     }
 
     const { data } = await query
       .order("created_at", { ascending: false })
       .limit(MAX_HISTORY);
+      
     if (data) setHistory(data as ContentTask[]);
     setLoadingHistory(false);
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => {
     fetchHistory();
@@ -306,7 +312,7 @@ export default function ContentFactory() {
         aspect_ratio: isVideo ? videoAspect : aspectRatio,
         design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
         custom_logo_url: customLogoUrl,
-        project_id: active.id === HQ_ID ? null : active.id,
+        project_id: isAgency ? null : active?.id,
       };
 
       const { data, error } = await (supabase as any)
@@ -323,8 +329,8 @@ export default function ContentFactory() {
 
       const n8nPayload = {
         task_id: data.id,
-        project_id: active.id,
-        client_name: active.name,
+        project_id: active?.id,
+        client_name: active?.name,
         content_type: isCarousel ? "carousel" : mainType,
         source_type: payload.source_type,
         source_url: payload.source_url,

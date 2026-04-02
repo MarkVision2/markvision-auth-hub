@@ -15,9 +15,8 @@ export interface Workspace {
   logoUrl?: string;
 }
 
-export const HQ_ID = "7e175bca-c8bd-49de-b348-4acc348e5a91";
-// HQ is the default workspace for MarkVision AI
-const HQ: Workspace = { id: HQ_ID, name: "MarkVision AI", type: "agency" };
+// In the new 'Clean Slate' architecture, there is no hardcoded HQ.
+// The first project in the database becomes the primary workspace.
 
 function loadCachedProjects(): Workspace[] {
   try {
@@ -30,7 +29,7 @@ function loadCachedProjects(): Workspace[] {
 
 interface WorkspaceContextValue {
   workspaces: Workspace[];
-  active: Workspace;
+  active: Workspace | null;
   setActiveId: (id: string) => void;
   createProject: (name: string) => Promise<string | null>;
   refreshProjects: () => Promise<void>;
@@ -43,10 +42,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { role, isSuperadmin } = useRole();
   const [activeId, setActiveId] = useState(() => {
-    const saved = localStorage.getItem("activeProjectId");
-    // Migrate old virtual "hq" id to real DB id
-    if (saved === "hq") return HQ_ID;
-    return saved || HQ_ID;
+    return localStorage.getItem("activeProjectId") || "";
   });
   const [projects, setProjects] = useState<Workspace[]>(loadCachedProjects);
 
@@ -55,14 +51,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!user) return;
 
       // 1. Fetch from projects table (primary source)
-      // If superadmin, fetch all. Otherwise filter by membership.
       let query = supabase
         .from("projects")
-        .select("id, name, logo_url, currency, timezone, language")
-        .order("name");
+        .select("id, name, logo_url, currency, timezone, language, created_at")
+        .order("created_at", { ascending: true }); // First created is 'Main'
 
       if (!isSuperadmin) {
-        // Use an inner join via project_members to filter projects where user is a member
         const { data: memberProjects, error: memberError } = await (supabase as any)
           .from("project_members")
           .select("project_id")
@@ -76,29 +70,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       const { data: projectsData, error: projectsError } = await query;
 
-      // 2. Fetch from clients_config as fallback/merging
-      const { data: clientsData, error: clientsError } = await (supabase as any)
-        .from("clients_config")
-        .select("id, client_name, project_id")
-        .eq("is_active", true);
-
-      if (projectsError && clientsError) {
-        console.warn("WorkspaceProvider: both fetches failed", projectsError, clientsError);
-        return;
-      }
-
       const foundIds = new Set<string>();
       const combined: Workspace[] = [];
 
       // Add actual projects
       if (projectsData && Array.isArray(projectsData)) {
-        (projectsData as any[]).forEach(p => {
-          if (!p.id || p.id === HQ_ID || foundIds.has(p.id)) return;
+        (projectsData as any[]).forEach((p, index) => {
+          if (!p.id || foundIds.has(p.id)) return;
           foundIds.add(p.id);
           combined.push({
             id: p.id,
             name: p.name || "Unnamed Project",
-            type: "client",
+            // The very first project is treated as 'agency' (Main), others are clients
+            type: index === 0 ? "agency" : "client",
             logoUrl: p.logo_url,
             currency: p.currency,
             timezone: p.timezone,
@@ -107,25 +91,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      // Add clients that might not be in the projects list (due to RLS or missing rows)
-      if (clientsData && Array.isArray(clientsData)) {
-        (clientsData as any[]).forEach((c: any) => {
-          const id = c.project_id || c.id;
-          if (!id || id === HQ_ID || foundIds.has(id)) return;
-          foundIds.add(id);
-          combined.push({
-            id: id,
-            name: c.client_name || "Unnamed Client",
-            type: "client"
-          });
-        });
-      }
-
-      const sorted = combined.sort((a, b) => a.name.localeCompare(b.name));
-      
-      // Update state and cache
-      setProjects(sorted);
-      localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(sorted));
+      setProjects(combined);
+      localStorage.setItem("cachedWorkspaceProjects", JSON.stringify(combined));
     } catch (err) {
       console.error("WorkspaceProvider: unexpected error:", err);
     }
@@ -137,7 +104,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [user, isSuperadmin, refreshProjects]);
 
   useEffect(() => {
-    localStorage.setItem("activeProjectId", activeId);
+    if (activeId) {
+      localStorage.setItem("activeProjectId", activeId);
+    }
   }, [activeId]);
 
   const createProject = useCallback(async (name: string) => {
@@ -150,18 +119,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      // Add project creator to project_members
       if (user && data) {
-        const { error: memberError } = await (supabase as any)
+        await (supabase as any)
           .from("project_members")
           .insert({
             project_id: (data as any).id,
             user_id: user.id
           });
-
-        if (memberError) {
-          console.error("Failed to add project member:", memberError);
-        }
       }
 
       await refreshProjects();
@@ -176,18 +140,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [user, refreshProjects]);
 
-  const workspaces = useMemo(() => {
-    // Superadmins see HQ + all other projects. 
-    // Others ONLY see what they are members of (already filtered in projects state)
-    if (isSuperadmin) return [HQ, ...projects];
-    return projects;
-  }, [projects, isSuperadmin]);
+  const workspaces = useMemo(() => projects, [projects]);
 
   const active = useMemo(() => {
+    if (workspaces.length === 0) return null;
     const found = workspaces.find(w => w.id === activeId);
-    if (found) return found;
-    // Fallback if the activeId is not in accessible workspaces
-    return workspaces.length > 0 ? workspaces[0] : HQ;
+    return found || workspaces[0];
   }, [workspaces, activeId]);
 
   const contextValue = useMemo(() => ({
@@ -196,7 +154,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveId,
     createProject,
     refreshProjects,
-    isAgency: active.type === "agency",
+    isAgency: active?.type === "agency",
   }), [workspaces, active, createProject, refreshProjects]);
 
   return (

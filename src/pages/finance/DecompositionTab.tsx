@@ -10,7 +10,7 @@ import {
     ChevronLeft, ChevronRight, Loader2,
 } from "lucide-react";
 import { fmt, fmtCurrency, KpiCard } from "./shared";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 interface SummaryRow {
     type?: "header" | "row";
@@ -22,7 +22,7 @@ interface SummaryRow {
 }
 
 export default function DecompositionTab() {
-    const { active } = useWorkspace();
+    const { active, isAgency } = useWorkspace();
     const MONTHS_RU = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
     const now = new Date();
     const [planMonthIndex, setPlanMonthIndex] = useState(now.getMonth());
@@ -243,14 +243,14 @@ export default function DecompositionTab() {
                                     plan_visits: calc.diagnostics,
                                     plan_sales: calc.sales,
                                     plan_revenue: Math.round(calc.revenue),
-                                    project_id: active.id === HQ_ID ? null : active.id
+                                    project_id: isAgency ? null : active?.id
                                 };
 
                                 const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);
-                                if (active.id === HQ_ID) {
+                                if (isAgency) {
                                     query.is("project_id", null);
                                 } else {
-                                    query.eq("project_id", active.id);
+                                    query.eq("project_id", active?.id);
                                 }
 
                                 const { data: existing } = await query.limit(1);

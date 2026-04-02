@@ -40,11 +40,18 @@ const SchedulePage = () => {
     }, [isDoctor, user]);
 
     const fetchAppointments = async () => {
+        if (!active) {
+            setAppointments([]);
+            setIsLoading(false);
+            return;
+        }
+        
         setIsLoading(true);
         try {
-            const { data, error } = await supabase
-                .from("leads_crm" as any)
+            const { data, error } = await (supabase as any)
+                .from("leads_crm")
                 .select("*")
+                .eq("project_id", active.id)
                 .not("scheduled_at", "is", null);
 
             if (error) throw error;
@@ -61,7 +68,7 @@ const SchedulePage = () => {
                     type: "Консультация",
                     service: lead.ai_summary || "Первичный прием",
                     comment: lead.comments || "",
-                    doctorId: lead.doctor_name || "all" // Use doctor_name for consistency
+                    doctorId: lead.doctor_name || "all" 
                 };
             });
 
@@ -82,7 +89,7 @@ const SchedulePage = () => {
 
     useEffect(() => {
         fetchAppointments();
-    }, []);
+    }, [active?.id]);
 
     const filteredAppointments = selectedDoctorId === "all" 
         ? appointments 

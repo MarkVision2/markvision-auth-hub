@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 interface Props {
   open: boolean;
@@ -52,7 +52,7 @@ type Objective = "whatsapp" | "website" | "leadform";
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_CAMPAIGN_LAUNCH_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
 
 export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [clients, setClients] = useState<ClientConfig[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
@@ -127,7 +127,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         .order("client_name");
 
       // Фильтрация: в HQ — все кабинеты, в проекте — только свои
-      if (active.id !== HQ_ID) {
+      if (!isAgency && active) {
         // Получаем расшаренные кабинеты
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
@@ -148,7 +148,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     };
 
     loadClients();
-  }, [open, active.id]);
+  }, [open, active?.id, isAgency]);
 
   // Load business pages when client changes
   useEffect(() => {

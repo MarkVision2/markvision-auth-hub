@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Calendar, Loader2, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { format, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { DailyRow, ClientOption } from "./ai-reports/shared";
@@ -52,8 +52,15 @@ export default function AiReportsPage() {
         .eq("is_active", true)
         .neq("is_agency", true);
 
-      if (active.id !== HQ_ID) {
+      if (!isAgency || !active) {
+        // ... if not agency we just do nothing or set small data
+        if (!active) {
+          setLoading(false);
+          return;
+        }
+        
         // Client project: own + shared
+        if (!active) return;
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
@@ -73,7 +80,7 @@ export default function AiReportsPage() {
       }
     };
     load();
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => {
     const load = async () => {
@@ -94,25 +101,31 @@ export default function AiReportsPage() {
           .order("leads", { ascending: false })
           .limit(10);
 
-        if (active.id !== HQ_ID) {
+        if (!isAgency || !active) {
+          if (!active) {
+            setLoading(false);
+            return;
+          }
+          const currentActiveId = active.id;
+
           // Client project: own
-          leadsQ = leadsQ.eq("project_id", active.id);
-          channelsQ = channelsQ.eq("project_id", active.id);
-          creativesQ = creativesQ.eq("analytics_campaigns.analytics_channels.project_id", active.id);
+          leadsQ = leadsQ.eq("project_id", currentActiveId);
+          channelsQ = channelsQ.eq("project_id", currentActiveId);
+          creativesQ = creativesQ.eq("analytics_campaigns.analytics_channels.project_id", currentActiveId);
 
           // Data Isolation Fix: Fetch client IDs inline to avoid stale `clients` state
           // when switching workspaces (race condition: active.id changes before clients state updates)
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")
             .select("client_config_id")
-            .eq("project_id", active.id);
+            .eq("project_id", currentActiveId);
           const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
           let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true).neq("is_agency", true);
           if (sharedCabIds.length > 0) {
-            cQuery = cQuery.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+            cQuery = cQuery.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
           } else {
-            cQuery = cQuery.eq("project_id", active.id);
+            cQuery = cQuery.eq("project_id", currentActiveId);
           }
           const { data: configData } = await cQuery;
           const clientIds = (configData || []).map((c: any) => c.id) as string[];
@@ -208,7 +221,7 @@ export default function AiReportsPage() {
   const hasRevenue = cur.revenue > 0;
 
   const clientName = selectedClient === "all"
-    ? (isAgency ? "Все проекты" : active.name)
+    ? (isAgency ? "Все проекты" : (active?.name || "Проект"))
     : clients.find(c => c.id === selectedClient)?.client_name || "Проект";
 
   // Dynamic import for heavy PDF generation libraries!

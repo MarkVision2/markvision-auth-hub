@@ -16,7 +16,7 @@ import {
   Clock, Send, FileText,
 } from "lucide-react";
 
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── Types ── */
 interface NpsFeedback {
@@ -93,7 +93,7 @@ function KpiCard({ label, value, sub, color }: {
 
 /* ── Main Page ── */
 export default function QualityControlPage() {
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const [feedback, setFeedback] = useState<NpsFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [templateOpen, setTemplateOpen] = useState(false);
@@ -104,14 +104,19 @@ export default function QualityControlPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
 
   const fetchFeedback = useCallback(async () => {
+    if (!active) {
+      setLoading(false);
+      return;
+    }
+    const currentActiveId = active.id;
     setLoading(true);
     try {
       let query = (supabase as any)
         .from("nps_feedback")
         .select("*");
 
-      if (active.id !== HQ_ID) {
-        query = query.eq("project_id", active.id);
+      if (!isAgency) {
+        query = query.eq("project_id", currentActiveId);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -144,19 +149,22 @@ export default function QualityControlPage() {
     } finally {
       setLoading(false);
     }
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   useEffect(() => { fetchFeedback(); }, [fetchFeedback]);
 
   // Realtime
   useEffect(() => {
+    if (!active) return;
+    const currentActiveId = active.id;
+
     const ch = supabase
       .channel("nps_feedback_realtime")
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
         table: "nps_feedback",
-        ...(active.id !== HQ_ID ? { filter: `project_id=eq.${active.id}` } : {})
+        ...(!isAgency ? { filter: `project_id=eq.${currentActiveId}` } : {})
       }, (payload: any) => {
         const row = payload.new;
         setFeedback(prev => [{
@@ -172,7 +180,7 @@ export default function QualityControlPage() {
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [active.id]);
+  }, [active?.id, isAgency]);
 
   const handleResolve = async (id: string) => {
     const { error } = await (supabase as any).from("nps_feedback").update({ is_resolved: true }).eq("id", id);

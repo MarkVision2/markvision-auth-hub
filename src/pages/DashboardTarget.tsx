@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
@@ -127,7 +127,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: s
 
 export default function DashboardTarget() {
   const now = new Date();
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
   const { isSuperadmin } = useRole();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -160,24 +160,24 @@ export default function DashboardTarget() {
         .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
         .order("client_name");
 
-      if (active.id === HQ_ID) {
-        // MarkVision AI (HQ) sees everything
-      } else {
+      if (isAgency && active) {
+        // Main project sees everything
+      } else if (active) {
+        const currentActiveId = active.id;
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
-          .eq("project_id", active.id);
+          .eq("project_id", currentActiveId);
         const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
-        // Ищем кабинеты по:
-        // 1. project_id совпадает с текущим проектом
-        // 2. id кабинета совпадает с ID проекта (для кабинетов без project_id, созданных из HQ)
-        // 3. кабинет расшарен через client_config_visibility
-        const orParts = [`project_id.eq.${active.id}`, `id.eq.${active.id}`];
+        const orParts = [`project_id.eq.${currentActiveId}`, `id.eq.${currentActiveId}`];
         if (sharedIds.length > 0) {
           orParts.push(`id.in.(${sharedIds.join(",")})`);
         }
         clientsQuery = (clientsQuery as any).or(orParts.join(","));
+      } else {
+        setLoading(false);
+        return;
       }
 
       const { data: clientsData, error: cErr } = await (clientsQuery as any);
@@ -252,19 +252,21 @@ export default function DashboardTarget() {
       setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
 
       // Fetch monthly plan for budget alerts
-      const { data: planData } = await (supabase as any)
-        .from("monthly_plans")
-        .select("plan_spend")
-        .eq("project_id", active.id)
-        .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
-        .maybeSingle();
-      setMonthlyPlan(planData);
+      if (active) {
+        const { data: planData } = await (supabase as any)
+          .from("monthly_plans")
+          .select("plan_spend")
+          .eq(isAgency ? "project_id" : "project_id", active.id) // Scoped to active project
+          .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
+          .maybeSingle();
+        setMonthlyPlan(planData);
+      }
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [selectedYear, selectedMonth, active.id]);
+  }, [selectedYear, selectedMonth, active?.id, isAgency]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -285,7 +287,7 @@ export default function DashboardTarget() {
       const budgetPct = Math.round((totalSpend / planSpend) * 100);
       if (budgetPct >= 90) {
         result.push({
-          account: active.name,
+          account: active?.name || "Project",
           issue: `Бюджет израсходован на ${budgetPct}% (${fmt(totalSpend)} / ${fmt(planSpend)})`,
           icon: CreditCard,
           severity: budgetPct >= 100 ? "critical" : "warning"
@@ -299,7 +301,7 @@ export default function DashboardTarget() {
       }
     });
     return result;
-  }, [clients, monthlyPlan, active.name]);
+  }, [clients, monthlyPlan, active?.name]);
 
   const filteredClients = useMemo(() => {
     return clients.filter((c) => {
@@ -596,9 +598,13 @@ export default function DashboardTarget() {
                                            const { error } = await (supabase as any).from("clients_config").delete().eq("id", client.id);
                                            if (error) throw error;
                                            // Удаляем связанный проект
-                                           if (projectId && projectId !== HQ_ID) {
-                                             await (supabase as any).from("project_members").delete().eq("project_id", projectId);
-                                             await (supabase as any).from("projects").delete().eq("id", projectId);
+                                           if (projectId) {
+                                             const { data: allP } = await (supabase as any).from("projects").select("id").order("created_at", { ascending: true }).limit(1);
+                                             const mainId = allP?.[0]?.id;
+                                             if (projectId !== mainId) {
+                                               await (supabase as any).from("project_members").delete().eq("project_id", projectId);
+                                               await (supabase as any).from("projects").delete().eq("id", projectId);
+                                             }
                                            }
                                            toast({ title: "Удалено", description: client.name });
                                            fetchData();

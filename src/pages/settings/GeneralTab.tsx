@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
 import {
   AlertDialog,
@@ -151,7 +151,7 @@ export default function GeneralTab() {
     };
 
     const handleDeleteProject = async () => {
-        if (!active || active.id === HQ_ID) return;
+        if (!active) return;
         
         const confirmName = window.prompt(`Чтобы подтвердить удаление проекта "${active.name}", введите его название полностью:`);
         if (confirmName !== active.name) {
@@ -201,9 +201,9 @@ export default function GeneralTab() {
 
             toast({ title: "Проект удален", description: `Проект «${active.name}» и все его данные стерты.` });
             
-            // 5. Очищаем локальный кеш и переключаемся на HQ
+            // 5. Очищаем локальный кеш
             localStorage.removeItem("cachedWorkspaceProjects");
-            setActiveId(HQ_ID);
+            setActiveId("");
             
             // Даем базе время на применение изменений перед рефрешем
             setTimeout(async () => {
@@ -394,7 +394,7 @@ export default function GeneralTab() {
             </div>
 
             {/* Section: Danger Zone (Superadmin Only) */}
-            {active && active.id !== HQ_ID && role === "superadmin" && (
+            {active && role === "superadmin" && (
                 <div className="rounded-2xl border border-rose-500/20 bg-rose-500/[0.02] p-6 space-y-6 transition-all hover:border-rose-500/40">
                     <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-lg bg-rose-500/10 flex items-center justify-center">

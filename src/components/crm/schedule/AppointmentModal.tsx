@@ -92,8 +92,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
         if (!open) return;
 
         async function initModal() {
-            // 1. Load team members (doctors)
-            const team = await fetchTeamMembers();
+            // 1. Load team members (doctors) for THE ACTIVE PROJECT
+            const team = await fetchTeamMembers(active?.id);
             const doctors = team.filter(m => m.role === "doctor");
             setDoctorsList(doctors);
 
@@ -523,7 +523,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                         phone: appointment.phone || formData.phone,
                         status: appointment.status === "completed" ? "Готов к лечению" : (appointment.status === "planned" ? "Записан" : "Новая заявка"),
                         scheduled_at: appointment.date ? (appointment.date instanceof Date ? appointment.date.toISOString() : appointment.date) : undefined,
-                        project_id: active.id || "default",
+                        project_id: active?.id,
                         comments: appointment.comment || formData.comment,
                         email: "",
                         source: "Schedule",

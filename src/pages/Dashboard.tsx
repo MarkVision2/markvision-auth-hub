@@ -6,11 +6,12 @@ import HqAiDirector from "@/components/hq/HqAiDirector";
 import HqRevenueChart from "@/components/hq/HqRevenueChart";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
-import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, LayoutDashboard } from "lucide-react";
+import { DollarSign, Users, BarChart3, TrendingUp, Target, Activity, CalendarDays, LayoutDashboard, Plus, Zap, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
 interface ClientMetric {
   client_id: string | null;
@@ -140,25 +141,83 @@ function ClientDetailPanels({ client }: { client: ClientMetric }) {
   );
 }
 
+function ZeroStateOnboarding({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-500">
+      <div className="relative mb-8">
+        <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full" />
+        <div className="relative h-24 w-24 rounded-3xl bg-card border border-border/50 flex items-center justify-center shadow-2xl">
+          <Target className="h-12 w-12 text-primary" />
+        </div>
+      </div>
+      
+      <h1 className="text-3xl font-black text-foreground tracking-tight mb-4">
+        Добро пожаловать в <span className="text-primary">MarkVision AI</span>
+      </h1>
+      <p className="text-muted-foreground max-w-md mx-auto leading-relaxed mb-10">
+        Система полностью обнулена и готова к работе. Начните с создания вашего первого проекта, который станет главным узлом управления.
+      </p>
+      
+      <Button 
+        size="lg" 
+        className="h-14 px-10 rounded-2xl gap-3 font-bold text-base shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all"
+        onClick={onCreate}
+      >
+        <Plus className="h-5 w-5" />
+        Создать первый проект
+      </Button>
+
+      <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl w-full">
+        <div className="p-6 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm space-y-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+            <Zap className="h-4 w-4 text-primary" />
+          </div>
+          <h3 className="text-sm font-bold">Чистый старт</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed text-left">Все старые данные удалены. Вы строите архитектуру с нуля.</p>
+        </div>
+        <div className="p-6 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm space-y-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+            <Shield className="h-4 w-4 text-primary" />
+          </div>
+          <h3 className="text-sm font-bold">Главный проект</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed text-left">Первый созданный проект автоматически станет мастер-профилем.</p>
+        </div>
+        <div className="p-6 rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm space-y-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+            <Users className="h-4 w-4 text-primary" />
+          </div>
+          <h3 className="text-sm font-bold">Команда и роли</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed text-left">Добавляйте сотрудников и распределяйте их по проектам позже.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
-  const { active, isAgency } = useWorkspace();
+  const { active, isAgency, workspaces, createProject } = useWorkspace();
   const { isSuperadmin } = useRole();
   const [clients, setClients] = useState<ClientMetric[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!active) {
+      setLoading(false);
+      return;
+    }
     let isMounted = true;
     async function fetch() {
       setLoading(true);
       try {
         let clientsData: ClientMetric[] = [];
 
-        if (active.id === HQ_ID) {
+        // In new architecture, we treat isAgency (first project) as the surrogate for "HQ View"
+        if (isAgency && active) {
           const { data, error } = await (supabase as any).from("agency_metrics_view").select("*").neq("is_agency", true);
           if (error) throw error;
           clientsData = data || [];
-        } else {
+        } else if (active) {
           // Data Isolation Fix: Only get valid client_config_ids for this project
           const { data: shared } = await (supabase as any).from("client_config_visibility").select("client_config_id").eq("project_id", active.id);
           const sharedIds = (shared || []).map((s: any) => s.client_config_id);
@@ -172,7 +231,6 @@ export default function Dashboard() {
           if (validIds.length > 0) {
             query = query.in("client_id", validIds);
           } else {
-            // Force empty if no ad cabinets exist
             query = query.eq("client_id", "00000000-0000-0000-0000-000000000000");
           }
 
@@ -192,18 +250,18 @@ export default function Dashboard() {
     }
     fetch();
     return () => { isMounted = false; };
-  }, [active.id]);
+  }, [active?.id]);
 
   const [agencyFinance, setAgencyFinance] = useState<{ mrr: number; costs: number } | null>(null);
 
   useEffect(() => {
-    if (!isAgency) return;
+    if (!isAgency || !active) return;
+    const currentActiveId = active.id;
     async function fetchAgencyFinance() {
-      // Only HQ-owned cabinets (project_id IS NULL = belong to agency itself, not client projects)
       const { data: hqCabs } = await (supabase as any)
         .from("clients_config")
         .select("id")
-        .is("project_id", null)
+        .eq("project_id", currentActiveId)
         .neq("is_agency", true);
       const hqCabIds = (hqCabs || []).map((c: any) => c.id);
 
@@ -227,16 +285,14 @@ export default function Dashboard() {
       setAgencyFinance({ mrr, costs });
     }
     fetchAgencyFinance();
-  }, [isAgency]);
+  }, [isAgency, active?.id]);
 
   const agencyMetrics: any = loading
     ? null
     : (() => {
-      // Followers/личные метрики — только собственные кабинеты HQ (project_id=null, is_agency=false)
       const hqPersonalClients = clients.filter((c: any) =>
-        c.project_id === null && c.is_agency === false
+        c.project_id === active?.id && c.is_agency === false
       );
-      // Активные кабинеты — все кабинеты во всех проектах (то что видно в разделе "Агентские кабинеты")
       const activeAccounts = clients.filter((c: any) => c.is_active).length;
       const mrr = agencyFinance?.mrr ?? 0;
       const costs = agencyFinance?.costs ?? 0;
@@ -277,11 +333,28 @@ export default function Dashboard() {
     } as any;
   };
 
-  const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
-  const hqClients = clients.filter(c => (c.project_id === HQ_ID || c.project_id === null) && c.is_agency === false);
-  const matchedHqClient = aggregateClientData(hqClients, HQ_ID, active.name);
+  const handleCreatePrompt = () => {
+    const name = window.prompt("Введите название вашего первого проекта:");
+    if (name) {
+      createProject(name);
+    }
+  };
 
-  const breadcrumb = isAgency ? "Штаб-квартира" : active.name;
+  if (!loading && (workspaces.length === 0 || !active)) {
+    return (
+      <DashboardLayout breadcrumb="Начало работы">
+        <ZeroStateOnboarding onCreate={handleCreatePrompt} />
+      </DashboardLayout>
+    );
+  }
+
+  const activeNonNull = active!;
+
+  const matchedClient = !isAgency ? aggregateClientData(clients, activeNonNull.id, activeNonNull.name) : null;
+  const hqClients = clients.filter(c => c.project_id === activeNonNull.id && c.is_agency === false);
+  const matchedHqClient = aggregateClientData(hqClients, activeNonNull.id, activeNonNull.name);
+
+  const breadcrumb = isAgency ? "Штаб-квартира" : activeNonNull.name;
 
   const renderClientView = (targetClient: ClientMetric | null, projName: string) => (
     <>
@@ -318,14 +391,14 @@ export default function Dashboard() {
           <HqAiDirector />
         </div>
       </div>
-      <HqRevenueChart projectId={active.id} />
+      {active && <HqRevenueChart projectId={active.id} />}
     </>
   );
 
   return (
     <DashboardLayout breadcrumb={breadcrumb}>
       <div className="space-y-6">
-        {!isAgency && (
+        {!isAgency && active && (
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-accent border border-border flex items-center justify-center text-xs font-bold">
               {active.name.slice(0, 2).toUpperCase()}
@@ -340,7 +413,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isAgency && isSuperadmin ? (
+        {isAgency && isSuperadmin && active ? (
           <Tabs defaultValue="global" className="w-full">
             <TabsList className="mb-8 bg-secondary/50 border border-border p-1 rounded-xl">
               <TabsTrigger 
@@ -363,11 +436,11 @@ export default function Dashboard() {
               {renderClientView(matchedHqClient, active.name)}
             </TabsContent>
           </Tabs>
-        ) : isAgency && !isSuperadmin ? (
+        ) : isAgency && !isSuperadmin && active ? (
           renderClientView(matchedHqClient, active.name)
-        ) : (
+        ) : active ? (
           renderClientView(matchedClient, active.name)
-        )}
+        ) : null}
       </div>
     </DashboardLayout>
   );

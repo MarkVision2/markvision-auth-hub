@@ -45,7 +45,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
-import { useWorkspace, HQ_ID } from "@/hooks/useWorkspace";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 // ─── Constants ───
 const N8N_SCRAPE_HEAVY = import.meta.env.VITE_N8N_SCRAPE_HEAVY_URL || "";
@@ -94,7 +94,7 @@ function scoreColor(score: number) {
 // ─── Trigger Boost.space webhook ───
 async function triggerBoostWebhook(payload: Record<string, unknown>) {
     if (!BOOST_WEBHOOK_URL) throw new Error("VITE_BOOST_WEBHOOK_URL не задан");
-    const response = await fetch(BOOST_WEBHOOK_URL, {
+    const response = await fetch(String(BOOST_WEBHOOK_URL), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -121,7 +121,7 @@ async function triggerScrape(url: string, payload: Record<string, unknown>) {
 
         if (error) {
             console.error("[Proxy] Invoke error:", error);
-            throw new Error(`Ошибка прокси: ${error.message}`);
+            throw new Error(`Ошибка прокси: ${(error as any).message}`);
         }
 
         console.log("[Proxy] Webhook triggered successfully via proxy", data);
@@ -137,7 +137,7 @@ export function CompetitorAnalysis() {
     const [profileResult, setProfileResult] = useState<any>(null);
 
     const { toast } = useToast();
-    const { active } = useWorkspace();
+    const { active, isAgency } = useWorkspace();
 
     const [competitors, setCompetitors] = useState<Competitor[]>([]);
     const [analyses, setAnalyses] = useState<AnalysisResult[]>([]);
@@ -281,7 +281,7 @@ export function CompetitorAnalysis() {
 
             const { data, error } = await (supabase as any)
                 .from("competitors")
-                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: active.id === HQ_ID ? null : active.id })
+                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: isAgency ? null : active?.id })
                 .select()
                 .single();
             if (error) throw error;
@@ -304,10 +304,10 @@ export function CompetitorAnalysis() {
 
             // Trigger n8n webhook for posts scrape
             try {
-                await triggerScrape(N8N_SCRAPE_HEAVY, {
+                await triggerScrape(String(N8N_SCRAPE_HEAVY), {
                     username,
                     competitor_id: data.id,
-                    project_id: active.id === HQ_ID ? null : active.id,
+                    project_id: isAgency ? null : active?.id,
                 });
                 toast({ title: "🚀 Сканирование запущено!", description: "Посты появятся через 1-2 мин" });
             } catch {
@@ -336,10 +336,10 @@ export function CompetitorAnalysis() {
 
             // Also trigger n8n for post data (if URL configured)
             if (url) {
-                await triggerScrape(url, {
+                await triggerScrape(String(url), {
                     username: comp.username,
                     competitor_id: comp.id,
-                    project_id: active.id === HQ_ID ? null : active.id,
+                    project_id: isAgency ? null : active?.id,
                 }).catch(() => {/* n8n optional */});
             }
 
@@ -403,10 +403,10 @@ export function CompetitorAnalysis() {
                 body: {
                     action: "analyze_video",
                     url: postUrl.trim(),
-                    project_id: active.id === HQ_ID ? null : active.id,
+                    project_id: isAgency ? null : active?.id,
                 },
             });
-            if (error) throw new Error(error.message);
+            if (error) throw new Error((error as any).message);
             if (!data?.record_id) throw new Error("Не получен record_id от сервера");
             // Сохраняем ID — realtime подписка покажет результат когда n8n завершит анализ
             setPendingAnalysisId(data.record_id);
@@ -427,7 +427,7 @@ export function CompetitorAnalysis() {
             toast({ title: "Ошибка запуска анализа", description: err.message, variant: "destructive" });
         }
         // postLoading сбрасывается в realtime UPDATE обработчике когда приходит результат
-    }, [postUrl, toast, active.id]);
+    }, [postUrl, toast, active?.id, isAgency]);
 
     const handleDeleteAnalysis = useCallback(async (id: string) => {
         try {
@@ -522,7 +522,7 @@ export function CompetitorAnalysis() {
                 body: JSON.stringify({
                     url: instagramUrl,
                     username,
-                    project_id: active.id === HQ_ID ? null : active.id,
+                    project_id: isAgency ? null : active?.id,
                 }),
             });
 
