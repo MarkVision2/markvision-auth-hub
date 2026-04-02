@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v10.0 - Full RBAC implementation (Manager vs Doctor vs Admin)
+// Deployment Trigger: v11.0 - Fixed team member creation and project linking
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";

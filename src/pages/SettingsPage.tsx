@@ -116,23 +116,26 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    if (loading) return; // Prevent double submission
+    if (loading) return; 
     if (!formName.trim() || !formEmail.trim()) {
       toast({ title: "Заполните имя и логин", variant: "destructive" });
       return;
     }
     
+    if (!editingMember && !formPassword.trim()) {
+      toast({ title: "Укажите пароль для нового сотрудника", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
 
     const cleanLogin = formEmail.trim().toLowerCase();
-    // Internally map login to a fake email if it's not already an email
     const finalEmail = cleanLogin.includes("@") ? cleanLogin : `${cleanLogin}@markvision-staff.io`;
 
-    console.log("Creating/Updating user with mapped email:", finalEmail);
+    console.log("Settings: Attempting to save user:", { name: formName, email: finalEmail, role: formRole });
 
     try {
       if (editingMember) {
-        // Update existing profile (mock-like but real query)
         const { error } = await supabase
           .from("profiles")
           .update({
@@ -144,7 +147,7 @@ export default function SettingsPage() {
              working_days: formWorkingDays,
              working_hours: formWorkingHours,
           } as any)
-          .eq("email", finalEmail as any);
+          .eq("id", editingMember.id as any);
 
         if (error) throw error;
 
@@ -163,8 +166,8 @@ export default function SettingsPage() {
         ));
         toast({ title: "Сотрудник обновлён" });
       } else {
-        // 1. Create user in Supabase Auth (without signing out current admin)
-        const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp({
+        // 1. Create user in Supabase Auth
+        const signUpPayload = {
           email: finalEmail,
           password: formPassword,
           options: {
@@ -174,15 +177,26 @@ export default function SettingsPage() {
               project_id: active?.id,
             }
           }
-        });
+        };
 
-        if (authError) throw authError;
-        if (!authRes.user) throw new Error("Не удалось создать пользователя");
+        const { data: authRes, error: authError } = await supabaseAdmin.auth.signUp(signUpPayload);
 
-        // 2. Profile update (REQUIRED: Run the SQL migration first!)
+        if (authError) {
+          console.error("Auth SignUp Error:", authError);
+          // Special handling for common errors
+          if (authError.message.includes("confirmation")) {
+            throw new Error("Нужно отключить 'Confirm Email' в настройках Supabase (Authentication -> Providers).");
+          }
+          throw authError;
+        }
+
+        if (!authRes.user) throw new Error("Не удалось инициализировать пользователя в Auth");
+
+        // 2. Profile update
         const { error: profError } = await supabase
           .from("profiles")
           .update({
+            full_name: formName,
             role: formRole,
             permissions: formPerms,
             specialty: formSpecialty,
@@ -193,42 +207,51 @@ export default function SettingsPage() {
           .eq("id", authRes.user.id as any);
 
         if (profError) {
-          console.error("Profile update failed:", profError);
-          toast({ 
-            title: "Ошибка обновления профиля", 
-            description: "Убедитесь, что миграция базы данных добавлена в Supabase SQL Editor.",
-            variant: "destructive"
-          });
+          console.error("Profile update failed (user created but profile update error):", profError);
+          // Don't throw, proceed to member link if possible
         }
 
         // 3. Link user to project
-        const { error: memberError } = await supabase
-          .from("project_members")
-          .insert({
-            user_id: authRes.user.id,
-            project_id: active?.id,
-          } as any);
+        if (active?.id) {
+          const { error: memberError } = await (supabase as any)
+            .from("project_members")
+            .upsert({
+              user_id: authRes.user.id,
+              project_id: active.id,
+              role: formRole
+            });
 
-        if (memberError) console.error("Project membership failed:", memberError);
+          if (memberError) console.error("Project membership link failed:", memberError);
+        }
 
         const newMember: TeamMember = {
           id: authRes.user.id,
-          name: formName, email: finalEmail, role: formRole,
-          status: "active", lastLogin: null, permissions: formPerms,
-          specialty: formSpecialty, office: formOffice, 
-          workingDays: formWorkingDays, workingHours: formWorkingHours,
+          name: formName, 
+          email: finalEmail, 
+          role: formRole,
+          status: "active", 
+          lastLogin: null, 
+          permissions: formPerms,
+          specialty: formSpecialty, 
+          office: formOffice, 
+          workingDays: formWorkingDays, 
+          workingHours: formWorkingHours,
         };
-        setTeam(prev => [...prev, newMember]);
         
-        // Final success
+        setTeam(prev => [...prev, newMember]);
         toast({ 
           title: "Сотрудник добавлен", 
-          description: `Аккаунт для ${cleanLogin} создан. Пришлите ему пароль: ${formPassword}` 
+          description: `Аккаунт для ${cleanLogin} готов. Пароль: ${formPassword}` 
         });
       }
       setSheetOpen(false);
     } catch (err: any) {
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+      console.error("Final handleSave Error:", err);
+      toast({ 
+        title: "Ошибка сохранения", 
+        description: err.message || "Попробуйте еще раз или проверьте консоль", 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
