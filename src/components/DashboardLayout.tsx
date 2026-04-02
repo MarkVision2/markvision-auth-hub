@@ -25,7 +25,7 @@ export default function DashboardLayout({ children, breadcrumb, noPadding }: Das
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      {!isDoctor && <AppSidebar />}
+      <AppSidebar />
 
       {/* Mobile drawer */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -38,16 +38,14 @@ export default function DashboardLayout({ children, breadcrumb, noPadding }: Das
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="h-14 shrink-0 flex items-center gap-3 px-4 md:px-6 border-b border-border/60 bg-card">
           {/* Mobile hamburger */}
-          {!isDoctor && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden h-10 w-10 shrink-0"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-10 w-10 shrink-0"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
 
           {breadcrumb ? (
             <span className="text-[13px] text-muted-foreground font-medium shrink-0 hidden sm:block">{breadcrumb}</span>

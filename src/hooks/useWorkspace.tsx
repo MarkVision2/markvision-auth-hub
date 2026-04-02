@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v8.0 - Final CRM sidebar and columns fix
+// Deployment Trigger: v9.0 - Sidebar visibility for all roles (including doctors)
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
