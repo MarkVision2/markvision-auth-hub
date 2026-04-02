@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v5.2 - Fixing schema alignment
+// Deployment Trigger: v6.0 - Full Aksisa & Webhook support
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
