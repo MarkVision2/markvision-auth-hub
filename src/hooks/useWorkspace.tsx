@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
+// Deployment Trigger: v5.2 - Fixing schema alignment
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
