@@ -60,6 +60,10 @@ export function useAiRopAudits() {
   useEffect(() => {
 
     async function fetch() {
+      if (!active) {
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         let query = (supabase as any).from("ai_rop_audits").select("*");
@@ -77,7 +81,7 @@ export function useAiRopAudits() {
       }
     }
     fetch();
-  }, [active.id]);
+  }, [active?.id]);
 
   return { audits, loading };
 }

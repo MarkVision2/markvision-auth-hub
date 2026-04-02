@@ -31,6 +31,10 @@ export function useAnalyticsData() {
 
   useEffect(() => {
     async function fetchAll() {
+      if (!active) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         // Define dates for aggregate fetch
@@ -159,7 +163,7 @@ export function useAnalyticsData() {
       }
     }
     fetchAll();
-  }, [active.id]);
+  }, [active?.id]);
 
   const derived = useMemo(() => {
     const hasDaily = dailyAgg.spend > 0 || dailyAgg.leads > 0;
