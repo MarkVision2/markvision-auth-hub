@@ -348,13 +348,22 @@ export default function Dashboard() {
     );
   }
 
-  const activeNonNull = active!;
+  // Still loading or active is null — show loading state
+  if (!active) {
+    return (
+      <DashboardLayout breadcrumb="Загрузка...">
+        <div className="flex items-center justify-center py-32">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  const matchedClient = !isAgency ? aggregateClientData(clients, activeNonNull.id, activeNonNull.name) : null;
-  const hqClients = clients.filter(c => c.project_id === activeNonNull.id && c.is_agency === false);
-  const matchedHqClient = aggregateClientData(hqClients, activeNonNull.id, activeNonNull.name);
+  const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
+  const hqClients = clients.filter(c => c.project_id === active.id && c.is_agency === false);
+  const matchedHqClient = aggregateClientData(hqClients, active.id, active.name);
 
-  const breadcrumb = isAgency ? "Штаб-квартира" : activeNonNull.name;
+  const breadcrumb = isAgency ? "Штаб-квартира" : active.name;
 
   const renderClientView = (targetClient: ClientMetric | null, projName: string) => (
     <>
