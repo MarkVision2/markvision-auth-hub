@@ -77,7 +77,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
       const { data: projectsData, error: projectsError } = await query;
       if (projectsError) {
-        console.error("Workspace Debug: Projects fetch error:", projectsError);
+        console.error("Workspace Debug: Projects fetch error! Details:", JSON.stringify(projectsError, null, 2));
+        console.dir(projectsError); // Detailed object inspection
         throw projectsError;
       }
 
