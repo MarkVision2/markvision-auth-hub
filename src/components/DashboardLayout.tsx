@@ -75,7 +75,7 @@ export default function DashboardLayout({ children, breadcrumb, noPadding }: Das
 
         </header>
 
-        <main key={active.id} className={cn("flex-1 overflow-y-auto", !noPadding && "p-4 md:p-6")}>
+        <main key={active?.id || "loading"} className={cn("flex-1 overflow-y-auto", !noPadding && "p-4 md:p-6")}>
           {children}
         </main>
       </div>
