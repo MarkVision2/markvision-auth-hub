@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v6.0 - Full Aksisa & Webhook support
+// Deployment Trigger: v7.0 - Fixed leads table, doctor list and meta integrations
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
