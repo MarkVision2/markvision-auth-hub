@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v7.0 - Fixed leads table, doctor list and meta integrations
+// Deployment Trigger: v8.0 - Final CRM sidebar and columns fix
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
