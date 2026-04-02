@@ -43,7 +43,7 @@ export default function ClientDatabase() {
       setLoading(false);
       return;
     }
-    const currentActiveId = active.id;
+    const currentActiveId = active?.id;
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
@@ -96,7 +96,7 @@ export default function ClientDatabase() {
     const currentActiveId = active.id;
     const ch = supabase
       .channel("client_db_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm", filter: `project_id=eq.${currentActiveId}` }, () => fetchClients())
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm", filter: `project_id=eq.${active?.id}` }, () => fetchClients())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [fetchClients, active?.id]);

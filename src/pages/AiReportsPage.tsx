@@ -159,7 +159,7 @@ export default function AiReportsPage() {
       }
     };
     load();
-  }, [active.id, selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
+  }, [active?.id, selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
 
   const cur = useMemo(() => {
     const sum = (key: keyof DailyRow) => curMetrics.reduce((s, r) => s + (Number(r[key]) || 0), 0);

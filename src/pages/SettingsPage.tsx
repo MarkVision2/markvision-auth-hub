@@ -171,7 +171,7 @@ export default function SettingsPage() {
             data: { 
               full_name: formName,
               role: formRole,
-              project_id: active.id,
+              project_id: active?.id,
             }
           }
         });
@@ -206,7 +206,7 @@ export default function SettingsPage() {
           .from("project_members")
           .insert({
             user_id: authRes.user.id,
-            project_id: active.id,
+            project_id: active?.id,
           } as any);
 
         if (memberError) console.error("Project membership failed:", memberError);

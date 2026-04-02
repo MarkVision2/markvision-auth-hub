@@ -359,9 +359,9 @@ export default function Dashboard() {
     );
   }
 
-  const matchedClient = !isAgency ? aggregateClientData(clients, active.id, active.name) : null;
-  const hqClients = clients.filter(c => c.project_id === active.id && c.is_agency === false);
-  const matchedHqClient = aggregateClientData(hqClients, active.id, active.name);
+  const matchedClient = (!isAgency && active) ? aggregateClientData(clients, active.id, active.name) : null;
+  const hqClients = active ? clients.filter(c => c.project_id === active.id && c.is_agency === false) : [];
+  const matchedHqClient = (active) ? aggregateClientData(hqClients, active.id, active.name) : null;
 
   const breadcrumb = isAgency ? "Штаб-квартира" : active.name;
 

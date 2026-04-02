@@ -55,7 +55,7 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
       status: form.status,
       doctor_name: form.doctor_name || null,
       office_name: form.office_name || null,
-      project_id: active.id,
+      project_id: active?.id,
     });
     setSaving(false);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }

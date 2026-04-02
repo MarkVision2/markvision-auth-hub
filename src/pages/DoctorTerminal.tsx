@@ -120,9 +120,8 @@ const DoctorTerminal = () => {
         password: formData.password,
         options: {
           data: { 
-            full_name: formData.name,
             role: "doctor",
-            project_id: active.id,
+            project_id: active?.id,
           }
         }
       });
@@ -159,7 +158,7 @@ const DoctorTerminal = () => {
         .from("project_members")
         .insert({
           user_id: authRes.user.id,
-          project_id: active.id,
+          project_id: active?.id,
         } as any);
 
       if (memberError) throw memberError;

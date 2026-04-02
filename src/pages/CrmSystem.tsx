@@ -60,9 +60,10 @@ export default function CrmSystem() {
     }
     let isMounted = true;
     const load = async () => {
+      if (!active) return;
       try {
         let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
-        query = query.eq("project_id", active.id);
+        query = query.eq("project_id", active?.id);
 
         const { data, error } = await query.order("created_at", { ascending: false });
         if (error) throw error;
@@ -82,7 +83,7 @@ export default function CrmSystem() {
       .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => load())
       .subscribe();
     return () => { isMounted = false; supabase.removeChannel(ch); };
-  }, [active.id]);
+  }, [active?.id]);
 
   const handleTaskGenerated = useCallback((task: AITask) => {
     setTasks(prev => [task, ...prev]);

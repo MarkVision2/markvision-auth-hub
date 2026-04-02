@@ -154,7 +154,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveId,
     createProject,
     refreshProjects,
-    isAgency: active?.type === "agency",
+    isAgency: !!active && active.type === "agency",
   }), [workspaces, active, createProject, refreshProjects]);
 
   return (

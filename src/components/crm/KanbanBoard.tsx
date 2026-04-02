@@ -191,12 +191,14 @@ export default function KanbanBoard() {
   const [scoreFilter, setScoreFilter] = useState("all");
 
   useEffect(() => {
+    if (!active) return;
     setStages(loadStages(active.id, activePipeline));
-  }, [active.id, activePipeline]);
+  }, [active?.id, activePipeline]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
+      if (!active) return;
       let query = (supabase as any).from("leads_crm").select("*");
       query = query.eq("project_id", active.id);
 
@@ -335,7 +337,7 @@ export default function KanbanBoard() {
 
   const handleSaveEdit = (e: React.FormEvent | React.MouseEvent, stageKey: string) => {
     e.stopPropagation();
-    if (!editValue.trim()) return;
+    if (!active) return;
     saveStageLabel(active.id, stageKey, editValue.trim(), activePipeline);
     setStages(prev => prev.map(s => s.key === stageKey ? { ...s, label: editValue.trim() } : s));
     setEditingStage(null);

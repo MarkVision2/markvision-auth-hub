@@ -193,6 +193,7 @@ export default function ScoreboardPage() {
 
 
   useEffect(() => {
+    if (!active) return;
     console.log("Scoreboard: active.id changed to:", active.id);
 
     async function fetchAccounts() {
@@ -202,23 +203,26 @@ export default function ScoreboardPage() {
           .eq("is_active", true)
           .eq("is_agency", false); // Only personal accounts for Scoreboard
 
+        if (!active) return;
+        const currentActiveId = active.id;
+
         // Strict project filtering (no HQ exception)
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")
           .select("client_config_id")
-          .eq("project_id", active.id);
+          .eq("project_id", currentActiveId);
         const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
         if (sharedCabIds.length > 0) {
-          query = query.or(`project_id.eq.${active.id},id.in.(${sharedCabIds.join(",")})`);
+          query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
         } else {
-          query = query.eq("project_id", active.id);
+          query = query.eq("project_id", currentActiveId);
         }
 
         const { data, error } = await query.order("client_name");
         if (error) throw error;
 
-        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts for project ${active.id}`, data);
+        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts for project ${currentActiveId}`, data);
 
         const accs = (data || []) as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
         setAccounts(accs);
@@ -252,7 +256,7 @@ export default function ScoreboardPage() {
     setRows([]);
 
     fetchAccounts();
-  }, [active.id]);
+  }, [active?.id]);
 
 
 
@@ -293,6 +297,7 @@ export default function ScoreboardPage() {
   // Fetch monthly plan
   const fetchPlan = useCallback(async () => {
     try {
+      if (!active) return;
       let query = (supabase as any).from("monthly_plans").select("*")
         .eq("project_id", active.id);
 
@@ -311,7 +316,7 @@ export default function ScoreboardPage() {
         setPlanValues({ ...EMPTY_PLAN });
       }
     } catch (err: any) { setPlanValues({ ...EMPTY_PLAN }); }
-  }, [monthYear, active.id]);
+  }, [monthYear, active?.id]);
 
   useEffect(() => { fetchDaily(); fetchPlan(); }, [fetchDaily, fetchPlan]);
 

@@ -48,6 +48,7 @@ const SchedulePage = () => {
         
         setIsLoading(true);
         try {
+            if (!active) return;
             const { data, error } = await (supabase as any)
                 .from("leads_crm")
                 .select("*")
