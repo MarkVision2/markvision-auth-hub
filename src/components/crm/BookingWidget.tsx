@@ -79,7 +79,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
         fetchBookedSlots();
     }, [doctor, date]);
 
-    const doctors = team.filter(m => m.role === "doctor");
+    const doctors = team.filter(m => m.role === "doctor" || m.role === "superadmin");
     const selectedDoctorObj = doctors.find(d => d.name === doctor);
 
     // Helper to generate time slots from "09:00 - 18:00"

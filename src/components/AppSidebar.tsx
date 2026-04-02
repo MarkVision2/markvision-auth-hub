@@ -43,14 +43,14 @@ interface NavGroup {
 const navGroups: NavGroup[] = [
   {
     label: "ГЛАВНОЕ",
-    roles: ["superadmin", "client_admin", "client_manager"],
+    roles: ["superadmin", "client_admin"],
     items: [
       { title: "Дашборд", path: "/dashboard", icon: LayoutDashboard, end: true, requiredPerm: "hq" },
     ],
   },
   {
     label: "МАРКЕТИНГ",
-    roles: ["superadmin", "client_admin", "client_manager"],
+    roles: ["superadmin", "client_admin"],
     items: [
       { title: "Управление рекламой", path: "/dashboard/target", icon: Target, requiredPerm: "ads" },
       { title: "Контент-Завод", path: "/content", icon: Wand2, requiredPerm: "content" },
@@ -71,7 +71,7 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "АНАЛИТИКА",
-    roles: ["superadmin", "client_admin", "client_manager"],
+    roles: ["superadmin", "client_admin"],
     items: [
       { title: "Сквозная аналитика", path: "/analytics", icon: Activity, requiredPerm: "analytics" },
       { title: "Таблица показателей", path: "/scoreboard", icon: TableProperties, requiredPerm: "scoreboard" },

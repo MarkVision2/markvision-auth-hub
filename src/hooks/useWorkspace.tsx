@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from "react";
-// Deployment Trigger: v9.0 - Sidebar visibility for all roles (including doctors)
+// Deployment Trigger: v10.0 - Full RBAC implementation (Manager vs Doctor vs Admin)
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
