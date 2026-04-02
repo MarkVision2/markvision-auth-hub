@@ -176,7 +176,7 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
 export default function KanbanBoard() {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
-  const [stages, setStages] = useState<CrmStage[]>([]);
+  const [stages, setStages] = useState<CrmStage[]>(loadStages(active?.id || "default", "main"));
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
