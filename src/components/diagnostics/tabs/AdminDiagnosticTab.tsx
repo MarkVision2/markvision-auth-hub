@@ -647,20 +647,20 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                 {/* STEP 2: Presentation & Payment Selection */}
                 {step === 2 && (
-                    <div className="animate-in fade-in slide-in-from-right-4 space-y-12 max-w-6xl mx-auto w-full">
+                    <div className="animate-in fade-in slide-in-from-right-4 space-y-8 max-w-6xl mx-auto w-full">
                         {/* 1. Diagnostic Value Proposition (The Package) */}
-                        <div className="space-y-6">
+                        <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <h3 className="text-sm font-black uppercase tracking-[0.3em] text-primary/60">ЧТО ВХОДИТ В ДИАГНОСТИКУ</h3>
-                                    <h2 className="text-3xl font-black uppercase tracking-tight text-foreground">Комплексное обследование</h2>
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary/60">ЧТО ВХОДИТ В ДИАГНОСТИКУ</h3>
+                                    <h2 className="text-2xl font-black uppercase tracking-tight text-foreground">Комплексное обследование</h2>
                                 </div>
-                                <div className="px-6 py-3 rounded-2xl bg-primary/10 border border-primary/20 backdrop-blur-md">
-                                    <span className="text-xs font-black text-primary uppercase tracking-widest">СТОИМОСТЬ: 9 900 ₸ </span>
+                                <div className="px-4 py-2 rounded-xl bg-primary/10 border border-primary/20 backdrop-blur-md">
+                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest">СТОИМОСТЬ: 9 900 ₸ </span>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 {[
                                     { icon: Stethoscope, title: "Терапевт", desc: "Общий осмотр, анамнез и давление." },
                                     { icon: Activity, title: "Реабилитолог", desc: "Тесты подвижности и позвоночника." },
@@ -668,16 +668,16 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                     { icon: Zap, title: "Процедура", desc: "Первый сеанс для снятия боли." },
                                     { icon: ClipboardList, title: "План лечения", desc: "Пошаговая стратегия восстановления." }
                                 ].map((item, i) => (
-                                    <div key={i} className="relative group p-6 rounded-[32px] bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-primary/30 transition-all duration-300">
-                                        <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/20 transition-all">
-                                            <item.icon className="h-6 w-6" />
+                                    <div key={i} className="relative group p-4 rounded-3xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] hover:border-primary/30 transition-all duration-300">
+                                        <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-primary/20 transition-all">
+                                            <item.icon className="h-5 w-5" />
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <h4 className="text-xs font-black text-foreground uppercase tracking-wider">{item.title}</h4>
-                                            <p className="text-[10px] text-muted-foreground font-medium leading-relaxed uppercase opacity-80">{item.desc}</p>
+                                        <div className="space-y-1">
+                                            <h4 className="text-[10px] font-black text-foreground uppercase tracking-wider">{item.title}</h4>
+                                            <p className="text-[9px] text-muted-foreground font-medium leading-relaxed uppercase opacity-80">{item.desc}</p>
                                         </div>
-                                        <div className="absolute top-4 right-4 h-4 w-4 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
-                                            <Check className="h-2.5 w-2.5 text-emerald-500" />
+                                        <div className="absolute top-3 right-3 h-3.5 w-3.5 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/40">
+                                            <Check className="h-2 w-2 text-emerald-500" />
                                         </div>
                                     </div>
                                 ))}
@@ -685,38 +685,38 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                         </div>
 
                         {/* 2. Prepayment Policy & Status Selection */}
-                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
                             {/* Left: Prepayment Details & Action Selection */}
-                            <div className="lg:col-span-3 space-y-8">
-                                <div className="p-8 rounded-[40px] bg-secondary/5 border border-white/5 space-y-6 relative overflow-hidden">
-                                    <div className="flex items-start gap-5 relative z-10">
-                                        <div className="h-14 w-14 rounded-3xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
-                                            <Info className="h-7 w-7" />
+                            <div className="lg:col-span-3 space-y-6">
+                                <div className="p-5 rounded-3xl bg-secondary/5 border border-white/5 space-y-4 relative overflow-hidden">
+                                    <div className="flex items-start gap-4 relative z-10">
+                                        <div className="h-10 w-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                                            <Info className="h-5 w-5" />
                                         </div>
-                                        <div className="space-y-2">
-                                            <h3 className="text-lg font-black uppercase tracking-tight">Политика бронирования</h3>
-                                            <p className="text-xs text-muted-foreground uppercase font-medium leading-relaxed tracking-wider opacity-70">
+                                        <div className="space-y-1">
+                                            <h3 className="text-base font-black uppercase tracking-tight">Политика бронирования</h3>
+                                            <p className="text-[10px] text-muted-foreground uppercase font-medium leading-normal tracking-wider opacity-70">
                                                 Для фиксации времени специалиста требуется гарантийный взнос <span className="text-foreground font-black">5 000 ₸</span>. 
-                                                Эта сумма <span className="text-emerald-500 font-black">вычитается из общей стоимости</span> диагностики при оплате в клинике.
-                                                Взнос возвращается при отмене записи за 24 часа.
+                                                Сумма <span className="text-emerald-500 font-black">вычитается из общей стоимости</span> при оплате в клинике.
+                                                Возвращается при отмене за 24 часа.
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                                    <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
                                 </div>
 
-                                <div className="space-y-4">
-                                    <Label className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 ml-4">ВЫБЕРИТЕ РЕЗУЛЬТАТ ЭТАПА</Label>
-                                    <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-3">
+                                    <Label className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 ml-4">ВЫБЕРИТЕ РЕЗУЛЬТАТ ЭТАПА</Label>
+                                    <div className="grid grid-cols-3 gap-3">
                                         {[
                                             { id: "pending", label: "Ожидание оплаты", desc: "В ожидании клика", icon: Clock,
-                                              selectedClass: "border-amber-500 bg-amber-500 shadow-2xl shadow-amber-500/40 text-white scale-[1.03]",
+                                              selectedClass: "border-amber-500 bg-amber-500 shadow-xl shadow-amber-500/40 text-white scale-[1.02]",
                                               iconBgClass: "bg-amber-500/10", iconColorClass: "text-amber-500" },
                                             { id: "paid", label: "Оплачено", desc: "Запись подтверждена", icon: CheckCircle2,
-                                              selectedClass: "border-emerald-500 bg-emerald-500 shadow-2xl shadow-emerald-500/40 text-white scale-[1.03]",
+                                              selectedClass: "border-emerald-500 bg-emerald-500 shadow-xl shadow-emerald-500/40 text-white scale-[1.02]",
                                               iconBgClass: "bg-emerald-500/10", iconColorClass: "text-emerald-500" },
                                             { id: "declined", label: "Отказ", desc: "Клиент отказался", icon: X,
-                                              selectedClass: "border-rose-500 bg-rose-500 shadow-2xl shadow-rose-500/40 text-white scale-[1.03]",
+                                              selectedClass: "border-rose-500 bg-rose-500 shadow-xl shadow-rose-500/40 text-white scale-[1.02]",
                                               iconBgClass: "bg-rose-500/10", iconColorClass: "text-rose-500" },
                                         ].map((item) => (
                                             <button
@@ -728,25 +728,25 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                     prepaymentAmount: item.id === "paid" ? "5000" : ""
                                                 })}
                                                 className={cn(
-                                                    "flex flex-col items-center justify-center gap-3 p-6 rounded-[32px] border-2 transition-all duration-300",
+                                                    "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border-2 transition-all duration-300",
                                                     formData.paymentStatus === item.id
                                                         ? item.selectedClass
                                                         : "border-white/5 bg-white/5 hover:bg-white/10 hover:border-white/20",
                                                 )}
                                             >
                                                 <div className={cn(
-                                                    "h-12 w-12 rounded-2xl flex items-center justify-center transition-colors duration-300",
+                                                    "h-10 w-10 rounded-xl flex items-center justify-center transition-colors duration-300",
                                                     formData.paymentStatus === item.id ? "bg-white/20" : item.iconBgClass
                                                 )}>
                                                     <item.icon className={cn(
-                                                        "h-6 w-6",
+                                                        "h-5 w-5",
                                                         formData.paymentStatus === item.id ? "text-white" : item.iconColorClass
                                                     )} />
                                                 </div>
                                                 <div className="text-center">
-                                                    <p className="text-[11px] font-black uppercase tracking-wider">{item.label}</p>
+                                                    <p className="text-[10px] font-black uppercase tracking-wider">{item.label}</p>
                                                     <p className={cn(
-                                                        "text-[9px] font-black uppercase tracking-widest opacity-40 mt-0.5",
+                                                        "text-[8px] font-black uppercase tracking-widest opacity-40 mt-0.5",
                                                         formData.paymentStatus === item.id ? "text-white/60" : "text-muted-foreground"
                                                     )}>{item.desc}</p>
                                                 </div>
@@ -760,32 +760,32 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             <div className="lg:col-span-2 space-y-6 min-h-[400px]">
                                 {/* CASE: PENDING (Default or Selected) */}
                                 {(formData.paymentStatus === "pending" || !formData.paymentStatus) && (
-                                    <div className="p-8 rounded-[40px] bg-primary shadow-2xl shadow-primary/20 space-y-8 animate-in zoom-in-95 duration-500 h-full flex flex-col justify-center">
+                                    <div className="p-6 rounded-3xl bg-primary shadow-2xl shadow-primary/20 space-y-6 animate-in zoom-in-95 duration-500 h-full flex flex-col justify-center">
                                         <div className="flex items-center gap-4">
-                                            <div className="h-14 w-14 rounded-3xl bg-white/10 flex items-center justify-center border border-white/20 backdrop-blur-md">
-                                                <Smartphone className="h-7 w-7 text-white" />
+                                            <div className="h-10 w-10 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 backdrop-blur-md">
+                                                <Smartphone className="h-5 w-5 text-white" />
                                             </div>
                                             <div>
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-white/60">КАСПИ СЧЕТ</span>
-                                                <h3 className="text-xl font-black uppercase tracking-tight text-white">Выбор оплаты</h3>
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-white/60">КАСПИ СЧЕТ</span>
+                                                <h3 className="text-lg font-black uppercase tracking-tight text-white">Выбор оплаты</h3>
                                             </div>
                                         </div>
                                         
-                                        <div className="space-y-5">
+                                        <div className="space-y-4">
                                             <div className="space-y-2">
-                                                <Label className="text-[10px] font-black tracking-widest text-white/60 ml-1 uppercase">ТЕЛЕФОН ДЛЯ СЧЕТА</Label>
+                                                <Label className="text-[9px] font-black tracking-widest text-white/60 ml-1 uppercase">ТЕЛЕФОН ДЛЯ СЧЕТА</Label>
                                                 <Input 
                                                     value={formData.invoicePhone}
                                                     onChange={e => setFormData({ ...formData, invoicePhone: e.target.value })}
                                                     placeholder="+7 (___) ___-__-__"
-                                                    className="h-14 bg-white/10 border-white/10 rounded-2xl px-6 text-white text-lg font-black placeholder:text-white/20 focus:ring-2 focus:ring-white/20"
+                                                    className="h-12 bg-white/10 border-white/10 rounded-xl px-4 text-white text-base font-black placeholder:text-white/20 focus:ring-2 focus:ring-white/20"
                                                 />
                                             </div>
                                             <Button 
-                                                className="w-full h-16 rounded-2xl gap-3 bg-white text-primary hover:bg-white/90 transition-all text-xs font-black uppercase tracking-widest shadow-xl shadow-black/10"
+                                                className="w-full h-12 rounded-xl gap-2 bg-white text-primary hover:bg-white/90 transition-all text-[10px] font-black uppercase tracking-widest shadow-xl shadow-black/10"
                                                 onClick={() => toast({ title: "СЧЕТ В ПУТИ", description: `Запрос на оплату отправлен на ${formData.invoicePhone}` })}
                                             >
-                                                <MessageSquare className="h-5 w-5" /> ОТПРАВИТЬ СЧЕТ
+                                                <MessageSquare className="h-4 w-4" /> ОТПРАВИТЬ СЧЕТ
                                             </Button>
                                         </div>
                                     </div>
@@ -793,27 +793,27 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                                 {/* CASE: REFUSAL REASONS */}
                                 {formData.paymentStatus === "declined" && (
-                                    <div className="p-8 rounded-[40px] bg-rose-500/10 border border-rose-500/20 space-y-6 animate-in slide-in-from-right-4 duration-500 h-full">
-                                        <div className="flex items-center gap-4 mb-4">
-                                            <div className="h-12 w-12 rounded-2xl bg-rose-500 text-white flex items-center justify-center">
-                                                <ShieldAlert className="h-6 w-6" />
+                                    <div className="p-6 rounded-3xl bg-rose-500/10 border border-rose-500/20 space-y-4 animate-in slide-in-from-right-4 duration-500 h-full">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="h-10 w-10 rounded-xl bg-rose-500 text-white flex items-center justify-center">
+                                                <ShieldAlert className="h-5 w-5" />
                                             </div>
-                                            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-rose-500">Причина отказа</h3>
+                                            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-rose-500">Причина отказа</h3>
                                         </div>
-                                        <div className="grid grid-cols-1 gap-2">
+                                        <div className="grid grid-cols-1 gap-1.5">
                                             {["Дорого", "Другой город", "Подумает", "Не сейчас", "Другое"].map(reason => (
                                                 <button
                                                     key={reason}
                                                     onClick={() => setFormData({ ...formData, refusalReason: reason })}
                                                     className={cn(
-                                                        "h-14 px-6 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between",
+                                                        "h-11 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-left flex items-center justify-between",
                                                         formData.refusalReason === reason 
                                                             ? "bg-rose-500 text-white" 
                                                             : "bg-rose-500/5 text-rose-600 hover:bg-rose-500/10 border border-rose-500/10"
                                                     )}
                                                 >
                                                     {reason}
-                                                    {formData.refusalReason === reason && <Check className="h-4 w-4" />}
+                                                    {formData.refusalReason === reason && <Check className="h-3.5 w-3.5" />}
                                                 </button>
                                             ))}
                                         </div>
@@ -822,7 +822,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                 placeholder="Укажите свою причину..."
                                                 value={formData.refusalReasonOther || ""}
                                                 onChange={e => setFormData({ ...formData, refusalReasonOther: e.target.value })}
-                                                className="bg-white/5 border-rose-500/30 rounded-2xl h-14 text-sm font-bold text-rose-500"
+                                                className="bg-white/5 border-rose-500/30 rounded-xl h-11 text-xs font-bold text-rose-500"
                                             />
                                         )}
                                     </div>
@@ -830,24 +830,24 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                                 {/* CASE: PAID (AMOUNT + BOOKING) */}
                                 {formData.paymentStatus === "paid" && (
-                                    <div className="p-8 rounded-[40px] bg-emerald-500/10 border border-emerald-500/20 space-y-8 animate-in slide-in-from-right-4 duration-500">
-                                        <div className="flex items-center justify-between border-b border-white/5 pb-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="h-12 w-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                                                    <CreditCard className="h-6 w-6" />
+                                    <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 space-y-6 animate-in slide-in-from-right-4 duration-500">
+                                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                                    <CreditCard className="h-5 w-5" />
                                                 </div>
                                                 <div className="space-y-0.5">
-                                                    <h3 className="text-sm font-black uppercase tracking-widest text-emerald-500">Оплата принята</h3>
-                                                    <p className="text-[10px] uppercase font-bold text-emerald-500/60 tracking-wider">Подтвердите сумму и выберите время</p>
+                                                    <h3 className="text-[11px] font-black uppercase tracking-widest text-emerald-500">Оплата принята</h3>
+                                                    <p className="text-[8px] uppercase font-bold text-emerald-500/60 tracking-wider">Подтвердите сумму и выберите время</p>
                                                 </div>
                                             </div>
-                                            <div className="w-32">
-                                                <Label className="text-[9px] uppercase font-black text-emerald-500 mb-1.5 block tracking-widest ml-1">СУММА (₸)</Label>
+                                            <div className="w-28">
+                                                <Label className="text-[8px] uppercase font-black text-emerald-500 mb-1 block tracking-widest ml-1">СУММА (₸)</Label>
                                                 <Input 
                                                     type="number"
                                                     value={formData.prepaymentAmount}
                                                     onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
-                                                    className="h-12 bg-white/10 border-emerald-500/30 font-black text-emerald-500 text-center rounded-xl text-lg focus:ring-emerald-500/20"
+                                                    className="h-11 bg-white/10 border-emerald-500/30 font-black text-emerald-500 text-center rounded-xl text-base focus:ring-emerald-500/20"
                                                 />
                                             </div>
                                         </div>
