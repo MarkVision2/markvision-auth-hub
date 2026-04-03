@@ -33,71 +33,113 @@ import {
 export interface Question {
     id: string;
     label: string;
-    type: "text" | "textarea" | "radio" | "checkbox";
+    type: "text" | "textarea" | "radio" | "checkbox" | "select";
     options?: { id: string; label: string }[];
     required?: boolean;
-    section?: string; // For compatibility with DoctorQuestion
+    section?: string;
 }
 
 export const DEFAULT_QUESTIONS: Question[] = [
     {
+        id: "source",
+        label: "Источник заявки",
+        type: "select",
+        options: [
+            { id: "ad", label: "реклама" },
+            { id: "site", label: "сайт" },
+            { id: "whatsapp", label: "WhatsApp" },
+            { id: "other", label: "другое" }
+        ],
+        required: true
+    },
+    {
         id: "complaints",
-        label: "Что именно вас сейчас беспокоит?",
+        label: "Жалобы пациента",
         type: "textarea",
         required: true
     },
     {
-        id: "pain_radiation",
-        label: "Боль куда-то отдает? Например в ногу, руку или плечо?",
-        type: "text",
-        required: true
+        id: "pain_location",
+        label: "Локализация боли",
+        type: "checkbox",
+        options: [
+            { id: "neck", label: "шея" },
+            { id: "shoulder", label: "плечо" },
+            { id: "elbow", label: "локоть" },
+            { id: "wrist", label: "запястье" },
+            { id: "thoracic", label: "грудной отдел" },
+            { id: "lower_back", label: "поясница" },
+            { id: "hip", label: "тазобедренный" },
+            { id: "knee", label: "колено" },
+            { id: "ankle", label: "голеностоп" }
+        ]
     },
     {
-        id: "pain_duration",
-        label: "Как давно появилась эта проблема?",
-        type: "text",
-        required: true
+        id: "problem_duration",
+        label: "Длительность проблемы",
+        type: "select",
+        options: [
+            { id: "days", label: "несколько дней" },
+            { id: "weeks", label: "несколько недель" },
+            { id: "months", label: "несколько месяцев" },
+            { id: "year_plus", label: "> года" }
+        ]
     },
     {
-        id: "pain_type",
-        label: "Боль постоянная или появляется периодически?",
-        type: "text",
-        required: true
+        id: "pain_character",
+        label: "Характер боли",
+        type: "checkbox",
+        options: [
+            { id: "aching", label: "ноющая" },
+            { id: "acute", label: "острая" },
+            { id: "shooting", label: "стреляющая" },
+            { id: "pulling", label: "тянущая" },
+            { id: "burning", label: "жгучая" }
+        ]
     },
     {
-        id: "morning_stiffness",
-        label: "Когда утром встаете, долго расходитесь или утром всё нормально?",
-        type: "text"
+        id: "pain_intensification",
+        label: "Когда усиливается",
+        type: "checkbox",
+        options: [
+            { id: "load", label: "при нагрузке" },
+            { id: "movement", label: "при движении" },
+            { id: "after_sleep", label: "после сна" },
+            { id: "evening", label: "к вечеру" },
+            { id: "constant", label: "постоянно" }
+        ]
     },
     {
-        id: "pain_timing",
-        label: "Когда боль проявляется сильнее: утром или ближе к вечеру после рабочего дня?",
-        type: "text"
-    },
-    {
-        id: "cramps_spasms",
-        label: "Есть ли судороги или спазмы в мышцах?",
-        type: "text"
-    },
-    {
-        id: "pain_intensity",
-        label: "Насколько сильная боль по шкале от 1 до 10?",
-        type: "text"
+        id: "movement_restriction",
+        label: "Ограничение движения",
+        type: "select",
+        options: [
+            { id: "yes", label: "да" },
+            { id: "no", label: "нет" }
+        ]
     },
     {
         id: "previous_treatment",
-        label: "Пробовали ли вы уже как-то лечить эту проблему? Например: массаж, таблетки, уколы, физиотерапию?",
-        type: "textarea"
+        label: "Предыдущее лечение",
+        type: "checkbox",
+        options: [
+            { id: "meds", label: "медикаменты" },
+            { id: "massage", label: "массаж" },
+            { id: "physio", label: "физиотерапия" },
+            { id: "manual", label: "мануальная терапия" },
+            { id: "lfc", label: "ЛФК" }
+        ]
     },
     {
-        id: "previous_doctors",
-        label: "Обращались ли ранее к врачам с этой проблемой? Если да, какой диагноз вам ставили?",
-        type: "textarea"
-    },
-    {
-        id: "mri_ct_xray",
-        label: "Делали ли МРТ, КТ или рентген позвоночника? Если делали — есть ли результаты на руках?",
-        type: "text"
+        id: "chronic_diseases",
+        label: "Хронические заболевания",
+        type: "checkbox",
+        options: [
+            { id: "hypertension", label: "гипертония" },
+            { id: "diabetes", label: "диабет" },
+            { id: "arthritis", label: "артрит/артроз" },
+            { id: "osteochondrosis", label: "остеохондроз" }
+        ]
     }
 ];
 
@@ -584,6 +626,26 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                             }}
                                                             disabled={readOnly}
                                                         />
+                                                    ) : q.type === "select" && q.options ? (
+                                                        <Select 
+                                                            value={formData.answers[q.id] || ""} 
+                                                            onValueChange={(val) => {
+                                                                setFormData({ ...formData, answers: { ...formData.answers, [q.id]: val } });
+                                                                if (isMissing) setAttemptedNext(false);
+                                                            }}
+                                                            disabled={readOnly}
+                                                        >
+                                                            <SelectTrigger className="h-14 bg-secondary/5 border-none rounded-2xl px-6 text-[11px] font-black uppercase tracking-widest focus:ring-1 shadow-inner transition-all">
+                                                                <SelectValue placeholder="ВЫБЕРИТЕ ВАРИАНТ..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="rounded-2xl border-border/40">
+                                                                {q.options.map((opt) => (
+                                                                    <SelectItem key={opt.id} value={opt.id} className="rounded-xl text-[11px] font-black uppercase tracking-widest">
+                                                                        {opt.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     ) : (q.type === "radio" || q.type === "checkbox") && q.options ? (
                                                         <div className="flex flex-wrap gap-2">
                                                             {q.options.map((opt) => {

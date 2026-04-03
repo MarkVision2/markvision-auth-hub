@@ -3,9 +3,9 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { Lead } from "../../crm/KanbanBoard";
 import { AdminFormData, Question } from "../tabs/AdminDiagnosticTab";
-import { DoctorFormData, DoctorQuestion } from "../tabs/DoctorDiagnosticTab";
-import { PrescriptionFormData } from "../tabs/PrescriptionTab";
-import { InteractiveBodyMap } from "./InteractiveBodyMap";
+import { TherapistFormData, TherapistQuestion } from "../tabs/TherapistDiagnosticTab";
+import { RehabFormData } from "../tabs/RehabDiagnosticTab";
+import { TreatmentPlanFormData } from "../tabs/TreatmentPlanTab";
 
 export interface DiagnosticPdfExportRef {
     generatePdf: () => Promise<void>;
@@ -14,14 +14,15 @@ export interface DiagnosticPdfExportRef {
 interface Props {
     lead: Lead;
     adminData: AdminFormData | null;
-    doctorData: DoctorFormData | null;
-    prescriptionData: PrescriptionFormData | null;
+    therapistData: TherapistFormData | null;
+    rehabData: RehabFormData | null;
+    treatmentPlanData: TreatmentPlanFormData | null;
     adminQuestions?: Question[];
-    doctorQuestions?: DoctorQuestion[];
+    therapistQuestions?: TherapistQuestion[];
 }
 
 export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({ 
-    lead, adminData, doctorData, prescriptionData, adminQuestions = [], doctorQuestions = [] 
+    lead, adminData, therapistData, rehabData, treatmentPlanData, adminQuestions = [], therapistQuestions = [] 
 }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,8 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({
 
             for (let i = 0; i < pages.length; i++) {
                 const page = pages[i] as HTMLElement;
+                // Temporary remove hidden class for capture
+                page.style.display = 'block';
                 const canvas = await html2canvas(page, { scale: 2, useCORS: true });
                 const imgData = canvas.toDataURL("image/png");
                 
@@ -42,12 +45,12 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({
                 if (i > 0) pdf.addPage();
                 pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
             }
-            pdf.save(`Диагностика_${lead.name}_${new Date().toLocaleDateString()}.pdf`);
+            pdf.save(`Консилиум_${lead.name}_${new Date().toLocaleDateString()}.pdf`);
         }
     }));
 
     const renderDynamicAnswers = (questions: any[], answers: Record<string, any>) => {
-        if (!questions.length) return null;
+        if (!questions.length) return <p className="text-gray-400 italic text-xs">Нет данных</p>;
         return (
             <div className="grid grid-cols-1 gap-y-3 mt-4">
                 {questions.map(q => {
@@ -55,8 +58,8 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({
                     if (!val) return null;
                     return (
                         <div key={q.id} className="border-b border-gray-100 pb-2">
-                            <p className="text-[10px] text-muted-foreground uppercase font-bold">{q.label}</p>
-                            <p className="text-sm font-medium whitespace-pre-wrap">{Array.isArray(val) ? val.join(", ") : val}</p>
+                            <p className="text-[9px] text-gray-500 uppercase font-black tracking-widest">{q.label}</p>
+                            <p className="text-sm font-bold whitespace-pre-wrap">{Array.isArray(val) ? val.join(", ") : val}</p>
                         </div>
                     );
                 })}
@@ -67,129 +70,144 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({
     return (
         <div ref={containerRef} className="bg-white">
             
-            {/* Страница 1: Анкета Администратора */}
-            <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
-                <div className="border-b-2 border-primary/20 pb-4 mb-6 flex justify-between items-end">
+            {/* Страница 1: Админ + Терапевт */}
+            <div className="pdf-page w-[794px] min-h-[1123px] p-12 bg-white text-black text-sm relative box-border">
+                <div className="border-b-4 border-[#0060cf] pb-6 mb-8 flex justify-between items-end">
                     <div>
-                        <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Первичная Диагностика</h1>
-                        <p className="text-muted-foreground mt-1">Отделение приема и регистрации</p>
+                        <h1 className="text-3xl font-black uppercase tracking-tighter text-[#0060cf]">Diagnostic Report</h1>
+                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">Medical Case & Examination</p>
                     </div>
                     <div className="text-right">
-                        <p className="font-bold">{lead.name}</p>
-                        <p className="text-muted-foreground">{lead.phone}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{new Date().toLocaleDateString()}</p>
+                        <p className="text-xl font-black">{lead.name}</p>
+                        <p className="text-gray-500 font-bold">{lead.phone}</p>
+                        <p className="text-[10px] font-black text-[#0060cf] mt-2 bg-blue-50 px-3 py-1 rounded-full uppercase tracking-widest inline-block">ID: {lead.id.slice(0, 8)}</p>
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Ответы на вопросы</h3>
+                <div className="space-y-10">
+                    {/* Stage 1: Admin */}
+                    <div className="bg-gray-50 p-6 rounded-[32px] border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-2 w-8 bg-[#0060cf] rounded-full" />
+                            <h3 className="text-sm font-black uppercase tracking-widest">Этап 1: Первичная регистрация</h3>
+                        </div>
                         {renderDynamicAnswers(adminQuestions, adminData?.answers || {})}
+                        {adminData?.adminComment && (
+                            <div className="mt-4 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-xl italic text-xs font-bold">
+                                "{adminData.adminComment}"
+                            </div>
+                        )}
                     </div>
                     
-                    <div className="mt-8 border-t pt-4">
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Запись и оплата</h3>
-                        <p>Назначено на: <strong>{adminData?.bookingDate?.toLocaleDateString()} в {adminData?.bookingTime}</strong></p>
-                        <p>Врач: <strong>{adminData?.bookingDoctor}</strong></p>
-                        <p>Статус оплаты: <strong>{adminData?.paymentStatus === "paid" ? "Оплачено" : "Ожидается"}</strong></p>
-                        {adminData?.prepaymentAmount && <p>Сумма: <strong>{adminData.prepaymentAmount} ₸</strong></p>}
-                        <p className="mt-2 text-xs text-muted-foreground">Комментарий админа: {adminData?.adminComment}</p>
+                    {/* Stage 2: Therapist */}
+                    <div className="p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-2 w-8 bg-emerald-500 rounded-full" />
+                            <h3 className="text-sm font-black uppercase tracking-widest">Этап 2: Осмотр терапевта</h3>
+                        </div>
+                        {renderDynamicAnswers(therapistQuestions, therapistData?.answers || {})}
                     </div>
                 </div>
                 
-                <div className="absolute bottom-10 left-10 right-10 flex justify-between text-xs text-muted-foreground border-t pt-4">
-                    <p>Подпись администратора _________________</p>
-                    <p>Страница 1 из 3</p>
+                <div className="absolute bottom-10 left-12 right-12 flex justify-between text-[10px] font-black text-gray-300 uppercase tracking-widest border-t pt-6">
+                    <p>Signature _________________</p>
+                    <p>Page 01 // 02</p>
                 </div>
             </div>
 
-            {/* Страница 2: Анкета Врача */}
-            <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
-                <div className="border-b-2 border-primary/20 pb-4 mb-6">
-                    <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Заключение Врача</h1>
-                    <p className="text-muted-foreground mt-1">Осмотр и предварительный диагноз</p>
-                </div>
-
-                <div className="space-y-6">
+            {/* Страница 2: Реабилитолог + План */}
+            <div className="pdf-page w-[794px] min-h-[1123px] p-12 bg-white text-black text-sm relative box-border">
+                <div className="border-b-4 border-[#0060cf] pb-6 mb-8 flex justify-between items-end">
                     <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Данные осмотра</h3>
-                        {renderDynamicAnswers(doctorQuestions, doctorData?.answers || {})}
+                        <h1 className="text-2xl font-black uppercase tracking-tighter text-[#0060cf]">Recovery Plan</h1>
+                        <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px] mt-1">Functional Assessment & Strategy</p>
                     </div>
+                </div>
 
-                    <div className="mt-8 border-t pt-6">
-                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl mb-6">
-                            <h3 className="text-sm font-bold uppercase text-[#0060cf] mb-1">Рекомендация врача</h3>
-                            <p className="font-bold text-lg">{doctorData?.recommendedCourse || "Не установлена"}</p>
+                <div className="space-y-10">
+                    {/* Stage 3: Rehab */}
+                    <div className="bg-gray-50 p-6 rounded-[32px] border border-gray-100">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-2 w-8 bg-indigo-500 rounded-full" />
+                            <h3 className="text-sm font-black uppercase tracking-widest">Этап 3: Тесты реабилитолога</h3>
                         </div>
-                        <p>Готовность пациента: <strong>{
-                            doctorData?.readiness === "ready" ? "✅ Готов начать" : 
-                            doctorData?.readiness === "thinking" ? "🤔 Думает" : "❌ Не готов"
-                        }</strong></p>
-                        {doctorData?.refusalReason && <p>Причина отказа: <strong>{doctorData.refusalReason}</strong></p>}
+                        {rehabData ? (
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Мобильность</p>
+                                    <p className="text-sm font-bold">Суставы: {rehabData.mobility_joints} / 10</p>
+                                    <p className="text-sm font-bold">Осанка: {rehabData.mobility_posture} / 10</p>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Боль / Нагрузка</p>
+                                    <p className="text-sm font-bold">Боль при нагрузке: {rehabData.pain_on_load} / 10</p>
+                                    <p className="text-sm font-bold">Стабильность: {rehabData.muscle_stabilization}</p>
+                                </div>
+                                <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
+                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Противопоказания</p>
+                                    <p className="text-sm font-bold text-rose-600">{rehabData.rehab_contraindications || "Нет"}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 italic text-xs">Данные отсутствуют</p>
+                        )}
                     </div>
-                </div>
 
-                <div className="absolute bottom-10 left-10 right-10 flex justify-between text-xs text-muted-foreground border-t pt-4">
-                    <p>Подпись врача _________________</p>
-                    <p>Страница 2 из 3</p>
-                </div>
-            </div>
-
-            {/* Страница 3: Лист назначения */}
-            <div className="pdf-page w-[794px] min-h-[1123px] p-10 bg-white text-black text-sm relative box-border">
-                <div className="border-b-2 border-primary/20 pb-4 mb-6 text-center">
-                    <h1 className="text-2xl font-bold uppercase tracking-wider text-[#0060cf]">Лист Назначения</h1>
-                    <p className="text-muted-foreground mt-1">План лечения пациента {lead.name}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                    <div>
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-4">Зоны лечения</h3>
-                        <div className="w-full h-auto">
-                            <InteractiveBodyMap selectedZones={prescriptionData?.selectedZones || []} onToggleZone={() => {}} isPrint={true} />
+                    {/* Stage 4: Treatment Plan */}
+                    <div className="p-6 bg-[#0060cf]/5 rounded-[32px] border border-[#0060cf]/10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="h-2 w-8 bg-[#0060cf] rounded-full" />
+                            <h3 className="text-sm font-black uppercase tracking-widest">Этап 4: План лечения</h3>
                         </div>
-                    </div>
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-2">Детали курса</h3>
-                        <p>Старт: <strong>{prescriptionData?.startDate}</strong></p>
-                        <p>Врач: <strong>{prescriptionData?.doctorName}</strong></p>
-                        <p>Пакет: <strong>{doctorData?.recommendedCourse || "—"}</strong></p>
+                        {treatmentPlanData ? (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-[9px] text-gray-500 uppercase font-bold">Курс лечения</p>
+                                            <p className="text-lg font-black text-[#0060cf]">{treatmentPlanData.course || "—"}</p>
+                                        </div>
+                                        <div className="flex gap-10">
+                                            <div>
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold">Занятий</p>
+                                                <p className="text-sm font-black">{treatmentPlanData.count}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[9px] text-gray-500 uppercase font-bold">Старт</p>
+                                                <p className="text-sm font-black">{treatmentPlanData.startDate}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <p className="text-[9px] text-gray-500 uppercase font-bold">График</p>
+                                            <p className="text-sm font-bold whitespace-pre-wrap">{treatmentPlanData.schedule || "По договоренности"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] text-gray-500 uppercase font-bold">Специалист</p>
+                                            <p className="text-sm font-black">{treatmentPlanData.specialist || "—"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-4 pt-6 border-t border-blue-100">
+                                    <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest mb-2">Итоговое заключение консилиума</p>
+                                    <p className="text-sm font-bold leading-relaxed">{treatmentPlanData.finalConclusion || "Рекомендовано наблюдение и выполнение назначенного курса."}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className="text-gray-400 italic text-xs">План не сформирован</p>
+                        )}
                     </div>
                 </div>
 
-                <div className="mt-8">
-                    <h3 className="text-sm font-bold bg-secondary/20 p-2 rounded mb-4">Расписание визитов</h3>
-                    <table className="w-full text-left border-collapse border border-gray-200">
-                        <thead className="bg-gray-100">
-                            <tr>
-                                <th className="border p-2 w-10 text-center">№</th>
-                                <th className="border p-2">Дата</th>
-                                <th className="border p-2">Время</th>
-                                <th className="border p-2">Процедура</th>
-                                <th className="border p-2 w-16 text-center">Каб.</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {(prescriptionData?.schedule || []).map((row, i) => (
-                                <tr key={i}>
-                                    <td className="border p-2 text-center text-gray-500">{i + 1}</td>
-                                    <td className="border p-2">{row.date}</td>
-                                    <td className="border p-2">{row.time}</td>
-                                    <td className="border p-2">{row.procedure}</td>
-                                    <td className="border p-2 text-center">{row.room}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div className="absolute bottom-20 left-10 space-y-4 text-xs">
+                <div className="absolute bottom-20 left-12 space-y-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-l-2 border-gray-100 pl-6">
                     <p>С планом лечения ознакомлен, противопоказаний не имею.</p>
-                    <p>Подпись пациента _________________</p>
+                    <p>Пациент: _________________ / {lead.name} /</p>
                 </div>
-                <div className="absolute bottom-10 left-10 right-10 flex justify-between text-xs text-muted-foreground border-t pt-4">
-                    <p>Лечащий врач _________________</p>
-                    <p>Страница 3 из 3</p>
+                
+                <div className="absolute bottom-10 left-12 right-12 flex justify-between text-[10px] font-black text-gray-300 uppercase tracking-widest border-t pt-6">
+                    <p>Physician Signature _________________</p>
+                    <p>Page 02 // 02</p>
                 </div>
             </div>
 
