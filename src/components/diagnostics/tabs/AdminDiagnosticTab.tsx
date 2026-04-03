@@ -8,12 +8,15 @@ import {
     Check, Calendar, ClipboardList, Loader2,
     X, CreditCard, CheckCircle2, 
     Edit2, Trash2, Plus, GripVertical, ChevronUp, ChevronDown, 
-    Stethoscope, Activity, FileSearch, Zap, ArrowRight
+    Stethoscope, Activity, FileSearch, Zap, ArrowRight, User, DoorOpen
 } from "lucide-react";
 import { Lead } from "../../crm/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookingWidget } from "../../crm/BookingWidget";
+import { format } from "date-fns";
+import { ru } from "date-fns/locale";
 
 export interface Question {
     id: string;
@@ -89,6 +92,7 @@ export interface AdminFormData {
     bookingDate?: Date;
     bookingTime?: string;
     bookingDoctor?: string;
+    bookingCabinet?: string;
     adminComment: string;
     paymentMethod: string;
     paymentStatus: "pending" | "paid" | "declined";
@@ -219,8 +223,8 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         answers: {},
         adminComment: "",
         paymentMethod: "Kaspi",
-        paymentStatus: "pending",
-        prepaymentAmount: "",
+        paymentStatus: lead.status === "Записан" ? "paid" : "pending",
+        prepaymentAmount: lead.amount ? String(lead.amount) : "15000",
         refusalReason: "",
         confirmed: false,
         finalFio: lead.name || "",
@@ -231,7 +235,10 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         painDuration: "",
         painType: "",
         painIntensity: "",
-        previousTreatment: ""
+        previousTreatment: "",
+        bookingDoctor: lead.doctor_name || "",
+        bookingCabinet: "",
+        bookingDate: lead.scheduled_at ? new Date(lead.scheduled_at) : undefined,
     });
 
     useEffect(() => {
@@ -261,6 +268,16 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                 return false;
             }
         }
+        if (currentStep === 2) {
+            if (!formData.bookingDate || !formData.bookingTime || !formData.bookingDoctor) {
+                toast({ 
+                    title: "Запись не зафиксирована", 
+                    description: "Выберите дату, время и врача для проведения диагностики", 
+                    variant: "destructive" 
+                });
+                return false;
+            }
+        }
         return true;
     };
 
@@ -278,7 +295,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                             {step > s ? <Check className="h-6 w-6" /> : s}
                         </div>
                         <span className={cn("text-[9px] font-black uppercase tracking-widest", step === s ? "text-primary" : "text-muted-foreground/40")}>
-                            Шаг {s}
+                            {s === 1 ? "Анкета" : s === 2 ? "Запись и Продажа" : "Готовность"}
                         </span>
                     </div>
                 ))}
@@ -288,7 +305,7 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                 <div className="space-y-6">
                     <div className="flex items-center justify-between pb-4">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-black uppercase tracking-tight">Анкетирование пациента</h2>
+                            <h2 className="text-xl font-black uppercase tracking-tight text-foreground">Анкетирование пациента</h2>
                             <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">Слушайте пациента, заполняйте карту</p>
                         </div>
                         {canManageQuestions && (
@@ -403,64 +420,154 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                     <div className="flex justify-end pt-8">
                         <Button onClick={() => validateStage(1) && setStep(2)} className="h-16 px-12 rounded-3xl font-black text-xs uppercase tracking-widest bg-primary shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                            Далее: Презентация <ArrowRight className="ml-3 h-5 w-5" />
+                            Далее: Фиксация записи <ArrowRight className="ml-3 h-5 w-5" />
                         </Button>
                     </div>
                 </div>
             )}
 
             {step === 2 && (
-                <div className="space-y-8">
-                    {/* Placeholder for Step 2 content: Presentation & Payment */}
-                    <div className="p-12 bg-card border border-border/30 rounded-[40px] text-center space-y-4">
-                        <h2 className="text-2xl font-black uppercase">Презентация и условия</h2>
-                        <p className="text-muted-foreground">Здесь будет выбор метода оплаты и подтверждение записи...</p>
-                        <Select 
-                            value={formData.paymentStatus} 
-                            onValueChange={(val: any) => setFormData({ ...formData, paymentStatus: val })}
-                        >
-                            <SelectTrigger className="h-14 bg-secondary/10 border-none rounded-2xl px-6 max-w-sm mx-auto">
-                                <SelectValue placeholder="Статус оплаты" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[155]">
-                                <SelectItem value="pending">Ожидание</SelectItem>
-                                <SelectItem value="paid">Оплачено</SelectItem>
-                                <SelectItem value="declined">Отказ</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {formData.paymentStatus === "declined" && (
-                            <div className="max-w-sm mx-auto pt-4">
-                                <Textarea 
-                                    className="bg-secondary/10 border-none rounded-2xl p-6"
-                                    placeholder="Причина отказа..."
-                                    value={formData.refusalReason}
-                                    onChange={e => setFormData({ ...formData, refusalReason: e.target.value })}
-                                />
+                <div className="space-y-8 animate-in slide-in-from-right-10 duration-500">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Booking Widget Column */}
+                        <div className="bg-card border border-border/40 rounded-[40px] p-8 shadow-sm space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                                    <Calendar className="h-5 w-5" />
+                                </div>
+                                <h2 className="text-sm font-black uppercase tracking-widest">Запись на диагностику</h2>
                             </div>
-                        )}
-                        <div className="flex justify-center gap-4 pt-8">
-                            <Button variant="ghost" onClick={() => setStep(1)} className="h-14 px-8 rounded-2xl uppercase font-black text-[10px]">Назад</Button>
-                            <Button onClick={() => setStep(3)} className="h-14 px-12 rounded-2xl uppercase font-black text-[10px]">Далее</Button>
+                            
+                            <BookingWidget 
+                                selectedDate={formData.bookingDate}
+                                selectedTime={formData.bookingTime}
+                                selectedDoctor={formData.bookingDoctor}
+                                onBookingChange={(b) => setFormData({
+                                    ...formData,
+                                    bookingDate: b.date,
+                                    bookingTime: b.time,
+                                    bookingDoctor: b.doctor,
+                                    bookingCabinet: b.cabinet
+                                })}
+                            />
                         </div>
+
+                        {/* Payment & Conditions Column */}
+                        <div className="space-y-8">
+                            <div className="bg-card border border-border/40 rounded-[40px] p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                                        <CreditCard className="h-5 w-5" />
+                                    </div>
+                                    <h2 className="text-sm font-black uppercase tracking-widest">Оплата и финансы</h2>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Стоимость диагностики (₸)</Label>
+                                        <Input 
+                                            type="number"
+                                            className="h-14 bg-secondary/5 border-border/40 rounded-2xl text-xl font-black px-6"
+                                            value={formData.prepaymentAmount}
+                                            onChange={e => setFormData({ ...formData, prepaymentAmount: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <Label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Статус оплаты</Label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={() => setFormData({ ...formData, paymentStatus: "paid" })}
+                                                className={cn(
+                                                    "h-14 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                                                    formData.paymentStatus === "paid" 
+                                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                                        : "bg-transparent border-white/5 text-muted-foreground/40 hover:border-emerald-500/30"
+                                                )}
+                                            >
+                                                Оплачено
+                                            </button>
+                                            <button
+                                                onClick={() => setFormData({ ...formData, paymentStatus: "pending" })}
+                                                className={cn(
+                                                    "h-14 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                                                    formData.paymentStatus === "pending" 
+                                                        ? "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20" 
+                                                        : "bg-transparent border-white/5 text-muted-foreground/40 hover:border-amber-500/30"
+                                                )}
+                                            >
+                                                Лист ожидания
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-border/40">
+                                        <Textarea 
+                                            placeholder="Внутренний комментарий администратора..."
+                                            className="min-h-[100px] bg-secondary/5 border-border/40 rounded-[24px] p-5 text-xs font-bold"
+                                            value={formData.adminComment}
+                                            onChange={e => setFormData({ ...formData, adminComment: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info Block */}
+                            <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10 flex items-start gap-4">
+                                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                    <Zap className="h-5 w-5" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">Важно</p>
+                                    <p className="text-[11px] font-bold text-muted-foreground leading-relaxed">
+                                        После завершения заявка перейдет в статус "ЗАПИСАН" и появится в терминале врача для проведения диагностики.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-4 pt-4">
+                        <Button variant="ghost" onClick={() => setStep(1)} className="h-16 px-10 rounded-3xl uppercase font-black text-[10px] tracking-widest">Назад</Button>
+                        <Button onClick={() => validateStage(2) && setStep(3)} className="h-16 px-14 rounded-3xl font-black text-xs uppercase tracking-[0.2em] bg-primary shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                            Зафиксировать диагностику <ArrowRight className="ml-3 h-5 w-5" />
+                        </Button>
                     </div>
                 </div>
             )}
 
             {step === 3 && (
-                <div className="space-y-8">
-                    {/* Placeholder for Step 3 content: Completion */}
-                    <div className="p-12 bg-emerald-500/5 border border-emerald-500/10 rounded-[40px] text-center space-y-6">
-                        <div className="h-20 w-20 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Check className="h-10 w-10" />
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                    <div className="p-12 bg-emerald-500/5 border border-emerald-500/10 rounded-[50px] text-center space-y-6 max-w-2xl mx-auto shadow-2xl">
+                        <div className="h-24 w-24 bg-emerald-500/20 text-emerald-500 rounded-[32px] flex items-center justify-center mx-auto mb-4 border-2 border-emerald-500/20 shadow-inner">
+                            <Check className="h-12 w-12" />
                         </div>
-                        <h2 className="text-2xl font-black uppercase tracking-tight">Все готово!</h2>
-                        <p className="text-muted-foreground max-w-md mx-auto uppercase text-[10px] font-bold tracking-widest leading-relaxed">
-                            Данные пациента сохранены. Теперь можно переходить к осмотру терапевта.
-                        </p>
-                        <div className="flex justify-center gap-4 pt-4">
-                            <Button variant="ghost" onClick={() => setStep(2)} className="h-14 px-8 rounded-2xl uppercase font-black text-[10px]">Назад</Button>
-                            <Button onClick={() => { if (onSave) onSave(); onNext(); }} className="h-16 px-16 rounded-[28px] uppercase font-black text-xs tracking-[0.2em] bg-emerald-500 text-white shadow-xl shadow-emerald-500/30">
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-black uppercase tracking-tight text-foreground">Диагностика продана</h2>
+                            <p className="text-emerald-600 font-bold uppercase text-[10px] tracking-[0.3em]">Patient is ready for examination</p>
+                        </div>
+                        
+                        <div className="p-8 bg-white/50 dark:bg-card border border-white/20 rounded-[32px] space-y-4 text-left">
+                            <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-800">
+                                <span className="text-[10px] font-black uppercase text-muted-foreground">Врач</span>
+                                <span className="text-sm font-black">{formData.bookingDoctor}</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-3 border-b border-gray-100 dark:border-gray-800">
+                                <span className="text-[10px] font-black uppercase text-muted-foreground">Дата и время</span>
+                                <span className="text-sm font-black">{formData.bookingDate ? format(formData.bookingDate, "dd.MM.yyyy") : "—"} в {formData.bookingTime}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase text-muted-foreground">Стоимость</span>
+                                <span className="text-sm font-black text-emerald-600">{formData.prepaymentAmount} ₸</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 pt-6">
+                            <Button onClick={() => { if (onSave) onSave(); onNext(); }} className="h-20 w-full rounded-[32px] uppercase font-black text-xs tracking-[0.2em] bg-emerald-500 text-white shadow-2xl shadow-emerald-500/30 hover:scale-[1.02] transition-all">
                                 Завершить и передать врачу
+                            </Button>
+                            <Button variant="ghost" onClick={() => setStep(2)} className="h-12 uppercase font-black text-[9px] tracking-widest text-muted-foreground">
+                                Вернуться и отредактировать
                             </Button>
                         </div>
                     </div>

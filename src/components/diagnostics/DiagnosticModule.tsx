@@ -176,6 +176,8 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                     const scheduledAt = new Date(adminData.bookingDate);
                     scheduledAt.setHours(h, m, 0, 0);
                     updateData.scheduled_at = scheduledAt.toISOString();
+                    updateData.doctor_name = adminData.bookingDoctor;
+                    updateData.cabinet = adminData.bookingCabinet;
                 }
                 
                 updateData.name = adminData.finalFio || lead.name;
