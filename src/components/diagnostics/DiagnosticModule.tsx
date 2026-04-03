@@ -254,7 +254,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none relative !fixed !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 z-40">
+            <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none relative !fixed !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 z-[60]">
                 <DialogHeader className="sr-only">
                     <DialogTitle>Диагностический модуль v2.0</DialogTitle>
                     <DialogDescription>4-этапный рабочий процесс: Админ &rarr; Терапевт &rarr; Реабилитолог &rarr; План лечения</DialogDescription>
