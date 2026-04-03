@@ -135,17 +135,17 @@ export const DiagnosticPdfExport = forwardRef<DiagnosticPdfExportRef, Props>(({
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <p className="text-[9px] text-gray-400 uppercase font-bold">Мобильность</p>
-                                    <p className="text-sm font-bold">Суставы: {rehabData.mobility_joints} / 10</p>
-                                    <p className="text-sm font-bold">Осанка: {rehabData.mobility_posture} / 10</p>
+                                    <p className="text-sm font-bold">Суставы: {rehabData.jointMobility} / 10</p>
+                                    <p className="text-sm font-bold">Мышечный баланс: {rehabData.muscleBalance}</p>
                                 </div>
                                 <div className="space-y-3">
-                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Боль / Нагрузка</p>
-                                    <p className="text-sm font-bold">Боль при нагрузке: {rehabData.pain_on_load} / 10</p>
-                                    <p className="text-sm font-bold">Стабильность: {rehabData.muscle_stabilization}</p>
+                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Болевой синдром</p>
+                                    <p className="text-sm font-bold">Боль при нагрузке: {rehabData.painOnLoad} / 10</p>
+                                    <p className="text-sm font-bold">Стабильность: {rehabData.spineStabilization}</p>
                                 </div>
                                 <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
-                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Противопоказания</p>
-                                    <p className="text-sm font-bold text-rose-600">{rehabData.rehab_contraindications || "Нет"}</p>
+                                    <p className="text-[9px] text-gray-400 uppercase font-bold">Противопоказания и ограничения</p>
+                                    <p className="text-sm font-bold text-rose-600">{rehabData.restrictions || "Нет"}</p>
                                 </div>
                             </div>
                         ) : (

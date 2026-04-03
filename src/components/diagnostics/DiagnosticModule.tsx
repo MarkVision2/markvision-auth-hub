@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { 
-  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList, CheckCircle2, PanelRightClose, PanelRightOpen, Zap
+  Stethoscope, FileText, User, Phone, X, Save, FileDown, Clock, Activity, Loader2, ClipboardList, CheckCircle2, PanelRightClose, PanelRightOpen, Zap, CalendarDays
 } from "lucide-react";
 import { Lead } from "../crm/KanbanBoard";
 import { AdminDiagnosticTab, AdminFormData, Question, DEFAULT_QUESTIONS } from "./tabs/AdminDiagnosticTab";
@@ -257,7 +257,7 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             <DialogContent className="max-w-none w-screen h-screen m-0 p-0 flex flex-col bg-background border-none rounded-none overflow-hidden select-none relative !fixed !top-0 !left-0 !right-0 !bottom-0 !translate-x-0 !translate-y-0 z-[100]">
                 <DialogHeader className="sr-only">
                     <DialogTitle>Диагностический модуль v2.0</DialogTitle>
-                    <DialogDescription>4-этапный рабочий процесс: Админ -> Терапевт -> Реабилитолог -> План лечения</DialogDescription>
+                    <DialogDescription>4-этапный рабочий процесс: Админ &rarr; Терапевт &rarr; Реабилитолог &rarr; План лечения</DialogDescription>
                 </DialogHeader>
 
                 {/* Aurora Background */}
