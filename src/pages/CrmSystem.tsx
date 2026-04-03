@@ -51,6 +51,27 @@ export default function CrmSystem() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [tasks, setTasks] = useState<AITask[]>([]);
 
+  const load = useCallback(async () => {
+    if (!active) return;
+    try {
+      let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
+      query = query.eq("project_id", active?.id);
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      if (error) throw error;
+      if (data) {
+        setLeads(data);
+      }
+    } catch (err: any) {
+      console.error("CRM leads fetch error:", err);
+      toast({ 
+        title: "Ошибка загрузки CRM", 
+        description: err?.message || "Не удалось загрузить лиды", 
+        variant: "destructive" 
+      });
+    }
+  }, [active?.id]);
+
   useEffect(() => {
     if (isAgency || !active) {
       if (!isAgency && !active) {
@@ -58,32 +79,26 @@ export default function CrmSystem() {
       }
       return;
     }
-    let isMounted = true;
-    const load = async () => {
-      if (!active) return;
-      try {
-        let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
-        query = query.eq("project_id", active?.id);
 
-        const { data, error } = await query.order("created_at", { ascending: false });
-        if (error) throw error;
-        if (data && isMounted) {
-          setLeads(data);
-        }
-      } catch (err: any) {
-        console.error("CRM leads fetch error:", err);
-        if (isMounted) {
-          toast({ title: "Ошибка загрузки CRM", description: err?.message || "Не удалось загрузить лиды", variant: "destructive" });
-        }
-      }
-    };
     load();
+
+    const channelId = `crm-stats-${active?.id}`;
     const ch = supabase
-      .channel("crm_kpi_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => load())
+      .channel(channelId)
+      .on("postgres_changes", { 
+        event: "*", 
+        schema: "public", 
+        table: "leads_crm",
+        filter: `project_id=eq.${active.id}`
+      }, () => {
+        load();
+      })
       .subscribe();
-    return () => { isMounted = false; supabase.removeChannel(ch); };
-  }, [active?.id]);
+
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
+  }, [active?.id, isAgency, load]);
 
   const handleTaskGenerated = useCallback((task: AITask) => {
     setTasks(prev => [task, ...prev]);
@@ -253,14 +268,18 @@ export default function CrmSystem() {
               </Sheet>
             </div>
 
-            <TabsContent value="kanban" className="flex-1 min-h-0"><KanbanBoard /></TabsContent>
+            <TabsContent value="kanban" className="flex-1 min-h-0"><KanbanBoard onLeadCreated={load} /></TabsContent>
             <TabsContent value="chats" className="flex-1 min-h-0"><ChatsView /></TabsContent>
             <TabsContent value="clients" className="flex-1 min-h-0"><ClientDatabase /></TabsContent>
             <TabsContent value="automations" className="flex-1 min-h-0"><Automations /></TabsContent>
           </Tabs>
         </div>
 
-        <AddLeadSheet open={addLeadOpen} onOpenChange={setAddLeadOpen} />
+        <AddLeadSheet 
+          open={addLeadOpen} 
+          onOpenChange={setAddLeadOpen} 
+          onLeadCreated={load}
+        />
       </div>
     </DashboardLayout>
   );

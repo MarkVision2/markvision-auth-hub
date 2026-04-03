@@ -173,7 +173,11 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
   );
 });
 
-export default function KanbanBoard() {
+interface KanbanBoardProps {
+  onLeadCreated?: () => void;
+}
+
+export default function KanbanBoard({ onLeadCreated }: KanbanBoardProps) {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
   const [stages, setStages] = useState<CrmStage[]>(loadStages(active?.id || "default", "main"));
@@ -215,12 +219,26 @@ export default function KanbanBoard() {
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   useEffect(() => {
+    if (!active) return;
+    const channelId = `kanban-rt-${active.id}`;
     const ch = supabase
-      .channel("kanban_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm" }, () => fetchLeads())
+      .channel(channelId)
+      .on("postgres_changes", { 
+        event: "*", 
+        schema: "public", 
+        table: "leads_crm",
+        filter: `project_id=eq.${active.id}`
+      }, (payload) => {
+        console.log("Kanban Realtime payload:", payload);
+        fetchLeads();
+        if (onLeadCreated) onLeadCreated();
+      })
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchLeads]);
+      
+    return () => { 
+      supabase.removeChannel(ch); 
+    };
+  }, [active?.id, fetchLeads, onLeadCreated]);
 
   // Маппинг CRM-этапов на ключи CAPI (n8n CAPI-Status-Trigger)
   const CAPI_STATUS_MAP: Record<string, string> = {

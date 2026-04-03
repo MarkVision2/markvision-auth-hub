@@ -14,6 +14,7 @@ import { fetchTeamMembers, type TeamMember } from "@/pages/settings/types";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onLeadCreated?: () => void;
 }
 
 const STAGES = [
@@ -21,7 +22,7 @@ const STAGES = [
   "Записан", "Визит совершен", "Оплачен", "Отказ",
 ];
 
-export default function AddLeadSheet({ open, onOpenChange }: Props) {
+export default function AddLeadSheet({ open, onOpenChange, onLeadCreated }: Props) {
   const { active } = useWorkspace();
   const [form, setForm] = useState({
     name: "",
@@ -69,6 +70,7 @@ export default function AddLeadSheet({ open, onOpenChange }: Props) {
       doctor_name: "",
       office_name: ""
     });
+    if (onLeadCreated) onLeadCreated();
     onOpenChange(false);
   };
   const handlePhoneChange = (v: string) => {
