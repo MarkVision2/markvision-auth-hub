@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Lead } from "../../crm/KanbanBoard";
 import { TherapistFormData } from "./TherapistDiagnosticTab";
 import { 
-    FileText, CalendarDays, CheckCircle2, ArrowRight, UserCheck, CreditCard, Clock, Bell, Zap
+    FileText, CalendarDays, CheckCircle2, ArrowRight, UserCheck, CreditCard, Clock, Bell, Zap, FileDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,11 +31,12 @@ interface Props {
     data: TreatmentPlanFormData | null;
     onChange: (data: TreatmentPlanFormData) => void;
     onComplete?: () => void;
+    onGeneratePdf?: () => void;
     readOnly?: boolean;
 }
 
 export const TreatmentPlanTab: React.FC<Props> = ({ 
-    lead, therapistData, data, onChange, onComplete, readOnly = false 
+    lead, therapistData, data, onChange, onComplete, onGeneratePdf, readOnly = false 
 }) => {
     const [formData, setFormData] = useState<TreatmentPlanFormData>(data || {
         course: "",
@@ -262,7 +263,17 @@ export const TreatmentPlanTab: React.FC<Props> = ({
             </div>
 
             {!readOnly && (
-                <div className="flex justify-end pt-10">
+                <div className="flex justify-end pt-10 gap-4">
+                    {onGeneratePdf && (
+                        <Button 
+                            variant="outline"
+                            onClick={onGeneratePdf}
+                            className="h-20 px-10 rounded-[32px] border-primary/20 text-primary font-black text-xs uppercase tracking-[0.2em] gap-4 transition-all hover:bg-primary/5 active:scale-[0.98]"
+                        >
+                            <FileDown className="h-6 w-6" />
+                            СКАЧАТЬ ПОЛНЫЙ ЛИСТ
+                        </Button>
+                    )}
                     <Button 
                         onClick={onComplete}
                         className="h-20 px-12 rounded-[32px] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] gap-4 shadow-2xl shadow-primary/40 transition-all hover:scale-[1.05] active:scale-[0.98] group relative overflow-hidden"
