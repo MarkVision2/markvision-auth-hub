@@ -130,7 +130,7 @@ const DoctorTerminal = () => {
       if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
       // 2. Profile update/create (REQUIRED: Run the SQL migration first!)
-      const { error: profError } = await supabase
+      const { error: profError } = await supabaseAdmin
         .from("profiles")
         .upsert({
           id: authRes.user.id,
@@ -157,7 +157,7 @@ const DoctorTerminal = () => {
       toast({ title: "Врач добавлен" });
 
       // 3. Link to Project
-      const { error: memberError } = await supabase
+      const { error: memberError } = await supabaseAdmin
         .from("project_members")
         .insert({
           user_id: authRes.user.id,
