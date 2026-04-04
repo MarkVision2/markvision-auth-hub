@@ -350,7 +350,11 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                                             questions={adminQuestions}
                                             onQuestionsChange={setAdminQuestions}
                                             onChange={setAdminData} 
-                                            onNext={() => setActiveTab("therapist")}
+                                            onNext={() => {
+                                                if (mode !== "admin") {
+                                                    setActiveTab("therapist");
+                                                }
+                                            }}
                                             onSave={handleSave}
                                         />
                                     </TabsContent>

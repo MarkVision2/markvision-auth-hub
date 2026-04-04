@@ -129,18 +129,21 @@ const DoctorTerminal = () => {
       if (authError) throw authError;
       if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
-      // 2. Profile update (REQUIRED: Run the SQL migration first!)
+      // 2. Profile update/create (REQUIRED: Run the SQL migration first!)
       const { error: profError } = await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          id: authRes.user.id,
+          email: finalEmail,
+          full_name: formData.name,
+          phone: formData.phone,
           role: "doctor",
           permissions: ROLE_PRESETS.doctor,
           specialty: formData.specialty,
           office: formData.office,
           working_days: formData.workingDays,
           working_hours: formData.workingHours,
-        } as any)
-        .eq("id", authRes.user.id as any);
+        } as any);
 
       if (profError) {
         console.error("Profile update failed:", profError);

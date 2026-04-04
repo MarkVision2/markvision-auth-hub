@@ -1,4 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Supabase Edge Function: lovable-webhook
+
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -29,14 +31,17 @@ function formatPhone(phone: string): string {
   return `+${numbers[0]} (${numbers.slice(1, 4)}) ${numbers.slice(4, 7)}-${numbers.slice(7, 9)}-${numbers.slice(9, 11)}`;
 }
 
-serve(async (req: Request) => {
+// @ts-ignore
+Deno.serve(async (req: Request) => {
   // 1. Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // @ts-ignore
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    // @ts-ignore
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 

@@ -222,13 +222,25 @@ export const TherapistDiagnosticTab: React.FC<Props> = ({
                         </div>
                     </div>
                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {adminQuestions.slice(0, 6).map(q => {
+                        {adminQuestions.map(q => {
                             const answer = adminData.answers?.[q.id];
                             if (!answer) return null;
+
+                            let formattedAnswer = String(answer);
+                            if (q.options && q.options.length > 0) {
+                                if (Array.isArray(answer)) {
+                                    formattedAnswer = answer.map(a => 
+                                        q.options?.find(o => o.id === a)?.label || a
+                                    ).join(", ");
+                                } else {
+                                    formattedAnswer = q.options?.find(o => o.id === answer)?.label || String(answer);
+                                }
+                            }
+
                             return (
                                 <div key={q.id} className="p-4 rounded-2xl bg-background/50 border border-border/10 flex flex-col gap-1">
                                     <span className="text-[9px] font-black text-muted-foreground uppercase">{q.label}</span>
-                                    <p className="text-xs font-bold">{Array.isArray(answer) ? answer.join(", ") : String(answer)}</p>
+                                    <p className="text-xs font-bold">{formattedAnswer}</p>
                                 </div>
                             );
                         })}

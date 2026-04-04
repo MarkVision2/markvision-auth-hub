@@ -92,9 +92,9 @@ function WhatsAppGreenApiCard() {
 
     useEffect(() => {
         async function load() {
-            const { data } = await supabase
+            const { data } = await (supabase as any)
                 .from("clients_config")
-                .select("wa_instance_id, wa_api_token")
+                .select("project_id, wa_instance_id, wa_api_token")
                 .eq("project_id", SETTINGS_PROJECT_ID)
                 .limit(1)
                 .maybeSingle();
@@ -185,9 +185,9 @@ function MetaAdsCard() {
 
     useEffect(() => {
         async function load() {
-            const { data } = await supabase
+            const { data } = await (supabase as any)
                 .from("clients_config")
-                .select("fb_token, ad_account_id")
+                .select("project_id, fb_token, ad_account_id")
                 .eq("project_id", SETTINGS_PROJECT_ID)
                 .limit(1)
                 .maybeSingle();
