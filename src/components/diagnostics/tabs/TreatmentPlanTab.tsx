@@ -54,6 +54,7 @@ export const TreatmentPlanTab: React.FC<Props> = ({
 
     useEffect(() => {
         onChange(formData);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
     const updateField = (field: keyof TreatmentPlanFormData, value: any) => {
@@ -274,8 +275,12 @@ export const TreatmentPlanTab: React.FC<Props> = ({
                             СКАЧАТЬ ПОЛНЫЙ ЛИСТ
                         </Button>
                     )}
-                    <Button 
-                        onClick={onComplete}
+                    <Button
+                        onClick={() => {
+                            const confirmedData = { ...formData, confirmed: true };
+                            onChange(confirmedData);
+                            if (onComplete) onComplete();
+                        }}
                         className="h-20 px-12 rounded-[32px] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] gap-4 shadow-2xl shadow-primary/40 transition-all hover:scale-[1.05] active:scale-[0.98] group relative overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />

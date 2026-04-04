@@ -3,9 +3,15 @@
   "configurations": [
     {
       "name": "Vite Dev Server",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["node_modules/.bin/vite", "--port", "8080"],
       "port": 8080
+    },
+    {
+      "name": "Vite Preview",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["node_modules/.bin/vite", "preview", "--port", "4173"],
+      "port": 4173
     }
   ]
 }

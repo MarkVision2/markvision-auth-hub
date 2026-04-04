@@ -71,12 +71,10 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
                             finalFio: leadRow.name || lead.name,
                             finalPhone: leadRow.phone || lead.phone || "",
                             invoicePhone: leadRow.phone || lead.phone || "",
-                            complaints: savedAdminAnswers.complaints || leadRow.ai_summary || "",
-                            painLocation: "",
-                            painDuration: "",
-                            painType: "",
-                            painIntensity: "5",
-                            previousTreatment: ""
+                            bookingDate: leadRow.scheduled_at ? new Date(leadRow.scheduled_at) : undefined,
+                            bookingTime: leadRow.scheduled_at ? format(new Date(leadRow.scheduled_at), "HH:mm") : undefined,
+                            bookingDoctor: leadRow.doctor_name || "",
+                            bookingCabinet: leadRow.cabinet || "",
                         });
 
                         // Therapist Data
@@ -197,8 +195,10 @@ export const DiagnosticModule: React.FC<DiagnosticModuleProps> = ({
             if (treatmentPlanData) {
                 updateData.diagnostic_plan_answers = treatmentPlanData;
                 updateData.diagnostic_plan_comment = treatmentPlanData.finalConclusion;
-                updateData.status = "Лечение начато";
-                updateData.pipeline = "doctor";
+                if (treatmentPlanData.confirmed) {
+                    updateData.status = "Лечение начато";
+                    updateData.pipeline = "doctor";
+                }
             }
 
             const { error: updateError } = await (supabase as any)

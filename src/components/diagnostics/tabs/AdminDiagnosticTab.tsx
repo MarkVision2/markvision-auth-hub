@@ -102,12 +102,6 @@ export interface AdminFormData {
     finalFio: string;
     finalPhone: string;
     invoicePhone: string;
-    complaints: string;
-    painLocation: string;
-    painDuration: string;
-    painType: string;
-    painIntensity: string;
-    previousTreatment: string;
 }
 
 interface QuestionEditorProps {
@@ -230,19 +224,15 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
         finalFio: lead.name || "",
         finalPhone: lead.phone || "",
         invoicePhone: lead.phone || "",
-        complaints: "",
-        painLocation: "",
-        painDuration: "",
-        painType: "",
-        painIntensity: "",
-        previousTreatment: "",
         bookingDoctor: lead.doctor_name || "",
         bookingCabinet: "",
         bookingDate: lead.scheduled_at ? new Date(lead.scheduled_at) : undefined,
+        bookingTime: lead.scheduled_at ? format(new Date(lead.scheduled_at), "HH:mm") : undefined,
     });
 
     useEffect(() => {
         onChange(formData);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
     const addQuestion = () => {
@@ -475,13 +465,13 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
 
                                     <div className="space-y-4">
                                         <Label className="text-[10px] text-muted-foreground uppercase font-black tracking-widest ml-1">Статус оплаты</Label>
-                                        <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-3 gap-3">
                                             <button
                                                 onClick={() => setFormData({ ...formData, paymentStatus: "paid" })}
                                                 className={cn(
                                                     "h-14 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all",
-                                                    formData.paymentStatus === "paid" 
-                                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                                    formData.paymentStatus === "paid"
+                                                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
                                                         : "bg-transparent border-white/5 text-muted-foreground/40 hover:border-emerald-500/30"
                                                 )}
                                             >
@@ -491,14 +481,36 @@ export const AdminDiagnosticTab: React.FC<Props> = ({
                                                 onClick={() => setFormData({ ...formData, paymentStatus: "pending" })}
                                                 className={cn(
                                                     "h-14 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all",
-                                                    formData.paymentStatus === "pending" 
-                                                        ? "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20" 
+                                                    formData.paymentStatus === "pending"
+                                                        ? "bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/20"
                                                         : "bg-transparent border-white/5 text-muted-foreground/40 hover:border-amber-500/30"
                                                 )}
                                             >
                                                 Лист ожидания
                                             </button>
+                                            <button
+                                                onClick={() => setFormData({ ...formData, paymentStatus: "declined" })}
+                                                className={cn(
+                                                    "h-14 rounded-2xl border-2 font-black text-[10px] uppercase tracking-widest transition-all",
+                                                    formData.paymentStatus === "declined"
+                                                        ? "bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20"
+                                                        : "bg-transparent border-white/5 text-muted-foreground/40 hover:border-red-500/30"
+                                                )}
+                                            >
+                                                Отказ
+                                            </button>
                                         </div>
+                                        {formData.paymentStatus === "declined" && (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <Label className="text-[10px] text-red-500 uppercase font-black tracking-widest ml-1">Причина отказа</Label>
+                                                <Textarea
+                                                    placeholder="Укажите причину отказа..."
+                                                    className="min-h-[80px] bg-red-500/5 border-red-500/20 rounded-[20px] p-4 text-xs font-bold"
+                                                    value={formData.refusalReason}
+                                                    onChange={e => setFormData({ ...formData, refusalReason: e.target.value })}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="pt-4 border-t border-border/40">

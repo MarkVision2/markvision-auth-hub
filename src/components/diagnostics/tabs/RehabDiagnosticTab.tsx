@@ -48,6 +48,7 @@ export const RehabDiagnosticTab: React.FC<Props> = ({
 
     useEffect(() => {
         onChange(formData);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData]);
 
     const updateField = (field: keyof RehabFormData, value: any) => {
