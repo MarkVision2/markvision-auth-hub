@@ -29,6 +29,10 @@
     ],
     "rewrites": [
         {
+            "source": "/api/ig-webhook",
+            "destination": "/api/ig-webhook"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
