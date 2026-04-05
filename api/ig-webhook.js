@@ -22,11 +22,13 @@ export default async function handler(req, res) {
 
   // POST: Forward to n8n
   if (req.method === 'POST') {
+    const payload = JSON.stringify(req.body);
+    console.log('IG WEBHOOK BODY:', payload.substring(0, 1000));
     try {
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body),
+        body: payload,
       });
 
       return res.status(200).send('EVENT_RECEIVED');
