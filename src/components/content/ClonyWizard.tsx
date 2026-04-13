@@ -89,11 +89,11 @@ const INITIAL: WizardForm = {
 // ── Content Types ────────────────────────────────────
 const CONTENT_TYPES: ContentType[] = [
   { value: "insta-carousel", label: "Insta Carousel", desc: "Образовательный контент", icon: SquareStack },
-  { value: "facebook-ads", label: "Facebook Ads", desc: "Таргет реклама", icon: Megaphone },
+  { value: "fb-target", label: "Facebook Ads", desc: "Таргет реклама", icon: Megaphone },
   { value: "google-ads", label: "Google Ads", desc: "Баннеры (КМС)", icon: PanelTop },
-  { value: "neural-photo", label: "Нейрофотосессия", desc: "AI-портреты", icon: Camera },
+  { value: "neuro-photo", label: "Нейрофотосессия", desc: "AI-портреты", icon: Camera },
   { value: "reels-cover", label: "Reels Cover", desc: "Instagram, TikTok", icon: Play },
-  { value: "stories", label: "Stories / Прогрев", desc: "Instagram", icon: Smartphone },
+  { value: "instagram-stories", label: "Stories / Прогрев", desc: "Instagram", icon: Smartphone },
   { value: "youtube", label: "YouTube", desc: "Превью видео", icon: MonitorPlay },
   { value: "banner", label: "Баннер", desc: "Сайт, реклама", icon: ImageIcon },
 ];
@@ -282,23 +282,32 @@ export default function ClonyWizard() {
       if (form.logo_file) logoUrl = await uploadFile(form.logo_file);
       if (form.photo_file) photoUrl = await uploadFile(form.photo_file);
 
+      // Collect all image URLs into image_urls[] as n8n expects
+      const imageUrls: string[] = [];
+      if (logoUrl) imageUrls.push(logoUrl);
+      if (photoUrl) imageUrls.push(photoUrl);
+
+      // Build prompt with additional instructions baked in
+      const fullPrompt = form.additional_instructions?.trim()
+        ? `${form.main_prompt}\n\nДополнительные инструкции: ${form.additional_instructions}`
+        : form.main_prompt;
+
       const payload = {
         content_type: form.content_type,
-        source_mode: form.source_mode,
-        source_url: form.source_mode === "link" ? form.source_url : undefined,
-        logo_url: logoUrl,
-        photo_url: photoUrl,
+        input_mode: form.source_mode,
+        link: form.source_mode === "link" ? form.source_url : undefined,
+        image_urls: imageUrls.length > 0 ? imageUrls : undefined,
         description: form.source_mode === "description" ? form.description_text : undefined,
-        main_prompt: form.main_prompt,
-        additional_instructions: form.additional_instructions || undefined,
-        aspect_ratio: form.aspect_ratio,
-        cta: form.cta.length > 0 ? form.cta : undefined,
-        language: form.language,
-        slide_count: form.slide_count,
-        style: form.style || undefined,
-        custom_style: form.custom_style || undefined,
+        prompt: fullPrompt,
+        aspect: form.aspect_ratio,
+        ctas: form.cta.length > 0 ? form.cta : undefined,
+        languege: form.language,
+        slides: form.slide_count,
+        style: form.style === "custom" ? form.custom_style : form.style || undefined,
+        color: undefined,
+        name: active?.name,
         project_id: isAgency ? undefined : active?.id,
-        client_name: active?.name,
+        session_id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
       };
 
