@@ -33,6 +33,59 @@ export function CfSection({ children, className }: { children: ReactNode; classN
   return <section className={cn(cfStyles.card, "p-4 sm:p-6 lg:p-8", className)}>{children}</section>;
 }
 
+export function CfStepIndicator({
+  steps,
+  current,
+  className,
+}: {
+  steps: readonly string[];
+  current: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-center gap-3", className)}>
+      {steps.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <div key={label} className="flex items-center gap-3">
+            {i > 0 && (
+              <div
+                className={cn(
+                  "h-px w-6 sm:w-10 transition-colors duration-300",
+                  done ? "bg-primary" : "bg-border/40"
+                )}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1.5">
+              <div
+                className={cn(
+                  "h-9 w-9 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300",
+                  done
+                    ? "bg-primary text-white shadow-md shadow-primary/20"
+                    : active
+                      ? "bg-primary/10 text-primary ring-2 ring-primary/30"
+                      : "bg-secondary/40 text-muted-foreground/40"
+                )}
+              >
+                {done ? "\u2713" : i + 1}
+              </div>
+              <span
+                className={cn(
+                  "text-[9px] font-black uppercase tracking-[0.15em] transition-colors hidden sm:block",
+                  done || active ? "text-primary" : "text-muted-foreground/30"
+                )}
+              >
+                {label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CfButtonMd({
   children,
   className,

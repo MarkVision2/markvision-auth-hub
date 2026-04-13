@@ -42,6 +42,7 @@ import { format as dateFmt } from "date-fns";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
+import ClonyWizard from "@/components/content/ClonyWizard";
 import { cn } from "@/lib/utils";
 import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
@@ -71,7 +72,7 @@ type AbEvent = {
 
 export default function ContentFactory() {
   const { active, isAgency } = useWorkspace();
-  const [pageTab, setPageTab] = useState<"scenario" | "create" | "my-content">("scenario");
+  const [pageTab, setPageTab] = useState<"scenario" | "create" | "clony" | "my-content">("scenario");
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
   const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
@@ -601,6 +602,15 @@ export default function ContentFactory() {
               <Plus className="h-4 w-4" /> Создать
             </button>
             <button
+              onClick={() => setPageTab("clony")}
+              className={cn(
+                cfStyles.tabButton,
+                pageTab === "clony" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Sparkles className="h-4 w-4" /> Clony AI
+            </button>
+            <button
               onClick={() => setPageTab("my-content")}
               className={cn(
                 cfStyles.tabButton,
@@ -736,6 +746,12 @@ export default function ContentFactory() {
                   </AnimatePresence>
                 </div>
               )}
+            </div>
+          )}
+
+          {pageTab === "clony" && (
+            <div className="h-full">
+              <ClonyWizard />
             </div>
           )}
 
