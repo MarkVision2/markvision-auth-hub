@@ -659,17 +659,35 @@ export default function ContentFactory() {
                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Загрузка истории...</p>
                 </div>
               ) : history.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-32 text-center space-y-6">
-                   <div className="h-24 w-24 rounded-full bg-secondary/30 flex items-center justify-center border border-border/50 shadow-inner">
-                      <Clock className="h-10 w-10 text-muted-foreground/20" />
+                <div className="flex flex-col items-center justify-center py-40 text-center space-y-8">
+                   <motion.div 
+                     initial={{ scale: 0.8, opacity: 0 }}
+                     animate={{ scale: 1, opacity: 1 }}
+                     transition={{ duration: 0.5, ease: "easeOut" }}
+                     className="h-32 w-32 rounded-[2.5rem] bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center border border-primary/20 shadow-inner relative overflow-hidden"
+                   >
+                      <motion.div 
+                        animate={{ 
+                          scale: [1, 1.1, 1],
+                          rotate: [0, 5, -5, 0]
+                        }}
+                        transition={{ duration: 5, repeat: Infinity }}
+                      >
+                        <Clock className="h-14 w-14 text-primary/40" />
+                      </motion.div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
+                   </motion.div>
+                   <div className="space-y-3 max-w-sm">
+                      <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">История пуста</h3>
+                      <p className="text-muted-foreground text-sm font-medium leading-relaxed">
+                        Здесь появятся ваши креативы. Запустите генерацию в разделе «Создать», чтобы увидеть магию AI в действии.
+                      </p>
                    </div>
-                   <div className="space-y-2">
-                      <h3 className="text-xl font-black text-foreground uppercase">История пуста</h3>
-                      <p className="text-muted-foreground text-sm font-medium">Вы еще не создали ни одного креатива.</p>
-                   </div>
-                   <Button onClick={() => setPageTab("create")} className="h-11 px-8 rounded-2xl bg-primary/10 text-primary border border-primary/20 font-bold hover:bg-primary/20">
-                      Создать первый контент
-                   </Button>
+                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button onClick={() => setPageTab("create")} className="h-14 px-10 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all gap-3">
+                         <Plus className="h-5 w-5" /> Создать первый контент
+                      </Button>
+                   </motion.div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
@@ -692,11 +710,22 @@ export default function ContentFactory() {
                             <span className="text-[10px] font-black uppercase tracking-widest text-foreground">{task.content_type}</span>
                           </div>
                           <div className="flex items-center gap-2">
+                             {(task.status === "pending" || task.status === "processing") && (
+                               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                                  <span className="flex h-1.5 w-1.5 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+                                  </span>
+                                  <span className="text-[7px] font-black uppercase tracking-widest text-primary">Live</span>
+                               </div>
+                             )}
                              <Badge variant="outline" className={cn(
                                "text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md border-none h-4",
-                               task.status === "completed" ? "bg-green-500/10 text-green-600" : "bg-primary/10 text-primary"
+                               task.status === "completed" ? "bg-green-500/10 text-green-600" : 
+                               task.status === "error" ? "bg-destructive/10 text-destructive" :
+                               "bg-primary/5 text-primary/60"
                              )}>
-                               {task.status === "completed" ? "Готово" : "В процессе"}
+                               {task.status === "completed" ? "Готово" : task.status === "error" ? "Ошибка" : "В процессе"}
                              </Badge>
                              <Button
                                variant="ghost"
