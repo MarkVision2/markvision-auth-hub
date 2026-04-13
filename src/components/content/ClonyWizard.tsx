@@ -159,6 +159,7 @@ export default function ClonyWizard() {
   const [form, setForm] = useState<WizardForm>({ ...INITIAL });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
 
   // File previews
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -218,6 +219,38 @@ export default function ClonyWizard() {
     if (error) throw error;
     const { data } = supabase.storage.from("content_assets").getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  // ── Magic enhance prompt ───────────────────────────
+  const handleEnhancePrompt = async () => {
+    const raw = form.main_prompt.trim();
+    if (!raw) {
+      toast({ title: "Напишите промпт", description: "Сначала опишите идею — AI сделает из неё чёткое ТЗ", variant: "destructive" });
+      return;
+    }
+    setEnhancing(true);
+    try {
+      const res = await fetch("https://n8n.zapoinov.com/webhook/clony-enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: raw,
+          content_type: form.content_type,
+          source_mode: form.source_mode,
+          language: form.language,
+          slide_count: form.slide_count,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const enhanced = typeof data === "string" ? data : data.enhanced || data.result || data.output || raw;
+      set("main_prompt", enhanced);
+      toast({ title: "✨ Промпт улучшен", description: "AI переформулировал описание для лучшего результата" });
+    } catch {
+      toast({ title: "Ошибка AI", description: "Не удалось улучшить промпт. Попробуйте позже.", variant: "destructive" });
+    } finally {
+      setEnhancing(false);
+    }
   };
 
   // ── Validation ─────────────────────────────────────
@@ -510,9 +543,31 @@ export default function ClonyWizard() {
 
       {/* Main prompt */}
       <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <PenLine className="h-4 w-4 text-primary/60" />
-          <Label className={cfStyles.label}>Главное описание</Label>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <PenLine className="h-4 w-4 text-primary/60" />
+            <Label className={cfStyles.label}>Главное описание</Label>
+          </div>
+          <button
+            type="button"
+            onClick={handleEnhancePrompt}
+            disabled={enhancing || !form.main_prompt.trim()}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+              enhancing
+                ? "bg-primary/10 text-primary/60 cursor-wait"
+                : form.main_prompt.trim()
+                  ? "bg-primary/10 text-primary hover:bg-primary/20 active:scale-95"
+                  : "bg-muted/30 text-muted-foreground/30 cursor-not-allowed"
+            )}
+          >
+            {enhancing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {enhancing ? "Улучшаю..." : "AI Магия"}
+          </button>
         </div>
         <Textarea
           value={form.main_prompt}
@@ -520,6 +575,9 @@ export default function ClonyWizard() {
           placeholder="Что именно создать? Какой текст должен быть? Какой посыл? Опишите максимально подробно..."
           className="min-h-[120px] rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
         />
+        <p className="text-[10px] font-medium text-muted-foreground/40 italic px-1">
+          Напишите идею кратко — кнопка «AI Магия» превратит её в чёткое ТЗ для генерации
+        </p>
       </div>
 
       {/* Additional instructions */}
