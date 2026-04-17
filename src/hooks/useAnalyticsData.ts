@@ -180,6 +180,7 @@ export function useAnalyticsData() {
         campaigns: campaignsByChannel.get(ch.id) || [],
       }));
 
+      // Если данных нет, возвращаем пустой массив (убираем моковые заглушки)
       setChannels(builtChannels);
       setOrganicPosts(rawOrganic.map((op) => ({
         id: op.id, thumbnail: op.thumbnail || "📝", caption: op.caption,
