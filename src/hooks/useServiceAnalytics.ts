@@ -42,14 +42,6 @@ export function useServiceAnalytics() {
                 .select("*")
                 .eq("project_id", active.id);
 
-            // Add date filtering if possible. Assuming the view supports it or we use created_at
-            // If the view is an aggregate, this might need to be handled differently.
-            // For now, let's try to filter by the period.
-            if (startDate && endDate) {
-                // Many views in this project use 'date' or 'created_at' for filtering
-                query = query.gte("created_at", startDate).lte("created_at", endDate);
-            }
-
             const { data: resData, error } = await query;
 
             if (error) throw error;
