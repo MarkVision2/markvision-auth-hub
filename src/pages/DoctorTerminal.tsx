@@ -138,6 +138,7 @@ const DoctorTerminal = () => {
           full_name: formData.name,
           phone: formData.phone,
           role: "doctor",
+          permissions: ROLE_PRESETS.doctor,
           specialty: formData.specialty,
           office: formData.office,
           working_days: formData.workingDays,
@@ -146,9 +147,11 @@ const DoctorTerminal = () => {
 
       if (profError) {
         console.error("Profile update failed:", profError);
+        throw new Error(`Ошибка записи профиля врача: ${profError.message}`);
       }
 
       // 3. Link to Project
+      let projectLinkWarning = "";
       if (active?.id) {
         const { error: memberError } = await (supabase as any)
           .from("project_members")
@@ -159,7 +162,9 @@ const DoctorTerminal = () => {
 
         if (memberError) {
           console.error("Member link failed:", memberError);
-          throw new Error(`Ошибка привязки к проекту: ${memberError.message}`);
+          // Не блокируем создание врача, если профиль уже создан.
+          // Иначе админ теряет результат из-за RLS на project_members.
+          projectLinkWarning = memberError.message;
         }
       }
 
@@ -188,7 +193,15 @@ const DoctorTerminal = () => {
         workingHours: "09:00 - 18:00",
       });
 
-      toast({ title: "Врач добавлен", description: `${formData.name} теперь в системе` });
+      if (projectLinkWarning) {
+        toast({
+          title: "Врач добавлен",
+          description: `${formData.name} создан, но привязка к проекту не выполнена: ${projectLinkWarning}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Врач добавлен", description: `${formData.name} теперь в системе` });
+      }
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
