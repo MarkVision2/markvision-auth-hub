@@ -723,36 +723,51 @@ export default function ClonyWizard() {
   const renderStep1 = () => (
     <motion.div key="s1" {...anim} className="space-y-6">
       {/* Source mode selector */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <Link className="h-4 w-4 text-primary/60" />
-          <Label className={cfStyles.label}>Источник контента</Label>
+      <div className="relative rounded-[2rem] bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
+        <div className="absolute -top-20 -right-20 h-64 w-64 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="relative flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Link className="h-3.5 w-3.5 text-primary" />
+          </div>
+          <Label className={cn(cfStyles.label, "text-foreground")}>Источник контента</Label>
         </div>
-        <p className="text-xs text-muted-foreground font-medium -mt-2">
+        <p className="relative text-xs text-muted-foreground font-medium -mt-2 ml-9">
           Выберите способ создания: по ссылке, по фото или по описанию
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {SOURCE_MODES.map(({ value, label, desc, icon: Icon }) => (
-            <button key={value} type="button" onClick={() => set("source_mode", value)}
-              className={cn(
-                "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all duration-300 text-left",
-                form.source_mode === value
-                  ? "border-primary bg-primary/5 shadow-md"
-                  : "border-border/30 bg-background hover:border-primary/20"
-              )}
-            >
-              <div className={cn(
-                "h-10 w-10 flex-shrink-0 rounded-xl flex items-center justify-center transition-colors",
-                form.source_mode === value ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground"
-              )}>
-                <Icon className="h-4 w-4" />
-              </div>
-              <div>
-                <span className="text-[11px] font-black uppercase tracking-wider block">{label}</span>
-                <span className="text-[9px] text-muted-foreground/60 font-medium block mt-0.5">{desc}</span>
-              </div>
-            </button>
-          ))}
+        <div className="relative grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {SOURCE_MODES.map(({ value, label, desc, icon: Icon }) => {
+            const active = form.source_mode === value;
+            return (
+              <button key={value} type="button" onClick={() => set("source_mode", value)}
+                className={cn(
+                  "group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden",
+                  active
+                    ? "border-primary/60 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent shadow-xl shadow-primary/20 scale-[1.02]"
+                    : "border-border/40 bg-background/40 hover:border-primary/30 hover:bg-primary/5 hover:scale-[1.01]"
+                )}
+              >
+                {active && (
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary animate-pulse" />
+                )}
+                <div className={cn(
+                  "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 relative",
+                  active
+                    ? "bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg shadow-primary/40"
+                    : "bg-secondary/40 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
+                )}>
+                  {active && <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-md" />}
+                  <Icon className="relative h-5 w-5" />
+                </div>
+                <div>
+                  <span className={cn(
+                    "text-[12px] font-black uppercase tracking-wider block transition-colors",
+                    active ? "text-primary" : "text-foreground"
+                  )}>{label}</span>
+                  <span className="text-[10px] text-muted-foreground/70 font-medium block mt-1 leading-snug">{desc}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Conditional source inputs */}
@@ -1293,23 +1308,29 @@ export default function ClonyWizard() {
       <div className="max-w-3xl mx-auto space-y-8">
 
         {/* Step header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
-          <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shadow-inner">
-              <StepIcon className="h-6 w-6 text-primary" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+          <div className="absolute -top-8 left-0 h-32 w-32 bg-primary/15 rounded-full blur-3xl opacity-60 pointer-events-none" />
+          <div className="relative flex items-center gap-4">
+            <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-transparent flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/20">
+              <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-md" />
+              <StepIcon className="relative h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
             </div>
             <div>
-              <h3 className="text-lg font-black tracking-tight">
-                <span className="text-primary mr-2">{step + 1}/{STEP_META.length}</span>
-                {meta.title}
+              <h3 className="text-xl font-black tracking-tight flex items-center gap-2.5">
+                <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent text-2xl">
+                  {step + 1}<span className="text-muted-foreground/40">/{STEP_META.length}</span>
+                </span>
+                <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{meta.title}</span>
               </h3>
-              <p className="text-xs text-muted-foreground font-medium mt-0.5">{meta.desc}</p>
+              <p className="text-xs text-muted-foreground font-medium mt-1 ml-0.5">{meta.desc}</p>
             </div>
           </div>
-          <div className="flex gap-1.5">
+          <div className="relative flex gap-2">
             {STEP_META.map((_, i) => (
-              <div key={i} className={cn("h-1.5 rounded-full transition-all duration-500",
-                i <= step ? "bg-primary w-8" : "bg-border/30 w-4"
+              <div key={i} className={cn("h-2 rounded-full transition-all duration-500",
+                i < step ? "bg-primary/60 w-6" :
+                i === step ? "bg-gradient-to-r from-primary to-primary/60 w-12 shadow-lg shadow-primary/40" :
+                "bg-border/40 w-6"
               )} />
             ))}
           </div>

@@ -631,46 +631,57 @@ export default function ContentFactory() {
       <div className={cn(cfStyles.page, "flex flex-col h-[calc(100vh-100px)] min-h-[680px]")}>
 
         {/* Premium Header */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 mb-10 pb-8 border-b border-border/40">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                 <Layers className="h-6 w-6 text-primary" />
+        <div className="relative flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 mb-10 pb-8 border-b border-border/40">
+          <div className="absolute -top-12 -left-12 h-48 w-48 bg-primary/20 rounded-full blur-3xl opacity-40 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-primary/5 flex items-center justify-center shadow-lg shadow-primary/20 border border-primary/30">
+                 <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-md" />
+                 <Layers className="relative h-7 w-7 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
               </div>
-              <CfH1 className="uppercase">Контент-Завод</CfH1>
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-black text-[10px] px-3 py-1 uppercase tracking-widest">Новый интерфейс</Badge>
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tight uppercase bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
+                  Контент-Завод
+                </h1>
+                <Badge variant="secondary" className="mt-1.5 bg-primary/15 text-primary border border-primary/30 font-black text-[10px] px-3 py-1 uppercase tracking-[0.15em] shadow-sm shadow-primary/20">
+                  ✨ Новый интерфейс
+                </Badge>
+              </div>
             </div>
-            <p className={cfStyles.hint}>Создавайте сценарии и креативы в одном понятном рабочем пространстве.</p>
+            <p className={cn(cfStyles.hint, "max-w-xl")}>Создавайте сценарии и креативы в одном понятном рабочем пространстве.</p>
           </div>
 
-          <div className="flex flex-wrap bg-muted/50 p-1.5 rounded-2xl border border-border shadow-inner">
-            <button
-              onClick={() => setPageTab("scenario")}
-              className={cn(
-                cfStyles.tabButton,
-                pageTab === "scenario" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Sparkles className="h-4 w-4" /> Сценарий
-            </button>
-            <button
-              onClick={() => setPageTab("create")}
-              className={cn(
-                cfStyles.tabButton,
-                pageTab === "create" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Plus className="h-4 w-4" /> Создать
-            </button>
-            <button
-              onClick={() => setPageTab("my-content")}
-              className={cn(
-                cfStyles.tabButton,
-                pageTab === "my-content" ? "bg-card text-primary shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Clock className="h-4 w-4" /> История
-            </button>
+          <div className="relative flex flex-wrap bg-gradient-to-br from-card/80 via-muted/40 to-card/80 backdrop-blur-xl p-2 rounded-2xl border border-border/60 shadow-xl shadow-black/5">
+            {[
+              { id: "scenario" as const, icon: Sparkles, label: "Сценарий" },
+              { id: "create" as const, icon: Plus, label: "Создать" },
+              { id: "my-content" as const, icon: Clock, label: "История" },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              const active = pageTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setPageTab(tab.id)}
+                  className={cn(
+                    "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
+                    active
+                      ? "text-white shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                  )}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="active-tab-bg"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80"
+                      transition={{ type: "spring", duration: 0.5 }}
+                    />
+                  )}
+                  <TabIcon className="relative h-4 w-4" />
+                  <span className="relative">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
