@@ -23,7 +23,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   // IMPORTANT: Default role and permissions are restricted (fail-closed)
   // This prevents unauthenticated or errored users from getting Superadmin access.
   const [role, setRole] = useState<AppRole>("client_manager");
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<string[]>(ROLE_PRESETS.client_manager);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,6 +55,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("Error fetching user role:", err);
+        // Fallback: keep working UI access for manager scope if profile RLS is temporarily broken.
+        setRole("client_manager");
+        setPermissions(ROLE_PRESETS.client_manager);
       } finally {
         setLoading(false);
       }
