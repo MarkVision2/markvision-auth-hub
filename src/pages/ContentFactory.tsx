@@ -48,6 +48,7 @@ import {
   X,
   Search,
   Rocket,
+  Wand2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -58,6 +59,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
 import ClonyWizard from "@/components/content/ClonyWizard";
+import { AiEditBlock } from "@/components/content/ai-edit/AiEditBlock";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { cn } from "@/lib/utils";
 import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
@@ -110,6 +112,12 @@ const TAB_CONTENT = {
     description: "Пошаговый мастер для баннеров, сторис, Reels cover, YouTube и нейрофотосессий с понятной сводкой.",
     highlights: ["Тип креатива", "Источник материалов", "Формат и CTA"],
   },
+  "ai-edit": {
+    kicker: "AI Video Editor",
+    title: "ИИ монтаж для Reels и Shorts",
+    description: "Загрузите исходник — ИИ сделает динамичный монтаж, добавит субтитры, B-roll и зумы.",
+    highlights: ["Viral Captions", "Auto B-roll", "Remotion Render"],
+  },
   "my-content": {
     kicker: "Content Vault",
     title: "Готовый контент, который можно запустить дальше",
@@ -120,7 +128,7 @@ const TAB_CONTENT = {
 
 export default function ContentFactory() {
   const { active, isAgency } = useWorkspace();
-  const [pageTab, setPageTab] = useState<"scenario" | "create" | "my-content">("scenario");
+  const [pageTab, setPageTab] = useState<"scenario" | "create" | "ai-edit" | "my-content">("scenario");
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
   const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
@@ -812,6 +820,12 @@ export default function ContentFactory() {
                     action: () => setPageTab("create"),
                   },
                   {
+                    title: "ИИ Монтаж",
+                    desc: "Автоматический монтаж Reels из ваших исходников.",
+                    active: pageTab === "ai-edit",
+                    action: () => setPageTab("ai-edit"),
+                  },
+                  {
                     title: "История",
                     desc: "Смотрим готовые материалы, оцениваем и отправляем в рекламу.",
                     active: pageTab === "my-content",
@@ -868,6 +882,7 @@ export default function ContentFactory() {
             {[
               { id: "scenario" as const, icon: Sparkles, label: "Сценарий" },
               { id: "create" as const, icon: Plus, label: "Создать" },
+              { id: "ai-edit" as const, icon: Wand2, label: "ИИ Монтаж" },
               { id: "my-content" as const, icon: Clock, label: "История" },
             ].map((tab) => {
               const TabIcon = tab.icon;
@@ -904,6 +919,12 @@ export default function ContentFactory() {
           {pageTab === "scenario" && (
             <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 flex justify-center">
               <ScenarioCreator />
+            </div>
+          )}
+
+          {pageTab === "ai-edit" && (
+            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
+              <AiEditBlock />
             </div>
           )}
 

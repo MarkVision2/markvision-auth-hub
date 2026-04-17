@@ -23,7 +23,16 @@
       "Bash(vercel inspect:*)",
       "mcp__plugin_claude-mem_mcp-search__smart_outline",
       "mcp__plugin_claude-mem_mcp-search__smart_unfold",
-      "mcp__plugin_claude-mem_mcp-search__get_observations"
+      "mcp__plugin_claude-mem_mcp-search__get_observations",
+      "Bash(python3 -m json.tool)",
+      "Bash(bash \"/Users/urijzapojnov/Мои Проекты/markvision-auth-hub/node_modules/superpowers/hooks/run-hook.cmd\" session-start)",
+      "Bash(python3)",
+      "Bash(python3 -c ' *)",
+      "Read(//Users/urijzapojnov/.n8n/**)",
+      "Bash(env)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('mcpServers',{}\\).get\\('enhanced-n8n', {}\\), indent=2\\)\\)\")",
+      "Bash(ps eww *)",
+      "Bash(export N8N_API_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YzNhZTVmYi1hNzY2LTQ1MmItOTBkMC1mNDAyNWRmMDhlY2YiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzY5MzQ1MjY5fQ.9AmpXYBswg4DWh8vvklOBKM6j-IbL3zy-HFdahtoKUQ\")"
     ],
     "deny": []
   }

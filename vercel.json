@@ -33,6 +33,18 @@
             "destination": "/api/ig-webhook"
         },
         {
+            "source": "/api/ai-edit",
+            "destination": "/api/ai-edit"
+        },
+        {
+            "source": "/api/ai-edit-status",
+            "destination": "/api/ai-edit-status"
+        },
+        {
+            "source": "/api/ai-edit-render",
+            "destination": "/api/ai-edit-render"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
