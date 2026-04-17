@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,9 @@ import {
   PanelTop,
   MousePointerClick,
   PenLine,
+  Plus,
+  User,
+  Star,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -52,12 +55,24 @@ interface ContentType {
 
 type SourceMode = "link" | "photo" | "description";
 
+interface SavedCharacter {
+  id: string;
+  name: string;
+  photo_urls: string[];
+  created_at: string;
+  project_id: string | null;
+}
+
 interface WizardForm {
   content_type: string;
   source_mode: SourceMode | "";
   source_url: string;
   logo_file: File | null;
-  photo_file: File | null;
+  cover_photo_file: File | null;
+  additional_photos: File[];
+  character_photos: File[];
+  character_name: string;
+  saved_character_id: string | null;
   description_text: string;
   main_prompt: string;
   additional_instructions: string;
@@ -74,7 +89,11 @@ const INITIAL: WizardForm = {
   source_mode: "",
   source_url: "",
   logo_file: null,
-  photo_file: null,
+  cover_photo_file: null,
+  additional_photos: [],
+  character_photos: [],
+  character_name: "",
+  saved_character_id: null,
   description_text: "",
   main_prompt: "",
   additional_instructions: "",
@@ -133,7 +152,6 @@ const STYLES = [
 ];
 
 // ── Детальные инструкции по типу контента ────────
-// Отправляются в prompt чтобы AI-генератор чётко понимал задачу
 const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
   "insta-carousel": `[ТИП: INSTAGRAM КАРУСЕЛЬ]
 Формат: Серия связанных слайдов (количество указано в параметре slides).
@@ -252,10 +270,42 @@ export default function ClonyWizard() {
 
   // File previews
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([]);
+  const [characterPreviews, setCharacterPreviews] = useState<string[]>([]);
 
+  // Character management
+  const [savedCharacters, setSavedCharacters] = useState<SavedCharacter[]>([]);
+  const [loadingCharacters, setLoadingCharacters] = useState(false);
+  const [savingCharacter, setSavingCharacter] = useState(false);
+
+  // File input refs
   const logoRef = useRef<HTMLInputElement>(null);
-  const photoRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const additionalRef = useRef<HTMLInputElement>(null);
+  const characterRef = useRef<HTMLInputElement>(null);
+
+  // Load saved characters when neuro-photo is selected
+  useEffect(() => {
+    if (form.content_type === "neuro-photo") {
+      loadSavedCharacters();
+    }
+  }, [form.content_type]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadSavedCharacters = async () => {
+    setLoadingCharacters(true);
+    try {
+      const { data } = await (supabase as any)
+        .from("neuro_characters")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) setSavedCharacters(data);
+    } catch {
+      // table may not exist yet
+    } finally {
+      setLoadingCharacters(false);
+    }
+  };
 
   const set = useCallback(
     <K extends keyof WizardForm>(key: K, value: WizardForm[K]) => {
@@ -279,23 +329,66 @@ export default function ClonyWizard() {
     setLogoPreview(file ? URL.createObjectURL(file) : null);
   };
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    set("photo_file", file);
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+    set("cover_photo_file", file);
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    setCoverPreview(file ? URL.createObjectURL(file) : null);
+    e.target.value = "";
   };
 
-  const clearFile = (type: "logo" | "photo") => {
-    if (type === "logo") {
-      set("logo_file", null);
-      if (logoPreview) URL.revokeObjectURL(logoPreview);
-      setLogoPreview(null);
-    } else {
-      set("photo_file", null);
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
-      setPhotoPreview(null);
-    }
+  const handleAddPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setForm((prev) => {
+      const canAdd = Math.min(files.length, 9 - prev.additional_photos.length);
+      if (canAdd <= 0) {
+        toast({ title: "Максимум 9 дополнительных фото", variant: "destructive" });
+        return prev;
+      }
+      const newFiles = files.slice(0, canAdd);
+      setAdditionalPreviews((p) => [...p, ...newFiles.map((f) => URL.createObjectURL(f))]);
+      return { ...prev, additional_photos: [...prev.additional_photos, ...newFiles] };
+    });
+    e.target.value = "";
+  };
+
+  const handleRemoveAdditionalPhoto = (idx: number) => {
+    setAdditionalPreviews((prev) => {
+      URL.revokeObjectURL(prev[idx]);
+      return prev.filter((_, i) => i !== idx);
+    });
+    setForm((prev) => ({
+      ...prev,
+      additional_photos: prev.additional_photos.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleAddCharacterPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setForm((prev) => {
+      const canAdd = Math.min(files.length, 10 - prev.character_photos.length);
+      if (canAdd <= 0) {
+        toast({ title: "Максимум 10 фото персонажа", variant: "destructive" });
+        return prev;
+      }
+      const newFiles = files.slice(0, canAdd);
+      setCharacterPreviews((p) => [...p, ...newFiles.map((f) => URL.createObjectURL(f))]);
+      return { ...prev, character_photos: [...prev.character_photos, ...newFiles] };
+    });
+    e.target.value = "";
+  };
+
+  const handleRemoveCharacterPhoto = (idx: number) => {
+    setCharacterPreviews((prev) => {
+      URL.revokeObjectURL(prev[idx]);
+      return prev.filter((_, i) => i !== idx);
+    });
+    setForm((prev) => ({
+      ...prev,
+      character_photos: prev.character_photos.filter((_, i) => i !== idx),
+    }));
   };
 
   // ── Upload helper ──────────────────────────────────
@@ -308,6 +401,42 @@ export default function ClonyWizard() {
     if (error) throw error;
     const { data } = supabase.storage.from("content_assets").getPublicUrl(path);
     return data.publicUrl;
+  };
+
+  const uploadFiles = async (files: File[]): Promise<string[]> =>
+    Promise.all(files.map((f) => uploadFile(f)));
+
+  // ── Save character ─────────────────────────────────
+  const handleSaveCharacter = async () => {
+    if (!form.character_name.trim()) {
+      toast({ title: "Введите имя персонажа", variant: "destructive" });
+      return;
+    }
+    if (form.character_photos.length === 0) {
+      toast({ title: "Загрузите хотя бы одно фото", variant: "destructive" });
+      return;
+    }
+    setSavingCharacter(true);
+    try {
+      const photoUrls = await uploadFiles(form.character_photos);
+      const { data, error } = await (supabase as any)
+        .from("neuro_characters")
+        .insert({
+          name: form.character_name,
+          photo_urls: photoUrls,
+          project_id: isAgency ? null : active?.id,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setSavedCharacters((prev) => [data, ...prev]);
+      set("saved_character_id", data.id);
+      toast({ title: "✅ Персонаж сохранён!", description: `«${form.character_name}» доступен для будущих сессий` });
+    } catch {
+      toast({ title: "Ошибка сохранения персонажа", variant: "destructive" });
+    } finally {
+      setSavingCharacter(false);
+    }
   };
 
   // ── Magic enhance prompt ───────────────────────────
@@ -353,7 +482,13 @@ export default function ClonyWizard() {
         if (!form.source_mode) return false;
         if (form.source_mode === "link" && !form.source_url.trim()) return false;
         if (form.source_mode === "description" && !form.description_text.trim()) return false;
-        if (form.source_mode === "photo" && !form.logo_file && !form.photo_file) return false;
+        if (form.source_mode === "photo") {
+          if (form.content_type === "neuro-photo") {
+            if (!form.saved_character_id && form.character_photos.length === 0) return false;
+          } else {
+            if (!form.logo_file && !form.cover_photo_file) return false;
+          }
+        }
         return Boolean(form.main_prompt.trim());
       }
       case 2:
@@ -368,33 +503,57 @@ export default function ClonyWizard() {
     setSubmitting(true);
     try {
       let logoUrl: string | undefined;
-      let photoUrl: string | undefined;
+      let coverPhotoUrl: string | undefined;
+      let additionalPhotoUrls: string[] = [];
+      let characterPhotoUrls: string[] = [];
 
       if (form.logo_file) logoUrl = await uploadFile(form.logo_file);
-      if (form.photo_file) photoUrl = await uploadFile(form.photo_file);
+      if (form.cover_photo_file) coverPhotoUrl = await uploadFile(form.cover_photo_file);
+      if (form.additional_photos.length > 0) additionalPhotoUrls = await uploadFiles(form.additional_photos);
 
-      // Collect all image URLs into image_urls[] as n8n expects
-      const imageUrls: string[] = [];
-      if (logoUrl) imageUrls.push(logoUrl);
-      if (photoUrl) imageUrls.push(photoUrl);
+      if (form.content_type === "neuro-photo") {
+        if (form.saved_character_id) {
+          const char = savedCharacters.find((c) => c.id === form.saved_character_id);
+          if (char) characterPhotoUrls = char.photo_urls;
+        } else if (form.character_photos.length > 0) {
+          characterPhotoUrls = await uploadFiles(form.character_photos);
+        }
+      }
 
-      // Build prompt: type instructions + user prompt + additional instructions
+      const imageUrls: string[] = [
+        ...(logoUrl ? [logoUrl] : []),
+        ...(coverPhotoUrl ? [coverPhotoUrl] : []),
+        ...additionalPhotoUrls,
+        ...characterPhotoUrls,
+      ];
+
       const typeInstructions = CONTENT_TYPE_INSTRUCTIONS[form.content_type] || "";
-      const sourceContext = form.source_mode === "photo"
-        ? "\n[ИСТОЧНИК: Загружены фото — обязательно использовать загруженные изображения как основу. Если есть логотип — использовать его стиль, цвета, шрифты. Если есть фото человека — сохранить его лицо и внешность.]"
-        : form.source_mode === "link"
-          ? "\n[ИСТОЧНИК: Ссылка на продукт/страницу — проанализировать контент по ссылке и использовать информацию оттуда.]"
-          : "";
-      const formatContext = `\n[ФОРМАТ: Размер ${form.aspect_ratio}, количество баннеров/слайдов: ${form.slide_count}, язык контента: ${form.language === "KZ" ? "Казахский" : "Русский"}]`;
+      let sourceContext = "";
+      if (form.source_mode === "photo") {
+        if (form.content_type === "neuro-photo") {
+          sourceContext = `\n[НЕЙРОФОТОСЕССИЯ: Загружено ${characterPhotoUrls.length} референсных фото персонажа. КРИТИЧЕСКИ ВАЖНО — использовать СТРОГО лицо этого человека. Не менять внешность, создавать профессиональные портреты именно его.]`;
+        } else {
+          sourceContext = [
+            "\n[ИСТОЧНИК — загружены изображения:",
+            logoUrl ? "• Логотип загружен — использовать его цвета, шрифты и стиль во всём дизайне, логотип размещать где уместно." : "",
+            coverPhotoUrl ? "• Обложка (главное фото) — использовать строго это фото как основу ПЕРВОГО слайда/баннера, нанести на него текст заголовка." : "",
+            additionalPhotoUrls.length > 0 ? `• Дополнительные фото (${additionalPhotoUrls.length} шт.) — использовать эти фото для остальных слайдов, нанести на каждое соответствующий текст.` : "",
+            "]",
+          ].filter(Boolean).join(" ");
+        }
+      } else if (form.source_mode === "link") {
+        sourceContext = "\n[ИСТОЧНИК: Ссылка на продукт/страницу — проанализировать контент и использовать информацию оттуда.]";
+      }
+
+      const formatContext = `\n[ФОРМАТ: Размер ${form.aspect_ratio}, слайдов: ${form.slide_count}, язык: ${form.language === "KZ" ? "Казахский" : "Русский"}]`;
       const fullPrompt = [
         typeInstructions,
         sourceContext,
         formatContext,
-        `\nОПИСАНИЕ ЗАДАЧИ ОТ ПОЛЬЗОВАТЕЛЯ:\n${form.main_prompt}`,
+        `\nОПИСАНИЕ ЗАДАЧИ:\n${form.main_prompt}`,
         form.additional_instructions?.trim() ? `\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ:\n${form.additional_instructions}` : "",
       ].filter(Boolean).join("\n");
 
-      // ─── Save to History (Supabase) ───
       const { data: dbTask, error: dbError } = await (supabase as any)
         .from("content_tasks")
         .insert({
@@ -402,21 +561,24 @@ export default function ClonyWizard() {
           status: "pending",
           progress_text: "Запрос отправлен в Clony AI...",
           project_id: isAgency ? null : active?.id,
-          main_text: form.main_prompt, // storing prompt as main_text for history preview
+          main_text: form.main_prompt,
         })
         .select()
         .single();
 
-      if (dbError) {
-        console.error("Supabase insert error:", dbError);
-        // We continue anyway so the user doesn't lose the generation if DB fails
-      }
+      if (dbError) console.error("Supabase insert error:", dbError);
 
       const payload = {
-        task_id: dbTask?.id, // Pass the DB ID to n8n
+        task_id: dbTask?.id,
         content_type: form.content_type,
         input_mode: form.source_mode,
         link: form.source_mode === "link" ? form.source_url : undefined,
+        logo_url: logoUrl,
+        cover_photo_url: coverPhotoUrl,
+        additional_photo_urls: additionalPhotoUrls.length > 0 ? additionalPhotoUrls : undefined,
+        character_photo_urls: characterPhotoUrls.length > 0 ? characterPhotoUrls : undefined,
+        character_name: form.character_name || undefined,
+        saved_character_id: form.saved_character_id || undefined,
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
         description: form.source_mode === "description" ? form.description_text : undefined,
         prompt: fullPrompt,
@@ -425,7 +587,6 @@ export default function ClonyWizard() {
         languege: form.language,
         slides: form.slide_count,
         style: form.style === "custom" ? form.custom_style : form.style || undefined,
-        color: undefined,
         name: active?.name,
         project_id: isAgency ? undefined : active?.id,
         session_id: crypto.randomUUID(),
@@ -439,7 +600,6 @@ export default function ClonyWizard() {
       });
 
       if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
-
       setSubmitted(true);
       toast({ title: "Запуск выполнен", description: "Clony AI создаёт ваш контент. Результат придёт в Telegram." });
     } catch (err: unknown) {
@@ -455,9 +615,13 @@ export default function ClonyWizard() {
     setForm({ ...INITIAL });
     setSubmitted(false);
     if (logoPreview) URL.revokeObjectURL(logoPreview);
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    additionalPreviews.forEach((p) => URL.revokeObjectURL(p));
+    characterPreviews.forEach((p) => URL.revokeObjectURL(p));
     setLogoPreview(null);
-    setPhotoPreview(null);
+    setCoverPreview(null);
+    setAdditionalPreviews([]);
+    setCharacterPreviews([]);
   };
 
   // ════════════════════════════════════════════════════
@@ -606,54 +770,244 @@ export default function ClonyWizard() {
           )}
 
           {form.source_mode === "photo" && (
-            <motion.div key="photo-input" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-hidden">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Logo upload */}
-                <div className="space-y-2">
-                  <Label className={cn(cfStyles.label, "text-muted-foreground/50")}>Логотип</Label>
-                  <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
-                  {logoPreview ? (
-                    <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/30 bg-primary/5 group">
-                      <img src={logoPreview} alt="" className="h-full w-full object-contain p-2" />
-                      <button type="button" onClick={() => clearFile("logo")}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                      >
-                        <X className="h-5 w-5 text-white" />
-                      </button>
+            <motion.div key="photo-input" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+
+              {/* ── НЕЙРОФОТОСЕССИЯ: Character Management ── */}
+              {form.content_type === "neuro-photo" ? (
+                <div className="space-y-5 pt-2">
+                  {/* Saved characters */}
+                  {loadingCharacters ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground/50 py-2">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Загрузка персонажей...
                     </div>
-                  ) : (
-                    <button type="button" onClick={() => logoRef.current?.click()}
-                      className="w-full h-28 rounded-2xl border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-border flex flex-col items-center justify-center gap-2 transition-all"
+                  ) : savedCharacters.length > 0 && (
+                    <div className="space-y-3">
+                      <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>Сохранённые персонажи</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {savedCharacters.map((char) => (
+                          <button key={char.id} type="button"
+                            onClick={() => set("saved_character_id", char.id === form.saved_character_id ? null : char.id)}
+                            className={cn(
+                              "flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-2 transition-all duration-200 text-sm",
+                              form.saved_character_id === char.id
+                                ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                : "border-border/30 bg-background hover:border-primary/30 text-foreground"
+                            )}
+                          >
+                            <div className={cn(
+                              "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-black",
+                              form.saved_character_id === char.id ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
+                            )}>
+                              {char.photo_urls?.[0] ? (
+                                <img src={char.photo_urls[0]} alt="" className="h-full w-full object-cover rounded-full" />
+                              ) : (
+                                <User className="h-3.5 w-3.5" />
+                              )}
+                            </div>
+                            <span className="font-bold text-[12px]">{char.name}</span>
+                            {form.saved_character_id === char.id && (
+                              <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      {form.saved_character_id && (
+                        <p className="text-[10px] text-primary/70 font-medium">
+                          ✓ Персонаж выбран — его лицо будет использовано строго
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Create new character */}
+                  {!form.saved_character_id && (
+                    <div className="rounded-2xl bg-secondary/20 border border-border/40 p-5 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Camera className="h-4 w-4 text-primary/60" />
+                        <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>
+                          {savedCharacters.length > 0 ? "Или создайте нового персонажа" : "Создать персонажа для фотосессии"}
+                        </Label>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground/50 font-medium -mt-2">
+                        Загрузите 3–10 фото лица (разные ракурсы, хорошее освещение). Система сохранит лицо и будет использовать его строго.
+                      </p>
+
+                      <Input
+                        value={form.character_name}
+                        onChange={(e) => set("character_name", e.target.value)}
+                        placeholder="Имя персонажа (например: Юрий)"
+                        className="h-11 rounded-xl border-border/40 bg-card text-sm font-semibold focus-visible:ring-primary/30"
+                      />
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Фото для обучения</Label>
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                            form.character_photos.length >= 3 ? "bg-green-500/10 text-green-600" : "bg-secondary text-muted-foreground/50"
+                          )}>
+                            {form.character_photos.length}/10
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {characterPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative h-[72px] w-[72px] rounded-xl overflow-hidden border-2 border-primary/20 group shadow-sm">
+                              <img src={preview} alt="" className="h-full w-full object-cover" />
+                              <button type="button" onClick={() => handleRemoveCharacterPhoto(idx)}
+                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl"
+                              >
+                                <X className="h-4 w-4 text-white" />
+                              </button>
+                            </div>
+                          ))}
+                          {form.character_photos.length < 10 && (
+                            <button type="button" onClick={() => characterRef.current?.click()}
+                              className="h-[72px] w-[72px] rounded-xl border-2 border-dashed border-border/40 bg-card hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-all"
+                            >
+                              <Plus className="h-4 w-4 text-muted-foreground/40" />
+                              <span className="text-[8px] font-bold text-muted-foreground/40">Фото</span>
+                            </button>
+                          )}
+                        </div>
+                        <input ref={characterRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddCharacterPhotos} />
+                      </div>
+
+                      {form.character_photos.length >= 1 && form.character_name.trim() && (
+                        <CfButtonMd
+                          onClick={handleSaveCharacter}
+                          disabled={savingCharacter}
+                          className="gap-2 bg-card border border-border/60 hover:bg-secondary/50 text-foreground shadow-sm"
+                        >
+                          {savingCharacter ? <Loader2 className="h-4 w-4 animate-spin" /> : <Star className="h-4 w-4 text-amber-500" />}
+                          {savingCharacter ? "Сохраняю..." : "Сохранить персонажа"}
+                        </CfButtonMd>
+                      )}
+                    </div>
+                  )}
+
+                  {form.saved_character_id && (
+                    <button type="button"
+                      onClick={() => set("saved_character_id", null)}
+                      className="text-[11px] text-muted-foreground/50 hover:text-foreground transition-colors flex items-center gap-1.5 underline underline-offset-2"
                     >
-                      <Upload className="h-5 w-5 text-muted-foreground/40" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">Загрузить лого</span>
+                      <X className="h-3 w-3" /> Создать нового персонажа
                     </button>
                   )}
                 </div>
 
-                {/* Photo upload */}
-                <div className="space-y-2">
-                  <Label className={cn(cfStyles.label, "text-muted-foreground/50")}>Ваше фото</Label>
-                  <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
-                  {photoPreview ? (
-                    <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/30 bg-primary/5 group">
-                      <img src={photoPreview} alt="" className="h-full w-full object-cover" />
-                      <button type="button" onClick={() => clearFile("photo")}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                      >
-                        <X className="h-5 w-5 text-white" />
-                      </button>
+              ) : (
+                /* ── ОБЫЧНЫЙ КОНТЕНТ: Logo + Cover + Additional ── */
+                <div className="space-y-5 pt-2">
+                  {/* Logo + Cover row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Logo */}
+                    <div className="space-y-2">
+                      <div>
+                        <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>
+                          Логотип
+                          <span className="ml-2 text-[9px] font-medium text-muted-foreground/40 normal-case">(необязательно)</span>
+                        </Label>
+                        <p className="text-[9px] text-muted-foreground/40 mt-0.5 font-medium">
+                          Цвета и стиль лого будут применены во всём дизайне
+                        </p>
+                      </div>
+                      <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
+                      {logoPreview ? (
+                        <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/30 bg-primary/5 group shadow-sm">
+                          <img src={logoPreview} alt="" className="h-full w-full object-contain p-3" />
+                          <button type="button" onClick={() => { set("logo_file", null); if (logoPreview) URL.revokeObjectURL(logoPreview); setLogoPreview(null); }}
+                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                          >
+                            <X className="h-5 w-5 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => logoRef.current?.click()}
+                          className="w-full h-28 rounded-2xl border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all"
+                        >
+                          <Upload className="h-5 w-5 text-muted-foreground/40" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">Загрузить лого</span>
+                        </button>
+                      )}
                     </div>
-                  ) : (
-                    <button type="button" onClick={() => photoRef.current?.click()}
-                      className="w-full h-28 rounded-2xl border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-border flex flex-col items-center justify-center gap-2 transition-all"
-                    >
-                      <Camera className="h-5 w-5 text-muted-foreground/40" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">Загрузить фото</span>
-                    </button>
-                  )}
+
+                    {/* Cover photo */}
+                    <div className="space-y-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>Обложка</Label>
+                          <span className="text-[8px] font-bold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            Главное фото
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground/40 mt-0.5 font-medium">
+                          Это фото — основа первого слайда / главного баннера
+                        </p>
+                      </div>
+                      <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverPhoto} />
+                      {coverPreview ? (
+                        <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/40 bg-primary/5 group shadow-sm">
+                          <img src={coverPreview} alt="" className="h-full w-full object-cover" />
+                          <button type="button" onClick={() => { set("cover_photo_file", null); if (coverPreview) URL.revokeObjectURL(coverPreview); setCoverPreview(null); }}
+                            className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                          >
+                            <X className="h-5 w-5 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => coverRef.current?.click()}
+                          className="w-full h-28 rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-all"
+                        >
+                          <Camera className="h-5 w-5 text-primary/40" />
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-primary/50">Загрузить обложку</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Additional photos */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>Дополнительные фото</Label>
+                        <p className="text-[9px] text-muted-foreground/40 mt-0.5 font-medium">
+                          До 9 фото — система нанесёт текст на каждое
+                        </p>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-bold px-2.5 py-0.5 rounded-full transition-colors",
+                        form.additional_photos.length > 0 ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground/40"
+                      )}>
+                        {form.additional_photos.length}/9
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {additionalPreviews.map((preview, idx) => (
+                        <div key={idx} className="relative h-[72px] w-[72px] rounded-xl overflow-hidden border-2 border-border/40 group shadow-sm">
+                          <img src={preview} alt="" className="h-full w-full object-cover" />
+                          <div className="absolute top-1 left-1 h-4 w-4 rounded-full bg-black/60 flex items-center justify-center">
+                            <span className="text-[8px] font-black text-white">{idx + 1}</span>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveAdditionalPhoto(idx)}
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl"
+                          >
+                            <X className="h-4 w-4 text-white" />
+                          </button>
+                        </div>
+                      ))}
+                      {form.additional_photos.length < 9 && (
+                        <button type="button" onClick={() => additionalRef.current?.click()}
+                          className="h-[72px] w-[72px] rounded-xl border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-1 transition-all"
+                        >
+                          <Plus className="h-4 w-4 text-muted-foreground/40" />
+                          <span className="text-[8px] font-bold text-muted-foreground/40">Добавить</span>
+                        </button>
+                      )}
+                    </div>
+                    <input ref={additionalRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddPhotos} />
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           )}
 
@@ -908,6 +1262,16 @@ export default function ClonyWizard() {
             ...(form.cta.length > 0 ? [["CTA", form.cta.map((c) => CTA_OPTIONS.find((o) => o.value === c)?.label ?? c).join(", ")]] : []),
             ["Слайды", `${form.slide_count}`],
             ...(form.style ? [["Стиль", form.style === "custom" ? (form.custom_style || "Свой") : STYLES.find((s) => s.value === form.style)?.label ?? form.style]] : []),
+            ...(form.source_mode === "photo" && form.content_type !== "neuro-photo" ? [
+              ...(form.logo_file ? [["Лого", "✓ Загружен"]] : []),
+              ...(form.cover_photo_file ? [["Обложка", "✓ Загружена"]] : []),
+              ...(form.additional_photos.length > 0 ? [["Доп. фото", `${form.additional_photos.length} шт.`]] : []),
+            ] : []),
+            ...(form.content_type === "neuro-photo" ? [
+              form.saved_character_id
+                ? [["Персонаж", savedCharacters.find((c) => c.id === form.saved_character_id)?.name ?? "Выбран"]]
+                : (form.character_photos.length > 0 ? [["Фото лица", `${form.character_photos.length} шт.`]] : []),
+            ].flat() : []),
           ].map(([key, val]) => (
             <div key={key as string} className="contents">
               <span className="text-muted-foreground/60 font-medium">{key}</span>

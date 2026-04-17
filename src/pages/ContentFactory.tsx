@@ -32,7 +32,12 @@ import {
   Layout,
   Smartphone,
   Plus,
-  Play
+  Play,
+  ThumbsUp,
+  ThumbsDown,
+  MessageSquare,
+  Send,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -105,6 +110,16 @@ export default function ContentFactory() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [abVariant, setAbVariant] = useState<"A" | "B">("A");
   const [sessionId, setSessionId] = useState("");
+
+  // Ratings / feedback for learning
+  const [ratings, setRatings] = useState<Record<string, 1 | -1>>(() => {
+    try { return JSON.parse(localStorage.getItem("cf_ratings") || "{}"); } catch { return {}; }
+  });
+  const [ratingComments, setRatingComments] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("cf_rating_comments") || "{}"); } catch { return {}; }
+  });
+  const [activeCommentTask, setActiveCommentTask] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
@@ -403,6 +418,52 @@ export default function ContentFactory() {
     setTask(item);
     setTaskId(item.id);
   };
+
+  const handleRating = useCallback(async (taskId: string, rating: 1 | -1, comment?: string) => {
+    const newRatings = { ...ratings, [taskId]: rating };
+    setRatings(newRatings);
+    localStorage.setItem("cf_ratings", JSON.stringify(newRatings));
+    let nextComment = ratingComments[taskId] ?? "";
+    if (comment !== undefined) {
+      const newComments = { ...ratingComments, [taskId]: comment };
+      setRatingComments(newComments);
+      localStorage.setItem("cf_rating_comments", JSON.stringify(newComments));
+      nextComment = comment;
+    }
+    try {
+      await (supabase as any).from("content_feedback").insert({
+        task_id: taskId,
+        rating,
+        comment: nextComment || null,
+      });
+    } catch {
+      /* silent */
+    }
+    try {
+      await fetch("https://n8n.zapoinov.com/webhook/clony-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          task_id: taskId,
+          rating,
+          comment: nextComment,
+          ts: new Date().toISOString(),
+        }),
+      });
+    } catch {
+      /* silent — feedback is best-effort */
+    }
+  }, [ratings, ratingComments]);
+
+  const submitComment = useCallback((taskId: string) => {
+    const text = commentDraft.trim();
+    if (!text) return;
+    const currentRating = ratings[taskId] ?? -1;
+    handleRating(taskId, currentRating as 1 | -1, text);
+    setActiveCommentTask(null);
+    setCommentDraft("");
+    toast({ title: "Спасибо за отзыв", description: "Система учтёт это при обучении." });
+  }, [commentDraft, ratings, handleRating, toast]);
 
   const progressPercent = !task ? 0 : task.status === "pending" ? 10 : task.status === "processing" ? 60 : task.status === "completed" ? 100 : 0;
 
@@ -761,6 +822,93 @@ export default function ContentFactory() {
                            <span>{task.created_at ? dateFmt(new Date(task.created_at), "dd MMM, HH:mm") : ""}</span>
                            <span className="group-hover:text-primary transition-colors">Смотреть →</span>
                         </div>
+
+                        {task.status === "completed" && task.result_urls?.[0] && (
+                          <div
+                            className="pt-3 border-t border-border/40 space-y-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-8 w-8 rounded-lg transition-colors",
+                                    ratings[task.id] === 1
+                                      ? "bg-green-500/15 text-green-600 hover:bg-green-500/20"
+                                      : "text-muted-foreground/50 hover:text-green-600 hover:bg-green-500/10"
+                                  )}
+                                  onClick={() => handleRating(task.id, 1)}
+                                  title="Нравится"
+                                >
+                                  <ThumbsUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-8 w-8 rounded-lg transition-colors",
+                                    ratings[task.id] === -1
+                                      ? "bg-destructive/15 text-destructive hover:bg-destructive/20"
+                                      : "text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10"
+                                  )}
+                                  onClick={() => handleRating(task.id, -1)}
+                                  title="Не нравится"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-8 w-8 rounded-lg transition-colors",
+                                    ratingComments[task.id]
+                                      ? "bg-primary/15 text-primary hover:bg-primary/20"
+                                      : "text-muted-foreground/50 hover:text-primary hover:bg-primary/10"
+                                  )}
+                                  onClick={() => {
+                                    setActiveCommentTask(activeCommentTask === task.id ? null : task.id);
+                                    setCommentDraft(ratingComments[task.id] ?? "");
+                                  }}
+                                  title="Комментарий"
+                                >
+                                  <MessageSquare className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              {ratingComments[task.id] && activeCommentTask !== task.id && (
+                                <span className="text-[10px] text-muted-foreground/60 truncate max-w-[60%]" title={ratingComments[task.id]}>
+                                  «{ratingComments[task.id]}»
+                                </span>
+                              )}
+                            </div>
+                            {activeCommentTask === task.id && (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={commentDraft}
+                                  onChange={(e) => setCommentDraft(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      submitComment(task.id);
+                                    }
+                                  }}
+                                  placeholder="Что понравилось или нет?"
+                                  className="flex-1 h-9 px-3 rounded-lg border border-border/60 bg-background text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  autoFocus
+                                />
+                                <Button
+                                  size="icon"
+                                  className="h-9 w-9 rounded-lg bg-primary text-white hover:bg-primary/90"
+                                  onClick={() => submitComment(task.id)}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>
