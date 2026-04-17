@@ -8,6 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,6 +56,7 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
 import ClonyWizard from "@/components/content/ClonyWizard";
+import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { cn } from "@/lib/utils";
 import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
@@ -59,6 +68,9 @@ interface ContentTask {
   progress_text: string | null;
   result_urls: string[] | null;
   content_type: string;
+  main_text?: string | null;
+  aspect_ratio?: string | null;
+  format?: string | null;
   created_at?: string;
 }
 
@@ -74,6 +86,14 @@ type AbEvent = {
   event: string;
   meta?: Record<string, string | number | boolean>;
 };
+
+const DELETE_REASON_OPTIONS = [
+  "Не нравится результат",
+  "Нужна другая версия",
+  "Случайно создал",
+  "Больше не актуально",
+  "Другое",
+] as const;
 
 export default function ContentFactory() {
   const { active, isAgency } = useWorkspace();
@@ -120,6 +140,11 @@ export default function ContentFactory() {
   });
   const [activeCommentTask, setActiveCommentTask] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState("");
+  const [adSheetOpen, setAdSheetOpen] = useState(false);
+  const [selectedAdTask, setSelectedAdTask] = useState<ContentTask | null>(null);
+  const [deleteDialogTask, setDeleteDialogTask] = useState<ContentTask | null>(null);
+  const [deleteReason, setDeleteReason] = useState<(typeof DELETE_REASON_OPTIONS)[number] | "">("");
+  const [deleteDetails, setDeleteDetails] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
@@ -198,7 +223,7 @@ export default function ContentFactory() {
       completionRate,
       reachedGoal: totalSessions >= 50,
     };
-  }, [history.length, task?.status]);
+  }, [history]);
 
   // Fetch history
   const fetchHistory = useCallback(async () => {
@@ -208,7 +233,7 @@ export default function ContentFactory() {
     }
     const currentActiveId = active.id;
     setLoadingHistory(true);
-    let query = (supabase as any).from("content_tasks").select("id, status, progress_text, result_urls, content_type, created_at");
+    let query = (supabase as any).from("content_tasks").select("id, status, progress_text, result_urls, content_type, main_text, aspect_ratio, format, created_at");
 
     if (!isAgency) {
       query = query.eq("project_id", currentActiveId);
@@ -233,7 +258,17 @@ export default function ContentFactory() {
       .channel(`content_task_${taskId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "content_tasks", filter: `id=eq.${taskId}` }, (payload: any) => {
         const row = payload.new;
-        const updated: ContentTask = { id: row.id, status: row.status, progress_text: row.progress_text, result_urls: row.result_urls, content_type: row.content_type, created_at: row.created_at };
+        const updated: ContentTask = {
+          id: row.id,
+          status: row.status,
+          progress_text: row.progress_text,
+          result_urls: row.result_urls,
+          content_type: row.content_type,
+          main_text: row.main_text,
+          aspect_ratio: row.aspect_ratio,
+          format: row.format,
+          created_at: row.created_at,
+        };
         setTask(updated);
         if (row.status === "completed" || row.status === "error") fetchHistory();
       })
@@ -334,7 +369,7 @@ export default function ContentFactory() {
       const { data, error } = await (supabase as any)
         .from("content_tasks")
         .insert(payload)
-        .select("id, status, progress_text, result_urls, content_type, created_at")
+        .select("id, status, progress_text, result_urls, content_type, main_text, aspect_ratio, format, created_at")
         .single();
       if (error) throw error;
 
@@ -391,24 +426,43 @@ export default function ContentFactory() {
     setReferencePreview(null);
   };
 
-  const handleDeleteTask = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // prevent opening the task
-    if (!confirm("Вы уверены, что хотите удалить эту запись?")) return;
+  const openDeleteDialog = (task: ContentTask, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteDialogTask(task);
+    setDeleteReason("");
+    setDeleteDetails("");
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deleteDialogTask || !deleteReason) return;
 
     try {
+      const feedbackComment = deleteDetails.trim()
+        ? `Удалено из истории. Причина: ${deleteReason}. Комментарий: ${deleteDetails.trim()}`
+        : `Удалено из истории. Причина: ${deleteReason}`;
+
+      await (supabase as any).from("content_feedback").insert({
+        task_id: deleteDialogTask.id,
+        rating: -1,
+        comment: feedbackComment,
+      });
+
       const { error } = await (supabase as any)
         .from("content_tasks")
         .delete()
-        .eq("id", id);
+        .eq("id", deleteDialogTask.id);
 
       if (error) throw error;
 
-      toast({ title: "Удалено", description: "Запись успешно удалена" });
-      setHistory(prev => prev.filter(t => t.id !== id));
-      if (taskId === id) {
+      toast({ title: "Удалено", description: "Контент удалён из истории" });
+      setHistory(prev => prev.filter(t => t.id !== deleteDialogTask.id));
+      if (taskId === deleteDialogTask.id) {
         setTask(null);
         setTaskId(null);
       }
+      setDeleteDialogTask(null);
+      setDeleteReason("");
+      setDeleteDetails("");
     } catch (err: any) {
       toast({ title: "Ошибка удаления", description: err.message, variant: "destructive" });
     }
@@ -466,6 +520,10 @@ export default function ContentFactory() {
   }, [commentDraft, ratings, handleRating, toast]);
 
   const progressPercent = !task ? 0 : task.status === "pending" ? 10 : task.status === "processing" ? 60 : task.status === "completed" ? 100 : 0;
+  const readyHistory = useMemo(
+    () => history.filter((item) => item.status === "completed" && Array.isArray(item.result_urls) && item.result_urls.length > 0),
+    [history]
+  );
 
   useEffect(() => {
     saveAbEvent("tab_open", { tab: pageTab });
@@ -696,41 +754,12 @@ export default function ContentFactory() {
 
           {pageTab === "my-content" && (
             <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-8">
-              <CfSection className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <CfH2>Метрики A/B теста интерфейса</CfH2>
-                  <Badge variant="outline" className={cn("text-xs", abStats.reachedGoal ? "text-green-600 border-green-600/30 bg-green-500/10" : "text-primary border-primary/30 bg-primary/10")}>
-                    {abStats.totalSessions}/50 пользователей
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-                  <div className="rounded-2xl border border-border/40 bg-background p-4">
-                    <p className={cfStyles.label}>Вовлеченность</p>
-                    <p className="text-2xl font-black mt-2">{abStats.engagementRate}%</p>
-                  </div>
-                  <div className="rounded-2xl border border-border/40 bg-background p-4">
-                    <p className={cfStyles.label}>Завершение задач</p>
-                    <p className="text-2xl font-black mt-2">{abStats.completionRate}%</p>
-                  </div>
-                  <div className="rounded-2xl border border-border/40 bg-background p-4">
-                    <p className={cfStyles.label}>Среднее время</p>
-                    <p className="text-2xl font-black mt-2">{abStats.avgTaskSec || 0}с</p>
-                  </div>
-                  <div className="rounded-2xl border border-border/40 bg-background p-4">
-                    <p className={cfStyles.label}>Вариант</p>
-                    <p className="text-2xl font-black mt-2">{abVariant}</p>
-                  </div>
-                </div>
-                <p className={cfStyles.hint}>
-                  Метрики считаются автоматически по событиям интерфейса. После 50 сессий можно фиксировать итог A/B теста.
-                </p>
-              </CfSection>
               {loadingHistory ? (
                 <div className="flex flex-col items-center justify-center py-32 space-y-4">
                    <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
                    <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Загрузка истории...</p>
                 </div>
-              ) : history.length === 0 ? (
+              ) : readyHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-40 text-center space-y-8">
                    <motion.div 
                      initial={{ scale: 0.8, opacity: 0 }}
@@ -750,9 +779,9 @@ export default function ContentFactory() {
                       <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
                    </motion.div>
                    <div className="space-y-3 max-w-sm">
-                      <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">История пуста</h3>
+                      <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Готового контента пока нет</h3>
                       <p className="text-muted-foreground text-sm font-medium leading-relaxed">
-                        Здесь появятся ваши креативы. Запустите генерацию в разделе «Создать», чтобы увидеть магию AI в действии.
+                        Здесь будут появляться только завершённые креативы, готовые к просмотру, оценке, удалению и запуску в рекламу.
                       </p>
                    </div>
                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -764,7 +793,7 @@ export default function ContentFactory() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                   <AnimatePresence mode="popLayout">
-                    {history.map((task, idx) => (
+                    {readyHistory.map((task, idx) => (
                       <motion.div 
                         layout
                         key={task.id} 
@@ -803,7 +832,7 @@ export default function ContentFactory() {
                                variant="ghost"
                                size="icon"
                                className="h-7 w-7 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors"
-                               onClick={(e) => handleDeleteTask(task.id, e)}
+                               onClick={(e) => openDeleteDialog(task, e)}
                              >
                                <Trash2 className="h-3.5 w-3.5" />
                              </Button>
@@ -840,7 +869,7 @@ export default function ContentFactory() {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -867,7 +896,7 @@ export default function ContentFactory() {
                                   onClick={() => handleRating(task.id, -1)}
                                   title="Не нравится"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <ThumbsDown className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -885,6 +914,27 @@ export default function ContentFactory() {
                                   title="Комментарий"
                                 >
                                   <MessageSquare className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
+                                  onClick={() => {
+                                    setSelectedAdTask(task);
+                                    setAdSheetOpen(true);
+                                  }}
+                                  title="Запустить в рекламу"
+                                >
+                                  <Zap className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                  onClick={(e) => openDeleteDialog(task, e)}
+                                  title="Удалить"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                               {ratingComments[task.id] && activeCommentTask !== task.id && (
@@ -935,6 +985,65 @@ export default function ContentFactory() {
           )}
         </div>
       </div>
+      <CampaignBuilderSheet
+        open={adSheetOpen}
+        onOpenChange={setAdSheetOpen}
+        initialCreative={
+          selectedAdTask
+            ? {
+                urls: selectedAdTask.result_urls || [],
+                contentType: selectedAdTask.content_type,
+                mainText: selectedAdTask.main_text || "",
+                aspectRatio: selectedAdTask.aspect_ratio || null,
+                format: selectedAdTask.format || null,
+              }
+            : null
+        }
+      />
+      <Dialog open={Boolean(deleteDialogTask)} onOpenChange={(open) => !open && setDeleteDialogTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Удалить контент из истории</DialogTitle>
+            <DialogDescription>
+              Укажите причину удаления. Это поможет понимать, какой контент вам подходит, а какой нет.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Причина</Label>
+              <Select value={deleteReason} onValueChange={(value) => setDeleteReason(value as (typeof DELETE_REASON_OPTIONS)[number])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите причину" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELETE_REASON_OPTIONS.map((reason) => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Комментарий</Label>
+              <Textarea
+                value={deleteDetails}
+                onChange={(e) => setDeleteDetails(e.target.value)}
+                placeholder="Например: текст слабый, нужен другой оффер, визуал не подходит"
+                className="min-h-[110px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogTask(null)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteTask} disabled={!deleteReason}>
+              Удалить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

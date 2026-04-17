@@ -22,6 +22,13 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialCreative?: {
+    urls: string[];
+    contentType: string;
+    mainText?: string | null;
+    aspectRatio?: string | null;
+    format?: string | null;
+  } | null;
 }
 
 interface ClientConfig {
@@ -50,8 +57,16 @@ interface BusinessPage {
 type Objective = "whatsapp" | "website" | "leadform";
 
 const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_CAMPAIGN_LAUNCH_URL || "https://n8n.zapoinov.com/webhook/ai-target-launch";
+const EMPTY_MEDIA = {
+  file: null,
+  preview: null,
+  originalFile: null,
+  originalPreview: null,
+  mediaType: null,
+  remoteUrl: null,
+} as const;
 
-export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
+export default function CampaignBuilderSheet({ open, onOpenChange, initialCreative = null }: Props) {
   const { active, isAgency } = useWorkspace();
   const [clients, setClients] = useState<ClientConfig[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
@@ -81,14 +96,18 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
     preview: string | null;
     originalFile: File | null;
     originalPreview: string | null;
-  }>({ file: null, preview: null, originalFile: null, originalPreview: null });
+    mediaType: "image" | "video" | null;
+    remoteUrl: string | null;
+  }>(EMPTY_MEDIA);
 
   const [storiesMedia, setStoriesMedia] = useState<{
     file: File | null;
     preview: string | null;
     originalFile: File | null;
     originalPreview: string | null;
-  }>({ file: null, preview: null, originalFile: null, originalPreview: null });
+    mediaType: "image" | "video" | null;
+    remoteUrl: string | null;
+  }>(EMPTY_MEDIA);
   
   // Cropping state
   const [activeCropType, setActiveCropType] = useState<"feed" | "stories" | null>(null);
@@ -107,6 +126,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
   const selectedPage = businessPages.find((p) => p.id === selectedPageId);
+  const initialUrlsKey = initialCreative?.urls?.join("|") ?? "";
 
   // Active page_id and instagram to send
   const activePage = selectedPage
@@ -217,11 +237,56 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       .finally(() => setLoadingForms(false));
   }, [objective, selectedClientId, selectedPageId]);
 
+  useEffect(() => {
+    if (!open || !initialCreative?.urls?.length) return;
+
+    const firstUrl = initialCreative.urls[0];
+    const remoteMediaType: "image" | "video" =
+      initialCreative.contentType === "video" ? "video" : "image";
+    const remoteAsset = {
+      file: null,
+      preview: firstUrl,
+      originalFile: null,
+      originalPreview: firstUrl,
+      mediaType: remoteMediaType,
+      remoteUrl: firstUrl,
+    } as const;
+
+    const isVertical =
+      initialCreative.aspectRatio === "9:16" ||
+      initialCreative.format === "reels" ||
+      initialCreative.format === "slideshow" ||
+      initialCreative.contentType === "video";
+
+    setFeedMedia(isVertical ? EMPTY_MEDIA : remoteAsset);
+    setStoriesMedia(isVertical ? remoteAsset : EMPTY_MEDIA);
+
+    const seededText = initialCreative.mainText?.trim() || "";
+    if (seededText) {
+      setHeadline((prev) => prev || seededText.split("\n")[0].slice(0, 80));
+      setBodyText((prev) => prev || seededText);
+    }
+  }, [
+    open,
+    initialCreative?.aspectRatio,
+    initialCreative?.contentType,
+    initialCreative?.format,
+    initialCreative?.mainText,
+    initialUrlsKey,
+  ]);
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "feed" | "stories") => {
     const file = e.target.files?.[0];
     if (!file) return;
     const preview = URL.createObjectURL(file);
-    const data = { file, preview, originalFile: file, originalPreview: preview };
+    const data = {
+      file,
+      preview,
+      originalFile: file,
+      originalPreview: preview,
+      mediaType: file.type.startsWith("video/") ? "video" as const : "image" as const,
+      remoteUrl: null,
+    };
     
     if (type === "feed") setFeedMedia(data);
     else setStoriesMedia(data);
@@ -268,26 +333,31 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
   const handleApplyCrop = async () => {
     if (!activeCropType) return;
     const media = activeCropType === "feed" ? feedMedia : storiesMedia;
-    if (!media.originalPreview || !croppedAreaPixels || !media.originalFile) return;
+    if (!media.originalPreview || !croppedAreaPixels || media.mediaType !== "image") return;
     
-    if (media.originalFile.type.startsWith("image/")) {
-      try {
-        const croppedBlob = await getCroppedImg(media.originalPreview, croppedAreaPixels);
-        if (croppedBlob) {
-          const croppedFile = new File([croppedBlob], media.originalFile.name, { type: "image/jpeg" });
-          const updated = { ...media, file: croppedFile, preview: URL.createObjectURL(croppedBlob) };
-          if (activeCropType === "feed") setFeedMedia(updated);
-          else setStoriesMedia(updated);
-        }
-      } catch (e) {
-        console.error("Error cropping image:", e);
+    try {
+      const croppedBlob = await getCroppedImg(media.originalPreview, croppedAreaPixels);
+      if (croppedBlob) {
+        const nextName = media.originalFile?.name || `${activeCropType}-creative.jpg`;
+        const croppedFile = new File([croppedBlob], nextName, { type: "image/jpeg" });
+        const updated = {
+          ...media,
+          file: croppedFile,
+          preview: URL.createObjectURL(croppedBlob),
+          mediaType: "image" as const,
+          remoteUrl: null,
+        };
+        if (activeCropType === "feed") setFeedMedia(updated);
+        else setStoriesMedia(updated);
       }
+    } catch (e) {
+      console.error("Error cropping image:", e);
     }
     setActiveCropType(null);
   };
 
   const handleLaunch = async () => {
-    if (!feedMedia.file && !storiesMedia.file) {
+    if (!feedMedia.file && !storiesMedia.file && !feedMedia.remoteUrl && !storiesMedia.remoteUrl) {
       toast({ title: "Загрузите креатив", description: "Выберите хотя бы один файл (4:5 или 9:16)", variant: "destructive" });
       return;
     }
@@ -308,6 +378,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         const { error } = await supabase.storage.from("content_assets").upload(path, feedMedia.file);
         if (error) throw error;
         feedUrl = supabase.storage.from("content_assets").getPublicUrl(path).data.publicUrl;
+      } else if (feedMedia.remoteUrl) {
+        feedUrl = feedMedia.remoteUrl;
       }
 
       if (storiesMedia.file) {
@@ -316,11 +388,13 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
         const { error } = await supabase.storage.from("content_assets").upload(path, storiesMedia.file);
         if (error) throw error;
         storiesUrl = supabase.storage.from("content_assets").getPublicUrl(path).data.publicUrl;
+      } else if (storiesMedia.remoteUrl) {
+        storiesUrl = storiesMedia.remoteUrl;
       }
 
       // 2. Build payload
-      const primaryMedia = storiesMedia.file || feedMedia.file;
-      const isVideo = primaryMedia?.type.startsWith("video/");
+      const primaryMediaType = storiesMedia.mediaType || feedMedia.mediaType;
+      const isVideo = primaryMediaType === "video";
 
       const payload = {
         clientConfig: {
@@ -372,8 +446,8 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
       onOpenChange(false);
       
       // Reset
-      setFeedMedia({ file: null, preview: null, originalFile: null, originalPreview: null });
-      setStoriesMedia({ file: null, preview: null, originalFile: null, originalPreview: null });
+      setFeedMedia(EMPTY_MEDIA);
+      setStoriesMedia(EMPTY_MEDIA);
     } catch (e: any) {
       toast({ title: "Ошибка запуска", description: e.message, variant: "destructive" });
     } finally {
@@ -523,7 +597,11 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                   )}
                 >
                   {feedMedia.preview ? (
-                    <img src={feedMedia.preview} className="w-full h-full object-cover" />
+                    feedMedia.mediaType === "video" ? (
+                      <video src={feedMedia.preview} className="w-full h-full object-cover" controls />
+                    ) : (
+                      <img src={feedMedia.preview} className="w-full h-full object-cover" />
+                    )
                   ) : (
                     <div className="text-center p-4">
                       <Upload className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
@@ -531,7 +609,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     </div>
                   )}
                 </div>
-                {feedMedia.preview && (
+                {feedMedia.preview && feedMedia.mediaType === "image" && (
                   <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold" onClick={() => setActiveCropType("feed")}>
                     <Scissors className="h-3 w-3 mr-1.5" /> Адаптировать
                   </Button>
@@ -550,7 +628,11 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                   )}
                 >
                   {storiesMedia.preview ? (
-                    <img src={storiesMedia.preview} className="w-full h-full object-cover" />
+                    storiesMedia.mediaType === "video" ? (
+                      <video src={storiesMedia.preview} className="w-full h-full object-cover" controls />
+                    ) : (
+                      <img src={storiesMedia.preview} className="w-full h-full object-cover" />
+                    )
                   ) : (
                     <div className="text-center p-4">
                       <Upload className="h-5 w-5 text-muted-foreground mx-auto mb-2" />
@@ -558,7 +640,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange }: Props) {
                     </div>
                   )}
                 </div>
-                {storiesMedia.preview && (
+                {storiesMedia.preview && storiesMedia.mediaType === "image" && (
                   <Button variant="outline" size="sm" className="w-full h-8 text-[10px] font-bold" onClick={() => setActiveCropType("stories")}>
                     <Scissors className="h-3 w-3 mr-1.5" /> Адаптировать
                   </Button>

@@ -18,7 +18,12 @@
       "Bash(cat:*)",
       "Bash(wc:*)",
       "Bash(curl:*)",
-      "Bash(export PATH=\"/usr/local/bin:$HOME/.npm-global/bin:$PATH\")"
+      "Bash(export PATH=\"/usr/local/bin:$HOME/.npm-global/bin:$PATH\")",
+      "Bash(vercel ls:*)",
+      "Bash(vercel inspect:*)",
+      "mcp__plugin_claude-mem_mcp-search__smart_outline",
+      "mcp__plugin_claude-mem_mcp-search__smart_unfold",
+      "mcp__plugin_claude-mem_mcp-search__get_observations"
     ],
     "deny": []
   }
