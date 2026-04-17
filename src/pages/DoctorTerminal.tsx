@@ -129,7 +129,7 @@ const DoctorTerminal = () => {
       if (authError) throw authError;
       if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
-      // 2. Profile update/create (REQUIRED: Run the SQL migration first!)
+      // 2. Profile update/create
       const { error: profError } = await (supabase as any)
         .from("profiles")
         .upsert({
@@ -138,7 +138,6 @@ const DoctorTerminal = () => {
           full_name: formData.name,
           phone: formData.phone,
           role: "doctor",
-          permissions: ROLE_PRESETS.doctor,
           specialty: formData.specialty,
           office: formData.office,
           working_days: formData.workingDays,
@@ -147,20 +146,21 @@ const DoctorTerminal = () => {
 
       if (profError) {
         console.error("Profile update failed:", profError);
-        // Don't throw here, profile might be created by trigger or RLS
       }
 
       // 3. Link to Project
-      const { error: memberError } = await (supabase as any)
-        .from("project_members")
-        .insert({
-          user_id: authRes.user.id,
-          project_id: active?.id,
-        });
+      if (active?.id) {
+        const { error: memberError } = await (supabase as any)
+          .from("project_members")
+          .insert({
+            user_id: authRes.user.id,
+            project_id: active.id,
+          });
 
-      if (memberError) {
-        console.error("Member link failed:", memberError);
-        throw memberError;
+        if (memberError) {
+          console.error("Member link failed:", memberError);
+          throw new Error(`Ошибка привязки к проекту: ${memberError.message}`);
+        }
       }
 
       const newDoctor: TeamMember = {
