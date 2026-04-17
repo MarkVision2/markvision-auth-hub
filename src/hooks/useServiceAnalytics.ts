@@ -42,21 +42,46 @@ export function useServiceAnalytics() {
                 .select("*")
                 .eq("project_id", active.id);
 
+            if (startDate && endDate) {
+                query = query.gte("created_at", startDate).lte("created_at", endDate);
+            }
+
             const { data: resData, error } = await query;
 
             if (error) throw error;
 
-            const processedData: ServiceAnalyticsData[] = (resData || []).map((item: any) => {
-                const spend = Number(item.spend) || 0;
-                const revenue = Number(item.revenue) || 0;
-                const leads = Number(item.leads) || 0;
-                const sales = Number(item.sales) || 0;
+            // Поскольку VIEW теперь возвращает данные по дням, нам нужно агрегировать их по категориям в UI
+            const aggregated = (resData || []).reduce((acc: Record<string, any>, item: any) => {
+                const cat = item.service_category || "Не определено";
+                if (!acc[cat]) {
+                    acc[cat] = {
+                        service_category: cat,
+                        spend: 0,
+                        leads: 0,
+                        visits: 0,
+                        sales: 0,
+                        revenue: 0
+                    };
+                }
+                acc[cat].spend += Number(item.spend) || 0;
+                acc[cat].leads += Number(item.leads) || 0;
+                acc[cat].visits += Number(item.visits) || 0;
+                acc[cat].sales += Number(item.sales) || 0;
+                acc[cat].revenue += Number(item.revenue) || 0;
+                return acc;
+            }, {});
+
+            const processedData: ServiceAnalyticsData[] = Object.values(aggregated).map((item: any) => {
+                const spend = item.spend;
+                const revenue = item.revenue;
+                const leads = item.leads;
+                const sales = item.sales;
 
                 return {
-                    service_category: item.service_category || "Не определено",
+                    service_category: item.service_category,
                     spend,
                     leads,
-                    visits: Number(item.visits) || 0,
+                    visits: item.visits,
                     sales,
                     revenue,
                     cpl: leads > 0 ? spend / leads : 0,
