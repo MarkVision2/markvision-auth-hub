@@ -34,6 +34,7 @@ import {
   Plus,
   User,
   Star,
+  Clock,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
@@ -285,6 +286,8 @@ export default function ClonyWizard() {
   const [form, setForm] = useState<WizardForm>({ ...INITIAL });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submittedTaskId, setSubmittedTaskId] = useState<string | null>(null);
   const [enhancing, setEnhancing] = useState(false);
 
   // File previews
@@ -619,10 +622,14 @@ export default function ClonyWizard() {
       });
 
       if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
+      setSubmittedTaskId(dbTask?.id ?? null);
+      setSubmitError(null);
       setSubmitted(true);
-      toast({ title: "Запуск выполнен", description: "Clony AI создаёт ваш контент. Результат придёт в Telegram." });
+      toast({ title: "Задача принята в работу", description: "Clony AI начал генерацию. Результат появится в разделе «История» и в Telegram." });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Unexpected error";
+      const message = err instanceof Error ? err.message : "Неизвестная ошибка";
+      setSubmitError(message);
+      setSubmitted(true);
       toast({ title: "Ошибка отправки", description: message, variant: "destructive" });
     } finally {
       setSubmitting(false);
@@ -633,6 +640,8 @@ export default function ClonyWizard() {
     setStep(0);
     setForm({ ...INITIAL });
     setSubmitted(false);
+    setSubmitError(null);
+    setSubmittedTaskId(null);
     if (logoPreview) URL.revokeObjectURL(logoPreview);
     if (coverPreview) URL.revokeObjectURL(coverPreview);
     additionalPreviews.forEach((p) => URL.revokeObjectURL(p));
@@ -647,54 +656,116 @@ export default function ClonyWizard() {
   // VIEWS
   // ════════════════════════════════════════════════════
 
-  // ── Success ────────────────────────────────────────
+  // ── Success / Error ────────────────────────────────
   if (submitted) {
+    const isError = Boolean(submitError);
     return (
       <div className="flex items-center justify-center min-h-[55vh] px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-lg rounded-[2.5rem] border border-border/40 bg-card p-10 sm:p-14 text-center space-y-8 shadow-2xl relative overflow-hidden"
+          className={cn(
+            "w-full max-w-xl rounded-[2.5rem] border p-10 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden",
+            isError
+              ? "border-destructive/40 bg-gradient-to-br from-destructive/10 via-card to-card"
+              : "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card"
+          )}
         >
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-green-400 via-primary to-green-400" />
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto"
+          <div className={cn(
+            "absolute top-0 left-0 w-full h-1.5",
+            isError ? "bg-gradient-to-r from-destructive/60 via-destructive to-destructive/60"
+                    : "bg-gradient-to-r from-green-400 via-primary to-green-400"
+          )} />
+          <div className={cn(
+            "absolute -top-20 -right-20 h-64 w-64 rounded-full blur-3xl opacity-30 pointer-events-none",
+            isError ? "bg-destructive" : "bg-primary"
+          )} />
+
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+            className={cn(
+              "relative h-24 w-24 rounded-3xl flex items-center justify-center mx-auto shadow-xl",
+              isError ? "bg-gradient-to-br from-destructive to-destructive/70 shadow-destructive/40"
+                      : "bg-gradient-to-br from-green-400 to-primary shadow-primary/40"
+            )}
           >
-            <CheckCircle2 className="h-10 w-10 text-green-500" />
+            <div className="absolute inset-0 rounded-3xl bg-white/20 blur-md" />
+            {isError ? (
+              <X className="relative h-12 w-12 text-white drop-shadow-lg" strokeWidth={3} />
+            ) : (
+              <CheckCircle2 className="relative h-12 w-12 text-white drop-shadow-lg" strokeWidth={2.5} />
+            )}
           </motion.div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black tracking-tight">Запрос отправлен!</h2>
-            <p className="text-sm text-muted-foreground font-medium max-w-xs mx-auto leading-relaxed">
-              Clony AI уже работает. Результат появится в Telegram.
+
+          <div className="relative space-y-3">
+            <h2 className="text-3xl font-black tracking-tight">
+              {isError ? "Не удалось отправить" : "Спасибо! Задача принята в работу"}
+            </h2>
+            <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+              {isError
+                ? "Произошла ошибка при отправке запроса. Попробуйте ещё раз или проверьте подключение."
+                : "Clony AI уже начал генерацию вашего креатива. Результат появится в разделе «История» и придёт в Telegram, обычно через 1–3 минуты."}
             </p>
+            {isError && submitError && (
+              <div className="mt-4 mx-auto max-w-md p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-left">
+                <p className="text-[10px] font-black uppercase tracking-widest text-destructive/80 mb-1.5">Текст ошибки</p>
+                <p className="text-xs font-mono text-destructive break-all">{submitError}</p>
+              </div>
+            )}
+            {!isError && submittedTaskId && (
+              <p className="text-[10px] font-mono text-muted-foreground/50 pt-1">
+                ID задачи: <span className="text-primary/70">{submittedTaskId.slice(0, 8)}</span>
+              </p>
+            )}
           </div>
-          <div className="flex items-center justify-center gap-3 sm:gap-5 py-4">
-            {PIPELINE_STAGES.map((stage, i) => {
-              const Icon = stage.icon;
-              return (
-                <div key={stage.label} className="flex items-center gap-3 sm:gap-5">
-                  {i > 0 && <div className={cn("h-px w-4 sm:w-8", i <= 0 ? "bg-green-400" : "bg-border/30")} />}
-                  <div className="flex flex-col items-center gap-1.5">
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}
-                      className={cn("h-10 w-10 rounded-xl flex items-center justify-center",
-                        i === 0 ? "bg-green-500 text-white shadow-lg shadow-green-500/20" : "bg-secondary/40 text-muted-foreground/30"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </motion.div>
-                    <span className={cn("text-[8px] font-black uppercase tracking-[0.15em]",
-                      i === 0 ? "text-green-600" : "text-muted-foreground/25"
-                    )}>
-                      {stage.label}
-                    </span>
+
+          {!isError && (
+            <div className="relative flex items-center justify-center gap-2 sm:gap-4 py-4">
+              {PIPELINE_STAGES.map((stage, i) => {
+                const Icon = stage.icon;
+                const isActive = i === 0;
+                return (
+                  <div key={stage.label} className="flex items-center gap-2 sm:gap-4">
+                    {i > 0 && (
+                      <div className={cn("h-0.5 w-4 sm:w-6 rounded-full",
+                        i === 1 ? "bg-gradient-to-r from-primary to-border/30" : "bg-border/30"
+                      )} />
+                    )}
+                    <div className="flex flex-col items-center gap-2">
+                      <motion.div initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.3 + i * 0.12, type: "spring" }}
+                        className={cn("relative h-12 w-12 rounded-2xl flex items-center justify-center",
+                          isActive
+                            ? "bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg shadow-primary/40"
+                            : "bg-secondary/30 text-muted-foreground/40"
+                        )}
+                      >
+                        {isActive && <div className="absolute inset-0 rounded-2xl bg-primary/40 blur-md animate-pulse" />}
+                        <Icon className="relative h-5 w-5" />
+                      </motion.div>
+                      <span className={cn("text-[9px] font-black uppercase tracking-[0.15em]",
+                        isActive ? "text-primary" : "text-muted-foreground/30"
+                      )}>
+                        {stage.label}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          )}
+
+          <div className="relative flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <CfButtonMd onClick={handleReset} variant="outline" className="gap-2 border-border/50 shadow-sm w-full sm:w-auto">
+              <RotateCcw className="h-4 w-4" /> {isError ? "Попробовать снова" : "Создать ещё"}
+            </CfButtonMd>
+            {!isError && (
+              <CfButtonMd
+                onClick={() => window.location.assign("/content?tab=history")}
+                className="gap-2 bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/30 w-full sm:w-auto"
+              >
+                <Clock className="h-4 w-4" /> Перейти в Историю
+              </CfButtonMd>
+            )}
           </div>
-          <CfButtonMd onClick={handleReset} variant="outline" className="gap-2 border-border/50 shadow-sm">
-            <RotateCcw className="h-4 w-4" /> Создать ещё
-          </CfButtonMd>
         </motion.div>
       </div>
     );
