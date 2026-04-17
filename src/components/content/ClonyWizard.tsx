@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ import {
   cfStyles,
   CfH2,
   CfButtonMd,
+  CfStepIndicator,
 } from "@/components/content/contentFactoryDesignSystem";
 
 // ── Types ──────────────────────────────────────────────
@@ -257,6 +258,24 @@ const anim = {
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -16 },
   transition: { duration: 0.25, ease: "easeOut" as const },
+};
+
+const CREATIVE_GUIDES: Record<string, { title: string; body: string; tip: string }> = {
+  "insta-carousel": {
+    title: "Карусель лучше работает как мини-история",
+    body: "Постройте цепочку: сильный хук, одна мысль на слайд, чёткий CTA на последнем кадре.",
+    tip: "Для образовательного контента почти всегда лучше 5–7 слайдов, а не один перегруженный макет.",
+  },
+  "fb-target": {
+    title: "Таргет любит ясный оффер",
+    body: "Держите минимум текста, сильный заголовок и понятное действие без перегруза деталями.",
+    tip: "Проверьте, чтобы первый экран считывался за 1–2 секунды на мобильном.",
+  },
+  "neuro-photo": {
+    title: "Нейрофотосессии чувствительны к качеству входа",
+    body: "Чем лучше и разнообразнее референсы лица, тем стабильнее и чище итоговая серия портретов.",
+    tip: "Добавьте разные ракурсы и свет, но без тяжёлых фильтров и масок на исходных фото.",
+  },
 };
 
 // ── Component ──────────────────────────────────────────
@@ -1302,77 +1321,190 @@ export default function ClonyWizard() {
   const meta = STEP_META[step];
   const StepIcon = meta.icon;
   const isLastStep = step === STEP_META.length - 1;
+  const selectedType = CONTENT_TYPES.find((item) => item.value === form.content_type);
+  const selectedSource = SOURCE_MODES.find((item) => item.value === form.source_mode);
+  const selectedLanguage = LANGUAGES.find((item) => item.value === form.language);
+  const selectedGuide = CREATIVE_GUIDES[form.content_type] || {
+    title: "Соберите сильное ТЗ",
+    body: "Чем конкретнее задача, тем лучше AI подберёт композицию, текст и подачу.",
+    tip: "Опишите результат глазами клиента: что он должен понять, почувствовать и сделать после просмотра.",
+  };
+  const completionPercent = useMemo(() => {
+    const checkpoints = [
+      Boolean(form.content_type),
+      Boolean(form.source_mode),
+      Boolean(form.main_prompt.trim()),
+      Boolean(form.aspect_ratio),
+      Boolean(form.language),
+      step >= 1,
+      step >= 2,
+    ];
+
+    return Math.round((checkpoints.filter(Boolean).length / checkpoints.length) * 100);
+  }, [form.aspect_ratio, form.content_type, form.language, form.main_prompt, form.source_mode, step]);
+  const readinessChecklist = [
+    { label: "Тип креатива", done: Boolean(form.content_type) },
+    { label: "Источник", done: Boolean(form.source_mode) },
+    { label: "Главный промпт", done: Boolean(form.main_prompt.trim()) },
+    { label: "Формат", done: Boolean(form.aspect_ratio) && Boolean(form.language) },
+  ];
 
   return (
     <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+        <div className="space-y-8">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(7,34,67,0.98),rgba(16,63,113,0.94)_48%,rgba(8,37,73,0.98))] p-6 text-white shadow-[0_24px_70px_rgba(7,23,56,0.22)] sm:p-8">
+            <div className="pointer-events-none absolute -left-8 top-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
+            <div className="pointer-events-none absolute right-0 top-0 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
+            <div className="relative space-y-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="relative h-14 w-14 rounded-2xl border border-white/15 bg-white/10 flex items-center justify-center shadow-lg shadow-black/10">
+                    <div className="absolute inset-1 rounded-[1rem] bg-emerald-300/10 blur-md" />
+                    <StepIcon className="relative h-6 w-6 text-emerald-200" />
+                  </div>
+                  <div>
+                    <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                      Creative Studio
+                    </div>
+                    <h3 className="mt-3 text-2xl font-black tracking-tight">
+                      {meta.title}
+                    </h3>
+                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-white/72">{meta.desc}</p>
+                  </div>
+                </div>
 
-        {/* Step header */}
-        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
-          <div className="absolute -top-8 left-0 h-32 w-32 bg-primary/15 rounded-full blur-3xl opacity-60 pointer-events-none" />
-          <div className="relative flex items-center gap-4">
-            <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-transparent flex items-center justify-center border border-primary/30 shadow-lg shadow-primary/20">
-              <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-md" />
-              <StepIcon className="relative h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-            </div>
-            <div>
-              <h3 className="text-xl font-black tracking-tight flex items-center gap-2.5">
-                <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent text-2xl">
-                  {step + 1}<span className="text-muted-foreground/40">/{STEP_META.length}</span>
-                </span>
-                <span className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">{meta.title}</span>
-              </h3>
-              <p className="text-xs text-muted-foreground font-medium mt-1 ml-0.5">{meta.desc}</p>
+                <div className="min-w-[180px] rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Готовность</p>
+                  <div className="mt-3 flex items-end justify-between gap-4">
+                    <span className="text-3xl font-black tracking-tight text-white">{completionPercent}%</span>
+                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-200">
+                      Этап {step + 1}/{STEP_META.length}
+                    </span>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-primary to-primary"
+                      animate={{ width: `${completionPercent}%` }}
+                      transition={{ duration: 0.35 }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { label: "Тип", value: selectedType?.label || "Не выбран" },
+                  { label: "Источник", value: selectedSource?.label || "Не выбран" },
+                  { label: "Проект", value: active?.name || "HQ Workspace" },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-[1.5rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">{item.label}</p>
+                    <p className="mt-3 text-sm font-black leading-snug text-white">{item.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="relative flex gap-2">
-            {STEP_META.map((_, i) => (
-              <div key={i} className={cn("h-2 rounded-full transition-all duration-500",
-                i < step ? "bg-primary/60 w-6" :
-                i === step ? "bg-gradient-to-r from-primary to-primary/60 w-12 shadow-lg shadow-primary/40" :
-                "bg-border/40 w-6"
-              )} />
-            ))}
+
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+            <div className="absolute -top-8 left-0 h-32 w-32 bg-primary/15 rounded-full blur-3xl opacity-60 pointer-events-none" />
+            <div className="relative">
+              <CfStepIndicator steps={STEP_META.map((item) => item.title)} current={step} />
+            </div>
+            <div className="relative flex gap-2">
+              {STEP_META.map((_, i) => (
+                <div key={i} className={cn("h-2 rounded-full transition-all duration-500",
+                  i < step ? "bg-primary/60 w-6" :
+                  i === step ? "bg-gradient-to-r from-primary to-primary/60 w-12 shadow-lg shadow-primary/40" :
+                  "bg-border/40 w-6"
+                )} />
+              ))}
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {step === 0 && renderStep0()}
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+          </AnimatePresence>
+
+          <div className="flex items-center justify-between pt-4 pb-4">
+            <CfButtonMd
+              variant="ghost"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 0}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" /> Назад
+            </CfButtonMd>
+
+            {!isLastStep ? (
+              <CfButtonMd
+                onClick={() => setStep((s) => s + 1)}
+                disabled={!canNext()}
+                className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
+              >
+                Далее <ArrowRight className="h-4 w-4" />
+              </CfButtonMd>
+            ) : (
+              <CfButtonMd
+                onClick={handleSubmit}
+                disabled={!canNext() || submitting}
+                className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8 h-13"
+              >
+                {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                Запустить генерацию
+              </CfButtonMd>
+            )}
           </div>
         </div>
 
-        {/* Step content */}
-        <AnimatePresence mode="wait">
-          {step === 0 && renderStep0()}
-          {step === 1 && renderStep1()}
-          {step === 2 && renderStep2()}
-        </AnimatePresence>
+        <aside className="xl:sticky xl:top-4 self-start space-y-4">
+          <div className="rounded-[2rem] border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Контроль качества</p>
+            <div className="mt-4 space-y-3">
+              {readinessChecklist.map((item) => (
+                <div key={item.label} className="flex items-center justify-between rounded-2xl bg-secondary/20 px-4 py-3">
+                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-foreground">{item.label}</span>
+                  <span className={cn(
+                    "rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]",
+                    item.done ? "bg-emerald-500/10 text-emerald-600" : "bg-secondary text-muted-foreground/50"
+                  )}>
+                    {item.done ? "Готово" : "Ожидает"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between pt-4 pb-4">
-          <CfButtonMd
-            variant="ghost"
-            onClick={() => setStep((s) => s - 1)}
-            disabled={step === 0}
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Назад
-          </CfButtonMd>
+          <div className="rounded-[2rem] border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Текущая конфигурация</p>
+            <div className="mt-4 space-y-3 text-sm">
+              {[
+                ["Тип", selectedType?.label || "Не выбран"],
+                ["Источник", selectedSource?.label || "Не выбран"],
+                ["Язык", selectedLanguage?.label || "Не выбран"],
+                ["Размер", form.aspect_ratio || "Не выбран"],
+                ["Слайды", String(form.slide_count)],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/20 px-4 py-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+                  <span className="text-right font-semibold text-foreground">{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          {!isLastStep ? (
-            <CfButtonMd
-              onClick={() => setStep((s) => s + 1)}
-              disabled={!canNext()}
-              className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
-            >
-              Далее <ArrowRight className="h-4 w-4" />
-            </CfButtonMd>
-          ) : (
-            <CfButtonMd
-              onClick={handleSubmit}
-              disabled={!canNext() || submitting}
-              className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8 h-13"
-            >
-              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-              Запустить генерацию
-            </CfButtonMd>
-          )}
-        </div>
+          <div className="rounded-[2rem] border border-primary/20 bg-primary/5 p-5 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70">AI подсказка</p>
+            <h4 className="mt-3 text-lg font-black tracking-tight text-foreground">{selectedGuide.title}</h4>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{selectedGuide.body}</p>
+            <div className="mt-4 rounded-2xl bg-background/70 px-4 py-3 text-sm font-semibold leading-relaxed text-foreground/85">
+              {selectedGuide.tip}
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );

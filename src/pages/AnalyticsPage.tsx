@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   ChevronRight, ChevronDown, TrendingUp, DollarSign, BarChart3, Crown,
-  Image, Video, Layers, Film, Inbox, Users, Target, Eye, ShoppingCart, Zap,
+  Image, Video, Layers, Film, Inbox, Users, Target, Eye, ShoppingCart, Zap, RefreshCcw
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { formatMoney, formatNum, calcRomi, type Channel, type Campaign } from "@/components/analytics/analyticsData";
@@ -14,6 +16,8 @@ import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServiceAnalyticsTab } from "@/components/analytics/ServiceAnalyticsTab";
+import PeriodPicker from "@/components/agency/PeriodPicker";
+import type { DateRange } from "react-day-picker";
 
 const formatIcons: Record<string, React.ReactNode> = {
   Video: <Video className="h-3.5 w-3.5" />,
@@ -24,21 +28,33 @@ const formatIcons: Record<string, React.ReactNode> = {
 
 /* ── KPI Card (upgraded) ── */
 function KpiCard({
-  icon, label, value, sub, accent = false,
+  icon, label, value, sub, accent = false, trend,
 }: {
-  icon: React.ReactNode; label: string; value: string; sub?: string; accent?: boolean;
+  icon: React.ReactNode; label: string; value: string; sub?: string; accent?: boolean; trend?: number;
 }) {
+  const isPositive = (trend || 0) > 0;
   return (
     <div className={`rounded-2xl border p-5 flex flex-col gap-2 transition-all group hover:shadow-lg ${accent
       ? "border-primary/25 bg-primary/[0.04] hover:shadow-primary/5"
       : "border-border bg-card hover:border-primary/20"
       }`}>
-      <div className="flex items-center gap-2">
-        <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${accent ? "bg-primary/15 text-primary" : "bg-secondary border border-border text-muted-foreground"
-          }`}>
-          {icon}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={`h-8 w-8 rounded-xl flex items-center justify-center ${accent ? "bg-primary/15 text-primary" : "bg-secondary border border-border text-muted-foreground"
+            }`}>
+            {icon}
+          </div>
+          <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
         </div>
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        {trend !== undefined && trend !== 0 && (
+          <div className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+            isPositive 
+              ? (label === "Расход" ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-500") 
+              : (label === "Расход" ? "bg-green-500/10 text-green-500" : "bg-destructive/10 text-destructive")
+          }`}>
+            {isPositive ? "+" : ""}{trend}%
+          </div>
+        )}
       </div>
       <p className={`text-2xl font-bold tracking-tight tabular-nums font-mono ${accent ? "text-primary" : "text-foreground"}`}>{value}</p>
       {sub && <p className="text-[11px] text-muted-foreground">{sub}</p>}
@@ -68,31 +84,64 @@ function FunnelVis({ funnelData }: { funnelData: { stage: string; value: number;
     );
   }
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 h-full">
-      <h3 className="text-[13px] font-semibold text-foreground mb-5 uppercase tracking-wider">Воронка конверсий</h3>
-      <div className="space-y-3">
+    <div className="rounded-2xl border border-border bg-card p-6 h-full relative overflow-hidden group">
+      <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+        <Target className="h-32 w-32 rotate-12" />
+      </div>
+      
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-[13px] font-bold text-foreground uppercase tracking-widest">Воронка конверсий</h3>
+          <p className="text-[11px] text-muted-foreground mt-1">От охвата до реальных продаж</p>
+        </div>
+        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] font-bold">
+          LIVE
+        </Badge>
+      </div>
+
+      <div className="space-y-4 relative">
         {funnelData.map((step, i) => {
           const maxVal = funnelData[0].value || 1;
-          const width = Math.max((step.value / maxVal) * 100, 8);
-          const dropoff = i > 0 && funnelData[i - 1].value > 0 ? ((1 - step.value / funnelData[i - 1].value) * 100).toFixed(1) : null;
+          const width = Math.max((step.value / maxVal) * 100, 15);
+          const prevValue = i > 0 ? funnelData[i - 1].value : null;
+          const convRate = prevValue && prevValue > 0 ? ((step.value / prevValue) * 100).toFixed(1) : null;
+          
           return (
-            <div key={step.stage}>
-              <div className="flex justify-between text-[12px] mb-1">
-                <span className="text-muted-foreground">{step.stage}</span>
+            <div key={step.stage} className="relative">
+              <div className="flex justify-between items-end text-[12px] mb-1.5 px-1">
+                <span className="font-bold text-muted-foreground uppercase tracking-tighter text-[10px]">{step.stage}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground tabular-nums">{step.label}</span>
-                  {dropoff && <span className="text-destructive text-[11px] tabular-nums">−{dropoff}%</span>}
+                  <span className="font-black text-foreground tabular-nums text-sm">{step.label}</span>
+                  {convRate && (
+                    <span className="bg-primary/10 text-primary text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm border border-primary/10">
+                      {convRate}%
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="h-7 rounded-lg bg-secondary/50 overflow-hidden">
+              <div className="h-10 rounded-xl bg-secondary/30 overflow-hidden border border-border/50 backdrop-blur-sm p-1">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${width}%` }}
-                  transition={{ duration: 0.8, delay: i * 0.1 }}
-                  className="h-full rounded-lg bg-primary/20 border-r-2 border-primary"
-                  style={{ opacity: 1 - i * 0.12 }}
-                />
+                  transition={{ duration: 1.2, delay: i * 0.15, ease: [0.22, 1, 0.36, 1] }}
+                  className="h-full rounded-lg relative overflow-hidden shadow-[0_0_15px_rgba(var(--primary),0.1)]"
+                  style={{ 
+                    background: `linear-gradient(90deg, hsl(var(--primary) / ${0.4 - i * 0.05}), hsl(var(--primary) / ${0.8 - i * 0.1}))`,
+                    opacity: 1 - i * 0.08
+                  }}
+                >
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  />
+                </motion.div>
               </div>
+              {i < funnelData.length - 1 && (
+                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10">
+                  <div className="h-2 w-[1px] bg-border/50" />
+                </div>
+              )}
             </div>
           );
         })}
@@ -112,26 +161,60 @@ function ChannelChart({ chartData }: { chartData: { name: string; spend: number;
     );
   }
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 h-full">
-      <h3 className="text-[13px] font-semibold text-foreground mb-5 uppercase tracking-wider">Расход vs Выручка по каналам</h3>
+    <div className="rounded-2xl border border-border bg-card p-6 h-full relative group">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-[13px] font-bold text-foreground uppercase tracking-widest">Расход vs Выручка</h3>
+          <p className="text-[11px] text-muted-foreground mt-1">Эффективность рекламных каналов</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-primary/40" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase">Расход</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <span className="text-[10px] text-muted-foreground font-medium uppercase">Выручка</span>
+          </div>
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={chartData} barGap={4}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" strokeOpacity={0.3} />
-          <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v: any) => formatMoney(v)} />
+        <BarChart data={chartData} barGap={6}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} strokeOpacity={0.5} />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 600 }} 
+            axisLine={false} 
+            tickLine={false} 
+            dy={10}
+          />
+          <YAxis 
+            tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10, fontWeight: 600 }} 
+            axisLine={false} 
+            tickLine={false} 
+            tickFormatter={(v: any) => formatMoney(v).replace('₽', '')}
+          />
           <Tooltip
-            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-            labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+            cursor={{ fill: "hsl(var(--primary) / 0.05)" }}
+            contentStyle={{ 
+              background: "hsl(var(--card))", 
+              border: "1px solid hsl(var(--border))", 
+              borderRadius: 12, 
+              fontSize: 12,
+              boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)"
+            }}
+            labelStyle={{ fontWeight: 800, color: "hsl(var(--foreground))", marginBottom: 4 }}
             formatter={(value: number, name: string) => [formatMoney(value), name === "spend" ? "Расход" : "Выручка"]}
           />
-          <Bar dataKey="spend" name="Расход" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <Bar dataKey="spend" name="spend" radius={[4, 4, 0, 0]} maxBarSize={32}>
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.color} fillOpacity={0.3} />
+              <Cell key={i} fill={entry.color} fillOpacity={0.3} className="transition-all duration-300 hover:fill-opacity-50" />
             ))}
           </Bar>
-          <Bar dataKey="revenue" name="Выручка" radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <Bar dataKey="revenue" name="revenue" radius={[4, 4, 0, 0]} maxBarSize={32}>
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={entry.color} />
+              <Cell key={i} fill={entry.color} className="transition-all duration-300 hover:opacity-80" />
             ))}
           </Bar>
         </BarChart>
@@ -252,53 +335,81 @@ function CampaignRow({ campaign, channelColor }: { campaign: Campaign; channelCo
 /* ── Organic Table ── */
 function OrganicTracker({ posts }: { posts: { id: string; thumbnail: string; caption: string; triggerWord: string; dms: number; leads: number; sales: number; revenue: number; ltv: number }[] }) {
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
-      <div className="p-5 border-b border-border">
-        <h3 className="text-[13px] font-semibold text-foreground uppercase tracking-wider">Контент-Завод → Продажи</h3>
-        <p className="text-[12px] text-muted-foreground mt-1">Органические посты с кодовыми словами</p>
+    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+      <div className="p-6 border-b border-border bg-muted/20">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Film className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-[13px] font-bold text-foreground uppercase tracking-widest">Контент-Завод → Продажи</h3>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Эффективность органического продвижения</p>
+          </div>
+        </div>
       </div>
       {posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-          <Inbox className="h-10 w-10 opacity-40" />
-          <p className="text-sm">Нет данных по органике</p>
-          <p className="text-xs text-muted-foreground/60">Добавьте посты в таблицу analytics_organic_posts</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
+          <div className="h-16 w-16 rounded-full bg-secondary border border-border flex items-center justify-center">
+            <Inbox className="h-8 w-8 opacity-20" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-foreground">Нет данных по органике</p>
+            <p className="text-xs text-muted-foreground/60 mt-1 max-w-[250px]">
+              Добавьте посты в таблицу analytics_organic_posts для отслеживания конверсий.
+            </p>
+          </div>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="text-[11px]">Пост</TableHead>
-              <TableHead className="text-[11px]">Кодовое слово</TableHead>
-              <TableHead className="text-[11px] text-right">Сообщения</TableHead>
-              <TableHead className="text-[11px] text-right">Лиды</TableHead>
-              <TableHead className="text-[11px] text-right">Продажи</TableHead>
-              <TableHead className="text-[11px] text-right">Выручка</TableHead>
-              <TableHead className="text-[11px] text-right">LTV</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {posts.map((post) => (
-              <TableRow key={post.id} className="border-border">
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-secondary border border-border flex items-center justify-center text-lg">
-                      {post.thumbnail}
-                    </div>
-                    <span className="text-[12px] text-foreground max-w-[200px] truncate">{post.caption}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className="bg-primary/10 text-primary border-primary/20 text-[11px] font-mono">{post.triggerWord}</Badge>
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.dms)}</TableCell>
-                <TableCell className="text-right tabular-nums text-[12px]">{formatNum(post.leads)}</TableCell>
-                <TableCell className="text-right tabular-nums text-[12px] font-medium">{formatNum(post.sales)}</TableCell>
-                <TableCell className="text-right tabular-nums text-[12px] font-semibold text-foreground">{formatMoney(post.revenue)}</TableCell>
-                <TableCell className="text-right tabular-nums text-[12px]">{formatMoney(post.ltv)}</TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase px-6 py-4">Пост / Контент</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase">Кодовое слово</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right">Сообщения</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right">Лиды</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right">Продажи</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right">Выручка</TableHead>
+                <TableHead className="text-[10px] font-bold text-muted-foreground uppercase text-right">LTV</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {posts.map((post) => (
+                <TableRow key={post.id} className="border-border hover:bg-muted/20 transition-colors">
+                  <TableCell className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-secondary border border-border flex items-center justify-center text-xl shadow-sm overflow-hidden">
+                        {post.thumbnail.startsWith('http') ? (
+                          <img src={post.thumbnail} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          post.thumbnail
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-bold text-foreground max-w-[200px] truncate">{post.caption}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-tighter">ID: {post.id.slice(0, 8)}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase tracking-widest px-2">
+                      {post.triggerWord || "—"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs tabular-nums text-muted-foreground">{formatNum(post.dms)}</TableCell>
+                  <TableCell className="text-right font-bold text-sm tabular-nums text-foreground">{formatNum(post.leads)}</TableCell>
+                  <TableCell className="text-right font-bold text-sm tabular-nums text-primary">{formatNum(post.sales)}</TableCell>
+                  <TableCell className="text-right font-black text-sm tabular-nums text-foreground">{formatMoney(post.revenue)}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="outline" className="text-[10px] font-bold border-primary/20 bg-primary/5 text-primary">
+                      {formatMoney(post.ltv)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
@@ -329,11 +440,20 @@ export default function AnalyticsPage() {
     totalSpend, totalRevenue, totalSales, totalLeads, totalClicks, totalVisits, totalImpressions,
     globalRomi, cpl, cpv, cac,
     topChannel, funnelData, channelChartData, totalLeadsFromCrm,
+    period, setPeriod, refresh, trends
   } = useAnalyticsData();
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refresh();
+    setIsRefreshing(false);
+  }, [refresh]);
 
   return (
     <DashboardLayout breadcrumb="Сквозная аналитика">
-      {loading ? (
+      {loading && !isRefreshing ? (
         <AnalyticsSkeleton />
       ) : (
         <div className="space-y-6 max-w-[1600px] mx-auto">
@@ -348,7 +468,22 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-muted-foreground mt-0.5">Полная воронка: от показа до продажи</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <PeriodPicker value={period} onChange={(range: DateRange) => {
+                if (range.from && range.to) {
+                  setPeriod({ from: range.from, to: range.to });
+                }
+              }} />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9 rounded-xl border-border bg-card"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCcw className={cn("h-4 w-4 text-muted-foreground", isRefreshing && "animate-spin")} />
+              </Button>
+              <div className="h-6 w-[1px] bg-border mx-1 hidden sm:block" />
               <Select defaultValue="all">
                 <SelectTrigger className="w-[180px] h-9 text-[13px] border-border bg-card">
                   <SelectValue />
@@ -362,19 +497,19 @@ export default function AnalyticsPage() {
 
           {/* 7-KPI Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
-            <KpiCard icon={<DollarSign className="h-4 w-4" />} label="Расход" value={formatMoney(totalSpend)} sub="за текущий месяц" />
-            <KpiCard icon={<Users className="h-4 w-4" />} label="Лиды" value={formatNum(totalLeads)} sub={`${totalLeadsFromCrm} всего в CRM`} />
+            <KpiCard icon={<DollarSign className="h-4 w-4" />} label="Расход" value={formatMoney(totalSpend)} sub="за период" trend={trends.spend} />
+            <KpiCard icon={<Users className="h-4 w-4" />} label="Лиды" value={formatNum(totalLeads)} sub={`${totalLeadsFromCrm} в CRM`} trend={trends.leads} />
             <KpiCard icon={<Target className="h-4 w-4" />} label="CPL" value={cpl > 0 ? formatMoney(cpl) : "—"} sub="стоимость лида" accent={cpl > 0} />
-            <KpiCard icon={<Eye className="h-4 w-4" />} label="Визиты" value={formatNum(totalVisits)} sub={cpv > 0 ? `CPV: ${formatMoney(cpv)}` : "нет данных"} />
-            <KpiCard icon={<ShoppingCart className="h-4 w-4" />} label="Продажи" value={formatNum(totalSales)} sub={cac > 0 ? `CAC: ${formatMoney(cac)}` : "нет данных"} />
-            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Выручка" value={formatMoney(totalRevenue)} />
-            <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="ROMI" value={totalSpend > 0 ? `${globalRomi}%` : "—"} sub={topChannel ? `Топ: ${topChannel.name}` : ""} accent={globalRomi > 0} />
+            <KpiCard icon={<Eye className="h-4 w-4" />} label="Визиты" value={formatNum(totalVisits)} sub={cpv > 0 ? `CPV: ${formatMoney(cpv)}` : "нет данных"} trend={trends.visits} />
+            <KpiCard icon={<ShoppingCart className="h-4 w-4" />} label="Продажи" value={formatNum(totalSales)} sub={cac > 0 ? `CAC: ${formatMoney(cac)}` : "нет данных"} trend={trends.sales} />
+            <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Выручка" value={formatMoney(totalRevenue)} trend={trends.revenue} />
+            <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="ROMI" value={totalSpend > 0 ? `${globalRomi}%` : "—"} sub={topChannel ? `Топ: ${topChannel.name}` : ""} accent={globalRomi > 0} trend={trends.romi} />
           </div>
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ChannelChart chartData={channelChartData} />
             <FunnelVis funnelData={funnelData} />
+            <ChannelChart chartData={channelChartData} />
           </div>
 
           {/* Tabs */}

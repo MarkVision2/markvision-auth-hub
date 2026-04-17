@@ -45,7 +45,9 @@ import {
   ThumbsDown,
   MessageSquare,
   Send,
-  X
+  X,
+  Search,
+  Rocket,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -94,6 +96,27 @@ const DELETE_REASON_OPTIONS = [
   "Больше не актуально",
   "Другое",
 ] as const;
+
+const TAB_CONTENT = {
+  scenario: {
+    kicker: "AI Story Lab",
+    title: "Сценарии, которые можно снимать сразу",
+    description: "Разбор по ссылке, работа от темы или голоса, быстрый выход в суфлёр, описание и полный сценарий.",
+    highlights: ["Ссылка или идея", "Голосовой ввод", "Сценарий + описание"],
+  },
+  create: {
+    kicker: "Creative Studio",
+    title: "Производство креативов под площадку",
+    description: "Пошаговый мастер для баннеров, сторис, Reels cover, YouTube и нейрофотосессий с понятной сводкой.",
+    highlights: ["Тип креатива", "Источник материалов", "Формат и CTA"],
+  },
+  "my-content": {
+    kicker: "Content Vault",
+    title: "Готовый контент, который можно запустить дальше",
+    description: "Смотрите готовые материалы, оценивайте, удаляйте с причиной и сразу отправляйте в рекламу.",
+    highlights: ["Фильтры и поиск", "Оценка качества", "Запуск в рекламу"],
+  },
+} as const;
 
 export default function ContentFactory() {
   const { active, isAgency } = useWorkspace();
@@ -145,6 +168,8 @@ export default function ContentFactory() {
   const [deleteDialogTask, setDeleteDialogTask] = useState<ContentTask | null>(null);
   const [deleteReason, setDeleteReason] = useState<(typeof DELETE_REASON_OPTIONS)[number] | "">("");
   const [deleteDetails, setDeleteDetails] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyFilter, setHistoryFilter] = useState<"all" | "video" | "image" | "liked">("all");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const refFileInputRef = useRef<HTMLInputElement>(null);
@@ -524,6 +549,43 @@ export default function ContentFactory() {
     () => history.filter((item) => item.status === "completed" && Array.isArray(item.result_urls) && item.result_urls.length > 0),
     [history]
   );
+  const historyStats = useMemo(() => {
+    const likes = Object.values(ratings).filter((value) => value === 1).length;
+    const videos = readyHistory.filter((item) => item.content_type === "video").length;
+    const visuals = readyHistory.filter((item) => item.content_type !== "video").length;
+
+    return {
+      total: readyHistory.length,
+      likes,
+      videos,
+      visuals,
+    };
+  }, [ratings, readyHistory]);
+  const filteredHistory = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+
+    return readyHistory.filter((item) => {
+      const matchesFilter =
+        historyFilter === "all" ||
+        (historyFilter === "video" && item.content_type === "video") ||
+        (historyFilter === "image" && item.content_type !== "video") ||
+        (historyFilter === "liked" && ratings[item.id] === 1);
+
+      if (!matchesFilter) return false;
+      if (!query) return true;
+
+      const haystack = [
+        item.content_type,
+        item.main_text || "",
+        item.format || "",
+        ratingComments[item.id] || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [historyFilter, historySearch, ratingComments, ratings, readyHistory]);
 
   useEffect(() => {
     saveAbEvent("tab_open", { tab: pageTab });
@@ -540,6 +602,13 @@ export default function ContentFactory() {
     { label: "Генерация", icon: "🎨", done: progressPercent >= 40 },
     { label: "Рендер", icon: "⚙️", done: progressPercent >= 70 },
     { label: "Готово", icon: "🚀", done: progressPercent >= 100 },
+  ];
+  const activeTabMeta = TAB_CONTENT[pageTab];
+  const topStats = [
+    { label: "Готово", value: historyStats.total, icon: Sparkles, tone: "text-primary" },
+    { label: "Видео", value: historyStats.videos, icon: Video, tone: "text-sky-400" },
+    { label: "Баннеры", value: historyStats.visuals, icon: ImageIcon, tone: "text-amber-300" },
+    { label: "Лайки", value: historyStats.likes, icon: ThumbsUp, tone: "text-emerald-300" },
   ];
 
   // 1. Result View
@@ -687,29 +756,115 @@ export default function ContentFactory() {
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
       <div className={cn(cfStyles.page, "flex flex-col h-[calc(100vh-100px)] min-h-[680px]")}>
-
-        {/* Premium Header */}
-        <div className="relative flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6 mb-10 pb-8 border-b border-border/40">
-          <div className="absolute -top-12 -left-12 h-48 w-48 bg-primary/20 rounded-full blur-3xl opacity-40 pointer-events-none" />
-          <div className="relative">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-primary/5 flex items-center justify-center shadow-lg shadow-primary/20 border border-primary/30">
-                 <div className="absolute inset-0 rounded-2xl bg-primary/10 blur-md" />
-                 <Layers className="relative h-7 w-7 text-primary drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+        <div className="relative mb-8 overflow-hidden rounded-[2.75rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(12,45,93,0.98),rgba(20,72,127,0.96)_45%,rgba(16,55,101,0.98))] px-6 py-7 text-white shadow-[0_30px_80px_rgba(7,23,56,0.28)] sm:px-8 lg:px-10">
+          <div className="pointer-events-none absolute -left-8 top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
+          <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-300/10 blur-3xl" />
+          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_360px]">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="relative mt-1 h-16 w-16 rounded-[1.6rem] border border-white/15 bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-black/10">
+                  <div className="absolute inset-1 rounded-[1.2rem] bg-emerald-300/10 blur-md" />
+                  <Layers className="relative h-7 w-7 text-emerald-200" />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 shadow-none">
+                      {activeTabMeta.kicker}
+                    </Badge>
+                    <Badge className="border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100 shadow-none">
+                      Улучшенный интерфейс
+                    </Badge>
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-black uppercase tracking-tight text-white sm:text-4xl">
+                      Контент-Завод
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-white/72 sm:text-base">
+                      {activeTabMeta.title}. {activeTabMeta.description}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight uppercase bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text text-transparent">
-                  Контент-Завод
-                </h1>
-                <Badge variant="secondary" className="mt-1.5 bg-primary/15 text-primary border border-primary/30 font-black text-[10px] px-3 py-1 uppercase tracking-[0.15em] shadow-sm shadow-primary/20">
-                  ✨ Новый интерфейс
-                </Badge>
+
+              <div className="flex flex-wrap gap-2">
+                {activeTabMeta.highlights.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    title: "Сценарий",
+                    desc: "Идея превращается в понятный скрипт, описание и телесуфлёр.",
+                    active: pageTab === "scenario",
+                    action: () => setPageTab("scenario"),
+                  },
+                  {
+                    title: "Создать",
+                    desc: "Готовим креатив под площадку, формат и задачу кампании.",
+                    active: pageTab === "create",
+                    action: () => setPageTab("create"),
+                  },
+                  {
+                    title: "История",
+                    desc: "Смотрим готовые материалы, оцениваем и отправляем в рекламу.",
+                    active: pageTab === "my-content",
+                    action: () => setPageTab("my-content"),
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.title}
+                    onClick={item.action}
+                    className={cn(
+                      "rounded-[1.6rem] border p-4 text-left transition-all duration-300",
+                      item.active
+                        ? "border-emerald-200/30 bg-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.15)]"
+                        : "border-white/10 bg-white/6 hover:border-white/18 hover:bg-white/10"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">{item.title}</p>
+                      {item.active && <Rocket className="h-4 w-4 text-emerald-200" />}
+                    </div>
+                    <p className="mt-2 text-xs font-medium leading-relaxed text-white/65">{item.desc}</p>
+                  </button>
+                ))}
               </div>
             </div>
-            <p className={cn(cfStyles.hint, "max-w-xl")}>Создавайте сценарии и креативы в одном понятном рабочем пространстве.</p>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
+              {topStats.map(({ label, value, icon: Icon, tone }) => (
+                <div
+                  key={label}
+                  className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">{label}</span>
+                    <Icon className={cn("h-4 w-4", tone)} />
+                  </div>
+                  <p className="mt-4 text-3xl font-black tracking-tight text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary/60">Workspace Flow</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Выберите рабочий режим</h2>
+            <p className="mt-2 max-w-2xl text-sm font-medium text-muted-foreground">
+              Каждая вкладка теперь отвечает за свой этап: стратегия, продакшн и управление готовым контентом.
+            </p>
           </div>
 
-          <div className="relative flex flex-wrap bg-gradient-to-br from-card/80 via-muted/40 to-card/80 backdrop-blur-xl p-2 rounded-2xl border border-border/60 shadow-xl shadow-black/5">
+          <div className="relative flex flex-wrap gap-2 rounded-[1.7rem] border border-border/50 bg-card/85 p-2 shadow-xl shadow-black/5 backdrop-blur-xl">
             {[
               { id: "scenario" as const, icon: Sparkles, label: "Сценарий" },
               { id: "create" as const, icon: Plus, label: "Создать" },
@@ -731,7 +886,7 @@ export default function ContentFactory() {
                   {active && (
                     <motion.div
                       layoutId="active-tab-bg"
-                      className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80"
+                      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80"
                       transition={{ type: "spring", duration: 0.5 }}
                     />
                   )}
@@ -754,6 +909,41 @@ export default function ContentFactory() {
 
           {pageTab === "my-content" && (
             <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-8">
+              {readyHistory.length > 0 && (
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="relative rounded-[1.8rem] border border-border/50 bg-card p-4 shadow-sm">
+                    <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/45" />
+                    <Input
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                      placeholder="Поиск по типу контента, тексту, формату или комментарию"
+                      className="h-12 rounded-2xl border-border/40 bg-secondary/20 pl-11 pr-4 font-semibold"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "all" as const, label: "Все" },
+                      { id: "video" as const, label: "Видео" },
+                      { id: "image" as const, label: "Визуалы" },
+                      { id: "liked" as const, label: "Любимые" },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setHistoryFilter(item.id)}
+                        className={cn(
+                          "h-12 rounded-2xl border px-4 text-[11px] font-black uppercase tracking-[0.16em] transition-all",
+                          historyFilter === item.id
+                            ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
+                            : "border-border/50 bg-card text-muted-foreground hover:border-primary/25 hover:text-foreground"
+                        )}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {loadingHistory ? (
                 <div className="flex flex-col items-center justify-center py-32 space-y-4">
                    <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
@@ -790,19 +980,28 @@ export default function ContentFactory() {
                       </Button>
                    </motion.div>
                 </div>
+              ) : filteredHistory.length === 0 ? (
+                <div className="rounded-[2.2rem] border border-dashed border-border/60 bg-card/70 px-6 py-16 text-center shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">История</p>
+                  <h3 className="mt-3 text-2xl font-black tracking-tight text-foreground">Ничего не найдено</h3>
+                  <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-relaxed text-muted-foreground">
+                    Попробуйте изменить фильтр или поисковый запрос. Готовые материалы остаются в истории и доступны для оценки и запуска в рекламу.
+                  </p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                   <AnimatePresence mode="popLayout">
-                    {readyHistory.map((task, idx) => (
+                    {filteredHistory.map((task, idx) => (
                       <motion.div 
                         layout
                         key={task.id} 
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: idx * 0.05 }}
-                        className="group relative rounded-[2rem] border border-border/50 bg-card hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4" 
+                        className="group relative rounded-[2.2rem] border border-border/50 bg-card hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4 overflow-hidden" 
                         onClick={() => loadHistoryItem(task)}
                       >
+                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/20 via-primary/70 to-emerald-300/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -828,14 +1027,6 @@ export default function ContentFactory() {
                              )}>
                                {task.status === "completed" ? "Готово" : task.status === "error" ? "Ошибка" : "В процессе"}
                              </Badge>
-                             <Button
-                               variant="ghost"
-                               size="icon"
-                               className="h-7 w-7 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/5 transition-colors"
-                               onClick={(e) => openDeleteDialog(task, e)}
-                             >
-                               <Trash2 className="h-3.5 w-3.5" />
-                             </Button>
                           </div>
                         </div>
 
@@ -857,19 +1048,61 @@ export default function ContentFactory() {
                              </div>
                            )}
                         </div>
+
+                        <div className="space-y-2">
+                          <p className="line-clamp-2 text-sm font-semibold leading-relaxed text-foreground/90">
+                            {task.main_text?.trim() || "Готовый материал без описания. Откройте карточку, чтобы просмотреть и использовать креатив дальше."}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {task.format && (
+                              <span className="rounded-full bg-secondary/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                                {task.format}
+                              </span>
+                            )}
+                            {task.aspect_ratio && (
+                              <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                                {task.aspect_ratio}
+                              </span>
+                            )}
+                            {ratings[task.id] === 1 && (
+                              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">
+                                Одобрено
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         
                         <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
                            <span>{task.created_at ? dateFmt(new Date(task.created_at), "dd MMM, HH:mm") : ""}</span>
-                           <span className="group-hover:text-primary transition-colors">Смотреть →</span>
+                           <span className="group-hover:text-primary transition-colors">Открыть →</span>
                         </div>
 
                         {task.status === "completed" && task.result_urls?.[0] && (
                           <div
-                            className="pt-3 border-t border-border/40 space-y-2"
+                            className="pt-3 border-t border-border/40 space-y-3"
                             onClick={(e) => e.stopPropagation()}
                           >
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                className="h-10 rounded-2xl bg-primary text-white hover:bg-primary/90"
+                                onClick={() => {
+                                  setSelectedAdTask(task);
+                                  setAdSheetOpen(true);
+                                }}
+                              >
+                                <Rocket className="mr-2 h-4 w-4" /> В рекламу
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="h-10 rounded-2xl border-border/60"
+                                onClick={(e) => openDeleteDialog(task, e)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Удалить
+                              </Button>
+                            </div>
+
                             <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5">
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -914,27 +1147,6 @@ export default function ContentFactory() {
                                   title="Комментарий"
                                 >
                                   <MessageSquare className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-lg text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
-                                  onClick={() => {
-                                    setSelectedAdTask(task);
-                                    setAdSheetOpen(true);
-                                  }}
-                                  title="Запустить в рекламу"
-                                >
-                                  <Zap className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                  onClick={(e) => openDeleteDialog(task, e)}
-                                  title="Удалить"
-                                >
-                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                               {ratingComments[task.id] && activeCommentTask !== task.id && (

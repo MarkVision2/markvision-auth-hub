@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { startOfMonth, endOfMonth, format } from "date-fns";
 
 export interface ServiceAnalyticsData {
     service_category: string;
@@ -20,53 +21,70 @@ export function useServiceAnalytics() {
     const { active } = useWorkspace();
     const [data, setData] = useState<ServiceAnalyticsData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState<{ from: Date; to: Date }>({
+        from: startOfMonth(new Date()),
+        to: endOfMonth(new Date()),
+    });
+
+    const fetchServiceAnalytics = useCallback(async () => {
+        if (!active?.id) return;
+        setLoading(true);
+        try {
+            const startDate = format(period.from, 'yyyy-MM-dd');
+            const endDate = format(period.to, 'yyyy-MM-dd');
+
+            // Since service_analytics_view is a view, we check if it supports date filtering
+            // If it doesn't have a date column, we might need to query underlying tables or 
+            // accept that the view provides aggregate data. 
+            // Most likely it should have a date or we filter by period if possible.
+            let query = (supabase as any)
+                .from("service_analytics_view")
+                .select("*")
+                .eq("project_id", active.id);
+
+            // Add date filtering if possible. Assuming the view supports it or we use created_at
+            // If the view is an aggregate, this might need to be handled differently.
+            // For now, let's try to filter by the period.
+            if (startDate && endDate) {
+                // Many views in this project use 'date' or 'created_at' for filtering
+                query = query.gte("created_at", startDate).lte("created_at", endDate);
+            }
+
+            const { data: resData, error } = await query;
+
+            if (error) throw error;
+
+            const processedData: ServiceAnalyticsData[] = (resData || []).map((item: any) => {
+                const spend = Number(item.spend) || 0;
+                const revenue = Number(item.revenue) || 0;
+                const leads = Number(item.leads) || 0;
+                const sales = Number(item.sales) || 0;
+
+                return {
+                    service_category: item.service_category || "Не определено",
+                    spend,
+                    leads,
+                    visits: Number(item.visits) || 0,
+                    sales,
+                    revenue,
+                    cpl: leads > 0 ? spend / leads : 0,
+                    cac: sales > 0 ? spend / sales : 0,
+                    romi: spend > 0 ? ((revenue - spend) / spend) * 100 : 0,
+                };
+            }).sort((a, b) => b.revenue - a.revenue);
+
+            setData(processedData);
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "Ошибка загрузки аналитики по услугам";
+            toast({ title: "Ошибка", description: msg, variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    }, [active?.id, period, toast]);
 
     useEffect(() => {
-        async function fetchServiceAnalytics() {
-            setLoading(true);
-            try {
-                let query = (supabase as any)
-                    .from("service_analytics_view")
-                    .select("*");
+        fetchServiceAnalytics();
+    }, [fetchServiceAnalytics]);
 
-                query = query.eq("project_id", active.id);
-
-                const { data: resData, error } = await query;
-
-                if (error) throw error;
-
-                const processedData: ServiceAnalyticsData[] = (resData || []).map((item: any) => {
-                    const spend = Number(item.spend) || 0;
-                    const revenue = Number(item.revenue) || 0;
-                    const leads = Number(item.leads) || 0;
-                    const sales = Number(item.sales) || 0;
-
-                    return {
-                        service_category: item.service_category || "Не определено",
-                        spend,
-                        leads,
-                        visits: Number(item.visits) || 0,
-                        sales,
-                        revenue,
-                        cpl: leads > 0 ? spend / leads : 0,
-                        cac: sales > 0 ? spend / sales : 0,
-                        romi: spend > 0 ? ((revenue - spend) / spend) * 100 : 0,
-                    };
-                }).sort((a, b) => b.revenue - a.revenue);
-
-                setData(processedData);
-            } catch (e: unknown) {
-                const msg = e instanceof Error ? e.message : "Ошибка загрузки аналитики по услугам";
-                toast({ title: "Ошибка", description: msg, variant: "destructive" });
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (active?.id) {
-            fetchServiceAnalytics();
-        }
-    }, [active.id, toast]);
-
-    return { data, loading };
+    return { data, loading, period, setPeriod, refresh: fetchServiceAnalytics };
 }

@@ -103,6 +103,36 @@ function ResultBlock({ title, content, icon: Icon }: { title: string; content?: 
 
 const N8N_SCENARIO_WEBHOOK = "https://n8n.zapoinov.com/webhook/02671bf4-ab71-41b0-996a-c1667e0f389c";
 
+const SCENARIO_PRESETS = [
+    {
+        title: "Экспертный Reels",
+        description: "Для врача, эксперта или основателя. Объяснить сложную тему простым языком.",
+        topic: "Снимите экспертный Reels на тему: почему клиент долго откладывает решение, и как показать ему понятный следующий шаг без давления.",
+        format: "Говорящая голова",
+        contentType: "Информационный",
+    },
+    {
+        title: "Продающий ролик",
+        description: "Короткий оффер с сильным хуком, болью и ясным CTA.",
+        topic: "Нужен продающий ролик с цепляющим первым кадром, конкретным оффером и призывом написать кодовое слово в директ.",
+        format: "Говорящая голова",
+        contentType: "Продающий",
+    },
+    {
+        title: "Личный контент",
+        description: "Прогрев через историю, путь и личную позицию бренда.",
+        topic: "Подготовьте личный сценарий о том, почему я перестал работать по-старому, что понял на практике и как это влияет на результат клиента.",
+        format: "Говорящая голова",
+        contentType: "Личный контент",
+    },
+] as const;
+
+const SCENARIO_OUTPUTS = [
+    { title: "Телесуфлёр", value: "Готовый текст", icon: MessageSquare },
+    { title: "Описание", value: "Caption + CTA", icon: Type },
+    { title: "Сценарий", value: "Полная структура", icon: Sparkles },
+] as const;
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function ScenarioCreator() {
     // Mode state
@@ -324,9 +354,66 @@ export default function ScenarioCreator() {
         if (pollingRef.current) clearInterval(pollingRef.current);
     };
 
+    const applyPreset = (preset: typeof SCENARIO_PRESETS[number]) => {
+        setCreationMode("topic");
+        setTopic(preset.topic);
+        setFormat(preset.format);
+        setContentType(preset.contentType);
+        toast({ title: `Шаблон «${preset.title}» применён` });
+    };
+
     // ── Render ───────────────────────────────────────────────────────────────
     return (
         <div className={cn(cfStyles.grid, "max-w-4xl w-full pb-20")}>
+            <CfSection className="overflow-hidden border-primary/20 bg-[linear-gradient(135deg,rgba(6,31,64,1),rgba(11,58,102,0.96)_46%,rgba(10,43,84,1))] text-white shadow-[0_24px_70px_rgba(7,23,56,0.24)]">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.9fr)]">
+                    <div className="space-y-5">
+                        <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
+                            Script Engine
+                        </div>
+                        <div className="space-y-3">
+                            <CfH2 className="text-white sm:text-2xl">Соберите сценарий быстрее, чем напишете ТЗ вручную</CfH2>
+                            <p className="max-w-2xl text-sm leading-relaxed text-white/72">
+                                Загружайте ссылку, надиктовывайте идею голосом или стартуйте от готового шаблона. На выходе вы сразу получаете структуру ролика, текст для суфлёра и описание для публикации.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            {SCENARIO_OUTPUTS.map(({ title, value, icon: Icon }) => (
+                                <div key={title} className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">{title}</span>
+                                        <Icon className="h-4 w-4 text-emerald-200" />
+                                    </div>
+                                    <p className="mt-3 text-base font-black tracking-tight text-white">{value}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[1.9rem] border border-white/10 bg-white/8 p-5 backdrop-blur-sm">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Как это работает</p>
+                        <div className="mt-4 space-y-3">
+                            {[
+                                { step: "01", title: "Задайте вход", desc: "Ссылка, тема или голос" },
+                                { step: "02", title: "Опишите контекст", desc: "Аудитория, формат, тип контента" },
+                                { step: "03", title: "Получите результат", desc: "Суфлёр, описание, сценарий" },
+                            ].map((item) => (
+                                <div key={item.step} className="flex gap-3 rounded-2xl border border-white/10 bg-black/10 p-3.5">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/12 text-[11px] font-black text-emerald-200">
+                                        {item.step}
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white">{item.title}</p>
+                                        <p className="mt-1 text-xs text-white/62">{item.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </CfSection>
+
             {/* Mode Selection */}
             <CfSection className="space-y-6">
                 <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Выберите способ создания</Label>
@@ -349,6 +436,43 @@ export default function ScenarioCreator() {
                     >
                         <Sparkles className="h-4 w-4" /> Создать сценарий
                     </button>
+                </div>
+            </CfSection>
+
+            <CfSection className="space-y-5 bg-gradient-to-br from-card via-card to-secondary/20">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Быстрый старт</p>
+                        <CfH2 className="mt-2 text-xl">Шаблоны под частые сценарные задачи</CfH2>
+                    </div>
+                    <p className="max-w-md text-sm font-medium text-muted-foreground">
+                        Нажмите на шаблон, если хотите стартовать не с пустого поля, а с понятной заготовки.
+                    </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                    {SCENARIO_PRESETS.map((preset) => (
+                        <button
+                            key={preset.title}
+                            type="button"
+                            onClick={() => applyPreset(preset)}
+                            className="rounded-[1.6rem] border border-border/50 bg-secondary/20 p-5 text-left transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/10"
+                        >
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">{preset.title}</p>
+                                <Zap className="h-4 w-4 text-primary" />
+                            </div>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{preset.description}</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                                    {preset.format}
+                                </span>
+                                <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                                    {preset.contentType}
+                                </span>
+                            </div>
+                        </button>
+                    ))}
                 </div>
             </CfSection>
 
