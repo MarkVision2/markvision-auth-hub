@@ -130,6 +130,7 @@ const DoctorTerminal = () => {
       if (!authRes.user) throw new Error("Не удалось создать пользователя");
 
       // 2. Profile update/create
+      console.log("Creating/updating profile for user:", authRes.user.id);
       const { error: profError } = await (supabase as any)
         .from("profiles")
         .upsert({
@@ -146,19 +147,44 @@ const DoctorTerminal = () => {
         });
 
       if (profError) {
-        console.error("Profile update failed:", profError);
+        console.error("Profile creation failed:", profError);
         throw new Error(`Ошибка записи профиля врача: ${profError.message}`);
       }
+
+      // 2.5 Verify profile exists (to avoid FK violation in next step)
+      console.log("Verifying profile exists for:", authRes.user.id);
+      const { data: verifyProf, error: verifyError } = await (supabase as any)
+        .from("profiles")
+        .select("id")
+        .eq("id", authRes.user.id)
+        .single();
+      
+      if (verifyError || !verifyProf) {
+        console.error("Profile verification failed! It seems RLS or some other issue prevented the profile from being visible.", verifyError);
+        // We still try to proceed, but this log will help debug if it fails again.
+      } else {
+        console.log("Profile verified successfully.");
+      }
+
+      // Small delay to ensure DB consistency (Supabase RLS/FK timing)
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       // 3. Link to Project
       let projectLinkWarning = "";
       if (active?.id) {
+        console.log("Linking user to project:", active.id);
         const { error: memberError } = await (supabase as any)
           .from("project_members")
-          .insert({
-            user_id: authRes.user.id,
-            project_id: active.id,
-          });
+          .upsert(
+            {
+              user_id: authRes.user.id,
+              project_id: active.id,
+            },
+            {
+              onConflict: "user_id,project_id",
+              ignoreDuplicates: true,
+            }
+          );
 
         if (memberError) {
           console.error("Member link failed:", memberError);
