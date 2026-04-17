@@ -28,7 +28,7 @@ import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
   ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
-  ExternalLink, TrendingUp, Plus, Trash2,
+  ExternalLink, TrendingUp, Plus, Trash2, BarChart3,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -120,6 +120,19 @@ function KpiCard({ icon: Icon, label, value, sub, color }: { icon: any; label: s
         </div>
         <p className="text-2xl font-bold font-mono tabular-nums text-foreground tracking-tight">{value}</p>
         {sub && <p className="text-[10px] text-muted-foreground mt-1.5 font-medium opacity-70">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Metric Box ── */
+function MetricBox({ label, value, subValue, color = "text-foreground" }: { label: string; value: string; subValue?: string; color?: string }) {
+  return (
+    <div className="space-y-1 group">
+      <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50 group-hover:text-primary/50 transition-colors">{label}</p>
+      <div className="flex items-baseline gap-1.5">
+        <p className={cn("text-[16px] font-bold tabular-nums tracking-tight", color)}>{value}</p>
+        {subValue && <span className="text-[10px] font-medium text-muted-foreground/60">{subValue}</span>}
       </div>
     </div>
   );
@@ -221,13 +234,18 @@ export default function DashboardTarget() {
 
       const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
         const metrics = metricsMap.get(c.id) || [];
-        const totalSpend = metrics.reduce((s, m) => s + m.spend, 0) + (Number(c.spend) || 0);
-        const totalLeads = metrics.reduce((s, m) => s + m.leads, 0) + (Number(c.meta_leads) || 0);
-        const totalVisits = metrics.reduce((s, m) => s + m.visits, 0) + (Number(c.visits) || 0);
-        const totalSales = metrics.reduce((s, m) => s + m.sales, 0) + (Number(c.sales) || 0);
-        const totalRevenue = metrics.reduce((s, m) => s + m.revenue, 0) + (Number(c.revenue) || 0);
-        const totalClicks = metrics.reduce((s, m) => s + m.clicks, 0) + (Number(c.clicks) || 0);
-        const totalImpressions = metrics.reduce((s, m) => s + m.impressions, 0) + (Number(c.impressions) || 0);
+        
+        // Ошибка была здесь: мы суммировали daily_data и прибавляли общее значение из clients_config.
+        // Если есть ежедневные данные, используем их как основной источник.
+        const hasDaily = metrics.length > 0;
+        
+        const totalSpend = hasDaily ? metrics.reduce((s, m) => s + m.spend, 0) : (Number(c.spend) || 0);
+        const totalLeads = hasDaily ? metrics.reduce((s, m) => s + m.leads, 0) : (Number(c.meta_leads) || 0);
+        const totalVisits = hasDaily ? metrics.reduce((s, m) => s + m.visits, 0) : (Number(c.visits) || 0);
+        const totalSales = hasDaily ? metrics.reduce((s, m) => s + m.sales, 0) : (Number(c.sales) || 0);
+        const totalRevenue = hasDaily ? metrics.reduce((s, m) => s + m.revenue, 0) : (Number(c.revenue) || 0);
+        const totalClicks = hasDaily ? metrics.reduce((s, m) => s + m.clicks, 0) : (Number(c.clicks) || 0);
+        const totalImpressions = hasDaily ? metrics.reduce((s, m) => s + m.impressions, 0) : (Number(c.impressions) || 0);
 
         return {
           id: c.id,
@@ -243,7 +261,7 @@ export default function DashboardTarget() {
           totalImpressions,
           cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
           romi: totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0,
-          hasData: metrics.length > 0,
+          hasData: hasDaily,
           dailyMetrics: metrics,
         };
       });
@@ -489,29 +507,29 @@ export default function DashboardTarget() {
                     >
                       <div className="flex items-center gap-4 flex-1">
                         <div className={cn(
-                          "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                          client.hasData ? "bg-primary/10 text-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.1)]" : "bg-muted text-muted-foreground/50"
+                          "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/10 transition-transform group-hover:scale-110",
+                          client.hasData ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                         )}>
                           <Megaphone className="h-6 w-6" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-[16px] font-bold text-foreground tracking-tight truncate">{client.name}</h3>
+                            <h3 className="text-[17px] font-black text-foreground tracking-tight truncate uppercase italic">{client.name}</h3>
                             {hasAlert && <AlertTriangle className="h-4 w-4 text-destructive animate-pulse" />}
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-[11px] font-mono text-muted-foreground/60 tracking-wider">ID: {client.ad_account_id || "—"}</span>
+                            <span className="text-[10px] font-bold font-mono text-muted-foreground/40 tracking-widest uppercase">ID: {client.ad_account_id || "—"}</span>
                             <div className="h-1 w-1 rounded-full bg-border" />
                             {client.hasData && (
-                              <Badge variant="outline" className="h-4 text-[9px] font-bold uppercase tracking-widest border-[hsl(var(--status-good))]/30 text-[hsl(var(--status-good))] px-1 bg-[hsl(var(--status-good))]/5">
-                                Active
+                              <Badge variant="outline" className="h-5 text-[9px] font-black uppercase tracking-widest border-green-500/20 text-green-500 px-2 bg-green-500/5">
+                                • Online
                               </Badge>
                             )}
                             <Badge variant="outline" className={cn(
-                              "h-4 text-[8px] font-black uppercase tracking-widest px-1.5 py-0 rounded-md border",
+                              "h-5 text-[9px] font-black uppercase tracking-widest px-2 py-0 rounded-md border",
                               (rawClients.find(rc => rc.id === client.id) as any)?.is_agency 
-                                ? "border-purple-500/30 text-purple-600 bg-purple-500/5" 
-                                : "border-blue-500/30 text-blue-600 bg-blue-500/5"
+                                ? "border-purple-500/20 text-purple-400 bg-purple-500/5" 
+                                : "border-blue-500/20 text-blue-400 bg-blue-500/5"
                             )}>
                               {(rawClients.find(rc => rc.id === client.id) as any)?.is_agency ? "Агентский" : "Личный"}
                             </Badge>
@@ -520,26 +538,11 @@ export default function DashboardTarget() {
                       </div>
 
                       {/* Main Metrics Overview */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 md:gap-12 shrink-0 md:border-l border-border/50 md:pl-12">
-                        <div className="space-y-1">
-                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Расход</p>
-                          <p className="text-[15px] font-bold tabular-nums text-foreground">{fmtCurrency(client.totalSpend)}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Лиды</p>
-                          <div className="flex items-center gap-2">
-                             <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalLeads}</p>
-                             {client.cpl > 0 && <span className="text-[10px] font-medium text-muted-foreground">({fmt(client.cpl)}₸)</span>}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Продажи</p>
-                          <p className="text-[15px] font-bold tabular-nums text-foreground">{client.totalSales}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[9px] uppercase font-black tracking-widest text-muted-foreground/50">Выручка</p>
-                          <p className="text-[15px] font-bold tabular-nums text-primary">{fmtCurrency(client.totalRevenue)}</p>
-                        </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 md:gap-16 shrink-0 md:border-l border-border/30 md:pl-16">
+                        <MetricBox label="Расход" value={fmtCurrency(client.totalSpend)} />
+                        <MetricBox label="Лиды" value={String(client.totalLeads)} subValue={client.cpl > 0 ? `(${fmt(client.cpl)}₸)` : undefined} />
+                        <MetricBox label="Продажи" value={String(client.totalSales)} />
+                        <MetricBox label="Выручка" value={fmtCurrency(client.totalRevenue)} color="text-primary" />
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 md:ml-4">
@@ -681,18 +684,26 @@ export default function DashboardTarget() {
                                 <span className="text-right">Визиты</span>
                                 <span className="text-right">Продажи</span>
                               </div>
-                              <div className="max-h-[300px] overflow-y-auto divide-y divide-border/30">
+                              <div className="max-h-[300px] overflow-y-auto divide-y divide-border/10">
                                 {client.dailyMetrics.length === 0 ? (
-                                  <div className="py-12 text-center text-xs text-muted-foreground font-medium italic">Дневная статистика отсутствует для этого периода</div>
+                                  <div className="py-20 flex flex-col items-center justify-center gap-4 text-center px-4">
+                                    <div className="h-12 w-12 rounded-full bg-secondary border border-border flex items-center justify-center">
+                                      <BarChart3 className="h-6 w-6 text-muted-foreground/30" />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <p className="text-sm font-bold text-foreground tracking-tight uppercase">Нет данных за период</p>
+                                      <p className="text-[11px] text-muted-foreground/60 max-w-[200px]">Дневная статистика для этого кабинета еще не загружена или отсутствует.</p>
+                                    </div>
+                                  </div>
                                 ) : (
-                                  client.dailyMetrics.slice().reverse().map(day => (
-                                    <div key={day.date} className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-3 hover:bg-accent/20 transition-colors">
-                                      <span className="text-[12px] font-medium text-muted-foreground/80">{fmtDate(day.date)}</span>
-                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{fmtCurrency(day.spend)}</span>
-                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.leads}</span>
-                                      <span className="text-right text-[13px] font-bold tabular-nums text-muted-foreground/60">{day.leads > 0 ? fmtCurrency(Math.round(day.spend / day.leads)) : "—"}</span>
-                                      <span className="text-right text-[13px] font-bold tabular-nums text-foreground/80">{day.visits}</span>
-                                      <span className="text-right text-[13px] font-bold tabular-nums text-[hsl(var(--status-good))]">{day.sales > 0 ? day.sales : "—"}</span>
+                                  client.dailyMetrics.slice().sort((a, b) => b.date.localeCompare(a.date)).map(day => (
+                                    <div key={day.date} className="grid grid-cols-[100px_repeat(5,1fr)] items-center px-4 py-4 hover:bg-primary/[0.02] transition-colors group/row">
+                                      <span className="text-[12px] font-bold text-muted-foreground group-hover/row:text-primary transition-colors">{fmtDate(day.date)}</span>
+                                      <span className="text-right text-[14px] font-bold tabular-nums text-foreground">{fmtCurrency(day.spend)}</span>
+                                      <span className="text-right text-[14px] font-bold tabular-nums text-foreground">{day.leads}</span>
+                                      <span className="text-right text-[12px] font-medium tabular-nums text-muted-foreground/60">{day.leads > 0 ? fmtCurrency(Math.round(day.spend / day.leads)) : "—"}</span>
+                                      <span className="text-right text-[14px] font-bold tabular-nums text-foreground">{day.visits}</span>
+                                      <span className="text-right text-[14px] font-black tabular-nums text-primary">{day.sales > 0 ? day.sales : "—"}</span>
                                     </div>
                                   ))
                                 )}
