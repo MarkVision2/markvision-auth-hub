@@ -657,6 +657,22 @@ export default function ClonyWizard() {
   // ════════════════════════════════════════════════════
 
   // ── Success / Error ────────────────────────────────
+  if (submitting) {
+    return (
+      <div className="flex min-h-[55vh] items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-5 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-foreground">Запускаем генерацию...</p>
+            <p className="mt-1 text-sm text-muted-foreground">Загружаем материалы и отправляем задачу в Clony AI</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (submitted) {
     const isError = Boolean(submitError);
     return (

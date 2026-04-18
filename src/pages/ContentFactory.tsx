@@ -572,7 +572,7 @@ export default function ContentFactory() {
   const filteredHistory = useMemo(() => {
     const query = historySearch.trim().toLowerCase();
 
-    return readyHistory.filter((item) => {
+    return history.filter((item) => {
       const matchesFilter =
         historyFilter === "all" ||
         (historyFilter === "video" && item.content_type === "video") ||
@@ -593,10 +593,11 @@ export default function ContentFactory() {
 
       return haystack.includes(query);
     });
-  }, [historyFilter, historySearch, ratingComments, ratings, readyHistory]);
+  }, [history, historyFilter, historySearch, ratingComments, ratings]);
 
   useEffect(() => {
     saveAbEvent("tab_open", { tab: pageTab });
+    if (pageTab === "my-content") fetchHistory();
   }, [pageTab, saveAbEvent]);
 
   useEffect(() => {
@@ -645,7 +646,7 @@ export default function ContentFactory() {
                 {task.content_type === "video" ? (
                   <div className="space-y-4">
                     {task.result_urls.map((url, i) => (
-                      <div key={i} className="rounded-[2rem] overflow-hidden border border-border/40 bg-secondary/20 shadow-xl max-w-sm mx-auto group relative aspect-[9/16]">
+                      <div key={i} className="rounded-2xl overflow-hidden border border-border/40 bg-secondary/20 shadow-xl max-w-sm mx-auto group relative aspect-[9/16]">
                         <video src={url} controls className="w-full h-full object-cover" />
                       </div>
                     ))}
@@ -653,7 +654,7 @@ export default function ContentFactory() {
                 ) : (
                   <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory custom-scrollbar">
                     {task.result_urls.map((url, i) => (
-                      <motion.div key={i} className="flex-shrink-0 snap-center rounded-[2rem] overflow-hidden border border-border/40 shadow-xl bg-secondary/10">
+                      <motion.div key={i} className="flex-shrink-0 snap-center rounded-2xl overflow-hidden border border-border/40 shadow-xl bg-secondary/10">
                         <img src={url} alt={`Слайд ${i + 1}`} className="max-h-[500px] w-auto object-contain" />
                       </motion.div>
                     ))}
@@ -704,7 +705,7 @@ export default function ContentFactory() {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
         <div className="mx-auto max-w-4xl py-20 px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[3rem] border border-border/40 bg-card p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border/40 bg-card p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                <motion.div 
                  className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
@@ -715,8 +716,8 @@ export default function ContentFactory() {
             </div>
 
             <div className="space-y-4">
-               <div className="h-24 w-24 rounded-[2rem] bg-primary/10 flex items-center justify-center mx-auto relative">
-                  <div className="absolute inset-0 rounded-[2rem] border-2 border-primary/20 border-t-primary animate-spin" />
+               <div className="h-24 w-24 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto relative">
+                  <div className="absolute inset-0 rounded-2xl border-2 border-primary/20 border-t-primary animate-spin" />
                   <Sparkles className="h-10 w-10 text-primary animate-pulse" />
                </div>
                <CfH2 className="uppercase">Подождите, готовим ваш контент</CfH2>
@@ -733,7 +734,7 @@ export default function ContentFactory() {
                     {stage.done ? <CheckCircle2 className="h-6 w-6" /> : stage.icon}
                   </div>
                   <span className={cn(
-                    "text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
+                    "text-xs font-medium transition-colors",
                     stage.done ? "text-primary" : "text-muted-foreground/30"
                   )}>{stage.label}</span>
                 </div>
@@ -741,7 +742,7 @@ export default function ContentFactory() {
             </div>
 
             <div className="space-y-4 max-w-md mx-auto">
-               <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground/60">
+               <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
                   <span>{task.progress_text || "Готовим этапы..."}</span>
                   <span className="text-primary">{progressPercent}%</span>
                </div>
@@ -887,47 +888,30 @@ export default function ContentFactory() {
               )}
 
               {loadingHistory ? (
-                <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                   <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-                   <p className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.3em]">Загрузка истории...</p>
+                <div className="flex flex-col items-center justify-center gap-3 py-32">
+                  <div className="h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <p className="text-sm text-muted-foreground">Загрузка истории...</p>
                 </div>
-              ) : readyHistory.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-40 text-center space-y-8">
-                   <motion.div 
-                     initial={{ scale: 0.8, opacity: 0 }}
-                     animate={{ scale: 1, opacity: 1 }}
-                     transition={{ duration: 0.5, ease: "easeOut" }}
-                     className="h-32 w-32 rounded-[2.5rem] bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center border border-primary/20 shadow-inner relative overflow-hidden"
-                   >
-                      <motion.div 
-                        animate={{ 
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, -5, 0]
-                        }}
-                        transition={{ duration: 5, repeat: Infinity }}
-                      >
-                        <Clock className="h-14 w-14 text-primary/40" />
-                      </motion.div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
-                   </motion.div>
-                   <div className="space-y-3 max-w-sm">
-                      <h3 className="text-2xl font-black text-foreground uppercase tracking-tight">Готового контента пока нет</h3>
-                      <p className="text-muted-foreground text-sm font-medium leading-relaxed">
-                        Здесь будут появляться только завершённые креативы, готовые к просмотру, оценке, удалению и запуску в рекламу.
-                      </p>
-                   </div>
-                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button onClick={() => setPageTab("create")} className="h-14 px-10 rounded-2xl bg-primary text-white font-bold shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all gap-3">
-                         <Plus className="h-5 w-5" /> Создать первый контент
-                      </Button>
-                   </motion.div>
+              ) : history.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-6 py-32 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-border/60 bg-muted/40">
+                    <Clock className="h-10 w-10 text-muted-foreground/30" />
+                  </div>
+                  <div className="max-w-sm space-y-2">
+                    <h3 className="text-lg font-semibold text-foreground">Контента пока нет</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      Здесь появятся все задачи — в процессе и завершённые. Создайте первый контент, чтобы начать.
+                    </p>
+                  </div>
+                  <Button onClick={() => setPageTab("create")} className="gap-2 rounded-xl bg-primary px-6 text-white hover:bg-primary/90">
+                    <Plus className="h-4 w-4" /> Создать первый контент
+                  </Button>
                 </div>
               ) : filteredHistory.length === 0 ? (
-                <div className="rounded-[2.2rem] border border-dashed border-border/60 bg-card/70 px-6 py-16 text-center shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">История</p>
-                  <h3 className="mt-3 text-2xl font-black tracking-tight text-foreground">Ничего не найдено</h3>
-                  <p className="mx-auto mt-3 max-w-md text-sm font-medium leading-relaxed text-muted-foreground">
-                    Попробуйте изменить фильтр или поисковый запрос. Готовые материалы остаются в истории и доступны для оценки и запуска в рекламу.
+                <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-6 py-12 text-center">
+                  <h3 className="text-base font-semibold text-foreground">Ничего не найдено</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                    Попробуйте изменить фильтр или поисковый запрос.
                   </p>
                 </div>
               ) : (
@@ -949,7 +933,7 @@ export default function ContentFactory() {
                             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                {task.content_type === "video" ? <Video className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
                             </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-foreground">{task.content_type}</span>
+                            <span className="text-xs font-semibold text-foreground">{task.content_type}</span>
                           </div>
                           <div className="flex items-center gap-2">
                              {(task.status === "pending" || task.status === "processing") && (
@@ -958,7 +942,7 @@ export default function ContentFactory() {
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
                                   </span>
-                                  <span className="text-[7px] font-black uppercase tracking-widest text-primary">Live</span>
+                                  <span className="text-[9px] font-semibold text-primary">Live</span>
                                </div>
                              )}
                              <Badge variant="outline" className={cn(
@@ -997,12 +981,12 @@ export default function ContentFactory() {
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {task.format && (
-                              <span className="rounded-full bg-secondary/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                              <span className="rounded-full bg-secondary/70 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
                                 {task.format}
                               </span>
                             )}
                             {task.aspect_ratio && (
-                              <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                              <span className="rounded-full bg-primary/8 px-2.5 py-1 text-[10px] font-medium text-primary">
                                 {task.aspect_ratio}
                               </span>
                             )}
@@ -1014,7 +998,7 @@ export default function ContentFactory() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground/50">
                            <span>{task.created_at ? dateFmt(new Date(task.created_at), "dd MMM, HH:mm") : ""}</span>
                            <span className="group-hover:text-primary transition-colors">Открыть →</span>
                         </div>
@@ -1133,7 +1117,7 @@ export default function ContentFactory() {
           )}
 
           {pageTab === "create" && (
-            <div className="h-full">
+            <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
               <ClonyWizard />
             </div>
           )}
