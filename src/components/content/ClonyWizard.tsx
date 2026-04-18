@@ -665,7 +665,7 @@ export default function ClonyWizard() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={cn(
-            "w-full max-w-xl rounded-[2.5rem] border p-10 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden",
+            "w-full max-w-xl rounded-3xl border p-10 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden",
             isError
               ? "border-destructive/40 bg-gradient-to-br from-destructive/10 via-card to-card"
               : "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card"
@@ -778,7 +778,7 @@ export default function ClonyWizard() {
         {CONTENT_TYPES.map(({ value, label, desc, icon: Icon }) => (
           <button key={value} type="button" onClick={() => set("content_type", value)}
             className={cn(
-              "group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-[1.5rem] border-2 transition-all duration-300",
+              "group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-xl border-2 transition-all duration-300",
               form.content_type === value
                 ? "border-primary bg-primary/5 shadow-lg shadow-primary/10 scale-[1.02]"
                 : "border-border/30 bg-card hover:border-primary/30 hover:shadow-md"
@@ -813,7 +813,7 @@ export default function ClonyWizard() {
   const renderStep1 = () => (
     <motion.div key="s1" {...anim} className="space-y-6">
       {/* Source mode selector */}
-      <div className="relative rounded-[2rem] bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
+      <div className="relative rounded-2xl bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
         <div className="absolute -top-20 -right-20 h-64 w-64 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
         <div className="relative flex items-center gap-2.5">
           <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -1131,7 +1131,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Main prompt */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <PenLine className="h-4 w-4 text-primary/60" />
@@ -1170,7 +1170,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Additional instructions */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Mic className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>
@@ -1192,7 +1192,7 @@ export default function ClonyWizard() {
   const renderStep2 = () => (
     <motion.div key="s2" {...anim} className="space-y-6">
       {/* Aspect Ratio */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Hash className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Соотношение сторон</Label>
@@ -1217,7 +1217,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* CTA */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <MousePointerClick className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Call to Action (CTA) <span className="text-muted-foreground/40 normal-case font-medium">— можно выбрать несколько</span></Label>
@@ -1239,7 +1239,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Language */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Globe className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Язык текста</Label>
@@ -1262,7 +1262,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Slide count */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <SquareStack className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Количество слайдов / вариантов</Label>
@@ -1289,7 +1289,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Style */}
-      <div className="rounded-[2rem] bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Palette className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Стиль дизайна <span className="text-muted-foreground/40 normal-case font-medium">— если не выбрать, система подберёт сама</span></Label>
@@ -1354,7 +1354,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Summary */}
-      <div className="rounded-[2rem] bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-6 sm:p-8 space-y-4">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-6 sm:p-8 space-y-4">
         <div className="flex items-center gap-2.5">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <Label className={cn(cfStyles.label, "text-primary")}>Сводка</Label>
@@ -1424,57 +1424,45 @@ export default function ClonyWizard() {
     <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <div className="space-y-8">
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(7,34,67,0.98),rgba(16,63,113,0.94)_48%,rgba(8,37,73,0.98))] p-6 text-white shadow-[0_24px_70px_rgba(7,23,56,0.22)] sm:p-8">
-            <div className="pointer-events-none absolute -left-8 top-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
-            <div className="pointer-events-none absolute right-0 top-0 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
-            <div className="relative space-y-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="relative h-14 w-14 rounded-2xl border border-white/15 bg-white/10 flex items-center justify-center shadow-lg shadow-black/10">
-                    <div className="absolute inset-1 rounded-[1rem] bg-emerald-300/10 blur-md" />
-                    <StepIcon className="relative h-6 w-6 text-emerald-200" />
-                  </div>
-                  <div>
-                    <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
-                      Creative Studio
-                    </div>
-                    <h3 className="mt-3 text-2xl font-black tracking-tight">
-                      {meta.title}
-                    </h3>
-                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-white/72">{meta.desc}</p>
-                  </div>
+          <div className="rounded-2xl border border-border/60 bg-card p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <StepIcon className="h-5 w-5" />
                 </div>
-
-                <div className="min-w-[180px] rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Готовность</p>
-                  <div className="mt-3 flex items-end justify-between gap-4">
-                    <span className="text-3xl font-black tracking-tight text-white">{completionPercent}%</span>
-                    <span className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-200">
-                      Этап {step + 1}/{STEP_META.length}
-                    </span>
-                  </div>
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-primary to-primary"
-                      animate={{ width: `${completionPercent}%` }}
-                      transition={{ duration: 0.35 }}
-                    />
-                  </div>
+                <div>
+                  <p className="text-base font-semibold text-foreground">{meta.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{meta.desc}</p>
                 </div>
               </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  { label: "Тип", value: selectedType?.label || "Не выбран" },
-                  { label: "Источник", value: selectedSource?.label || "Не выбран" },
-                  { label: "Проект", value: active?.name || "HQ Workspace" },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-[1.5rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">{item.label}</p>
-                    <p className="mt-3 text-sm font-black leading-snug text-white">{item.value}</p>
-                  </div>
-                ))}
+              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-2.5">
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Готовность</p>
+                  <p className="text-lg font-bold text-foreground">{completionPercent}%</p>
+                </div>
+                <div className="h-8 w-24 overflow-hidden rounded-full bg-muted">
+                  <motion.div
+                    className="h-full rounded-full bg-primary"
+                    animate={{ width: `${completionPercent}%` }}
+                    transition={{ duration: 0.35 }}
+                  />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {step + 1}/{STEP_META.length}
+                </span>
               </div>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {[
+                { label: "Тип", value: selectedType?.label || "Не выбран" },
+                { label: "Источник", value: selectedSource?.label || "Не выбран" },
+                { label: "Проект", value: active?.name || "HQ Workspace" },
+              ].map((item) => (
+                <div key={item.label} className="rounded-xl border border-border/50 bg-background px-3 py-2.5">
+                  <p className="text-[10px] font-medium text-muted-foreground">{item.label}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -1532,12 +1520,12 @@ export default function ClonyWizard() {
         </div>
 
         <aside className="xl:sticky xl:top-4 self-start space-y-4">
-          <div className="rounded-[2rem] border border-border/50 bg-card p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Контроль качества</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-xs font-medium text-muted-foreground">Контроль качества</p>
             <div className="mt-4 space-y-3">
               {readinessChecklist.map((item) => (
                 <div key={item.label} className="flex items-center justify-between rounded-2xl bg-secondary/20 px-4 py-3">
-                  <span className="text-[11px] font-black uppercase tracking-[0.16em] text-foreground">{item.label}</span>
+                  <span className="text-xs font-semibold text-foreground">{item.label}</span>
                   <span className={cn(
                     "rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]",
                     item.done ? "bg-emerald-500/10 text-emerald-600" : "bg-secondary text-muted-foreground/50"
@@ -1549,8 +1537,8 @@ export default function ClonyWizard() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-border/50 bg-card p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Текущая конфигурация</p>
+          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-xs font-medium text-muted-foreground">Текущая конфигурация</p>
             <div className="mt-4 space-y-3 text-sm">
               {[
                 ["Тип", selectedType?.label || "Не выбран"],
@@ -1560,15 +1548,15 @@ export default function ClonyWizard() {
                 ["Слайды", String(form.slide_count)],
               ].map(([label, value]) => (
                 <div key={label} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/20 px-4 py-3">
-                  <span className="text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">{label}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{label}</span>
                   <span className="text-right font-semibold text-foreground">{value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-primary/20 bg-primary/5 p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70">AI подсказка</p>
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+            <p className="text-xs font-medium text-primary">AI подсказка</p>
             <h4 className="mt-3 text-lg font-black tracking-tight text-foreground">{selectedGuide.title}</h4>
             <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{selectedGuide.body}</p>
             <div className="mt-4 rounded-2xl bg-background/70 px-4 py-3 text-sm font-semibold leading-relaxed text-foreground/85">

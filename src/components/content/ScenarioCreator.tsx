@@ -60,17 +60,17 @@ function ModernSelect({ label, value, onChange, options, icon: Icon }: {
     label: string; value: string; onChange: (v: string) => void; options: string[]; icon?: any;
 }) {
     return (
-        <div className="space-y-2.5">
-            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                {Icon && <Icon className="h-3 w-3 opacity-40" />}
+        <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                {Icon && <Icon className="h-3.5 w-3.5" />}
                 {label}
             </Label>
             <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="h-12 bg-secondary border-border/40 rounded-2xl font-bold text-sm focus:ring-primary/20">
+                <SelectTrigger className="h-10 rounded-xl border-border/60 bg-background text-sm focus:ring-primary/30">
                     <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-border/40">
-                    {options.map((o) => <SelectItem key={o} value={o} className="rounded-xl font-medium">{o}</SelectItem>)}
+                <SelectContent className="rounded-xl border-border/60">
+                    {options.map((o) => <SelectItem key={o} value={o} className="rounded-lg text-sm">{o}</SelectItem>)}
                 </SelectContent>
             </Select>
         </div>
@@ -81,20 +81,20 @@ function ModernSelect({ label, value, onChange, options, icon: Icon }: {
 function ResultBlock({ title, content, icon: Icon }: { title: string; content?: string; icon?: any }) {
     if (!content) return null;
     return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     {Icon && <Icon className="h-4 w-4 text-primary" />}
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground">{title}</span>
+                    <span className="text-sm font-semibold text-foreground">{title}</span>
                 </div>
                 <button
-                    onClick={() => { navigator.clipboard.writeText(content); toast({ title: "📋 Скопировано" }); }}
-                    className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors"
+                    onClick={() => { navigator.clipboard.writeText(content); toast({ title: "Скопировано" }); }}
+                    className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary"
                 >
-                    <Copy className="h-3 w-3" /> Копировать
+                    <Copy className="h-3.5 w-3.5" /> Копировать
                 </button>
             </div>
-            <div className="p-6 bg-secondary border border-border/40 rounded-[2rem] text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap max-h-80 overflow-y-auto custom-scrollbar font-medium">
+            <div className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-xl border border-border/50 bg-muted/40 p-4 text-sm leading-relaxed text-foreground/90">
                 {content}
             </div>
         </div>
@@ -125,12 +125,6 @@ const SCENARIO_PRESETS = [
         format: "Говорящая голова",
         contentType: "Личный контент",
     },
-] as const;
-
-const SCENARIO_OUTPUTS = [
-    { title: "Телесуфлёр", value: "Готовый текст", icon: MessageSquare },
-    { title: "Описание", value: "Caption + CTA", icon: Type },
-    { title: "Сценарий", value: "Полная структура", icon: Sparkles },
 ] as const;
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -364,358 +358,280 @@ export default function ScenarioCreator() {
 
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className={cn(cfStyles.grid, "max-w-4xl w-full pb-20")}>
-            <CfSection className="overflow-hidden border-primary/20 bg-[linear-gradient(135deg,rgba(6,31,64,1),rgba(11,58,102,0.96)_46%,rgba(10,43,84,1))] text-white shadow-[0_24px_70px_rgba(7,23,56,0.24)]">
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.9fr)]">
-                    <div className="space-y-5">
-                        <div className="inline-flex rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">
-                            Script Engine
-                        </div>
-                        <div className="space-y-3">
-                            <CfH2 className="text-white sm:text-2xl">Соберите сценарий быстрее, чем напишете ТЗ вручную</CfH2>
-                            <p className="max-w-2xl text-sm leading-relaxed text-white/72">
-                                Загружайте ссылку, надиктовывайте идею голосом или стартуйте от готового шаблона. На выходе вы сразу получаете структуру ролика, текст для суфлёра и описание для публикации.
-                            </p>
-                        </div>
-
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            {SCENARIO_OUTPUTS.map(({ title, value, icon: Icon }) => (
-                                <div key={title} className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">{title}</span>
-                                        <Icon className="h-4 w-4 text-emerald-200" />
-                                    </div>
-                                    <p className="mt-3 text-base font-black tracking-tight text-white">{value}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="rounded-[1.9rem] border border-white/10 bg-white/8 p-5 backdrop-blur-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">Как это работает</p>
-                        <div className="mt-4 space-y-3">
-                            {[
-                                { step: "01", title: "Задайте вход", desc: "Ссылка, тема или голос" },
-                                { step: "02", title: "Опишите контекст", desc: "Аудитория, формат, тип контента" },
-                                { step: "03", title: "Получите результат", desc: "Суфлёр, описание, сценарий" },
-                            ].map((item) => (
-                                <div key={item.step} className="flex gap-3 rounded-2xl border border-white/10 bg-black/10 p-3.5">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/12 text-[11px] font-black text-emerald-200">
-                                        {item.step}
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white">{item.title}</p>
-                                        <p className="mt-1 text-xs text-white/62">{item.desc}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </CfSection>
-
-            {/* Mode Selection */}
-            <CfSection className="space-y-6">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Выберите способ создания</Label>
-                <div className="flex bg-secondary rounded-2xl p-1.5 border border-border/40 shadow-inner">
-                    <button
-                        onClick={() => setCreationMode("link")}
-                        className={cn(
-                            "flex-1 flex items-center justify-center gap-3 py-3.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
-                            creationMode === "link" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        <Send className="h-4 w-4" /> Анализ по ссылке
-                    </button>
+        <div className="w-full max-w-4xl space-y-6 pb-16">
+            {/* Mode toggle */}
+            <div className="rounded-2xl border border-border/60 bg-card p-4">
+                <Label className="mb-2 block text-xs font-medium text-muted-foreground">Способ создания</Label>
+                <div className="flex gap-1.5 rounded-xl bg-muted/60 p-1">
                     <button
                         onClick={() => setCreationMode("topic")}
                         className={cn(
-                            "flex-1 flex items-center justify-center gap-3 py-3.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300",
-                            creationMode === "topic" ? "bg-card text-primary shadow-md ring-1 ring-border" : "text-muted-foreground hover:text-foreground"
+                            "flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors",
+                            creationMode === "topic" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                         )}
                     >
                         <Sparkles className="h-4 w-4" /> Создать сценарий
                     </button>
+                    <button
+                        onClick={() => setCreationMode("link")}
+                        className={cn(
+                            "flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors",
+                            creationMode === "link" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <Send className="h-4 w-4" /> Анализ по ссылке
+                    </button>
                 </div>
-            </CfSection>
+            </div>
 
-            <CfSection className="space-y-5 bg-gradient-to-br from-card via-card to-secondary/20">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/60">Быстрый старт</p>
-                        <CfH2 className="mt-2 text-xl">Шаблоны под частые сценарные задачи</CfH2>
-                    </div>
-                    <p className="max-w-md text-sm font-medium text-muted-foreground">
-                        Нажмите на шаблон, если хотите стартовать не с пустого поля, а с понятной заготовки.
-                    </p>
+            {/* Presets */}
+            <div className="rounded-2xl border border-border/60 bg-card p-5">
+                <div className="mb-4 flex items-baseline justify-between gap-3">
+                    <h3 className="text-base font-semibold text-foreground">Быстрый старт</h3>
+                    <p className="hidden text-xs text-muted-foreground sm:block">Нажмите, чтобы заполнить заготовку</p>
                 </div>
-
                 <div className="grid gap-3 md:grid-cols-3">
                     {SCENARIO_PRESETS.map((preset) => (
                         <button
                             key={preset.title}
                             type="button"
                             onClick={() => applyPreset(preset)}
-                            className="rounded-[1.6rem] border border-border/50 bg-secondary/20 p-5 text-left transition-all duration-300 hover:border-primary/30 hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/10"
+                            className="group rounded-xl border border-border/60 bg-background p-4 text-left transition-all hover:border-primary/40 hover:bg-primary/5"
                         >
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-foreground">{preset.title}</p>
-                                <Zap className="h-4 w-4 text-primary" />
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-foreground">{preset.title}</p>
+                                <Zap className="h-4 w-4 text-primary/70 transition-transform group-hover:scale-110" />
                             </div>
-                            <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{preset.description}</p>
-                            <div className="mt-4 flex flex-wrap gap-2">
-                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
+                            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{preset.description}</p>
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                                     {preset.format}
                                 </span>
-                                <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                                <span className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                                     {preset.contentType}
                                 </span>
                             </div>
                         </button>
                     ))}
                 </div>
-            </CfSection>
+            </div>
 
-            <div className="space-y-8">
-                <AnimatePresence mode="wait">
-                    {creationMode === "link" ? (
-                        <motion.div 
-                            key="link-mode"
-                            initial={{ opacity: 0, y: 10 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6"
-                        >
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Ссылка на Reels / Shorts / TikTok</Label>
-                            <div className="relative group">
-                                <Input
-                                    value={linkUrl}
-                                    onChange={(e) => setLinkUrl(e.target.value)}
-                                    placeholder="Вставьте ссылку для анализа..."
-                                    className="h-14 bg-secondary border-border/40 text-sm font-bold rounded-2xl focus-visible:ring-primary/20"
-                                />
-                                <div className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-focus-within:scale-110 transition-transform">
-                                    <Link className="h-4 w-4" />
-                                </div>
-                            </div>
-                            <p className="text-[10px] font-medium text-muted-foreground/40 italic px-2">AI разложит видео на сценарий, проанализирует структуру и предложит адаптацию под вашу нишу.</p>
-                        </motion.div>
-                    ) : (
-                        <motion.div 
-                            key="topic-mode"
-                            initial={{ opacity: 0, y: 10 }} 
-                            animate={{ opacity: 1, y: 0 }} 
-                            exit={{ opacity: 0, y: -10 }}
-                            className="p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40 space-y-6"
-                        >
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Тема / Идея (текст или голос)</Label>
-                            <div className="relative">
-                                <Textarea
-                                    value={topic}
-                                    onChange={(e) => setTopic(e.target.value)}
-                                    placeholder="О чём будет ролик? Просто опишите идею своими словами..."
-                                    className="min-h-[160px] bg-secondary border-border/40 text-sm font-bold rounded-[2rem] p-6 focus-visible:ring-primary/20 resize-none pr-20 shadow-inner"
-                                />
-                                <div className="absolute bottom-6 right-6 flex flex-col gap-3">
-                                    <button
-                                        onClick={isRecording ? stopRecording : startRecording}
-                                        className={cn(
-                                            "h-14 w-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg",
-                                            isRecording
-                                                ? "bg-destructive text-white shadow-destructive/40 animate-pulse scale-110"
-                                                : "bg-primary text-white shadow-primary/20 hover:scale-105 active:scale-95"
-                                        )}
-                                    >
-                                        {isRecording ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
-                                    </button>
-                                    {audioUrl && (
-                                        <button 
-                                            onClick={clearAudio}
-                                            className="h-10 w-10 rounded-xl bg-secondary border border-border/40 flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
+            {/* Main input */}
+            <AnimatePresence mode="wait">
+                {creationMode === "link" ? (
+                    <motion.div
+                        key="link-mode"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="rounded-2xl border border-border/60 bg-card p-5"
+                    >
+                        <Label className="mb-2 block text-xs font-medium text-muted-foreground">Ссылка на Reels / Shorts / TikTok</Label>
+                        <div className="relative">
+                            <Input
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                placeholder="Вставьте ссылку для анализа..."
+                                className="h-11 rounded-xl border-border/60 bg-background pr-10 text-sm"
+                            />
+                            <Link className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            AI разложит видео на сценарий, проанализирует структуру и предложит адаптацию под вашу нишу.
+                        </p>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="topic-mode"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="space-y-3 rounded-2xl border border-border/60 bg-card p-5"
+                    >
+                        <Label className="block text-xs font-medium text-muted-foreground">Тема / Идея (текст или голос)</Label>
+                        <div className="relative">
+                            <Textarea
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                                placeholder="О чём будет ролик? Опишите идею своими словами..."
+                                className="min-h-[140px] resize-none rounded-xl border-border/60 bg-background pr-14 text-sm"
+                            />
+                            <div className="absolute bottom-3 right-3 flex flex-col gap-2">
+                                <button
+                                    onClick={isRecording ? stopRecording : startRecording}
+                                    className={cn(
+                                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                                        isRecording
+                                            ? "animate-pulse bg-destructive text-white"
+                                            : "bg-primary text-primary-foreground hover:bg-primary/90"
                                     )}
-                                </div>
-                            </div>
-
-                            {audioUrl && (
-                                <motion.div 
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="flex items-center gap-4 p-4 bg-secondary border border-border/40 rounded-2xl shadow-sm"
                                 >
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                        <Play className="h-4 w-4 fill-primary" />
-                                    </div>
-                                    <audio src={audioUrl} controls className="h-8 flex-1 opacity-80" />
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-green-500/10 rounded-lg">
-                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Голос записан</span>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* FORM GRID — only for "Создать сценарий" mode */}
-                {creationMode === "topic" && (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 rounded-[2.5rem] bg-secondary/20 border border-border/40">
-                            <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
-                            <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
-                            <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
-                            <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
-                            <ModernSelect label="Воронка ManyChat?" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
-                            <div className="space-y-2.5">
-                                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
-                                    <MessageSquare className="h-3 w-3 opacity-40" />
-                                    Триггер-слово
-                                </Label>
-                                <Input
-                                    value={trigger}
-                                    onChange={(e) => setTrigger(e.target.value)}
-                                    placeholder="Например: ГАЙД"
-                                    className="h-12 bg-secondary border-border/40 rounded-2xl font-bold text-sm focus-visible:ring-primary/20"
-                                />
+                                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                                </button>
+                                {audioUrl && (
+                                    <button
+                                        onClick={clearAudio}
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-background text-muted-foreground hover:text-destructive"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        <CfSection className="space-y-4">
-                            <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 block px-1">Доп. пожелания / Референсы</Label>
-                            <Textarea
-                                value={refs}
-                                onChange={(e) => setRefs(e.target.value)}
-                                placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
-                                className="min-h-[100px] bg-secondary border-border/40 text-sm font-bold rounded-2xl p-6 focus-visible:ring-primary/20 resize-none shadow-inner"
-                            />
-                        </CfSection>
-                    </>
+                        {audioUrl && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.98 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 p-3"
+                            >
+                                <Play className="h-4 w-4 fill-primary text-primary" />
+                                <audio src={audioUrl} controls className="h-8 flex-1" />
+                                <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1">
+                                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                    <span className="text-[10px] font-medium text-emerald-600">Записано</span>
+                                </div>
+                            </motion.div>
+                        )}
+                    </motion.div>
                 )}
-            </div>
+            </AnimatePresence>
 
-            {/* CTA BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            {/* Form grid — only for "topic" mode */}
+            {creationMode === "topic" && (
+                <div className="space-y-5 rounded-2xl border border-border/60 bg-card p-5">
+                    <h3 className="text-base font-semibold text-foreground">Параметры сценария</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
+                        <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
+                        <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
+                        <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
+                        <ModernSelect label="Воронка ManyChat" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
+                        <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                                <MessageSquare className="h-3.5 w-3.5" />
+                                Триггер-слово
+                            </Label>
+                            <Input
+                                value={trigger}
+                                onChange={(e) => setTrigger(e.target.value)}
+                                placeholder="Например: ГАЙД"
+                                className="h-10 rounded-xl border-border/60 bg-background text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <Label className="block text-xs font-medium text-muted-foreground">Доп. пожелания / Референсы</Label>
+                        <Textarea
+                            value={refs}
+                            onChange={(e) => setRefs(e.target.value)}
+                            placeholder="Особые пожелания по стилю, темпу, музыке или ссылки на примеры..."
+                            className="min-h-[90px] resize-none rounded-xl border-border/60 bg-background text-sm"
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* CTA */}
+            <div className="flex flex-col gap-3 sm:flex-row">
                 <CfButtonMd
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="flex-1 h-16 bg-primary hover:bg-primary/90 text-white text-sm gap-3 rounded-[2rem] shadow-2xl shadow-primary/30 hover:scale-[1.01] border-b-4 border-primary-foreground/20 active:border-b-0"
+                    className="h-12 flex-1 gap-2 rounded-xl bg-primary text-sm text-primary-foreground hover:bg-primary/90"
                 >
                     {isGenerating
-                        ? <><Loader2 className="h-6 w-6 animate-spin" /> Анализирую…</>
-                        : <><Sparkles className="h-6 w-6" /> Создать сценарий</>
+                        ? <><Loader2 className="h-4 w-4 animate-spin" /> Анализирую…</>
+                        : <><Sparkles className="h-4 w-4" /> Создать сценарий</>
                     }
                 </CfButtonMd>
                 <CfButtonMd
                     variant="outline"
                     onClick={handleReset}
                     disabled={isGenerating}
-                    className="h-16 px-10 border-border/60 text-muted-foreground hover:text-foreground gap-2 rounded-[2rem] hover:bg-accent"
+                    className="h-12 gap-2 rounded-xl border-border/60 px-6 text-sm"
                 >
-                    <RotateCcw className="h-5 w-5" />
+                    <RotateCcw className="h-4 w-4" /> Сбросить
                 </CfButtonMd>
             </div>
 
-            {/* LOADER */}
+            {/* Loader */}
             <AnimatePresence>
                 {isGenerating && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="rounded-[3rem] border border-border/40 bg-card backdrop-blur-2xl p-16 text-center space-y-10 shadow-2xl relative overflow-hidden"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="overflow-hidden rounded-2xl border border-border/60 bg-card"
                     >
-                         <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
-                            <motion.div 
-                                className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
+                        <div className="h-1 bg-muted">
+                            <motion.div
+                                className="h-full bg-primary"
                                 initial={{ width: "0%" }}
                                 animate={{ width: `${loaderProgress}%` }}
                                 transition={{ duration: 0.5 }}
                             />
                         </div>
-
-                        <div className="relative h-24 w-24 mx-auto">
-                            <div className="absolute inset-0 rounded-[2rem] border-4 border-primary/5" />
-                            <div className="absolute inset-0 rounded-[2rem] border-4 border-t-primary animate-spin" />
-                            <div className="absolute inset-0 m-auto h-12 w-12 flex items-center justify-center bg-primary/10 rounded-2xl">
-                                <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+                        <div className="flex items-center gap-4 p-5">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
                             </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                             <CfH2 className="uppercase">{loaderText}</CfH2>
-                             <p className="text-sm text-muted-foreground font-medium max-w-sm mx-auto leading-relaxed">Проверяем материал и готовим понятный сценарий.</p>
-                        </div>
-                        
-                        <div className="space-y-4 max-w-md mx-auto">
-                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary/60 px-1">
-                                <span>Прогресс</span>
-                                <span>{loaderProgress}%</span>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-foreground">{loaderText}</p>
+                                <p className="mt-0.5 text-xs text-muted-foreground">Готовим сценарий — обычно это занимает 1-3 минуты</p>
                             </div>
-                            <div className="w-full h-2 bg-secondary/30 rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-primary rounded-full shadow-[0_0_12px_rgba(var(--primary),0.5)]"
-                                    animate={{ width: `${loaderProgress}%` }}
-                                    transition={{ duration: 0.5 }}
-                                />
-                            </div>
+                            <span className="text-sm font-semibold text-primary">{loaderProgress}%</span>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* RESULT */}
+            {/* Result */}
             <AnimatePresence>
                 {result && !isGenerating && (
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-[3rem] border border-primary/30 bg-card backdrop-blur-xl overflow-hidden shadow-2xl"
+                        className="overflow-hidden rounded-2xl border border-border/60 bg-card"
                     >
-                        {/* Result header */}
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-10 py-8 border-b border-border/40 bg-primary/5 gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center">
-                                    <CheckCircle2 className="h-7 w-7 text-green-500" />
+                        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-emerald-500/5 px-5 py-4">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                                 </div>
                                 <div>
-                                    <CfH2 className="uppercase text-xl">Сценарий готов</CfH2>
-                                    <p className={cfStyles.hint}>Скопируйте текст и используйте в съемке.</p>
+                                    <p className="text-sm font-semibold text-foreground">Сценарий готов</p>
+                                    <p className="text-xs text-muted-foreground">Скопируйте текст и используйте в съемке</p>
                                 </div>
                             </div>
                             <CfButtonMd
                                 onClick={handleReset}
                                 variant="outline"
-                                className="h-11 px-6 text-xs border-border/60 hover:bg-accent rounded-xl gap-2"
+                                className="h-9 gap-1.5 rounded-lg border-border/60 px-3 text-xs"
                             >
-                                <RotateCcw className="h-4 w-4" /> Новый
+                                <RotateCcw className="h-3.5 w-3.5" /> Новый
                             </CfButtonMd>
                         </div>
 
-                        {/* Result blocks */}
-                        <div className="p-10 space-y-10">
+                        <div className="space-y-5 p-5">
                             <ResultBlock title="Текст для суфлёра" content={result["Только текст видео"] || result.teleprompter} icon={MessageSquare} />
                             <ResultBlock title="Описание для Instagram" content={result["Текст Описание"] || result.description} icon={Type} />
                             <ResultBlock title="Полный сценарий" content={result["ТЕКСТ СЦЕНАРИИ"] || result.scenario} icon={Sparkles} />
 
-                            {/* Copy all */}
-                            <div className="pt-4">
-                                <CfButtonMd
-                                    onClick={() => {
-                                        const all = [
-                                            (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
-                                            (result["Текст Описание"] || result.description) && `ОПИСАНИЕ:\n${result["Текст Описание"] || result.description}`,
-                                            (result["ТЕКСТ СЦЕНАРИИ"] || result.scenario) && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"] || result.scenario}`,
-                                        ].filter(Boolean).join("\n\n---\n\n");
-                                        navigator.clipboard.writeText(all);
-                                        toast({ title: "📋 Всё скопировано!" });
-                                    }}
-                                    className="w-full h-16 bg-primary hover:bg-primary/90 text-white rounded-[2rem] gap-3 text-xs shadow-xl shadow-primary/20 border-b-4 border-primary-foreground/20 active:border-b-0 active:translate-y-1"
-                                >
-                                    <Copy className="h-5 w-5" /> Копировать всё в буфер
-                                </CfButtonMd>
-                            </div>
+                            <CfButtonMd
+                                onClick={() => {
+                                    const all = [
+                                        (result["Только текст видео"] || result.teleprompter) && `СУФЛЁР:\n${result["Только текст видео"] || result.teleprompter}`,
+                                        (result["Текст Описание"] || result.description) && `ОПИСАНИЕ:\n${result["Текст Описание"] || result.description}`,
+                                        (result["ТЕКСТ СЦЕНАРИИ"] || result.scenario) && `СЦЕНАРИЙ:\n${result["ТЕКСТ СЦЕНАРИИ"] || result.scenario}`,
+                                    ].filter(Boolean).join("\n\n---\n\n");
+                                    navigator.clipboard.writeText(all);
+                                    toast({ title: "Всё скопировано" });
+                                }}
+                                className="h-11 w-full gap-2 rounded-xl bg-primary text-sm text-primary-foreground hover:bg-primary/90"
+                            >
+                                <Copy className="h-4 w-4" /> Копировать всё в буфер
+                            </CfButtonMd>
                         </div>
                     </motion.div>
                 )}
