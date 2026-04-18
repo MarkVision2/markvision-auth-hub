@@ -637,8 +637,8 @@ export default function ContentFactory() {
             </CfButtonMd>
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-[2.5rem] border border-border/40 bg-card p-10 shadow-2xl overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-3xl border border-border/50 bg-card p-8 shadow-lg overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-12 items-start">
               <div className="space-y-8">
@@ -761,130 +761,53 @@ export default function ContentFactory() {
   }
 
   // 3. Main Interface
+  const tabs = [
+    { id: "scenario" as const, icon: Sparkles, label: "Сценарий" },
+    { id: "create" as const, icon: Plus, label: "Создать" },
+    { id: "ai-edit" as const, icon: Wand2, label: "ИИ Монтаж" },
+    { id: "my-content" as const, icon: Clock, label: "История" },
+  ];
+
   return (
     <DashboardLayout breadcrumb="Контент-Завод">
       <div className={cn(cfStyles.page, "flex flex-col h-[calc(100vh-100px)] min-h-[680px]")}>
-        <div className="relative mb-8 overflow-hidden rounded-[2.75rem] border border-primary/15 bg-[linear-gradient(135deg,rgba(12,45,93,0.98),rgba(20,72,127,0.96)_45%,rgba(16,55,101,0.98))] px-6 py-7 text-white shadow-[0_30px_80px_rgba(7,23,56,0.28)] sm:px-8 lg:px-10">
-          <div className="pointer-events-none absolute -left-8 top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
-          <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-300/10 blur-3xl" />
-          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_360px]">
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="relative mt-1 h-16 w-16 rounded-[1.6rem] border border-white/15 bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-xl shadow-black/10">
-                  <div className="absolute inset-1 rounded-[1.2rem] bg-emerald-300/10 blur-md" />
-                  <Layers className="relative h-7 w-7 text-emerald-200" />
-                </div>
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="border-white/15 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200 shadow-none">
-                      {activeTabMeta.kicker}
-                    </Badge>
-                    <Badge className="border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100 shadow-none">
-                      Улучшенный интерфейс
-                    </Badge>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-white sm:text-4xl">
-                      Контент-Завод
-                    </h1>
-                    <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-white/72 sm:text-base">
-                      {activeTabMeta.title}. {activeTabMeta.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {activeTabMeta.highlights.map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white/80 backdrop-blur-sm"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  {
-                    title: "Сценарий",
-                    desc: "Идея превращается в понятный скрипт, описание и телесуфлёр.",
-                    active: pageTab === "scenario",
-                    action: () => setPageTab("scenario"),
-                  },
-                  {
-                    title: "Создать",
-                    desc: "Готовим креатив под площадку, формат и задачу кампании.",
-                    active: pageTab === "create",
-                    action: () => setPageTab("create"),
-                  },
-                  {
-                    title: "ИИ Монтаж",
-                    desc: "Автоматический монтаж Reels из ваших исходников.",
-                    active: pageTab === "ai-edit",
-                    action: () => setPageTab("ai-edit"),
-                  },
-                  {
-                    title: "История",
-                    desc: "Смотрим готовые материалы, оцениваем и отправляем в рекламу.",
-                    active: pageTab === "my-content",
-                    action: () => setPageTab("my-content"),
-                  },
-                ].map((item) => (
-                  <button
-                    key={item.title}
-                    onClick={item.action}
-                    className={cn(
-                      "rounded-[1.6rem] border p-4 text-left transition-all duration-300",
-                      item.active
-                        ? "border-emerald-200/30 bg-white/12 shadow-[0_16px_40px_rgba(0,0,0,0.15)]"
-                        : "border-white/10 bg-white/6 hover:border-white/18 hover:bg-white/10"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">{item.title}</p>
-                      {item.active && <Rocket className="h-4 w-4 text-emerald-200" />}
-                    </div>
-                    <p className="mt-2 text-xs font-medium leading-relaxed text-white/65">{item.desc}</p>
-                  </button>
-                ))}
-              </div>
+        <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Layers className="h-6 w-6" />
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-              {topStats.map(({ label, value, icon: Icon, tone }) => (
-                <div
-                  key={label}
-                  className="rounded-[1.6rem] border border-white/10 bg-white/8 p-4 backdrop-blur-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">{label}</span>
-                    <Icon className={cn("h-4 w-4", tone)} />
-                  </div>
-                  <p className="mt-4 text-3xl font-black tracking-tight text-white">{value}</p>
-                </div>
-              ))}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Контент-Завод</h1>
+                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider">
+                  {activeTabMeta.kicker}
+                </Badge>
+              </div>
+              <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+                {activeTabMeta.description}
+              </p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 lg:w-auto">
+            {topStats.map(({ label, value, icon: Icon, tone }) => (
+              <div
+                key={label}
+                className="flex flex-col items-start gap-1 rounded-2xl border border-border/50 bg-card px-3 py-2 sm:px-4 sm:py-3"
+              >
+                <div className="flex w-full items-center justify-between">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+                  <Icon className={cn("h-3.5 w-3.5", tone)} />
+                </div>
+                <p className="text-xl font-bold text-foreground sm:text-2xl">{value}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary/60">Workspace Flow</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground">Выберите рабочий режим</h2>
-            <p className="mt-2 max-w-2xl text-sm font-medium text-muted-foreground">
-              Каждая вкладка теперь отвечает за свой этап: стратегия, продакшн и управление готовым контентом.
-            </p>
-          </div>
-
-          <div className="relative flex flex-wrap gap-2 rounded-[1.7rem] border border-border/50 bg-card/85 p-2 shadow-xl shadow-black/5 backdrop-blur-xl">
-            {[
-              { id: "scenario" as const, icon: Sparkles, label: "Сценарий" },
-              { id: "create" as const, icon: Plus, label: "Создать" },
-              { id: "ai-edit" as const, icon: Wand2, label: "ИИ Монтаж" },
-              { id: "my-content" as const, icon: Clock, label: "История" },
-            ].map((tab) => {
+        <div className="mb-6">
+          <div className="inline-flex w-full flex-wrap gap-1 rounded-2xl border border-border/50 bg-card p-1 sm:w-auto">
+            {tabs.map((tab) => {
               const TabIcon = tab.icon;
               const active = pageTab === tab.id;
               return (
@@ -892,17 +815,15 @@ export default function ContentFactory() {
                   key={tab.id}
                   onClick={() => setPageTab(tab.id)}
                   className={cn(
-                    "relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300",
-                    active
-                      ? "text-white shadow-lg shadow-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                    "relative flex flex-1 items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors sm:flex-none",
+                    active ? "text-white" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {active && (
                     <motion.div
                       layoutId="active-tab-bg"
-                      className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary via-primary to-primary/80"
-                      transition={{ type: "spring", duration: 0.5 }}
+                      className="absolute inset-0 rounded-xl bg-primary"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
                   <TabIcon className="relative h-4 w-4" />
@@ -931,17 +852,17 @@ export default function ContentFactory() {
           {pageTab === "my-content" && (
             <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10 space-y-8">
               {readyHistory.length > 0 && (
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto]">
-                  <div className="relative rounded-[1.8rem] border border-border/50 bg-card p-4 shadow-sm">
-                    <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/45" />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="relative flex-1 sm:max-w-md">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={historySearch}
                       onChange={(e) => setHistorySearch(e.target.value)}
-                      placeholder="Поиск по типу контента, тексту, формату или комментарию"
-                      className="h-12 rounded-2xl border-border/40 bg-secondary/20 pl-11 pr-4 font-semibold"
+                      placeholder="Поиск по описанию, типу или формату"
+                      className="h-10 rounded-xl border-border/50 bg-card pl-10 text-sm"
                     />
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 rounded-xl border border-border/50 bg-card p-1">
                     {[
                       { id: "all" as const, label: "Все" },
                       { id: "video" as const, label: "Видео" },
@@ -952,10 +873,10 @@ export default function ContentFactory() {
                         key={item.id}
                         onClick={() => setHistoryFilter(item.id)}
                         className={cn(
-                          "h-12 rounded-2xl border px-4 text-[11px] font-black uppercase tracking-[0.16em] transition-all",
+                          "h-8 rounded-lg px-3 text-xs font-semibold transition-colors",
                           historyFilter === item.id
-                            ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
-                            : "border-border/50 bg-card text-muted-foreground hover:border-primary/25 hover:text-foreground"
+                            ? "bg-primary text-white"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                         )}
                       >
                         {item.label}
@@ -1019,7 +940,7 @@ export default function ContentFactory() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: idx * 0.05 }}
-                        className="group relative rounded-[2.2rem] border border-border/50 bg-card hover:bg-card hover:border-primary/30 transition-all duration-500 shadow-sm hover:shadow-xl cursor-pointer p-5 space-y-4 overflow-hidden" 
+                        className="group relative rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-colors shadow-sm hover:shadow-lg cursor-pointer p-4 space-y-3 overflow-hidden"
                         onClick={() => loadHistoryItem(task)}
                       >
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/20 via-primary/70 to-emerald-300/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />

@@ -269,27 +269,27 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_420px]">
         <div className="space-y-6">
-          <div className="rounded-[2.25rem] border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Input</p>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-foreground">Исходное видео и ассеты</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Input</p>
+                <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
               </div>
-              <Badge className="border-primary/20 bg-primary/10 text-primary shadow-none">Remotion</Badge>
+              <Badge variant="secondary" className="text-[10px] font-semibold">Remotion</Badge>
             </div>
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <label className="relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[2rem] border-2 border-dashed border-primary/20 bg-secondary/20">
+            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+              <label className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border hover:border-primary/40 bg-secondary/10 transition-colors">
                 {videoPreview ? (
                   <video src={videoPreview} controls className="h-full w-full object-cover" />
                 ) : (
-                  <div className="space-y-4 text-center">
-                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.7rem] bg-primary/10">
-                      <Upload className="h-10 w-10 text-primary" />
+                  <div className="space-y-3 text-center px-6">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                      <Upload className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="text-lg font-black tracking-tight text-foreground">Загрузить видео</p>
-                      <p className="text-sm font-medium text-muted-foreground">MP4 / MOV, вертикальный или квадратный исходник</p>
+                      <p className="text-base font-semibold text-foreground">Загрузить видео</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">MP4 / MOV, до 150 МБ</p>
                     </div>
                   </div>
                 )}
@@ -325,12 +325,47 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
           </div>
 
-          <div className="rounded-[2.25rem] border border-border/50 bg-card p-6 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Настройки</p>
+          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+            <div className="mb-5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Стиль монтажа</p>
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Как собираем видео</h3>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {EDIT_STYLES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setStyle(item.id)}
+                  className={cn(
+                    "rounded-2xl border p-4 text-left transition-all",
+                    style === item.id
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "border-border/50 bg-secondary/10 hover:border-primary/30 hover:bg-secondary/20"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "mb-3 flex h-10 w-10 items-center justify-center rounded-xl",
+                      style === item.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                    )}
+                  >
+                    {item.id === "viral" ? <Zap className="h-5 w-5" /> : item.id === "minimal" ? <Type className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.helper}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Настройки</p>
+            <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Формат и поведение</h3>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field title="Формат" icon={Clapperboard}>
                 <Select value={format} onValueChange={(value: "9:16" | "1:1") => setFormat(value)}>
-                  <SelectTrigger className="h-12 rounded-2xl">
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -341,7 +376,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               </Field>
               <Field title="Язык субтитров" icon={Languages}>
                 <Select value={captionLanguage} onValueChange={setCaptionLanguage}>
-                  <SelectTrigger className="h-12 rounded-2xl">
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -353,7 +388,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               </Field>
               <Field title="Бизнес шаблон" icon={FileType}>
                 <Select value={businessTemplate} onValueChange={setBusinessTemplate}>
-                  <SelectTrigger className="h-12 rounded-2xl">
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -365,9 +400,9 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
                 </Select>
               </Field>
               <Field title="Длина клипов" icon={Clapperboard}>
-                <div className="grid grid-cols-[1fr_120px] gap-2">
+                <div className="grid grid-cols-[1fr_110px] gap-2">
                   <Select value={clipDurationMode} onValueChange={(value: "auto" | "manual") => setClipDurationMode(value)}>
-                    <SelectTrigger className="h-12 rounded-2xl">
+                    <SelectTrigger className="h-11 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -380,131 +415,136 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
                     onChange={(event) => setClipDurationSec(event.target.value)}
                     disabled={clipDurationMode !== "manual"}
                     placeholder="сек"
-                    className="h-12 rounded-2xl"
+                    className="h-11 rounded-xl"
                   />
                 </div>
               </Field>
             </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
               <ToggleCard title="Авто B-roll" icon={ImageIcon} checked={autoBroll} onChange={setAutoBroll} />
               <ToggleCard title="Авто Zoom" icon={Maximize} checked={autoZoom} onChange={setAutoZoom} />
             </div>
 
             <div className="mt-5">
-              <Label className="mb-3 block text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+              <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Плотность эффектов
               </Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 {(["low", "medium", "high"] as IntensityLevel[]).map((value) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setIntensity(value)}
                     className={cn(
-                      "rounded-2xl border px-4 py-3 text-xs font-black uppercase tracking-[0.16em] transition-all",
+                      "rounded-xl border px-4 py-2.5 text-xs font-semibold uppercase transition-all",
                       intensity === value
-                        ? "border-primary bg-primary text-white shadow-lg shadow-primary/20"
-                        : "border-border/50 bg-secondary/20 text-muted-foreground hover:border-primary/25 hover:text-foreground"
+                        ? "border-primary bg-primary text-white"
+                        : "border-border/50 bg-secondary/10 text-muted-foreground hover:border-primary/30 hover:text-foreground"
                     )}
                   >
-                    {value}
+                    {value === "low" ? "Low" : value === "medium" ? "Medium" : "High"}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="mt-5">
-              <Label className="mb-3 block text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+              <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Контекст речи / хук
               </Label>
               <Textarea
                 value={scriptHint}
                 onChange={(event) => setScriptHint(event.target.value)}
                 placeholder="Коротко опишите суть видео или вставьте ключевой текст, чтобы AI точнее собрал сцены."
-                className="min-h-[120px] rounded-[1.5rem]"
+                className="min-h-[100px] rounded-xl resize-none"
               />
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            {EDIT_STYLES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setStyle(item.id)}
-                className={cn(
-                  "rounded-[1.8rem] border p-5 text-left transition-all",
-                  style === item.id
-                    ? "border-primary bg-primary/5 shadow-xl shadow-primary/10"
-                    : "border-border/50 bg-card hover:border-primary/25"
-                )}
-              >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  {item.id === "viral" ? <Zap className="h-5 w-5" /> : item.id === "minimal" ? <Type className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
-                </div>
-                <p className="text-sm font-black uppercase tracking-tight text-foreground">{item.label}</p>
-                <p className="mt-2 text-xs font-medium leading-relaxed text-muted-foreground">{item.helper}</p>
-              </button>
-            ))}
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-[2.25rem] border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Pipeline</p>
-                <h3 className="mt-2 text-xl font-black tracking-tight text-foreground">AI режиссер</h3>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pipeline</p>
+                <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">AI режиссёр</h3>
               </div>
-              {taskId && <Badge className="border-border/50 bg-secondary/30 text-foreground shadow-none">{taskId}</Badge>}
-            </div>
-
-            <div className="mt-5 space-y-3">
-              {PIPELINE_STEPS.map((step, index) => {
-                const isDone = currentStepIndex >= index && currentStepIndex !== -1;
-                return (
-                  <div key={step.id} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-secondary/10 px-4 py-3">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl", isDone ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground")}>
-                      {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-foreground">{step.label}</p>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {status?.stage === step.id ? status.progressText : "Ожидает этап"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-5 rounded-[1.6rem] border border-primary/10 bg-primary/5 p-4">
-              <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.18em] text-primary/80">
-                <span>{status?.progressText ?? "Ожидание запуска"}</span>
-                <span>{status?.progress ?? 0}%</span>
-              </div>
-              <Progress value={status?.progress ?? 0} className="h-2" />
+              {taskId && (
+                <Badge variant="secondary" className="font-mono text-[10px]">{taskId.slice(-8)}</Badge>
+              )}
             </div>
 
             <Button
               onClick={startAiEdit}
               disabled={!videoFile || isSubmitting}
-              className="mt-5 h-14 w-full rounded-2xl bg-primary text-white shadow-2xl shadow-primary/25 hover:bg-primary/90"
+              className="mt-5 h-12 w-full rounded-2xl bg-primary text-white hover:bg-primary/90"
             >
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
-              Запустить ИИ монтаж
+              {isSubmitting ? "Обрабатываем…" : "Запустить ИИ монтаж"}
             </Button>
+
+            {(isSubmitting || status) && (
+              <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  <span className="truncate pr-2">{status?.progressText ?? "Ожидание запуска"}</span>
+                  <span>{status?.progress ?? 0}%</span>
+                </div>
+                <Progress value={status?.progress ?? 0} className="h-1.5" />
+              </div>
+            )}
+
+            <div className="mt-5 space-y-2">
+              {PIPELINE_STEPS.map((step, index) => {
+                const isDone = currentStepIndex > index && currentStepIndex !== -1;
+                const isActive = currentStepIndex === index;
+                return (
+                  <div
+                    key={step.id}
+                    className={cn(
+                      "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
+                      isActive && "bg-primary/5",
+                      !isActive && !isDone && "opacity-60"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                        isDone
+                          ? "bg-primary text-white"
+                          : isActive
+                            ? "bg-primary/15 text-primary"
+                            : "bg-secondary/40 text-muted-foreground"
+                      )}
+                    >
+                      {isDone ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : isActive ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="text-[10px] font-bold">{index + 1}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-foreground">{step.label}</p>
+                      {isActive && status?.progressText && (
+                        <p className="truncate text-[10px] text-muted-foreground">{status.progressText}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {status?.transcript && (
-            <div className="rounded-[2.25rem] border border-border/50 bg-card p-6 shadow-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">AI данные</p>
-              <h3 className="mt-2 text-lg font-black tracking-tight text-foreground">Транскрипт и сцены</h3>
-              <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{status.transcript.text}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">AI данные</p>
+              <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">Транскрипт и сцены</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{status.transcript.text}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
                 {status.scenes?.map((scene, index) => (
-                  <Badge key={`${scene.type}-${index}`} className="border-border/50 bg-secondary/30 text-foreground shadow-none">
+                  <Badge key={`${scene.type}-${index}`} variant="secondary" className="text-[10px] font-medium">
                     {scene.type} {scene.start.toFixed(1)}-{scene.end.toFixed(1)}с
                   </Badge>
                 ))}
@@ -516,40 +556,40 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
       {status?.videos?.length ? (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-6 rounded-[2.5rem] border border-border/50 bg-card p-6 shadow-sm"
+          className="space-y-5 rounded-3xl border border-border/50 bg-card p-6 shadow-sm"
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary/70">Results</p>
-              <h3 className="mt-2 text-2xl font-black tracking-tight text-foreground">3 варианта видео готовы</h3>
-              <p className="mt-2 text-sm font-medium text-muted-foreground">
-                Для следующего этапа сюда можно подключить реальный worker-рендер через Remotion Renderer и S3.
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Results</p>
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">3 варианта монтажа готовы</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Превью генерируется через Remotion Renderer. Скачайте понравившийся или сбросьте задачу.
               </p>
             </div>
-            <Button variant="outline" className="rounded-2xl border-border/60" onClick={resetTask}>
+            <Button variant="outline" className="rounded-xl" onClick={resetTask}>
               <RefreshCcw className="mr-2 h-4 w-4" />
               Сбросить
             </Button>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             {status.videos.map((video, index) => (
-              <div key={video.id} className="overflow-hidden rounded-[2rem] border border-border/40 bg-secondary/10">
-                <div className="aspect-[9/16] bg-black/80">
+              <div key={video.id} className="overflow-hidden rounded-2xl border border-border/50 bg-secondary/10">
+                <div className="aspect-[9/16] bg-black">
                   <video src={video.url} controls className="h-full w-full object-cover" />
                 </div>
-                <div className="space-y-3 p-5">
+                <div className="space-y-2 p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-lg font-black tracking-tight text-foreground">{video.name}</p>
-                    <Badge className="border-primary/20 bg-primary/10 text-primary shadow-none">v{index + 1}</Badge>
+                    <p className="text-sm font-semibold text-foreground">{video.name}</p>
+                    <Badge variant="secondary" className="text-[10px] font-semibold">v{index + 1}</Badge>
                   </div>
-                  <p className="text-sm font-medium leading-relaxed text-muted-foreground">{video.notes}</p>
-                  <a href={video.url} target="_blank" rel="noreferrer" className="block">
-                    <Button className="h-11 w-full rounded-2xl bg-primary text-white hover:bg-primary/90">
+                  <p className="text-xs leading-relaxed text-muted-foreground">{video.notes}</p>
+                  <a href={video.url} target="_blank" rel="noreferrer" className="block pt-1">
+                    <Button className="h-10 w-full rounded-xl bg-primary text-white hover:bg-primary/90">
                       <Download className="mr-2 h-4 w-4" />
-                      Открыть / скачать
+                      Скачать
                     </Button>
                   </a>
                 </div>
@@ -572,8 +612,8 @@ const Field = ({
   children: React.ReactNode;
 }) => (
   <div>
-    <Label className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-muted-foreground">
-      <Icon className="h-4 w-4 text-primary" />
+    <Label className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <Icon className="h-3.5 w-3.5" />
       {title}
     </Label>
     {children}
@@ -595,17 +635,17 @@ const ToggleCard = ({
     type="button"
     onClick={() => onChange(!checked)}
     className={cn(
-      "flex items-center justify-between rounded-[1.5rem] border px-4 py-4 text-left transition-all",
-      checked ? "border-primary bg-primary/5" : "border-border/40 bg-secondary/10"
+      "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors",
+      checked ? "border-primary/50 bg-primary/5" : "border-border/50 bg-secondary/10 hover:border-border"
     )}
   >
-    <div className="flex items-center gap-3">
-      <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl", checked ? "bg-primary text-white" : "bg-secondary/40 text-muted-foreground")}>
-        <Icon className="h-5 w-5" />
+    <div className="flex items-center gap-2.5">
+      <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg", checked ? "bg-primary text-white" : "bg-secondary/40 text-muted-foreground")}>
+        <Icon className="h-4 w-4" />
       </div>
-      <span className="text-sm font-bold text-foreground">{title}</span>
+      <span className="text-sm font-semibold text-foreground">{title}</span>
     </div>
-    <span className={cn("rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em]", checked ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground")}>
+    <span className={cn("rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase", checked ? "bg-primary text-white" : "bg-secondary/50 text-muted-foreground")}>
       {checked ? "On" : "Off"}
     </span>
   </button>
@@ -626,18 +666,18 @@ const AssetInput = ({
   file: File | null;
   onChange: (file: File | null) => void;
 }) => (
-  <label className="flex cursor-pointer items-center justify-between rounded-[1.5rem] border border-border/40 bg-secondary/10 px-4 py-4 transition-all hover:border-primary/25">
-    <div className="flex items-center gap-3">
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-        <Icon className="h-5 w-5" />
+  <label className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 bg-secondary/10 px-3 py-3 transition-colors hover:border-primary/30">
+    <div className="flex min-w-0 items-center gap-2.5">
+      <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", file ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
+        <Icon className="h-4 w-4" />
       </div>
-      <div>
-        <p className="text-sm font-black tracking-tight text-foreground">{title}</p>
-        <p className="text-xs font-medium text-muted-foreground">{file?.name ?? description}</p>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-foreground">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{file?.name ?? description}</p>
       </div>
     </div>
-    <div className="rounded-full border border-border/50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-muted-foreground">
-      {file ? "Готово" : "Выбрать"}
+    <div className="shrink-0 rounded-md border border-border/50 px-2 py-0.5 text-[10px] font-semibold uppercase text-muted-foreground">
+      {file ? "✓" : "+"}
     </div>
     <input
       type="file"
