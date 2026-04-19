@@ -7,10 +7,10 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { motion } from "framer-motion";
 
 const features = [
-  { icon: BarChart3, title: "Сквозная аналитика", desc: "Узнайте, какая реклама приносит выручку: от клика до кассы.", color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },
-  { icon: Zap, title: "Автоматизация контента", desc: "Видео, фото и посты в 1 клик. Нейросети создают за вас.", color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-  { icon: Shield, title: "AI-Контроль звонков", desc: "100% аудит диалогов менеджеров. Оценка скриптов и ошибок.", color: "text-purple-500", bg: "bg-purple-500/10", border: "border-purple-500/20" },
-  { icon: TrendingUp, title: "Управление бизнесом", desc: "Трафик, финансы и KPI команды в одном интерактивном окне.", color: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/20" },
+  { icon: BarChart3, title: "Сквозная аналитика", desc: "Все каналы в одном окне — от клика до продажи" },
+  { icon: Zap, title: "AI-автоматизация", desc: "Генерация контента, аудит звонков, прогнозы" },
+  { icon: Shield, title: "Контроль качества", desc: "AI-РОП проверяет каждый диалог менеджера" },
+  { icon: TrendingUp, title: "Рост без хаоса", desc: "CRM, финансы и команда — всё под контролем" },
 ];
 
 const mockBlogPosts = [
@@ -106,40 +106,38 @@ const AuthPage = () => {
       <div className="flex min-h-screen flex-col lg:flex-row">
         
         {/* Left — Marketing/Hero Info */}
-        <div className="relative flex w-full items-center justify-center overflow-hidden bg-secondary/20 px-6 py-16 lg:w-7/12 lg:px-12 xl:px-20 lg:py-0 border-r border-border/40">
+        <div className="relative flex w-full items-center justify-center overflow-hidden bg-card px-8 py-16 lg:w-[55%] lg:py-0 border-r border-border/40">
           {/* Ambient Glow */}
-          <div className="absolute inset-0 pointer-events-none opacity-40">
-            <div className="absolute -left-1/4 -top-1/4 h-[800px] w-[800px] rounded-full bg-primary/20 blur-[120px]" />
-            <div className="absolute top-1/2 right-0 h-[500px] w-[500px] rounded-full bg-emerald-500/10 blur-[100px]" />
+          <div className="absolute inset-0 pointer-events-none opacity-30">
+            <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[120px]" />
+            <div className="absolute -bottom-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[100px]" />
           </div>
           
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
+          <div className="dot-pattern absolute inset-0 opacity-40" />
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative z-10 w-full max-w-2xl"
+            className="relative z-10 w-full max-w-xl"
           >
-            {/* Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary shadow-sm">
-              <Zap className="h-3.5 w-3.5 fill-primary" />
-              <span>Единая AI Экосистема</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse ml-1" />
+            <div className="mb-10 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <span className="text-2xl font-bold tracking-tight text-foreground">MarkVision</span>
             </div>
 
             {/* Title */}
-            <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-foreground lg:text-5xl xl:text-6xl">
-              Бизнес под контролем
+            <h1 className="text-4xl font-bold leading-[1.15] tracking-tight text-foreground lg:text-5xl">
+              Управляйте бизнесом
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">
-                искусственного интеллекта
-              </span>
+              <span className="text-primary">в одном месте</span>
             </h1>
             
             {/* Description */}
-            <p className="mt-6 text-lg leading-relaxed text-muted-foreground font-medium max-w-lg">
-              Забудьте о разрозненных таблицах и рутине. MarkVision объединяет маркетинг, аналитику, генерацию контента и контроль отдела продаж в одну прозрачную платформу, которая работает на вас 24/7.
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
+              Трафик, контент, продажи, финансы и команда — одна панель. AI следит за результатом 24/7.
             </p>
 
             {/* Feature Cards Grid */}
@@ -150,33 +148,19 @@ const AuthPage = () => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                  className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 p-5 backdrop-blur-md transition-all hover:border-primary/30 hover:bg-card hover:shadow-xl hover:shadow-primary/5"
+                  className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-4 backdrop-blur-sm"
                 >
-                  <div className={`mb-3 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${f.bg} ${f.border} ${f.color}`}>
-                    <f.icon className="h-5 w-5" />
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                    <f.icon className="h-4 w-4 text-primary" />
                   </div>
-                  <h3 className="text-base font-bold text-foreground mb-1">{f.title}</h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground/80 font-medium">
-                    {f.desc}
-                  </p>
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-0.5">{f.title}</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground font-medium">
+                      {f.desc}
+                    </p>
+                  </div>
                 </motion.div>
               ))}
-            </div>
-
-            {/* Small stats / Trust markers */}
-            <div className="mt-12 flex flex-wrap items-center gap-6 border-t border-border/40 pt-6 text-sm font-semibold text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  <div className="h-6 w-6 rounded-full border-2 border-background bg-blue-500/20" />
-                  <div className="h-6 w-6 rounded-full border-2 border-background bg-emerald-500/20" />
-                  <div className="h-6 w-6 rounded-full border-2 border-background bg-primary/20" />
-                </div>
-                <span>Десятки интеграций</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                <span>Окупаемость с 1-го месяца</span>
-              </div>
             </div>
           </motion.div>
         </div>
@@ -313,6 +297,33 @@ const AuthPage = () => {
 
         </div>
       </section>
+
+      {/* ─── FOOTER ─── */}
+      <footer className="w-full bg-card/50 border-t border-border/40 py-12 px-6 sm:px-12 lg:px-20 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div>
+            <div className="flex items-center gap-2 mb-4 opacity-80 hover:opacity-100 transition-opacity">
+               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                 <Zap className="h-4 w-4 text-primary" />
+               </div>
+               <span className="text-xl font-bold tracking-tight text-foreground">MarkVision</span>
+            </div>
+             <p className="text-xs text-muted-foreground font-medium max-w-[280px] leading-relaxed">
+               Инновационная платформа для управления клиникой. Искусственный интеллект, маркетинг и автоматизация продаж в едином окне.
+             </p>
+          </div>
+          
+          <div className="flex flex-wrap gap-8 text-sm font-semibold text-foreground/80">
+            <a href="#" className="hover:text-primary transition-colors">О компании</a>
+            <a href="#" className="hover:text-primary transition-colors">Кейсы</a>
+            <a href="#" className="hover:text-primary transition-colors">Блог</a>
+            <a href="#" className="hover:text-primary transition-colors">Политика конфиденциальности</a>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-12 border-t border-border/30 pt-6 text-center md:text-left text-xs font-semibold text-muted-foreground/50">
+          © {new Date().getFullYear()} MarkVision. Все права защищены.
+        </div>
+      </footer>
 
     </div>
   );
