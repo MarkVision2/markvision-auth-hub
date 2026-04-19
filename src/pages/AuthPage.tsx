@@ -13,34 +13,11 @@ const features = [
   { icon: TrendingUp, title: "Рост без хаоса", desc: "CRM, финансы и команда — всё под контролем" },
 ];
 
-const mockBlogPosts = [
-  {
-    id: 1,
-    title: "Как AI-технологии увеличивают конверсию в медицинских клиниках на 40%",
-    excerpt: "Разбор реального кейса: как внедрение AI-РОПа для контроля звонков и сквозной аналитики позволило клинике вырасти без увеличения рекламного бюджета.",
-    category: "Кейсы",
-    date: "14 апреля 2026",
-    imageUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=60",
-    readTime: "5 мин",
-  },
-  {
-    id: 2,
-    title: "5 главных ошибок при настройке таргетированной рекламы",
-    excerpt: "Почему вы сливаете бюджет? Анализ самых частых ошибок маркетологов на основе данных из нашей системы сквозной аналитики.",
-    category: "Маркетинг",
-    date: "10 апреля 2026",
-    imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=60",
-    readTime: "7 мин",
-  },
-  {
-    id: 3,
-    title: "Контент-Завод: Как создавать Reels каждый день, не нанимая видеомейкера",
-    excerpt: "Практическое руководство по модулю генерации MarkVision. Создаем сценарии, озвучку и монтаж с помощью нейросетей за 15 минут.",
-    category: "Инструкции",
-    date: "5 апреля 2026",
-    imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop&q=60",
-    readTime: "4 мин",
-  }
+const features = [
+  { icon: BarChart3, title: "Сквозная аналитика", desc: "Все каналы в одном окне — от клика до продажи" },
+  { icon: Zap, title: "AI-автоматизация", desc: "Генерация контента, аудит звонков, прогнозы" },
+  { icon: Shield, title: "Контроль качества", desc: "AI-РОП проверяет каждый диалог менеджера" },
+  { icon: TrendingUp, title: "Рост без хаоса", desc: "CRM, финансы и команда — всё под контролем" },
 ];
 
 const AuthPage = () => {
@@ -232,71 +209,7 @@ const AuthPage = () => {
 
       </div>
 
-      {/* ─── BLOG & KNOWLEDGE BASE SECTION ─── */}
-      <section className="bg-card w-full py-20 lg:py-28 px-6 sm:px-12 lg:px-20 border-t border-border/40 relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-        <div className="max-w-7xl mx-auto relative z-10">
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground">Последние материалы</h2>
-              <p className="text-lg text-muted-foreground mt-3 font-medium">Статьи, разборы кейсов и практические руководства по масштабированию бизнеса с помощью IT-инструментов.</p>
-            </div>
-            {/* Optional "See All" button could go here */}
-            <button className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-full border border-primary/20 font-semibold text-sm text-primary hover:bg-primary hover:text-white transition-all">
-              Все статьи <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {mockBlogPosts.map((post) => (
-              <a key={post.id} href="#" className="group flex flex-col rounded-2xl bg-background border border-border/50 overflow-hidden hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300">
-                {/* Image */}
-                <div className="relative h-56 w-full overflow-hidden bg-secondary">
-                  <img 
-                    src={post.imageUrl} 
-                    alt={post.title} 
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="backdrop-blur-md bg-black/40 text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-                      {post.category}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Content */}
-                <div className="flex flex-col flex-1 p-6">
-                  <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground mb-3">
-                    <span>{post.date}</span>
-                    <span className="w-1 h-1 rounded-full bg-primary/50" />
-                    <span>{post.readTime} чтения</span>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors leading-tight">
-                    {post.title}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed mb-6">
-                    {post.excerpt}
-                  </p>
-                  
-                  <div className="mt-auto pt-4 border-t border-border/50 flex items-center text-sm font-bold text-primary group-hover:gap-2 transition-all">
-                    Читать далее <ArrowRight className="h-4 w-4 ml-1 transition-all group-hover:translate-x-1" />
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
-
-          <div className="mt-10 md:hidden flex justify-center">
-            <button className="flex items-center gap-2 px-6 py-3 rounded-full border border-primary/20 font-bold text-sm text-primary hover:bg-primary/5 transition-all">
-              Перейти в блог <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-
-        </div>
-      </section>
+      </div>
 
       {/* ─── FOOTER ─── */}
       <footer className="w-full bg-card/50 border-t border-border/40 py-12 px-6 sm:px-12 lg:px-20 backdrop-blur-xl">
@@ -316,7 +229,7 @@ const AuthPage = () => {
           <div className="flex flex-wrap gap-8 text-sm font-semibold text-foreground/80">
             <a href="#" className="hover:text-primary transition-colors">О компании</a>
             <a href="#" className="hover:text-primary transition-colors">Кейсы</a>
-            <a href="#" className="hover:text-primary transition-colors">Блог</a>
+            <button onClick={() => navigate('/blog')} className="hover:text-primary transition-colors">Блог</button>
             <a href="#" className="hover:text-primary transition-colors">Политика конфиденциальности</a>
           </div>
         </div>

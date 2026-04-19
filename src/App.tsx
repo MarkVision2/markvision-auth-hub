@@ -33,6 +33,7 @@ const AiManagerPage = lazy(() => import("./pages/AiManagerPage"));
 const DoctorTerminal = lazy(() => import("./pages/DoctorTerminal"));
 const SchedulePage = lazy(() => import("./pages/SchedulePage"));
 const DiagnosticsDashboardPage = lazy(() => import("./pages/DiagnosticsDashboardPage"));
+const BlogPage = lazy(() => import("./pages/BlogPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -66,6 +67,7 @@ const App = () => (
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path="/" element={<AuthPage />} />
+                      <Route path="/blog" element={<BlogPage />} />
                       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                       <Route path="/dashboard/target" element={<ProtectedRoute><DashboardTarget /></ProtectedRoute>} />
                       <Route path="/dashboard/sales" element={<ProtectedRoute><DashboardSales /></ProtectedRoute>} />
