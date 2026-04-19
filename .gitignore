@@ -1,5 +1,16 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,21 +18,53 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Environment (SECRETS — never commit)
+.env
+.env.*
+!.env.example
+*.env.local
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.secrets
 
-# Editor directories and files
+# Editors / OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.vercel
-.env
-.env*.local
+*.local
+
+# Vercel
+.vercel/
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+.nyc_output/
+
+# Temporary / scratch files (dev debugging)
+tmp_*
+tmp/
+scratch/
+*.backup.json
+
+# Claude / AI tooling local state
+.claude-flow/
+.home/
+.agents/
+skills-lock.json
+
+# Lovable / generated
+Проекты/
+meta-ads-mcp-extended/
+n8n-knowledge-base.json
