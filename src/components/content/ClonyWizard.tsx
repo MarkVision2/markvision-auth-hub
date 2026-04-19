@@ -918,12 +918,13 @@ export default function ClonyWizard() {
             );
           })}
         </div>
-
+      </div>
     </motion.div>
   );
 
-  const renderStep3 = () => (
+  const renderStep2 = () => (
     <motion.div key="s2" {...anim} className="space-y-6">
+      <div className="relative rounded-lg bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
         {/* Conditional source inputs */}
         <AnimatePresence mode="wait">
           {form.source_mode === "link" && (
@@ -1253,7 +1254,7 @@ export default function ClonyWizard() {
   );
 
   // ── Step 2: Format Settings ────────────────────────
-  const renderStep2 = () => (
+  const renderStep3 = () => (
     <motion.div key="s2" {...anim} className="space-y-6">
       {/* Aspect Ratio */}
       <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
