@@ -708,8 +708,10 @@ export default function ClonyWizard() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
           <div>
-            <p className="text-base font-semibold text-foreground">Запускаем генерацию...</p>
-            <p className="mt-1 text-sm text-muted-foreground">Загружаем материалы и отправляем задачу в Clony AI</p>
+            <p className="text-2xl font-bold tracking-tight text-foreground">Задача поставлена</p>
+            <p className="mt-2 text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+              Контент создается, ожидайте... Мы загружаем материалы и отправляем данные в нейросеть. Пожалуйста, не закрывайте вкладку (обычно 1-3 минуты).
+            </p>
           </div>
         </div>
       </div>
@@ -757,12 +759,12 @@ export default function ClonyWizard() {
 
           <div className="relative space-y-3">
             <h2 className="text-3xl font-bold tracking-tight">
-              {isError ? "Не удалось отправить" : "Спасибо! Задача принята в работу"}
+              {isError ? "Не удалось отправить" : "Задача поставлена, контент создается"}
             </h2>
             <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
               {isError
                 ? "Произошла ошибка при отправке запроса. Попробуйте ещё раз или проверьте подключение."
-                : "Clony AI уже начал генерацию вашего креатива. Результат появится в разделе «История» и придёт в Telegram, обычно через 1–3 минуты."}
+                : "Пожалуйста, ожидайте. Результат скоро появится в разделе «История» и придёт в Telegram."}
             </p>
             {isError && submitError && (
               <div className="mt-4 mx-auto max-w-md p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-left">

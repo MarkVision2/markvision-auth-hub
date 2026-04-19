@@ -147,6 +147,7 @@ export default function ScenarioCreator() {
     const [loaderText, setLoaderText] = useState("");
     const [loaderProgress, setLoaderProgress] = useState(0);
     const [result, setResult] = useState<ScenarioResult | null>(null);
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -237,6 +238,7 @@ export default function ScenarioCreator() {
 
         setIsGenerating(true);
         setResult(null);
+        setIsSubmitted(false);
         setLoaderProgress(10);
         setLoaderText("Инициализация...");
 
@@ -321,9 +323,10 @@ export default function ScenarioCreator() {
             } else {
                 // If no immediate result and no recordId, we wait a bit and hope
                 setLoaderText("Обрабатываем запрос...");
-                await new Promise(r => setTimeout(r, 5000));
-                setLoaderText("Процесс запущен. Результат появится в истории.");
+                await new Promise(r => setTimeout(r, 2000));
+                setLoaderProgress(100);
                 setIsGenerating(false);
+                setIsSubmitted(true);
             }
 
         } catch (err: unknown) {
@@ -335,7 +338,7 @@ export default function ScenarioCreator() {
 
     const handleReset = () => {
         setTopic(""); setLinkUrl(""); setAudioBlob(null); setAudioUrl(null); setResult(null);
-        setIsGenerating(false); setLoaderProgress(0);
+        setIsGenerating(false); setLoaderProgress(0); setIsSubmitted(false);
         if (pollingRef.current) clearInterval(pollingRef.current);
     };
 
@@ -619,6 +622,31 @@ export default function ScenarioCreator() {
                                 className="h-11 w-full gap-2 rounded-xl bg-primary text-sm text-primary-foreground hover:bg-primary/90"
                             >
                                 <Copy className="h-4 w-4" /> Копировать всё в буфер
+                            </CfButtonMd>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Task queued state */}
+            <AnimatePresence>
+                {isSubmitted && !result && !isGenerating && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="overflow-hidden rounded-xl border border-primary/30 bg-primary/5 text-center p-8 sm:p-12 shadow-sm"
+                    >
+                        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-primary/10 mb-5 relative">
+                            <div className="absolute inset-0 bg-primary/20 blur-md rounded-2xl animate-pulse" />
+                            <CheckCircle2 className="h-8 w-8 text-primary relative" />
+                        </div>
+                        <h3 className="text-2xl font-bold tracking-tight text-foreground">Задача поставлена!</h3>
+                        <p className="mt-2 text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
+                            Контент создается, ожидайте... Система анализирует исходники и генерирует сценарий. Обычно это занимает пару минут, результат появится в <strong>Истории</strong>.
+                        </p>
+                        <div className="mt-6 flex justify-center gap-3">
+                            <CfButtonMd onClick={handleReset} variant="outline" className="gap-2 border-primary/20 bg-background text-sm">
+                                <RotateCcw className="h-4 w-4" /> Создать новый
                             </CfButtonMd>
                         </div>
                     </motion.div>
