@@ -178,7 +178,6 @@ export default function ScoreboardPage() {
   // Ad Account filter
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
-  const [baseMetrics, setBaseMetrics] = useState({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
@@ -231,17 +230,9 @@ export default function ScoreboardPage() {
           const first = accs[0];
           console.log("Scoreboard: Auto-selecting first account:", first.client_name);
           setSelectedAccountId(first.id);
-          setBaseMetrics({
-            spend: Number(first.spend) || 0,
-            leads: Number(first.meta_leads) || 0,
-            visits: Number(first.visits) || 0,
-            sales: Number(first.sales) || 0,
-            revenue: Number(first.revenue) || 0,
-          });
         } else {
           console.log("Scoreboard: No accounts found for this project.");
           setSelectedAccountId("__none__");
-          setBaseMetrics({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
         }
       } catch (err) {
         console.error("Scoreboard: fetchAccounts error:", err);
@@ -251,7 +242,6 @@ export default function ScoreboardPage() {
 
     // Reset EVERYTHING immediately when project changes
     setSelectedAccountId("__none__");
-    setBaseMetrics({ spend: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
     setAccounts([]);
     setRows([]);
 
@@ -365,14 +355,14 @@ export default function ScoreboardPage() {
       revenue: acc.revenue + d.revenue,
     }),
     {
-      spend: baseMetrics.spend,
-      leads: baseMetrics.leads,
+      spend: 0,
+      leads: 0,
       followers: 0,
-      visits: baseMetrics.visits,
-      sales: baseMetrics.sales,
-      revenue: baseMetrics.revenue
+      visits: 0,
+      sales: 0,
+      revenue: 0
     }
-  ), [rows, baseMetrics]);
+  ), [rows]);
 
   const getVal = (src: Record<string, number>, key: MetricKey): number => {
     if (key === "cpl") return cplCalc(src.spend, src.leads);
@@ -464,16 +454,6 @@ export default function ScoreboardPage() {
               value={selectedAccountId}
               onValueChange={(id) => {
                 setSelectedAccountId(id);
-                const acc = accounts.find(a => a.id === id) as any;
-                if (acc) {
-                  setBaseMetrics({
-                    spend: Number(acc.spend) || 0,
-                    leads: Number(acc.meta_leads) || 0,
-                    visits: Number(acc.visits) || 0,
-                    sales: Number(acc.sales) || 0,
-                    revenue: Number(acc.revenue) || 0,
-                  });
-                }
               }}
             >
               <SelectTrigger className="h-10 min-h-[44px] w-full sm:w-[220px] text-xs bg-card border-border rounded-xl">
