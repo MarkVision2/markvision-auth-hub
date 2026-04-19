@@ -188,39 +188,170 @@ export default function AuthPage() {
           </div>
         </section>
 
-        {/* 03. How it Works */}
-        <section id="features" className="px-6 py-20 lg:px-12 xl:px-20 bg-secondary/20 border-t border-border/40">
-          <div className="max-w-4xl">
+        {/* 03. How it Works — Redesigned Premium Version */}
+        <section id="features" className="px-6 py-24 lg:px-12 xl:px-20 bg-secondary/5 border-t border-border/40 relative overflow-hidden">
+          {/* Subtle Grid Background */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+          
+          <div className="max-w-5xl mx-auto relative z-10 text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground mb-4">Как это работает</h2>
-            <p className="text-muted-foreground font-medium text-lg mb-12">
-              Система сама ведёт клиента от заявки до визита в клинику.
+            <p className="text-muted-foreground font-medium text-lg max-w-2xl mx-auto">
+              Интеллектуальная экосистема, которая превращает рекламный охват в реальную прибыль клиники в автоматическом режиме.
             </p>
+          </div>
 
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-card p-8 rounded-3xl border border-border shadow-sm">
-              <div className="flex flex-col gap-3 w-full md:w-auto">
-                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">Instagram</div>
-                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">TikTok</div>
-                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">Google Ads</div>
+          <div className="max-w-6xl mx-auto relative px-4 lg:px-0">
+            {/* Desktop Visualization */}
+            <div className="hidden md:flex items-center justify-between gap-4 relative py-12">
+              
+              {/* LEFT: Traffic Sources */}
+              <div className="flex flex-col gap-6 z-20 w-[200px]">
+                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2 text-center">Генерация трафика</div>
+                {[
+                  { name: "Instagram", color: "from-pink-500 to-purple-500" },
+                  { name: "TikTok", color: "from-gray-900 to-teal-500" },
+                  { name: "Google Ads", color: "from-blue-500 to-amber-500" }
+                ].map((item, idx) => (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    whileHover={{ scale: 1.05, x: 5 }}
+                    className="relative group cursor-default"
+                  >
+                    <div className={`absolute -inset-1 blur-lg bg-gradient-to-r ${item.color} opacity-0 group-hover:opacity-20 transition-opacity`} />
+                    <div className="relative px-6 py-4 rounded-2xl bg-card border border-border/60 shadow-sm backdrop-blur-md flex items-center justify-center font-bold text-sm text-foreground">
+                      {item.name}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* CENTER: AI CORE */}
+              <div className="relative z-30 flex items-center justify-center">
+                {/* Connecting Lines (Left to Center) */}
+                <div className="absolute right-full mr-4 w-[100px] lg:w-[150px] top-1/2 -translate-y-1/2 overflow-visible pointer-events-none">
+                  <svg width="100%" height="160" viewBox="0 0 150 160" fill="none" className="overflow-visible">
+                    <motion.path 
+                      d="M0 20 C60 20, 90 80, 150 80" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    <motion.path 
+                      d="M0 80 L150 80" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    <motion.path 
+                      d="M0 140 C60 140, 90 80, 150 80" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    {/* Pulsing Light Dots */}
+                    {[20, 80, 140].map((y, i) => (
+                      <motion.circle key={i} r="3" fill="var(--primary)">
+                        <animateMotion 
+                          dur={`${2 + i * 0.5}s`} repeatCount="indefinite" 
+                          path={i === 0 ? "M0 20 C60 20, 90 80, 150 80" : (i === 1 ? "M0 80 L150 80" : "M0 140 C60 140, 90 80, 150 80")}
+                        />
+                      </motion.circle>
+                    ))}
+                  </svg>
+                </div>
+
+                <div className="relative">
+                  {/* Rotating Orbits */}
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-16 border border-primary/10 rounded-full"
+                  />
+                  <motion.div
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-24 border border-primary/5 rounded-full"
+                  />
+                  
+                  {/* The Core */}
+                  <div className="relative h-40 w-40 flex items-center justify-center rounded-full bg-primary/10 border border-primary/30 shadow-[0_0_50px_rgba(var(--primary-rgb),0.15)] overflow-hidden">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--primary-rgb),0.2)_0%,transparent_70%)] animate-pulse" />
+                    <div className="flex flex-col items-center relative z-10 mt-1">
+                      <Zap className="h-12 w-12 text-primary drop-shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mt-2">MarkVision AI</div>
+                      <div className="text-[8px] font-bold text-muted-foreground uppercase mt-1 tracking-widest opacity-60">Core Engine</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connecting Lines (Center to Right) */}
+                <div className="absolute left-full ml-4 w-[100px] lg:w-[150px] top-1/2 -translate-y-1/2 overflow-visible pointer-events-none">
+                  <svg width="100%" height="160" viewBox="0 0 150 160" fill="none" className="overflow-visible">
+                    <motion.path 
+                      d="M0 80 C60 80, 90 20, 150 20" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    <motion.path 
+                      d="M0 80 L150 80" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    <motion.path 
+                      d="M0 80 C60 80, 90 140, 150 140" 
+                      stroke="currentColor" strokeWidth="2" strokeDasharray="4 4" className="text-primary/20"
+                    />
+                    {/* Pulsing Light Dots (Out) */}
+                    {[20, 80, 140].map((y, i) => (
+                      <motion.circle key={i} r="3" fill="var(--primary)">
+                        <animateMotion 
+                          dur={`${2.5 + i * 0.3}s`} repeatCount="indefinite" 
+                          path={i === 0 ? "M0 80 C60 80, 90 20, 150 20" : (i === 1 ? "M0 80 L150 80" : "M0 80 C60 80, 90 140, 150 140")}
+                        />
+                      </motion.circle>
+                    ))}
+                  </svg>
+                </div>
+              </div>
+
+              {/* RIGHT: Business Results */}
+              <div className="flex flex-col gap-6 z-20 w-[200px]">
+                 <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 mb-2 text-center">Рост прибыли</div>
+                {[
+                  { name: "CRM", detail: "Автозапись" },
+                  { name: "Аналитика", detail: "ROI контроль" },
+                  { name: "Финансы", detail: "Прозрачность" }
+                ].map((item, idx) => (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 + 0.3 }}
+                    whileHover={{ scale: 1.05, x: -5 }}
+                    className="relative group cursor-default"
+                  >
+                    <div className="absolute -inset-1 blur-lg bg-primary/20 opacity-0 group-hover:opacity-40 transition-opacity" />
+                    <div className="relative px-6 py-4 rounded-2xl bg-card border-2 border-primary/20 shadow-lg backdrop-blur-md flex flex-col items-center justify-center">
+                      <div className="font-bold text-sm text-primary">{item.name}</div>
+                      <div className="text-[9px] font-bold text-muted-foreground/70 uppercase tracking-tighter mt-0.5">{item.detail}</div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+            </div>
+
+            {/* Mobile View — Simplified Vertical Flow */}
+            <div className="flex md:hidden flex-col items-center gap-8 py-8">
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="px-4 py-3 rounded-xl bg-card border border-border text-center text-xs font-bold">Instagram</div>
+                <div className="px-4 py-3 rounded-xl bg-card border border-border text-center text-xs font-bold">TikTok</div>
               </div>
               
-              <div className="rotate-90 md:rotate-0">
-                <ArrowRight className="h-8 w-8 text-muted-foreground/50" />
+              <div className="h-20 w-px bg-gradient-to-b from-border to-primary/40 relative">
+                <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-10 w-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center p-8 rounded-full bg-primary/10 border border-primary/30 w-32 h-32 relative">
-                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-                <Zap className="h-10 w-10 text-primary relative z-10" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-primary mt-1 relative z-10">MarkVision</span>
-              </div>
-
-              <div className="rotate-90 md:rotate-0">
-                <ArrowRight className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-
-              <div className="flex flex-col gap-3 w-full md:w-auto">
-                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">CRM</div>
-                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">Аналитика</div>
-                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">Финансы</div>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <div className="px-4 py-3 rounded-xl bg-primary/10 border border-primary/30 text-center text-xs font-bold text-primary">CRM</div>
+                <div className="px-4 py-3 rounded-xl bg-primary/10 border border-primary/30 text-center text-xs font-bold text-primary">Аналитика</div>
               </div>
             </div>
           </div>
