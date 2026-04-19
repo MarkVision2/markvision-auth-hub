@@ -132,15 +132,18 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const { data: project } = await supabase
         .from("ai_edit_projects")
         .select("id,status,stage,progress,progress_text,error_message")
-        .eq("id" as any, projectId)
+        // @ts-expect-error schema typing mismatch
+        .eq("id", projectId)
         .maybeSingle();
       if (!project || disposed) return;
 
       const { data: renders } = await supabase
         .from("ai_edit_renders")
         .select("id,version,output_url,variant_name,variant_notes,status")
-        .eq("project_id" as any, projectId)
-        .eq("status" as any, "completed")
+        // @ts-expect-error schema typing mismatch
+        .eq("project_id", projectId)
+        // @ts-expect-error schema typing mismatch
+        .eq("status", "completed")
         .order("version", { ascending: true });
 
       if (disposed) return;
