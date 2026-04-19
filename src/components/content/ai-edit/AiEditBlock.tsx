@@ -35,6 +35,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { CfStepIndicator, CfButtonMd, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 interface AiEditBlockProps {
   onTaskCreated?: (taskId: string) => void;
@@ -57,6 +60,13 @@ interface ProjectStatus {
 const N8N_AI_MONTAGE_WEBHOOK =
   import.meta.env.VITE_N8N_AI_MONTAGE_URL || "https://n8n.zapoinov.com/webhook/ai-montage-start";
 
+
+
+const AI_EDIT_STEPS = [
+  "Материалы",
+  "Стиль монтажа",
+  "Настройки"
+];
 const EDIT_STYLES: Array<{ id: EditStyle; label: string; helper: string }> = [
   { id: "viral", label: "Viral captions", helper: "Хук, pop-caption, агрессивный ритм" },
   { id: "minimal", label: "Minimal", helper: "Чистая подача с мягкой анимацией" },
@@ -74,6 +84,7 @@ const PIPELINE_STEPS: Array<{ id: StageId; label: string }> = [
 
 export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const { active } = useWorkspace();
+  const [step, setStep] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [brollFile, setBrollFile] = useState<File | null>(null);
@@ -306,228 +317,252 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     setIsSubmitting(false);
   };
 
-  return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_420px]">
-        <div className="space-y-6">
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold font-medium text-muted-foreground">Input</p>
-                <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
-              </div>
-              <Badge variant="secondary" className="text-[10px] font-semibold">Remotion</Badge>
-            </div>
-
-            <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <label className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border hover:border-primary/40 bg-secondary/10 transition-colors">
-                {videoPreview ? (
-                  <video src={videoPreview} controls className="h-full w-full object-cover" />
-                ) : (
-                  <div className="space-y-3 text-center px-6">
-                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
-                      <Upload className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold text-foreground">Загрузить видео</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">MP4 / MOV, до 150 МБ</p>
-                    </div>
-                  </div>
-                )}
-                <input type="file" accept="video/mp4,video/quicktime,video/*" className="hidden" onChange={handleVideoChange} />
-              </label>
-
-              <div className="space-y-4">
-                <AssetInput
-                  icon={Type}
-                  title="Шрифт"
-                  description=".ttf, опционально"
-                  accept=".ttf,font/ttf"
-                  file={fontFile}
-                  onChange={setFontFile}
-                />
-                <AssetInput
-                  icon={ImageIcon}
-                  title="B-roll"
-                  description="доп. видео, опционально"
-                  accept="video/*"
-                  file={brollFile}
-                  onChange={setBrollFile}
-                />
-                <AssetInput
-                  icon={Music4}
-                  title="SFX / переходы"
-                  description="mp3, wav, опционально"
-                  accept="audio/*"
-                  file={soundFile}
-                  onChange={setSoundFile}
-                />
-              </div>
-            </div>
+    // --- STEPS RENDERERS ---
+  const renderStep0 = () => (
+    <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
+            <p className="mt-1 text-[11px] font-medium text-muted-foreground">Загрузите сырые материалы для нейронного монтажа</p>
           </div>
+          <Badge variant="secondary" className="text-[10px] font-semibold">Remotion</Badge>
+        </div>
 
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-            <div className="mb-5">
-              <p className="text-[10px] font-semibold font-medium text-muted-foreground">Стиль монтажа</p>
-              <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Как собираем видео</h3>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              {EDIT_STYLES.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setStyle(item.id)}
-                  className={cn(
-                    "rounded-lg border p-4 text-left transition-all",
-                    style === item.id
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-border/50 bg-secondary/10 hover:border-primary/30 hover:bg-secondary/20"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "mb-3 flex h-10 w-10 items-center justify-center rounded-xl",
-                      style === item.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
-                    )}
-                  >
-                    {item.id === "viral" ? <Zap className="h-5 w-5" /> : item.id === "minimal" ? <Type className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.helper}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-            <p className="text-[10px] font-semibold font-medium text-muted-foreground">Настройки</p>
-            <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Формат и поведение</h3>
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field title="Формат" icon={Clapperboard}>
-                <Select value={format} onValueChange={(value: "9:16" | "1:1") => setFormat(value)}>
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="9:16">9:16 Reels / Shorts</SelectItem>
-                    <SelectItem value="1:1">1:1 Square</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field title="Язык субтитров" icon={Languages}>
-                <Select value={captionLanguage} onValueChange={setCaptionLanguage}>
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ru">Русский</SelectItem>
-                    <SelectItem value="kk">Казахский</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field title="Бизнес шаблон" icon={FileType}>
-                <Select value={businessTemplate} onValueChange={setBusinessTemplate}>
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="clinic">Клиники</SelectItem>
-                    <SelectItem value="restaurant">Рестораны</SelectItem>
-                    <SelectItem value="ecommerce">E-commerce</SelectItem>
-                    <SelectItem value="general">Общий</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field title="Длина клипов" icon={Clapperboard}>
-                <div className="grid grid-cols-[1fr_110px] gap-2">
-                  <Select value={clipDurationMode} onValueChange={(value: "auto" | "manual") => setClipDurationMode(value)}>
-                    <SelectTrigger className="h-11 rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Авто</SelectItem>
-                      <SelectItem value="manual">Вручную</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={clipDurationSec}
-                    onChange={(event) => setClipDurationSec(event.target.value)}
-                    disabled={clipDurationMode !== "manual"}
-                    placeholder="сек"
-                    className="h-11 rounded-xl"
-                  />
+        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <label className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border hover:border-primary/40 bg-secondary/10 transition-colors">
+            {videoPreview ? (
+              <video src={videoPreview} controls className="h-full w-full object-cover" />
+            ) : (
+              <div className="space-y-3 text-center px-6">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                  <Upload className="h-6 w-6 text-primary" />
                 </div>
-              </Field>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <ToggleCard title="Авто B-roll" icon={ImageIcon} checked={autoBroll} onChange={setAutoBroll} />
-              <ToggleCard title="Авто Zoom" icon={Maximize} checked={autoZoom} onChange={setAutoZoom} />
-            </div>
-
-            <div className="mt-5">
-              <Label className="mb-2 block text-[10px] font-semibold font-medium text-muted-foreground">
-                Плотность эффектов
-              </Label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["low", "medium", "high"] as IntensityLevel[]).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setIntensity(value)}
-                    className={cn(
-                      "rounded-xl border px-4 py-2.5 text-xs font-semibold uppercase transition-all",
-                      intensity === value
-                        ? "border-primary bg-primary text-white"
-                        : "border-border/50 bg-secondary/10 text-muted-foreground hover:border-primary/30 hover:text-foreground"
-                    )}
-                  >
-                    {value === "low" ? "Low" : value === "medium" ? "Medium" : "High"}
-                  </button>
-                ))}
+                <div>
+                  <p className="text-base font-semibold text-foreground">Загрузить видео</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">MP4 / MOV, до 150 МБ</p>
+                </div>
               </div>
-            </div>
+            )}
+            <input type="file" accept="video/mp4,video/quicktime,video/*" className="hidden" onChange={handleVideoChange} />
+          </label>
 
-            <div className="mt-5">
-              <Label className="mb-2 block text-[10px] font-semibold font-medium text-muted-foreground">
-                Контекст речи / хук
-              </Label>
-              <Textarea
-                value={scriptHint}
-                onChange={(event) => setScriptHint(event.target.value)}
-                placeholder="Коротко опишите суть видео или вставьте ключевой текст, чтобы AI точнее собрал сцены."
-                className="min-h-[100px] rounded-xl resize-none"
+          <div className="space-y-4">
+            <AssetInput icon={Type} title="Шрифт" description=".ttf, опционально" accept=".ttf,font/ttf" file={fontFile} onChange={setFontFile} />
+            <AssetInput icon={ImageIcon} title="B-roll" description="доп. видео" accept="video/*" file={brollFile} onChange={setBrollFile} />
+            <AssetInput icon={Music4} title="SFX / переходы" description="mp3, wav" accept="audio/*" file={soundFile} onChange={setSoundFile} />
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const renderStep1 = () => (
+    <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+        <div className="mb-5">
+          <h3 className="text-xl font-bold tracking-tight text-foreground">Стиль и динамика</h3>
+          <p className="mt-1 text-[11px] font-medium text-muted-foreground">Выберите темп и способ подачи контента</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {EDIT_STYLES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { setStyle(item.id); setStep(2); }}
+              className={cn(
+                "rounded-lg border p-4 text-left transition-all",
+                style === item.id
+                  ? "border-primary bg-primary/5 ring-2 ring-primary/20 scale-[1.02] shadow-sm"
+                  : "border-border/50 bg-secondary/10 hover:border-primary/30 hover:bg-secondary/20 hover:scale-[1.01]"
+              )}
+            >
+              <div
+                className={cn(
+                  "mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
+                  style === item.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                )}
+              >
+                {item.id === "viral" ? <Zap className="h-5 w-5" /> : item.id === "minimal" ? <Type className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
+              </div>
+              <p className="text-sm font-semibold text-foreground">{item.label}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.helper}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const renderStep2 = () => (
+    <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-foreground">Детали и генерация</h3>
+          <p className="mt-1 text-[11px] font-medium text-muted-foreground mb-5">Финальные настройки перед запуском пайплайна</p>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <Field title="Формат" icon={Clapperboard}>
+            <Select value={format} onValueChange={(value: "9:16" | "1:1") => setFormat(value)}>
+              <SelectTrigger className="h-10 rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="9:16">9:16 Reels / Shorts</SelectItem>
+                <SelectItem value="1:1">1:1 Square</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field title="Язык субтитров" icon={Languages}>
+            <Select value={captionLanguage} onValueChange={setCaptionLanguage}>
+              <SelectTrigger className="h-10 rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ru">Русский</SelectItem>
+                <SelectItem value="kk">Казахский</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field title="Бизнес шаблон" icon={FileType}>
+            <Select value={businessTemplate} onValueChange={setBusinessTemplate}>
+              <SelectTrigger className="h-10 rounded-lg">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="clinic">Клиники</SelectItem>
+                <SelectItem value="restaurant">Рестораны</SelectItem>
+                <SelectItem value="ecommerce">E-commerce</SelectItem>
+                <SelectItem value="general">Общий</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field title="Длина клипов" icon={Clapperboard}>
+            <div className="grid grid-cols-[1fr_110px] gap-2">
+              <Select value={clipDurationMode} onValueChange={(value: "auto" | "manual") => setClipDurationMode(value)}>
+                <SelectTrigger className="h-10 rounded-lg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Авто</SelectItem>
+                  <SelectItem value="manual">Вручную</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                value={clipDurationSec}
+                onChange={(event) => setClipDurationSec(event.target.value)}
+                disabled={clipDurationMode !== "manual"}
+                placeholder="сек"
+                className="h-10 rounded-lg"
               />
             </div>
+          </Field>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <ToggleCard title="Авто B-roll" icon={ImageIcon} checked={autoBroll} onChange={setAutoBroll} />
+          <ToggleCard title="Авто Zoom" icon={Maximize} checked={autoZoom} onChange={setAutoZoom} />
+        </div>
+
+        <div className="mt-5">
+          <Label className="mb-2 block text-[10px] font-semibold text-muted-foreground">ПЛОТНОСТЬ ЭФФЕКТОВ</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {(["low", "medium", "high"] as IntensityLevel[]).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setIntensity(value)}
+                className={cn(
+                  "rounded-lg border px-4 py-2.5 text-xs font-semibold transition-all",
+                  intensity === value
+                    ? "border-primary bg-primary text-white"
+                    : "border-border/50 bg-secondary/10 text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                )}
+              >
+                {value === "low" ? "Low" : value === "medium" ? "Medium" : "High"}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-semibold font-medium text-muted-foreground">Pipeline</p>
-                <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">AI режиссёр</h3>
-              </div>
-              {projectId && (
-                <Badge variant="secondary" className="font-mono text-[10px]">{projectId.slice(-8)}</Badge>
-              )}
-            </div>
+        <div className="mt-5">
+          <Label className="mb-2 block text-[10px] font-semibold text-muted-foreground">КОНТЕКСТ РЕЧИ / ХУК</Label>
+          <Textarea
+            value={scriptHint}
+            onChange={(event) => setScriptHint(event.target.value)}
+            placeholder="Опишите суть видео или ключевой текст, чтобы AI точнее собрал сцены."
+            className="min-h-[100px] rounded-lg resize-none"
+          />
+        </div>
+      </div>
+    </motion.div>
+  );
 
-            <Button
-              onClick={startAiEdit}
-              disabled={!videoFile || isSubmitting}
-              className="mt-5 h-12 w-full rounded-lg bg-primary text-white hover:bg-primary/90"
+  const canNext = () => {
+    if (step === 0) return Boolean(videoFile);
+    if (step === 1) return Boolean(style);
+    return true;
+  };
+
+  return (
+    <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
+        <div className="space-y-8">
+          
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+            <CfStepIndicator steps={AI_EDIT_STEPS} current={step} />
+          </div>
+
+          <AnimatePresence mode="wait">
+            {step === 0 && renderStep0()}
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+          </AnimatePresence>
+
+          <div className="flex items-center justify-between pt-4 pb-4">
+            <CfButtonMd
+              variant="ghost"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 0}
+              className="gap-2 text-muted-foreground hover:text-foreground"
             >
-              {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
-              {isSubmitting ? "Обрабатываем…" : "Запустить ИИ монтаж"}
-            </Button>
+              <ArrowLeft className="h-4 w-4" /> Назад
+            </CfButtonMd>
+
+            {step < 2 ? (
+              <CfButtonMd
+                onClick={() => setStep((s) => s + 1)}
+                disabled={!canNext()}
+                className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
+              >
+                Далее <ArrowRight className="h-4 w-4" />
+              </CfButtonMd>
+            ) : (
+              <CfButtonMd
+                onClick={startAiEdit}
+                disabled={!canNext() || isSubmitting}
+                className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8"
+              >
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+                Запустить ИИ монтаж
+              </CfButtonMd>
+            )}
+          </div>
+        </div>
+
+        <aside className="xl:sticky xl:top-4 self-start space-y-4">
+          <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+               <h3 className="text-[12px] font-bold tracking-tight text-muted-foreground">ПРОГРЕСС МОНТАЖА</h3>
+               {projectId && <Badge variant="secondary" className="font-mono text-[10px]">{projectId.slice(-8)}</Badge>}
+            </div>
 
             {(isSubmitting || status) && (
               <div className="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-4">
-                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold font-medium text-primary">
+                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold text-primary">
                   <span className="truncate pr-2">{status?.progressText ?? "Ожидание запуска"}</span>
                   <span>{status?.progress ?? 0}%</span>
                 </div>
@@ -536,41 +571,17 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             )}
 
             <div className="mt-5 space-y-2">
-              {PIPELINE_STEPS.map((step, index) => {
+              {PIPELINE_STEPS.map((pStep, index) => {
                 const isDone = currentStepIndex > index && currentStepIndex !== -1;
                 const isActive = currentStepIndex === index;
                 return (
-                  <div
-                    key={step.id}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
-                      isActive && "bg-primary/5",
-                      !isActive && !isDone && "opacity-60"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                        isDone
-                          ? "bg-primary text-white"
-                          : isActive
-                            ? "bg-primary/15 text-primary"
-                            : "bg-secondary/40 text-muted-foreground"
-                      )}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="h-4 w-4" />
-                      ) : isActive ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <span className="text-[10px] font-bold">{index + 1}</span>
-                      )}
+                  <div key={pStep.id} className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors", isActive && "bg-primary/5", !isActive && !isDone && "opacity-60")}>
+                    <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", isDone ? "bg-primary text-white" : isActive ? "bg-primary/15 text-primary" : "bg-secondary/40 text-muted-foreground")}>
+                      {isDone ? <CheckCircle2 className="h-4 w-4" /> : isActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="text-[10px] font-bold">{index + 1}</span>}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-foreground">{step.label}</p>
-                      {isActive && status?.progressText && (
-                        <p className="truncate text-[10px] text-muted-foreground">{status.progressText}</p>
-                      )}
+                      <p className="text-xs font-semibold text-foreground">{pStep.label}</p>
+                      {isActive && status?.progressText && <p className="truncate text-[10px] text-muted-foreground">{status.progressText}</p>}
                     </div>
                   </div>
                 );
@@ -579,34 +590,25 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           </div>
 
           {status?.errorMessage && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 shadow-sm">
-              <p className="text-[10px] font-semibold font-medium text-destructive">Ошибка пайплайна</p>
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 shadow-sm">
+              <p className="text-[10px] font-semibold text-destructive">Ошибка пайплайна</p>
               <p className="mt-2 text-sm leading-relaxed text-destructive/90">{status.errorMessage}</p>
             </div>
           )}
-        </div>
+        </aside>
       </div>
 
       {status?.renders?.length ? (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm"
-        >
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold font-medium text-muted-foreground">Results</p>
               <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Монтаж готов</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Рендер выполнен через Remotion. Скачайте понравившийся вариант или сбросьте задачу.
-              </p>
             </div>
-            <Button variant="outline" className="rounded-xl" onClick={resetTask}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Сбросить
+            <Button variant="outline" className="rounded-xl text-sm" onClick={resetTask}>
+              <RefreshCcw className="mr-2 h-4 w-4" /> Сбросить
             </Button>
           </div>
-
           <div className="grid gap-4 md:grid-cols-3">
             {status.renders.map((render) => (
               <div key={render.id} className="overflow-hidden rounded-lg border border-border/50 bg-secondary/10">
@@ -620,9 +622,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
                   </div>
                   <p className="text-xs leading-relaxed text-muted-foreground">{render.variant_notes}</p>
                   <a href={render.output_url} target="_blank" rel="noreferrer" className="block pt-1">
-                    <Button className="h-10 w-full rounded-xl bg-primary text-white hover:bg-primary/90">
-                      <Download className="mr-2 h-4 w-4" />
-                      Скачать
+                    <Button className="h-10 w-full rounded-xl bg-primary text-white hover:bg-primary/90 text-sm">
+                       <Download className="mr-2 h-4 w-4" /> Скачать
                     </Button>
                   </a>
                 </div>
@@ -633,7 +634,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       ) : null}
     </div>
   );
-};
+};};
 
 const Field = ({
   title,
