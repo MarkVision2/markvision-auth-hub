@@ -634,7 +634,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       ) : null}
     </div>
   );
-};};
+};
 
 const Field = ({
   title,
