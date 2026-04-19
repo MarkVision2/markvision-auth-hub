@@ -1,26 +1,30 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2, ArrowRight, BarChart3, Zap, Shield, TrendingUp } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Loader2, ArrowRight, Zap, Target, PhoneMissed, EyeOff, FileSpreadsheet, Send, Users, ImageMinus, CheckCircle2, PlayCircle, Clock, Workflow } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { motion } from "framer-motion";
 
-const features = [
-  { icon: BarChart3, title: "Сквозная аналитика", desc: "Все каналы в одном окне — от клика до продажи" },
-  { icon: Zap, title: "AI-автоматизация", desc: "Генерация контента, аудит звонков, прогнозы" },
-  { icon: Shield, title: "Контроль качества", desc: "AI-РОП проверяет каждый диалог менеджера" },
-  { icon: TrendingUp, title: "Рост без хаоса", desc: "CRM, финансы и команда — всё под контролем" },
+const problems = [
+  { icon: PhoneMissed, stat: "–40%", statLabel: "потерянных заявок", title: "Пропущенные звонки", desc: "Администратор не берёт трубку после 18:00. Клиент уходит к конкурентам.", color: "text-red-500", bg: "bg-red-500/10" },
+  { icon: EyeOff, stat: "0₸", statLabel: "понимания ROI", title: "Нет аналитики", desc: "Вы не знаете, откуда приходят клиенты и какая реклама работает.", color: "text-orange-500", bg: "bg-orange-500/10" },
+  { icon: FileSpreadsheet, stat: "3ч", statLabel: "в день впустую", title: "Ручная работа", desc: "Записи в тетради, отчёты в Excel, напоминания в голове. Ошибки неизбежны.", color: "text-amber-500", bg: "bg-amber-500/10" },
+  { icon: Send, stat: "–60%", statLabel: "бюджета впустую", title: "Деньги на ветер", desc: "Реклама крутится, но вы не знаете — окупается она или нет.", color: "text-rose-500", bg: "bg-rose-500/10" },
+  { icon: Users, stat: "0", statLabel: "контроля", title: "Нет контроля команды", desc: "Администраторы работают как хотят. Никто не отслеживает качество.", color: "text-pink-500", bg: "bg-pink-500/10" },
+  { icon: ImageMinus, stat: "–70%", statLabel: "доверия", title: "Нет контента", desc: "Соцсети пустые. Клиенты не доверяют клинике без онлайн-присутствия.", color: "text-purple-500", bg: "bg-purple-500/10" }
 ];
 
-const features = [
-  { icon: BarChart3, title: "Сквозная аналитика", desc: "Все каналы в одном окне — от клика до продажи" },
-  { icon: Zap, title: "AI-автоматизация", desc: "Генерация контента, аудит звонков, прогнозы" },
-  { icon: Shield, title: "Контроль качества", desc: "AI-РОП проверяет каждый диалог менеджера" },
-  { icon: TrendingUp, title: "Рост без хаоса", desc: "CRM, финансы и команда — всё под контролем" },
+const modules = [
+  { num: "01", title: "Контент за вас", desc: "200+ постов и видео в месяц. Мы сами придумываем, снимаем и публикуем. Вам не нужен SMM-специалист." },
+  { num: "02", title: "Запись 24/7", desc: "Бот отвечает клиентам в любое время: консультирует, отвечает на вопросы и записывает на приём." },
+  { num: "03", title: "Понятная аналитика", desc: "Видите откуда пришёл каждый клиент и сколько принёс денег. Всё просто и наглядно." },
+  { num: "04", title: "Учёт финансов", desc: "Все доходы и расходы в одном месте. Прямо в телефоне. Никаких таблиц Excel." },
+  { num: "05", title: "Контроль команды", desc: "Система следит за работой администраторов: кто как отвечает, кто записал больше клиентов." },
+  { num: "06", title: "Отчёты каждый день", desc: "Каждое утро получаете отчёт: сколько записей, сколько денег, что улучшить." }
 ];
 
-const AuthPage = () => {
+export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,10 +54,7 @@ const AuthPage = () => {
     const finalEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@markvision-staff.io`;
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ 
-        email: finalEmail, 
-        password 
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email: finalEmail, password });
       if (error) {
         toast({ title: "Ошибка входа", description: error.message, variant: "destructive" });
         return;
@@ -63,6 +64,12 @@ const AuthPage = () => {
       toast({ title: "Непредвиденная ошибка", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const scrollToLogin = () => {
+    if (window.innerWidth < 1024) {
+      document.getElementById('mobile-login-form')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -77,83 +84,291 @@ const AuthPage = () => {
   if (user) return null;
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto font-sans">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-background font-sans relative">
       
-      {/* ─── HERO SPLIT SECTION ─── */}
-      <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* ─── LEFT SCROLLABLE AREA ─── */}
+      <div className="w-full lg:w-7/12 xl:w-2/3 flex flex-col">
         
-        {/* Left — Marketing/Hero Info */}
-        <div className="relative flex w-full items-center justify-center overflow-hidden bg-card px-8 py-16 lg:w-[55%] lg:py-0 border-r border-border/40">
-          {/* Ambient Glow */}
-          <div className="absolute inset-0 pointer-events-none opacity-30">
-            <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-primary/20 blur-[120px]" />
-            <div className="absolute -bottom-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[100px]" />
+        {/* Header Navigation */}
+        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/40 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-xl font-bold tracking-tight text-foreground">MarkVision</span>
           </div>
-          
-          <div className="dot-pattern absolute inset-0 opacity-40" />
 
+          <div className="hidden sm:flex items-center gap-8 text-sm font-semibold text-muted-foreground mr-auto ml-12">
+            <a href="#about" className="hover:text-primary transition-colors">О проекте</a>
+            <a href="#features" className="hover:text-primary transition-colors">Возможности</a>
+          </div>
+
+          {/* Login button visible only on mobile to scroll down */}
+          <button onClick={scrollToLogin} className="lg:hidden text-sm font-bold text-primary hover:underline">
+            Войти
+          </button>
+        </header>
+
+        {/* 01. Hero Section */}
+        <section className="relative px-6 py-20 lg:px-12 xl:px-20 overflow-hidden bg-secondary/10">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
+          <div className="absolute top-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+          
+          <div className="relative z-10 max-w-3xl">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-primary shadow-sm">
+              <CheckCircle2 className="h-3.5 w-3.5 fill-primary text-background" />
+              <span>Умная система управления</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1] mb-6">
+              Хватит терять клиентов. <br/>
+              Увеличьте выручку <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">без дополнительных расходов на рекламу</span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-muted-foreground font-medium mb-10 max-w-xl leading-relaxed">
+              Мы управляем маркетингом, продажами и аналитикой — <strong className="text-foreground">вы управляйте бизнесом</strong>.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <button className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:brightness-110 active:scale-[0.98] w-full sm:w-auto">
+                Забронировать аудит
+                <ArrowRight className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full sm:w-auto p-2">
+                <PlayCircle className="h-12 w-12 text-primary" strokeWidth={1.5} />
+                <div className="text-sm font-semibold leading-tight">
+                  Посмотрите видео <span className="opacity-70 font-medium">(3 мин)</span><br/>
+                  <span className="text-xs font-medium opacity-70">и получите доступ к полной демонстрации</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-muted-foreground/80">
+              <Clock className="h-4 w-4" /> Обычно занимает 20 минут | Без обязательств
+            </div>
+          </div>
+        </section>
+
+        {/* 02. Problems Section */}
+        <section className="px-6 py-20 lg:px-12 xl:px-20 bg-background border-t border-border/40">
+          <div className="max-w-4xl">
+            <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground mb-4">Знакомо?</h2>
+            <h3 className="text-xl lg:text-2xl font-bold text-destructive mb-3">Эти проблемы убивают вашу прибыль</h3>
+            <p className="text-muted-foreground font-medium text-lg mb-12">
+              Каждый день без системы — это потерянные клиенты и деньги.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+              {problems.map((p, i) => (
+                <div key={i} className="rounded-2xl border border-border bg-card p-6 shadow-sm hover:border-primary/20 hover:shadow-md transition-all">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${p.bg} ${p.color}`}>
+                      <p.icon className="h-6 w-6" />
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-xl font-black tabular-nums tracking-tight ${p.color}`}>{p.stat}</div>
+                      <div className="text-[10px] uppercase font-bold text-muted-foreground">{p.statLabel}</div>
+                    </div>
+                  </div>
+                  <h4 className="text-base font-bold text-foreground mb-2">{p.title}</h4>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed">{p.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-14 inline-block bg-primary/10 border border-primary/20 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <CheckCircle2 className="h-6 w-6 text-primary" />
+                <h3 className="text-xl font-bold text-foreground">MarkVision решает все эти проблемы</h3>
+              </div>
+              <p className="text-muted-foreground font-medium ml-9">
+                Автоматически. Без найма новых сотрудников.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 03. How it Works */}
+        <section id="features" className="px-6 py-20 lg:px-12 xl:px-20 bg-secondary/20 border-t border-border/40">
+          <div className="max-w-4xl">
+            <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground mb-4">Как это работает</h2>
+            <p className="text-muted-foreground font-medium text-lg mb-12">
+              Система сама ведёт клиента от заявки до визита в клинику.
+            </p>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-card p-8 rounded-3xl border border-border shadow-sm">
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">Instagram</div>
+                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">TikTok</div>
+                <div className="px-5 py-3 rounded-xl bg-secondary font-bold text-sm text-center border border-border">Google Ads</div>
+              </div>
+              
+              <div className="rotate-90 md:rotate-0">
+                <ArrowRight className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+
+              <div className="flex flex-col items-center justify-center p-8 rounded-full bg-primary/10 border border-primary/30 w-32 h-32 relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+                <Zap className="h-10 w-10 text-primary relative z-10" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary mt-1 relative z-10">MarkVision</span>
+              </div>
+
+              <div className="rotate-90 md:rotate-0">
+                <ArrowRight className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+
+              <div className="flex flex-col gap-3 w-full md:w-auto">
+                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">CRM</div>
+                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">Аналитика</div>
+                <div className="px-5 py-3 rounded-xl bg-background border border-primary/20 font-bold text-sm text-center text-primary shadow-sm">Финансы</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 04. Founder Story */}
+        <section id="about" className="px-6 py-20 lg:px-12 xl:px-20 bg-background border-t border-border/40">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-12 items-center">
+            <div className="w-full md:w-1/2 flex justify-center">
+              <div className="relative rounded-3xl overflow-hidden border-4 border-border shadow-2xl max-w-sm w-full aspect-[3/4]">
+                <img src="/yuri-mark.jpg" alt="Юрий с сыном Марком" className="w-full h-full object-cover" />
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
+                  <div className="font-bold text-lg">Юрий с сыном Марком</div>
+                </div>
+              </div>
+            </div>
+            <div className="w-full md:w-1/2">
+              <h2 className="text-xs font-black uppercase text-primary tracking-widest mb-2">История проекта</h2>
+              <h3 className="text-3xl font-extrabold text-foreground mb-6 leading-tight">
+                Почему проект назван в честь моего сына?
+              </h3>
+              
+              <div className="space-y-4 text-muted-foreground font-medium text-sm leading-relaxed">
+                <p>
+                  <strong className="text-foreground">MarkVision</strong> — это не просто название компании, это личное обязательство. Проект назван в честь моего сына Марка, что символизирует глубину ответственности, которую я несу за каждый результат.
+                </p>
+                <p>Это наш семейный стандарт качества, который я переношу в бизнес:</p>
+                <ul className="space-y-3 mt-4">
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    <span><strong className="text-foreground">Личный контроль:</strong> Я лично проверяю результаты работы каждой клиники‑партнёра.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    <span><strong className="text-foreground">Системный подход:</strong> Мы выстраиваем процессы так, чтобы я мог с гордостью показать их итог своему сыну.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    <span><strong className="text-foreground">Наследие, а не просто услуга:</strong> Мы создаём не просто рекламные кампании, а внедряем порядок, системность и устойчивые бизнес‑процессы, на которых можно строить будущее.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="mt-10 flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary font-serif text-2xl font-bold text-foreground">Ю</div>
+                <div>
+                  <div className="font-bold text-foreground">Юрий Валерьевич</div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Основатель MarkVision AI</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 05. Modules */}
+        <section className="px-6 py-20 lg:px-12 xl:px-20 bg-secondary/10 border-t border-border/40">
+          <div className="max-w-4xl">
+            <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-foreground mb-4">Что внутри MarkVision</h2>
+            <h3 className="text-xl lg:text-2xl font-bold text-primary mb-3">6 модулей, работающих 24/7</h3>
+            <p className="text-muted-foreground font-medium text-lg mb-12">
+              Каждый модуль автоматизирует процесс, который раньше требовал отдельного сотрудника.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {modules.map((m, i) => (
+                <div key={i} className="flex flex-col bg-card border border-border/60 rounded-2xl p-6 shadow-sm hover:border-primary/30 transition-colors">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="font-black text-4xl text-primary/20">{m.num}</div>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-wider">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Активен 24/7
+                    </div>
+                  </div>
+                  <h4 className="text-lg font-bold text-foreground mb-2">{m.title}</h4>
+                  <p className="text-sm text-muted-foreground font-medium leading-relaxed mt-auto">
+                    {m.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ─── FOOTER ─── */}
+        <footer className="bg-card w-full mt-auto py-16 px-6 sm:px-12 xl:px-20 border-t border-border/40">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between gap-12">
+            
+            <div className="max-w-xs">
+              <div className="flex items-center gap-2 mb-4">
+                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                   <Zap className="h-4 w-4 text-primary" />
+                 </div>
+                 <span className="text-xl font-bold tracking-tight text-foreground">MarkVision AI</span>
+              </div>
+               <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                 Первая автономная система управления прибылью для медицинского бизнеса. Наследие, созданное для будущего.
+               </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm font-semibold text-foreground/80">
+              <Link to="/blog" className="hover:text-primary transition-colors">Блог</Link>
+              <a href="#" className="hover:text-primary transition-colors">Карьера</a>
+              <a href="#" className="hover:text-primary transition-colors">База знаний</a>
+              <a href="#" className="hover:text-primary transition-colors">Юридическое</a>
+              <a href="#" className="hover:text-primary transition-colors col-span-2">Политика конфиденциальности</a>
+              <a href="#" className="hover:text-primary transition-colors col-span-2">Пользовательское соглашение</a>
+              <span className="text-muted-foreground font-normal col-span-2 mt-2">Соответствие Закону РК</span>
+            </div>
+            
+            <div>
+              <div className="text-sm font-bold text-foreground mb-4">Контакты</div>
+              <a href="tel:+77472842595" className="block text-xl font-black text-primary hover:text-primary/80 transition-colors mb-2">
+                +7 747 284 2595
+              </a>
+              <a href="mailto:admin@markvision.kz" className="block text-sm font-semibold hover:text-primary transition-colors text-muted-foreground">
+                admin@markvision.kz
+              </a>
+            </div>
+            
+          </div>
+          <div className="max-w-4xl mx-auto mt-16 pt-8 border-t border-border/30 text-center md:text-left text-xs font-semibold text-muted-foreground/50">
+            © {new Date().getFullYear()} MarkVision AI. Все права защищены.
+          </div>
+        </footer>
+
+      </div>
+
+      {/* ─── RIGHT STICKY LOGIN AREA ─── */}
+      <div id="mobile-login-form" className="w-full lg:w-5/12 xl:w-1/3 bg-background border-t lg:border-t-0 lg:border-l border-border/40 relative">
+        <div className="lg:sticky lg:top-0 lg:h-screen flex flex-col justify-center px-8 py-16 sm:px-12 xl:px-16 overflow-y-auto">
+          
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative z-10 w-full max-w-xl"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-full max-w-sm mx-auto"
           >
-            <div className="mb-10 flex items-center gap-3">
+            <div className="mb-10 lg:hidden flex items-center justify-center gap-2">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
                 <Zap className="h-5 w-5 text-primary" />
               </div>
               <span className="text-2xl font-bold tracking-tight text-foreground">MarkVision</span>
             </div>
 
-            {/* Title */}
-            <h1 className="text-4xl font-bold leading-[1.15] tracking-tight text-foreground lg:text-5xl">
-              Управляйте бизнесом
-              <br />
-              <span className="text-primary">в одном месте</span>
-            </h1>
-            
-            {/* Description */}
-            <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-              Трафик, контент, продажи, финансы и команда — одна панель. AI следит за результатом 24/7.
-            </p>
-
-            {/* Feature Cards Grid */}
-            <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {features.map((f, i) => (
-                <motion.div
-                  key={f.title}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1, duration: 0.5 }}
-                  className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-4 backdrop-blur-sm"
-                >
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <f.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-0.5">{f.title}</h3>
-                    <p className="text-xs leading-relaxed text-muted-foreground font-medium">
-                      {f.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Right — Login Form */}
-        <div className="flex w-full items-center justify-center px-6 py-16 lg:w-5/12 xl:w-[40%] lg:py-0 bg-background relative">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full max-w-sm xl:max-w-md mx-auto"
-          >
-            <h2 className="mb-2 text-3xl font-bold text-foreground tracking-tight">
+            <h2 className="mb-2 text-3xl font-bold text-foreground tracking-tight text-center lg:text-left">
               Добро пожаловать
             </h2>
-            <p className="mb-8 text-sm text-muted-foreground font-medium">
+            <p className="mb-8 text-sm text-muted-foreground font-medium text-center lg:text-left">
               Войдите в систему, чтобы продолжить работу
             </p>
 
@@ -188,7 +403,7 @@ const AuthPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:shadow-primary/40 hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:shadow-primary/40 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 mt-4"
               >
                 {loading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -201,45 +416,15 @@ const AuthPage = () => {
               </button>
             </form>
 
-            <p className="mt-8 text-center text-xs text-muted-foreground/60 max-w-xs mx-auto leading-relaxed">
-              Нажимая кнопку, вы соглашаетесь с Политикой конфиденциальности и Условиями использования платформы
-            </p>
+            <div className="mt-12 bg-primary/5 rounded-2xl p-5 border border-primary/10 text-center">
+              <Workflow className="h-6 w-6 text-primary mx-auto mb-2" />
+              <div className="text-sm font-bold text-foreground">Нужна помощь с входом?</div>
+              <div className="text-xs text-muted-foreground mt-1">Обратитесь в поддержку или к своему менеджеру.</div>
+            </div>
           </motion.div>
         </div>
-
       </div>
-
-      </div>
-
-      {/* ─── FOOTER ─── */}
-      <footer className="w-full bg-card/50 border-t border-border/40 py-12 px-6 sm:px-12 lg:px-20 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4 opacity-80 hover:opacity-100 transition-opacity">
-               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
-                 <Zap className="h-4 w-4 text-primary" />
-               </div>
-               <span className="text-xl font-bold tracking-tight text-foreground">MarkVision</span>
-            </div>
-             <p className="text-xs text-muted-foreground font-medium max-w-[280px] leading-relaxed">
-               Инновационная платформа для управления клиникой. Искусственный интеллект, маркетинг и автоматизация продаж в едином окне.
-             </p>
-          </div>
-          
-          <div className="flex flex-wrap gap-8 text-sm font-semibold text-foreground/80">
-            <a href="#" className="hover:text-primary transition-colors">О компании</a>
-            <a href="#" className="hover:text-primary transition-colors">Кейсы</a>
-            <button onClick={() => navigate('/blog')} className="hover:text-primary transition-colors">Блог</button>
-            <a href="#" className="hover:text-primary transition-colors">Политика конфиденциальности</a>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto mt-12 border-t border-border/30 pt-6 text-center md:text-left text-xs font-semibold text-muted-foreground/50">
-          © {new Date().getFullYear()} MarkVision. Все права защищены.
-        </div>
-      </footer>
 
     </div>
   );
-};
-
-export default AuthPage;
+}
