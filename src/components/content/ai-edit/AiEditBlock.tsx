@@ -44,16 +44,18 @@ type EditStyle = "viral" | "minimal" | "business";
 type IntensityLevel = "low" | "medium" | "high";
 type StageId = "idle" | "upload" | "transcription" | "analysis" | "broll" | "rendering" | "completed";
 
-interface ApiStatus {
-  taskId: string;
-  status: "processing" | "completed";
+interface ProjectStatus {
+  projectId: string;
+  status: string;
   stage: StageId;
   progress: number;
   progressText: string;
-  transcript?: { text: string; words: Array<{ word: string; start: number; end: number }> };
-  scenes?: Array<{ start: number; end: number; type: string; keywords: string[]; emotion: string }>;
-  videos?: Array<{ id: string; name: string; url: string; notes: string }>;
+  errorMessage?: string | null;
+  renders?: Array<{ id: string; version: number; output_url: string; variant_name: string; variant_notes: string }>;
 }
+
+const N8N_AI_MONTAGE_WEBHOOK =
+  import.meta.env.VITE_N8N_AI_MONTAGE_URL || "https://n8n.zapoinov.com/webhook/ai-montage-start";
 
 const EDIT_STYLES: Array<{ id: EditStyle; label: string; helper: string }> = [
   { id: "viral", label: "Viral captions", helper: "Хук, pop-caption, агрессивный ритм" },
@@ -88,9 +90,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [autoZoom, setAutoZoom] = useState(true);
   const [scriptHint, setScriptHint] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [taskToken, setTaskToken] = useState<string | null>(null);
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [status, setStatus] = useState<ApiStatus | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [status, setStatus] = useState<ProjectStatus | null>(null);
 
   useEffect(() => {
     return () => {
@@ -101,46 +102,73 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   }, [videoPreview]);
 
   useEffect(() => {
-    if (!taskToken) {
+    if (!projectId) {
       return;
     }
 
     let disposed = false;
-    const poll = async () => {
-      try {
-        const response = await fetch(`/api/ai-edit-status?token=${encodeURIComponent(taskToken)}`);
-        if (!response.ok) {
-          throw new Error(`Статус недоступен: ${response.status}`);
-        }
-        const nextStatus = (await response.json()) as ApiStatus;
-        if (!disposed) {
-          setStatus(nextStatus);
-          if (nextStatus.status === "completed") {
-            setIsSubmitting(false);
-          }
-        }
-      } catch (error: any) {
-        if (!disposed) {
-          setIsSubmitting(false);
-          toast({
-            title: "Ошибка статуса",
-            description: error.message ?? "Не удалось получить статус задачи",
-            variant: "destructive",
-          });
-        }
+
+    const mapRow = (row: Record<string, unknown>): ProjectStatus => ({
+      projectId: row.id as string,
+      status: (row.status as string) ?? "queued",
+      stage: (row.stage as StageId) ?? "upload",
+      progress: (row.progress as number) ?? 0,
+      progressText: (row.progress_text as string) ?? "",
+      errorMessage: (row.error_message as string) ?? null,
+    });
+
+    const fetchState = async () => {
+      const { data: project } = await supabase
+        .from("ai_edit_projects")
+        .select("id,status,stage,progress,progress_text,error_message")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (!project || disposed) return;
+
+      const { data: renders } = await supabase
+        .from("ai_edit_renders")
+        .select("id,version,output_url,variant_name,variant_notes,status")
+        .eq("project_id", projectId)
+        .eq("status", "completed")
+        .order("version", { ascending: true });
+
+      if (disposed) return;
+      setStatus({
+        ...mapRow(project as Record<string, unknown>),
+        renders: (renders ?? []).map((r) => ({
+          id: r.id as string,
+          version: (r.version as number) ?? 1,
+          output_url: (r.output_url as string) ?? "",
+          variant_name: (r.variant_name as string) ?? `Вариант ${r.version}`,
+          variant_notes: (r.variant_notes as string) ?? "",
+        })),
+      });
+      if ((project as any).status === "completed" || (project as any).status === "failed") {
+        setIsSubmitting(false);
       }
     };
 
-    void poll();
-    const intervalId = window.setInterval(() => {
-      void poll();
-    }, 1500);
+    void fetchState();
+
+    const channel = supabase
+      .channel(`ai-edit-${projectId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "ai_edit_projects", filter: `id=eq.${projectId}` },
+        () => void fetchState()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ai_edit_renders", filter: `project_id=eq.${projectId}` },
+        () => void fetchState()
+      )
+      .subscribe();
 
     return () => {
       disposed = true;
-      window.clearInterval(intervalId);
+      void supabase.removeChannel(channel);
     };
-  }, [taskToken]);
+  }, [projectId]);
 
   const currentStepIndex = useMemo(() => {
     const stage = status?.stage ?? "idle";
@@ -198,8 +226,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
     setIsSubmitting(true);
     setStatus({
-      taskId: "pending",
-      status: "processing",
+      projectId: "pending",
+      status: "uploading",
       stage: "upload",
       progress: 8,
       progressText: "Загрузка исходников в storage",
@@ -213,54 +241,67 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         soundFile ? uploadAsset(soundFile, "sfx") : Promise.resolve(null),
       ]);
 
-      const response = await fetch("/api/ai-edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          videoUrl,
-          projectId: active?.id ?? null,
+      const { data: userData } = await supabase.auth.getUser();
+      const ownerId = userData?.user?.id ?? null;
+
+      const { data: inserted, error: insertError } = await supabase
+        .from("ai_edit_projects")
+        .insert({
+          project_id: active?.id ?? null,
+          owner_id: ownerId,
+          source_video_url: videoUrl,
+          source_size_bytes: videoFile.size,
           style,
           format,
-          businessTemplate,
-          captionLanguage,
-          clipDurationMode,
-          clipDurationSec: clipDurationMode === "manual" ? Number(clipDurationSec) : null,
-          scriptHint,
-          options: {
-            autoBroll,
-            autoZoom,
-            intensity,
-          },
-          assets: {
-            fontUrl,
-            brollUrl,
-            soundUrl,
-          },
-        }),
+          caption_language: captionLanguage,
+          business_template: businessTemplate,
+          clip_duration_mode: clipDurationMode,
+          clip_duration_sec: clipDurationMode === "manual" ? Number(clipDurationSec) : null,
+          intensity,
+          auto_broll: autoBroll,
+          auto_zoom: autoZoom,
+          script_hint: scriptHint || null,
+          font_url: fontUrl,
+          custom_broll_url: brollUrl,
+          custom_sfx_url: soundUrl,
+          status: "queued",
+          stage: "upload",
+          progress: 10,
+          progress_text: "Задача поставлена в очередь",
+        })
+        .select("id,task_token")
+        .single();
+
+      if (insertError || !inserted) {
+        throw new Error(insertError?.message ?? "Не удалось создать проект");
+      }
+
+      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: inserted.id, taskToken: inserted.task_token }),
       });
 
       if (!response.ok) {
-        throw new Error(`Не удалось запустить задачу: ${response.status}`);
+        throw new Error(`n8n webhook error: ${response.status}`);
       }
 
-      const data = (await response.json()) as { taskId: string; taskToken: string };
-      setTaskToken(data.taskToken);
-      setTaskId(data.taskId);
-      onTaskCreated?.(data.taskId);
-    } catch (error: any) {
+      setProjectId(inserted.id);
+      onTaskCreated?.(inserted.id);
+    } catch (error: unknown) {
       setIsSubmitting(false);
       setStatus(null);
+      const message = error instanceof Error ? error.message : "Не удалось запустить ИИ монтаж";
       toast({
         title: "Ошибка запуска",
-        description: error.message ?? "Не удалось запустить ИИ монтаж",
+        description: message,
         variant: "destructive",
       });
     }
   };
 
   const resetTask = () => {
-    setTaskToken(null);
-    setTaskId(null);
+    setProjectId(null);
     setStatus(null);
     setIsSubmitting(false);
   };
@@ -269,22 +310,22 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.1fr)_420px]">
         <div className="space-y-6">
-          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Input</p>
+                <p className="text-[10px] font-semibold font-medium text-muted-foreground">Input</p>
                 <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
               </div>
               <Badge variant="secondary" className="text-[10px] font-semibold">Remotion</Badge>
             </div>
 
             <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <label className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-border hover:border-primary/40 bg-secondary/10 transition-colors">
+              <label className="group relative flex aspect-video cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-border hover:border-primary/40 bg-secondary/10 transition-colors">
                 {videoPreview ? (
                   <video src={videoPreview} controls className="h-full w-full object-cover" />
                 ) : (
                   <div className="space-y-3 text-center px-6">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
                       <Upload className="h-6 w-6 text-primary" />
                     </div>
                     <div>
@@ -325,9 +366,9 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
             <div className="mb-5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Стиль монтажа</p>
+              <p className="text-[10px] font-semibold font-medium text-muted-foreground">Стиль монтажа</p>
               <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Как собираем видео</h3>
             </div>
 
@@ -338,7 +379,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
                   type="button"
                   onClick={() => setStyle(item.id)}
                   className={cn(
-                    "rounded-2xl border p-4 text-left transition-all",
+                    "rounded-lg border p-4 text-left transition-all",
                     style === item.id
                       ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                       : "border-border/50 bg-secondary/10 hover:border-primary/30 hover:bg-secondary/20"
@@ -359,8 +400,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Настройки</p>
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+            <p className="text-[10px] font-semibold font-medium text-muted-foreground">Настройки</p>
             <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Формат и поведение</h3>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <Field title="Формат" icon={Clapperboard}>
@@ -427,7 +468,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
 
             <div className="mt-5">
-              <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Label className="mb-2 block text-[10px] font-semibold font-medium text-muted-foreground">
                 Плотность эффектов
               </Label>
               <div className="grid grid-cols-3 gap-2">
@@ -450,7 +491,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
 
             <div className="mt-5">
-              <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <Label className="mb-2 block text-[10px] font-semibold font-medium text-muted-foreground">
                 Контекст речи / хук
               </Label>
               <Textarea
@@ -464,29 +505,29 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Pipeline</p>
+                <p className="text-[10px] font-semibold font-medium text-muted-foreground">Pipeline</p>
                 <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">AI режиссёр</h3>
               </div>
-              {taskId && (
-                <Badge variant="secondary" className="font-mono text-[10px]">{taskId.slice(-8)}</Badge>
+              {projectId && (
+                <Badge variant="secondary" className="font-mono text-[10px]">{projectId.slice(-8)}</Badge>
               )}
             </div>
 
             <Button
               onClick={startAiEdit}
               disabled={!videoFile || isSubmitting}
-              className="mt-5 h-12 w-full rounded-2xl bg-primary text-white hover:bg-primary/90"
+              className="mt-5 h-12 w-full rounded-lg bg-primary text-white hover:bg-primary/90"
             >
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
               {isSubmitting ? "Обрабатываем…" : "Запустить ИИ монтаж"}
             </Button>
 
             {(isSubmitting || status) && (
-              <div className="mt-5 rounded-2xl border border-primary/15 bg-primary/5 p-4">
-                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-primary">
+              <div className="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-4">
+                <div className="mb-2 flex items-center justify-between text-[10px] font-semibold font-medium text-primary">
                   <span className="truncate pr-2">{status?.progressText ?? "Ожидание запуска"}</span>
                   <span>{status?.progress ?? 0}%</span>
                 </div>
@@ -537,35 +578,27 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
           </div>
 
-          {status?.transcript && (
-            <div className="rounded-3xl border border-border/50 bg-card p-6 shadow-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">AI данные</p>
-              <h3 className="mt-1 text-lg font-bold tracking-tight text-foreground">Транскрипт и сцены</h3>
-              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{status.transcript.text}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {status.scenes?.map((scene, index) => (
-                  <Badge key={`${scene.type}-${index}`} variant="secondary" className="text-[10px] font-medium">
-                    {scene.type} {scene.start.toFixed(1)}-{scene.end.toFixed(1)}с
-                  </Badge>
-                ))}
-              </div>
+          {status?.errorMessage && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 shadow-sm">
+              <p className="text-[10px] font-semibold font-medium text-destructive">Ошибка пайплайна</p>
+              <p className="mt-2 text-sm leading-relaxed text-destructive/90">{status.errorMessage}</p>
             </div>
           )}
         </div>
       </div>
 
-      {status?.videos?.length ? (
+      {status?.renders?.length ? (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="space-y-5 rounded-3xl border border-border/50 bg-card p-6 shadow-sm"
+          className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Results</p>
-              <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">3 варианта монтажа готовы</h3>
+              <p className="text-[10px] font-semibold font-medium text-muted-foreground">Results</p>
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-foreground">Монтаж готов</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Превью генерируется через Remotion Renderer. Скачайте понравившийся или сбросьте задачу.
+                Рендер выполнен через Remotion. Скачайте понравившийся вариант или сбросьте задачу.
               </p>
             </div>
             <Button variant="outline" className="rounded-xl" onClick={resetTask}>
@@ -575,18 +608,18 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {status.videos.map((video, index) => (
-              <div key={video.id} className="overflow-hidden rounded-2xl border border-border/50 bg-secondary/10">
+            {status.renders.map((render) => (
+              <div key={render.id} className="overflow-hidden rounded-lg border border-border/50 bg-secondary/10">
                 <div className="aspect-[9/16] bg-black">
-                  <video src={video.url} controls className="h-full w-full object-cover" />
+                  <video src={render.output_url} controls className="h-full w-full object-cover" />
                 </div>
                 <div className="space-y-2 p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">{video.name}</p>
-                    <Badge variant="secondary" className="text-[10px] font-semibold">v{index + 1}</Badge>
+                    <p className="text-sm font-semibold text-foreground">{render.variant_name}</p>
+                    <Badge variant="secondary" className="text-[10px] font-semibold">v{render.version}</Badge>
                   </div>
-                  <p className="text-xs leading-relaxed text-muted-foreground">{video.notes}</p>
-                  <a href={video.url} target="_blank" rel="noreferrer" className="block pt-1">
+                  <p className="text-xs leading-relaxed text-muted-foreground">{render.variant_notes}</p>
+                  <a href={render.output_url} target="_blank" rel="noreferrer" className="block pt-1">
                     <Button className="h-10 w-full rounded-xl bg-primary text-white hover:bg-primary/90">
                       <Download className="mr-2 h-4 w-4" />
                       Скачать
@@ -612,7 +645,7 @@ const Field = ({
   children: React.ReactNode;
 }) => (
   <div>
-    <Label className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <Label className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold font-medium text-muted-foreground">
       <Icon className="h-3.5 w-3.5" />
       {title}
     </Label>

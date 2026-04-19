@@ -360,7 +360,7 @@ export default function ScenarioCreator() {
     return (
         <div className="w-full max-w-4xl space-y-6 pb-16">
             {/* Mode toggle */}
-            <div className="rounded-2xl border border-border/60 bg-card p-4">
+            <div className="rounded-lg border border-border/60 bg-card p-4">
                 <Label className="mb-2 block text-xs font-medium text-muted-foreground">Способ создания</Label>
                 <div className="flex gap-1.5 rounded-xl bg-muted/60 p-1">
                     <button
@@ -385,7 +385,7 @@ export default function ScenarioCreator() {
             </div>
 
             {/* Presets */}
-            <div className="rounded-2xl border border-border/60 bg-card p-5">
+            <div className="rounded-lg border border-border/60 bg-card p-5">
                 <div className="mb-4 flex items-baseline justify-between gap-3">
                     <h3 className="text-base font-semibold text-foreground">Быстрый старт</h3>
                     <p className="hidden text-xs text-muted-foreground sm:block">Нажмите, чтобы заполнить заготовку</p>
@@ -424,7 +424,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="rounded-2xl border border-border/60 bg-card p-5"
+                        className="rounded-lg border border-border/60 bg-card p-5"
                     >
                         <Label className="mb-2 block text-xs font-medium text-muted-foreground">Ссылка на Reels / Shorts / TikTok</Label>
                         <div className="relative">
@@ -446,7 +446,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="space-y-3 rounded-2xl border border-border/60 bg-card p-5"
+                        className="space-y-3 rounded-lg border border-border/60 bg-card p-5"
                     >
                         <Label className="block text-xs font-medium text-muted-foreground">Тема / Идея (текст или голос)</Label>
                         <div className="relative">
@@ -499,7 +499,7 @@ export default function ScenarioCreator() {
 
             {/* Form grid — only for "topic" mode */}
             {creationMode === "topic" && (
-                <div className="space-y-5 rounded-2xl border border-border/60 bg-card p-5">
+                <div className="space-y-5 rounded-lg border border-border/60 bg-card p-5">
                     <h3 className="text-base font-semibold text-foreground">Параметры сценария</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
@@ -562,7 +562,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="overflow-hidden rounded-2xl border border-border/60 bg-card"
+                        className="overflow-hidden rounded-lg border border-border/60 bg-card"
                     >
                         <div className="h-1 bg-muted">
                             <motion.div
@@ -592,7 +592,7 @@ export default function ScenarioCreator() {
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="overflow-hidden rounded-2xl border border-border/60 bg-card"
+                        className="overflow-hidden rounded-lg border border-border/60 bg-card"
                     >
                         <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-emerald-500/5 px-5 py-4">
                             <div className="flex items-center gap-3">

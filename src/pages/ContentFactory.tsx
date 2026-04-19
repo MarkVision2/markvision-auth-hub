@@ -638,7 +638,7 @@ export default function ContentFactory() {
             </CfButtonMd>
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-3xl border border-border/50 bg-card p-8 shadow-lg overflow-hidden relative">
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-xl border border-border/50 bg-card p-8 shadow-lg overflow-hidden relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-12 items-start">
@@ -646,7 +646,7 @@ export default function ContentFactory() {
                 {task.content_type === "video" ? (
                   <div className="space-y-4">
                     {task.result_urls.map((url, i) => (
-                      <div key={i} className="rounded-2xl overflow-hidden border border-border/40 bg-secondary/20 shadow-xl max-w-sm mx-auto group relative aspect-[9/16]">
+                      <div key={i} className="rounded-lg overflow-hidden border border-border/40 bg-secondary/20 shadow-xl max-w-sm mx-auto group relative aspect-[9/16]">
                         <video src={url} controls className="w-full h-full object-cover" />
                       </div>
                     ))}
@@ -654,7 +654,7 @@ export default function ContentFactory() {
                 ) : (
                   <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory custom-scrollbar">
                     {task.result_urls.map((url, i) => (
-                      <motion.div key={i} className="flex-shrink-0 snap-center rounded-2xl overflow-hidden border border-border/40 shadow-xl bg-secondary/10">
+                      <motion.div key={i} className="flex-shrink-0 snap-center rounded-lg overflow-hidden border border-border/40 shadow-xl bg-secondary/10">
                         <img src={url} alt={`Слайд ${i + 1}`} className="max-h-[500px] w-auto object-contain" />
                       </motion.div>
                     ))}
@@ -663,8 +663,8 @@ export default function ContentFactory() {
               </div>
 
               <div className="space-y-6 pt-4">
-                  <div className="p-6 rounded-3xl bg-secondary/30 border border-border/40 space-y-4">
-                    <CfH3 className="uppercase tracking-widest flex items-center gap-2 text-sm">
+                  <div className="p-6 rounded-xl bg-secondary/30 border border-border/40 space-y-4">
+                    <CfH3 className="font-medium flex items-center gap-2 text-sm">
                        <Zap className="h-4 w-4 text-primary" /> Действия
                     </CfH3>
                     <div className="grid grid-cols-1 gap-3">
@@ -681,8 +681,8 @@ export default function ContentFactory() {
                     </div>
                  </div>
 
-                 <div className="p-6 rounded-3xl bg-primary/5 border border-primary/10 space-y-3">
-                    <p className="text-xs font-bold text-primary/80 uppercase tracking-widest">Информация</p>
+                 <div className="p-6 rounded-xl bg-primary/5 border border-primary/10 space-y-3">
+                    <p className="text-xs font-bold text-primary/80 font-medium">Информация</p>
                     <div className="flex items-center justify-between text-sm">
                        <span className="text-muted-foreground">Тип:</span>
                        <span className="font-bold text-foreground capitalize">{task.content_type}</span>
@@ -705,7 +705,7 @@ export default function ContentFactory() {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
         <div className="mx-auto max-w-4xl py-20 px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border/40 bg-card p-16 text-center space-y-12 shadow-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/40 bg-card p-8 md:p-12 text-center space-y-12 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                <motion.div 
                  className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
@@ -716,8 +716,8 @@ export default function ContentFactory() {
             </div>
 
             <div className="space-y-4">
-               <div className="h-24 w-24 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto relative">
-                  <div className="absolute inset-0 rounded-2xl border-2 border-primary/20 border-t-primary animate-spin" />
+               <div className="h-24 w-24 rounded-lg bg-primary/10 flex items-center justify-center mx-auto relative">
+                  <div className="absolute inset-0 rounded-lg border-2 border-primary/20 border-t-primary animate-spin" />
                   <Sparkles className="h-10 w-10 text-primary animate-pulse" />
                </div>
                <CfH2 className="uppercase">Подождите, готовим ваш контент</CfH2>
@@ -728,7 +728,7 @@ export default function ContentFactory() {
               {pipelineStages.map((stage, i) => (
                 <div key={i} className="flex flex-col items-center gap-3 group">
                   <div className={cn(
-                    "h-14 w-14 rounded-2xl flex items-center justify-center text-xl transition-all duration-500",
+                    "h-10 w-10 rounded-lg flex items-center justify-center text-xl transition-all duration-500",
                     stage.done ? "bg-primary text-white shadow-xl shadow-primary/20 scale-110" : "bg-secondary/40 text-muted-foreground/40"
                   )}>
                     {stage.done ? <CheckCircle2 className="h-6 w-6" /> : stage.icon}
@@ -774,13 +774,13 @@ export default function ContentFactory() {
       <div className={cn(cfStyles.page, "flex flex-col h-[calc(100vh-100px)] min-h-[680px]")}>
         <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Layers className="h-6 w-6" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Контент-Завод</h1>
-                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider">
+                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] font-semibold font-medium">
                   {activeTabMeta.kicker}
                 </Badge>
               </div>
@@ -794,10 +794,10 @@ export default function ContentFactory() {
             {topStats.map(({ label, value, icon: Icon, tone }) => (
               <div
                 key={label}
-                className="flex flex-col items-start gap-1 rounded-2xl border border-border/50 bg-card px-3 py-2 sm:px-4 sm:py-3"
+                className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-card px-3 py-2 sm:px-4 sm:py-3"
               >
                 <div className="flex w-full items-center justify-between">
-                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+                  <span className="text-[9px] font-semibold font-medium text-muted-foreground">{label}</span>
                   <Icon className={cn("h-3.5 w-3.5", tone)} />
                 </div>
                 <p className="text-xl font-bold text-foreground sm:text-2xl">{value}</p>
@@ -807,7 +807,7 @@ export default function ContentFactory() {
         </div>
 
         <div className="mb-6">
-          <div className="inline-flex w-full flex-wrap gap-1 rounded-2xl border border-border/50 bg-card p-1 sm:w-auto">
+          <div className="inline-flex w-full flex-wrap gap-1 rounded-lg border border-border/50 bg-card p-1 sm:w-auto">
             {tabs.map((tab) => {
               const TabIcon = tab.icon;
               const active = pageTab === tab.id;
@@ -894,7 +894,7 @@ export default function ContentFactory() {
                 </div>
               ) : history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-6 py-32 text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-border/60 bg-muted/40">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-border/60 bg-muted/40">
                     <Clock className="h-10 w-10 text-muted-foreground/30" />
                   </div>
                   <div className="max-w-sm space-y-2">
@@ -908,7 +908,7 @@ export default function ContentFactory() {
                   </Button>
                 </div>
               ) : filteredHistory.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 px-6 py-12 text-center">
+                <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 px-6 py-12 text-center">
                   <h3 className="text-base font-semibold text-foreground">Ничего не найдено</h3>
                   <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
                     Попробуйте изменить фильтр или поисковый запрос.
@@ -924,7 +924,7 @@ export default function ContentFactory() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: idx * 0.05 }}
-                        className="group relative rounded-2xl border border-border/50 bg-card hover:border-primary/40 transition-colors shadow-sm hover:shadow-lg cursor-pointer p-4 space-y-3 overflow-hidden"
+                        className="group relative rounded-lg border border-border/50 bg-card hover:border-primary/40 transition-colors shadow-sm hover:shadow-lg cursor-pointer p-4 space-y-3 overflow-hidden"
                         onClick={() => loadHistoryItem(task)}
                       >
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/20 via-primary/70 to-emerald-300/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -946,7 +946,7 @@ export default function ContentFactory() {
                                </div>
                              )}
                              <Badge variant="outline" className={cn(
-                               "text-[8px] font-black uppercase tracking-widest px-2 py-0 rounded-md border-none h-4",
+                               "text-xs font-medium px-2 py-0 rounded-md border-none h-4",
                                task.status === "completed" ? "bg-green-500/10 text-green-600" : 
                                task.status === "error" ? "bg-destructive/10 text-destructive" :
                                "bg-primary/5 text-primary/60"
@@ -956,7 +956,7 @@ export default function ContentFactory() {
                           </div>
                         </div>
 
-                        <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-secondary/30 relative border border-border/40 group-hover:scale-[1.02] transition-transform duration-500">
+                        <div className="aspect-[16/10] rounded-lg overflow-hidden bg-secondary/30 relative border border-border/40 group-hover:scale-[1.02] transition-transform duration-500">
                            {task.result_urls?.[0] ? (
                              task.content_type === 'video' ? (
                                <div className="relative h-full w-full">
@@ -991,7 +991,7 @@ export default function ContentFactory() {
                               </span>
                             )}
                             {ratings[task.id] === 1 && (
-                              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">
+                              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600">
                                 Одобрено
                               </span>
                             )}
@@ -1010,7 +1010,7 @@ export default function ContentFactory() {
                           >
                             <div className="grid grid-cols-2 gap-2">
                               <Button
-                                className="h-10 rounded-2xl bg-primary text-white hover:bg-primary/90"
+                                className="h-10 rounded-lg bg-primary text-white hover:bg-primary/90"
                                 onClick={() => {
                                   setSelectedAdTask(task);
                                   setAdSheetOpen(true);
@@ -1020,7 +1020,7 @@ export default function ContentFactory() {
                               </Button>
                               <Button
                                 variant="outline"
-                                className="h-10 rounded-2xl border-border/60"
+                                className="h-10 rounded-lg border-border/60"
                                 onClick={(e) => openDeleteDialog(task, e)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" /> Удалить

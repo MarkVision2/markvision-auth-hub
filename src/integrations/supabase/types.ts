@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_account_project: {
+        Row: {
+          ad_account_id: string
+          created_at: string | null
+          project_id: string | null
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string | null
+          project_id?: string | null
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string | null
+          project_id?: string | null
+        }
+        Relationships: []
+      }
+      ad_conversations: {
+        Row: {
+          ad_account_id: string | null
+          analysis_date: string | null
+          appointment_confirmed: boolean | null
+          city_confirmed: boolean | null
+          conversation_id: string | null
+          created_at: string | null
+          gemini_analysis: Json | null
+          id: string
+          project_id: string | null
+          quality_score: number | null
+          raw_messages: Json | null
+          service_confirmed: boolean | null
+          spam: boolean | null
+          summary: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          analysis_date?: string | null
+          appointment_confirmed?: boolean | null
+          city_confirmed?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          gemini_analysis?: Json | null
+          id?: string
+          project_id?: string | null
+          quality_score?: number | null
+          raw_messages?: Json | null
+          service_confirmed?: boolean | null
+          spam?: boolean | null
+          summary?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          analysis_date?: string | null
+          appointment_confirmed?: boolean | null
+          city_confirmed?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          gemini_analysis?: Json | null
+          id?: string
+          project_id?: string | null
+          quality_score?: number | null
+          raw_messages?: Json | null
+          service_confirmed?: boolean | null
+          spam?: boolean | null
+          summary?: string | null
+        }
+        Relationships: []
+      }
       agency_billing: {
         Row: {
           created_at: string | null
@@ -94,6 +163,358 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_edit_assets: {
+        Row: {
+          cost_cents: number | null
+          created_at: string
+          duration_ms: number | null
+          external_task_id: string | null
+          id: string
+          kind: string
+          metadata: Json | null
+          model: string | null
+          project_id: string
+          prompt: string | null
+          provider: string | null
+          source: string
+          status: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          cost_cents?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          external_task_id?: string | null
+          id?: string
+          kind: string
+          metadata?: Json | null
+          model?: string | null
+          project_id: string
+          prompt?: string | null
+          provider?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          cost_cents?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          external_task_id?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json | null
+          model?: string | null
+          project_id?: string
+          prompt?: string | null
+          provider?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_edit_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_edit_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_edit_cost_ledger: {
+        Row: {
+          cost_cents: number
+          created_at: string
+          id: string
+          meta: Json | null
+          project_id: string
+          provider: string | null
+          step: string
+          unit_type: string | null
+          units: number | null
+        }
+        Insert: {
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          project_id: string
+          provider?: string | null
+          step: string
+          unit_type?: string | null
+          units?: number | null
+        }
+        Update: {
+          cost_cents?: number
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          project_id?: string
+          provider?: string | null
+          step?: string
+          unit_type?: string | null
+          units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_edit_cost_ledger_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_edit_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_edit_projects: {
+        Row: {
+          auto_broll: boolean | null
+          auto_zoom: boolean | null
+          business_template: string | null
+          caption_language: string
+          clip_duration_mode: string | null
+          clip_duration_sec: number | null
+          created_at: string
+          custom_broll_url: string | null
+          custom_sfx_url: string | null
+          error_message: string | null
+          font_url: string | null
+          format: string
+          id: string
+          intensity: string | null
+          n8n_execution_id: string | null
+          owner_id: string | null
+          progress: number
+          progress_text: string | null
+          project_id: string | null
+          script_hint: string | null
+          source_duration_sec: number | null
+          source_size_bytes: number | null
+          source_video_url: string
+          stage: string
+          status: string
+          style: string
+          task_token: string
+          updated_at: string
+        }
+        Insert: {
+          auto_broll?: boolean | null
+          auto_zoom?: boolean | null
+          business_template?: string | null
+          caption_language?: string
+          clip_duration_mode?: string | null
+          clip_duration_sec?: number | null
+          created_at?: string
+          custom_broll_url?: string | null
+          custom_sfx_url?: string | null
+          error_message?: string | null
+          font_url?: string | null
+          format?: string
+          id?: string
+          intensity?: string | null
+          n8n_execution_id?: string | null
+          owner_id?: string | null
+          progress?: number
+          progress_text?: string | null
+          project_id?: string | null
+          script_hint?: string | null
+          source_duration_sec?: number | null
+          source_size_bytes?: number | null
+          source_video_url: string
+          stage?: string
+          status?: string
+          style?: string
+          task_token?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_broll?: boolean | null
+          auto_zoom?: boolean | null
+          business_template?: string | null
+          caption_language?: string
+          clip_duration_mode?: string | null
+          clip_duration_sec?: number | null
+          created_at?: string
+          custom_broll_url?: string | null
+          custom_sfx_url?: string | null
+          error_message?: string | null
+          font_url?: string | null
+          format?: string
+          id?: string
+          intensity?: string | null
+          n8n_execution_id?: string | null
+          owner_id?: string | null
+          progress?: number
+          progress_text?: string | null
+          project_id?: string | null
+          script_hint?: string | null
+          source_duration_sec?: number | null
+          source_size_bytes?: number | null
+          source_video_url?: string
+          stage?: string
+          status?: string
+          style?: string
+          task_token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_edit_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_edit_renders: {
+        Row: {
+          cost_cents: number | null
+          created_at: string
+          duration_sec: number | null
+          id: string
+          output_url: string | null
+          project_id: string
+          render_ms: number | null
+          size_bytes: number | null
+          status: string
+          thumbnail_url: string | null
+          variant_name: string | null
+          variant_notes: string | null
+          version: number
+        }
+        Insert: {
+          cost_cents?: number | null
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          output_url?: string | null
+          project_id: string
+          render_ms?: number | null
+          size_bytes?: number | null
+          status?: string
+          thumbnail_url?: string | null
+          variant_name?: string | null
+          variant_notes?: string | null
+          version?: number
+        }
+        Update: {
+          cost_cents?: number | null
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          output_url?: string | null
+          project_id?: string
+          render_ms?: number | null
+          size_bytes?: number | null
+          status?: string
+          thumbnail_url?: string | null
+          variant_name?: string | null
+          variant_notes?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_edit_renders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_edit_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_edit_segments: {
+        Row: {
+          created_at: string
+          data: Json
+          end_ms: number
+          id: string
+          is_ai_generated: boolean
+          is_deleted: boolean
+          is_user_edited: boolean
+          order_index: number
+          project_id: string
+          start_ms: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          end_ms: number
+          id?: string
+          is_ai_generated?: boolean
+          is_deleted?: boolean
+          is_user_edited?: boolean
+          order_index?: number
+          project_id: string
+          start_ms: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          end_ms?: number
+          id?: string
+          is_ai_generated?: boolean
+          is_deleted?: boolean
+          is_user_edited?: boolean
+          order_index?: number
+          project_id?: string
+          start_ms?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_edit_segments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "ai_edit_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_edit_style_presets: {
+        Row: {
+          config: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_premium: boolean | null
+          label: string
+          name: string
+          preview_url: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          label: string
+          name: string
+          preview_url?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium?: boolean | null
+          label?: string
+          name?: string
+          preview_url?: string | null
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
       ai_rop_audits: {
         Row: {
           ai_score: number | null
@@ -138,13 +559,6 @@ export type Database = {
           transcript?: Json | null
         }
         Relationships: [
-          {
-            foreignKeyName: "ai_rop_audits_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "ai_rop_audits_project_id_fkey"
             columns: ["project_id"]
@@ -366,6 +780,69 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          anamnesis: Json | null
+          appointment_date: string
+          created_at: string | null
+          diagnosis: string | null
+          doctor_id: string | null
+          id: string
+          lead_id: string | null
+          objection: string | null
+          package_price: number | null
+          project_id: string | null
+          proposed_package: string | null
+          sale_status: string | null
+          status: string | null
+        }
+        Insert: {
+          anamnesis?: Json | null
+          appointment_date: string
+          created_at?: string | null
+          diagnosis?: string | null
+          doctor_id?: string | null
+          id?: string
+          lead_id?: string | null
+          objection?: string | null
+          package_price?: number | null
+          project_id?: string | null
+          proposed_package?: string | null
+          sale_status?: string | null
+          status?: string | null
+        }
+        Update: {
+          anamnesis?: Json | null
+          appointment_date?: string
+          created_at?: string | null
+          diagnosis?: string | null
+          doctor_id?: string | null
+          id?: string
+          lead_id?: string | null
+          objection?: string | null
+          package_price?: number | null
+          project_id?: string | null
+          proposed_package?: string | null
+          sale_status?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_doctor_id_fkey"
+            columns: ["doctor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       autopost_items: {
         Row: {
           caption: string | null
@@ -444,6 +921,170 @@ export type Database = {
           },
         ]
       }
+      business_pages: {
+        Row: {
+          client_config_id: string
+          created_at: string | null
+          id: string
+          instagram_user_id: string | null
+          page_id: string
+          page_name: string
+        }
+        Insert: {
+          client_config_id: string
+          created_at?: string | null
+          id?: string
+          instagram_user_id?: string | null
+          page_id: string
+          page_name: string
+        }
+        Update: {
+          client_config_id?: string
+          created_at?: string | null
+          id?: string
+          instagram_user_id?: string | null
+          page_id?: string
+          page_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_pages_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "business_pages_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_learnings: {
+        Row: {
+          ad_name: string | null
+          ad_text: string | null
+          adset_name: string | null
+          avg_cpl: number | null
+          campaign_name: string | null
+          client_config_id: string | null
+          cpl_trend: string | null
+          cpm: number | null
+          created_at: string | null
+          ctr: number | null
+          days_active: number | null
+          depth_2_rate: number | null
+          depth_3_rate: number | null
+          fb_ad_id: string | null
+          fb_adset_id: string | null
+          fb_campaign_id: string | null
+          headline: string | null
+          ice_breakers: Json | null
+          id: string
+          impressions: number | null
+          is_paused: boolean | null
+          is_winner: boolean | null
+          lesson_learned: string | null
+          media_type: string | null
+          pause_reason: string | null
+          project_id: string | null
+          quality_score: number | null
+          reply_rate: number | null
+          score_label: string | null
+          score_trend: string | null
+          targeting_json: Json | null
+          total_leads: number | null
+          total_spend: number | null
+          updated_at: string | null
+          welcome_message: string | null
+        }
+        Insert: {
+          ad_name?: string | null
+          ad_text?: string | null
+          adset_name?: string | null
+          avg_cpl?: number | null
+          campaign_name?: string | null
+          client_config_id?: string | null
+          cpl_trend?: string | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          days_active?: number | null
+          depth_2_rate?: number | null
+          depth_3_rate?: number | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          headline?: string | null
+          ice_breakers?: Json | null
+          id?: string
+          impressions?: number | null
+          is_paused?: boolean | null
+          is_winner?: boolean | null
+          lesson_learned?: string | null
+          media_type?: string | null
+          pause_reason?: string | null
+          project_id?: string | null
+          quality_score?: number | null
+          reply_rate?: number | null
+          score_label?: string | null
+          score_trend?: string | null
+          targeting_json?: Json | null
+          total_leads?: number | null
+          total_spend?: number | null
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Update: {
+          ad_name?: string | null
+          ad_text?: string | null
+          adset_name?: string | null
+          avg_cpl?: number | null
+          campaign_name?: string | null
+          client_config_id?: string | null
+          cpl_trend?: string | null
+          cpm?: number | null
+          created_at?: string | null
+          ctr?: number | null
+          days_active?: number | null
+          depth_2_rate?: number | null
+          depth_3_rate?: number | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          headline?: string | null
+          ice_breakers?: Json | null
+          id?: string
+          impressions?: number | null
+          is_paused?: boolean | null
+          is_winner?: boolean | null
+          lesson_learned?: string | null
+          media_type?: string | null
+          pause_reason?: string | null
+          project_id?: string | null
+          quality_score?: number | null
+          reply_rate?: number | null
+          score_label?: string | null
+          score_trend?: string | null
+          targeting_json?: Json | null
+          total_leads?: number | null
+          total_spend?: number | null
+          updated_at?: string | null
+          welcome_message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_learnings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           created_at: string | null
@@ -469,17 +1110,171 @@ export type Database = {
           message_text?: string
           sender_name?: string | null
         }
+        Relationships: []
+      }
+      client_config_visibility: {
+        Row: {
+          client_config_id: string
+          created_at: string | null
+          id: string
+          project_id: string
+        }
+        Insert: {
+          client_config_id: string
+          created_at?: string | null
+          id?: string
+          project_id: string
+        }
+        Update: {
+          client_config_id?: string
+          created_at?: string | null
+          id?: string
+          project_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "chat_messages_lead_id_fkey"
-            columns: ["lead_id"]
+            foreignKeyName: "client_config_visibility_client_config_id_fkey"
+            columns: ["client_config_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_config_visibility_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_config_visibility_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
       }
       clients_config: {
+        Row: {
+          account_type: string
+          ad_account_id: string | null
+          brief: string | null
+          city: string | null
+          clicks: number | null
+          client_name: string
+          created_at: string | null
+          daily_budget: number | null
+          fb_pixel_id: string | null
+          fb_token: string | null
+          followers: number | null
+          id: string
+          impressions: number | null
+          instagram_user_id: string | null
+          is_active: boolean | null
+          is_agency: boolean | null
+          max_budget_cap: number | null
+          max_cpl: number | null
+          max_spend_no_lead: number | null
+          meta_leads: number | null
+          page_id: string | null
+          page_name: string | null
+          pixel_event: string | null
+          project_id: string | null
+          region_key: string | null
+          revenue: number | null
+          romi: number | null
+          sales: number | null
+          scale_factor: number | null
+          spend: number | null
+          telegram_group_id: string | null
+          visits: number | null
+          website_url: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          account_type?: string
+          ad_account_id?: string | null
+          brief?: string | null
+          city?: string | null
+          clicks?: number | null
+          client_name: string
+          created_at?: string | null
+          daily_budget?: number | null
+          fb_pixel_id?: string | null
+          fb_token?: string | null
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          instagram_user_id?: string | null
+          is_active?: boolean | null
+          is_agency?: boolean | null
+          max_budget_cap?: number | null
+          max_cpl?: number | null
+          max_spend_no_lead?: number | null
+          meta_leads?: number | null
+          page_id?: string | null
+          page_name?: string | null
+          pixel_event?: string | null
+          project_id?: string | null
+          region_key?: string | null
+          revenue?: number | null
+          romi?: number | null
+          sales?: number | null
+          scale_factor?: number | null
+          spend?: number | null
+          telegram_group_id?: string | null
+          visits?: number | null
+          website_url?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          account_type?: string
+          ad_account_id?: string | null
+          brief?: string | null
+          city?: string | null
+          clicks?: number | null
+          client_name?: string
+          created_at?: string | null
+          daily_budget?: number | null
+          fb_pixel_id?: string | null
+          fb_token?: string | null
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          instagram_user_id?: string | null
+          is_active?: boolean | null
+          is_agency?: boolean | null
+          max_budget_cap?: number | null
+          max_cpl?: number | null
+          max_spend_no_lead?: number | null
+          meta_leads?: number | null
+          page_id?: string | null
+          page_name?: string | null
+          pixel_event?: string | null
+          project_id?: string | null
+          region_key?: string | null
+          revenue?: number | null
+          romi?: number | null
+          sales?: number | null
+          scale_factor?: number | null
+          spend?: number | null
+          telegram_group_id?: string | null
+          visits?: number | null
+          website_url?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_config_project_id_fkey1"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients_config_old: {
         Row: {
           ad_account_id: string | null
           brief: string | null
@@ -492,14 +1287,19 @@ export type Database = {
           id: string
           instagram_user_id: string | null
           is_active: boolean | null
+          is_agency: boolean | null
           meta_leads: number | null
           page_id: string | null
           page_name: string | null
           pixel_event: string | null
           project_id: string | null
           region_key: string | null
+          revenue: number | null
+          romi: number | null
+          sales: number | null
           spend: number | null
           telegram_group_id: string | null
+          visits: number | null
           wa_api_token: string | null
           wa_instance_id: string | null
           website_url: string | null
@@ -517,14 +1317,19 @@ export type Database = {
           id?: string
           instagram_user_id?: string | null
           is_active?: boolean | null
+          is_agency?: boolean | null
           meta_leads?: number | null
           page_id?: string | null
           page_name?: string | null
           pixel_event?: string | null
           project_id?: string | null
           region_key?: string | null
+          revenue?: number | null
+          romi?: number | null
+          sales?: number | null
           spend?: number | null
           telegram_group_id?: string | null
+          visits?: number | null
           wa_api_token?: string | null
           wa_instance_id?: string | null
           website_url?: string | null
@@ -542,14 +1347,19 @@ export type Database = {
           id?: string
           instagram_user_id?: string | null
           is_active?: boolean | null
+          is_agency?: boolean | null
           meta_leads?: number | null
           page_id?: string | null
           page_name?: string | null
           pixel_event?: string | null
           project_id?: string | null
           region_key?: string | null
+          revenue?: number | null
+          romi?: number | null
+          sales?: number | null
           spend?: number | null
           telegram_group_id?: string | null
+          visits?: number | null
           wa_api_token?: string | null
           wa_instance_id?: string | null
           website_url?: string | null
@@ -564,6 +1374,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      clients_secrets: {
+        Row: {
+          client_config_id: string
+          created_at: string | null
+          fb_token: string | null
+          id: string
+          updated_at: string | null
+          wa_api_token: string | null
+          wa_instance_id: string | null
+          waba_phone_number_id: string | null
+        }
+        Insert: {
+          client_config_id: string
+          created_at?: string | null
+          fb_token?: string | null
+          id?: string
+          updated_at?: string | null
+          wa_api_token?: string | null
+          wa_instance_id?: string | null
+          waba_phone_number_id?: string | null
+        }
+        Update: {
+          client_config_id?: string
+          created_at?: string | null
+          fb_token?: string | null
+          id?: string
+          updated_at?: string | null
+          wa_api_token?: string | null
+          wa_instance_id?: string | null
+          waba_phone_number_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_secrets_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: true
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "clients_secrets_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: true
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clony_requests: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          description: string | null
+          execution_id: string | null
+          id: string
+          log_url: string | null
+          name: string | null
+          request_id: string | null
+          slides_count: number | null
+          slides_json: Json | null
+          status: string | null
+          telegram_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          execution_id?: string | null
+          id?: string
+          log_url?: string | null
+          name?: string | null
+          request_id?: string | null
+          slides_count?: number | null
+          slides_json?: Json | null
+          status?: string | null
+          telegram_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          execution_id?: string | null
+          id?: string
+          log_url?: string | null
+          name?: string | null
+          request_id?: string | null
+          slides_count?: number | null
+          slides_json?: Json | null
+          status?: string | null
+          telegram_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       competitor_ads: {
         Row: {
@@ -770,6 +1676,30 @@ export type Database = {
           },
         ]
       }
+      content_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          task_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          task_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          task_id?: string
+        }
+        Relationships: []
+      }
       content_tasks: {
         Row: {
           aspect_ratio: string | null
@@ -913,15 +1843,7 @@ export type Database = {
           read?: boolean
           sender_type?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "crm_messages_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       crm_notes: {
         Row: {
@@ -945,22 +1867,17 @@ export type Database = {
           id?: string
           lead_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "crm_notes_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      daily_metrics: {
+      daily_data: {
         Row: {
+          ad_account_id: string | null
           clicks: number | null
           client_config_id: string | null
           created_at: string | null
           date: string
+          followers: number | null
+          followers_total: number | null
           id: string
           impressions: number | null
           leads: number | null
@@ -972,14 +1889,18 @@ export type Database = {
           project_id: string | null
           revenue: number | null
           sales: number | null
+          service_category: string | null
           spend: number | null
           visits: number | null
         }
         Insert: {
+          ad_account_id?: string | null
           clicks?: number | null
           client_config_id?: string | null
           created_at?: string | null
           date: string
+          followers?: number | null
+          followers_total?: number | null
           id?: string
           impressions?: number | null
           leads?: number | null
@@ -991,14 +1912,18 @@ export type Database = {
           project_id?: string | null
           revenue?: number | null
           sales?: number | null
+          service_category?: string | null
           spend?: number | null
           visits?: number | null
         }
         Update: {
+          ad_account_id?: string | null
           clicks?: number | null
           client_config_id?: string | null
           created_at?: string | null
           date?: string
+          followers?: number | null
+          followers_total?: number | null
           id?: string
           impressions?: number | null
           leads?: number | null
@@ -1010,6 +1935,7 @@ export type Database = {
           project_id?: string | null
           revenue?: number | null
           sales?: number | null
+          service_category?: string | null
           spend?: number | null
           visits?: number | null
         }
@@ -1036,6 +1962,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      diagnostic_questions: {
+        Row: {
+          category: string | null
+          correct_answer: string | null
+          created_at: string | null
+          id: string
+          options: Json | null
+          question_text: string
+        }
+        Insert: {
+          category?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          question_text: string
+        }
+        Update: {
+          category?: string | null
+          correct_answer?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          question_text?: string
+        }
+        Relationships: []
       }
       finance_client_billing: {
         Row: {
@@ -1198,6 +2151,33 @@ export type Database = {
           },
         ]
       }
+      hq_targets: {
+        Row: {
+          active_projects: number
+          followers: number
+          id: string
+          mrr: number
+          spend: number
+          updated_at: string | null
+        }
+        Insert: {
+          active_projects?: number
+          followers?: number
+          id?: string
+          mrr?: number
+          spend?: number
+          updated_at?: string | null
+        }
+        Update: {
+          active_projects?: number
+          followers?: number
+          id?: string
+          mrr?: number
+          spend?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           ai_score: number | null
@@ -1205,21 +2185,36 @@ export type Database = {
           amount: number | null
           client_config_id: string | null
           created_at: string | null
-          id: string
-          name: string
-          phone: string | null
-          project_id: string | null
-          source: string | null
-          status: string | null
-          updated_at: string | null
-          utm_campaign: string | null
-          utm_source: string | null
-          utm_medium: string | null
-          utm_content: string | null
-          utm_term: string | null
-          scheduled_at: string | null
           doctor_name: string | null
+          external_lead_id: string | null
+          extra_data: Json | null
+          fb_ad_account_id: string | null
+          fb_ad_id: string | null
+          fb_adset_id: string | null
+          fb_campaign_id: string | null
+          id: string
+          is_diagnostic: boolean | null
+          lead_score: string | null
+          name: string
           office_name: string | null
+          phone: string | null
+          pipeline: string | null
+          prescribed_packages: string[] | null
+          project_id: string | null
+          refusal_reason: string | null
+          scheduled_at: string | null
+          score_label: string | null
+          service_category: string | null
+          serviced_by: string | null
+          source: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           ai_score?: number | null
@@ -1227,21 +2222,36 @@ export type Database = {
           amount?: number | null
           client_config_id?: string | null
           created_at?: string | null
-          id?: string
-          name: string
-          phone?: string | null
-          project_id?: string | null
-          source?: string | null
-          status?: string | null
-          updated_at?: string | null
-          utm_campaign?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          scheduled_at?: string | null
           doctor_name?: string | null
+          external_lead_id?: string | null
+          extra_data?: Json | null
+          fb_ad_account_id?: string | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          id?: string
+          is_diagnostic?: boolean | null
+          lead_score?: string | null
+          name?: string
           office_name?: string | null
+          phone?: string | null
+          pipeline?: string | null
+          prescribed_packages?: string[] | null
+          project_id?: string | null
+          refusal_reason?: string | null
+          scheduled_at?: string | null
+          score_label?: string | null
+          service_category?: string | null
+          serviced_by?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           ai_score?: number | null
@@ -1249,21 +2259,36 @@ export type Database = {
           amount?: number | null
           client_config_id?: string | null
           created_at?: string | null
-          id?: string
-          name?: string
-          phone?: string | null
-          project_id?: string | null
-          source?: string | null
-          status?: string | null
-          updated_at?: string | null
-          utm_campaign?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          scheduled_at?: string | null
           doctor_name?: string | null
+          external_lead_id?: string | null
+          extra_data?: Json | null
+          fb_ad_account_id?: string | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          id?: string
+          is_diagnostic?: boolean | null
+          lead_score?: string | null
+          name?: string
           office_name?: string | null
+          phone?: string | null
+          pipeline?: string | null
+          prescribed_packages?: string[] | null
+          project_id?: string | null
+          refusal_reason?: string | null
+          scheduled_at?: string | null
+          score_label?: string | null
+          service_category?: string | null
+          serviced_by?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
@@ -1287,7 +2312,56 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "leads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      maps_leads: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          company_type: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          socials: string | null
+          summary: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          company_type?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          socials?: string | null
+          summary?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          company_type?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          socials?: string | null
+          summary?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       monthly_plans: {
         Row: {
@@ -1333,51 +2407,77 @@ export type Database = {
           },
         ]
       }
+      neuro_characters: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          photo_urls: Json
+          project_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          photo_urls?: Json
+          project_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          photo_urls?: Json
+          project_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nps_feedback: {
         Row: {
+          client_name: string | null
           clinic_name: string | null
           created_at: string | null
           feedback_text: string | null
           id: string
           is_resolved: boolean | null
           lead_id: string | null
+          phone: string | null
           project_id: string | null
           score: number | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
+          client_name?: string | null
           clinic_name?: string | null
           created_at?: string | null
           feedback_text?: string | null
           id?: string
           is_resolved?: boolean | null
           lead_id?: string | null
+          phone?: string | null
           project_id?: string | null
           score?: number | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
+          client_name?: string | null
           clinic_name?: string | null
           created_at?: string | null
           feedback_text?: string | null
           id?: string
           is_resolved?: boolean | null
           lead_id?: string | null
+          phone?: string | null
           project_id?: string | null
           score?: number | null
           status?: string | null
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "nps_feedback_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "nps_feedback_project_id_fkey"
             columns: ["project_id"]
@@ -1395,8 +2495,14 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          office: string | null
+          permissions: string[] | null
           phone: string | null
+          role: string | null
+          specialty: string | null
           updated_at: string
+          working_days: string[] | null
+          working_hours: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1405,8 +2511,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          office?: string | null
+          permissions?: string[] | null
           phone?: string | null
+          role?: string | null
+          specialty?: string | null
           updated_at?: string
+          working_days?: string[] | null
+          working_hours?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -1415,8 +2527,14 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          office?: string | null
+          permissions?: string[] | null
           phone?: string | null
+          role?: string | null
+          specialty?: string | null
           updated_at?: string
+          working_days?: string[] | null
+          working_hours?: string | null
         }
         Relationships: []
       }
@@ -1424,16 +2542,19 @@ export type Database = {
         Row: {
           id: string
           project_id: string | null
+          role: string | null
           user_id: string | null
         }
         Insert: {
           id?: string
           project_id?: string | null
+          role?: string | null
           user_id?: string | null
         }
         Update: {
           id?: string
           project_id?: string | null
+          role?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1456,18 +2577,30 @@ export type Database = {
       projects: {
         Row: {
           created_at: string | null
+          currency: string | null
           id: string
+          language: string | null
+          logo_url: string | null
           name: string
+          timezone: string | null
         }
         Insert: {
           created_at?: string | null
+          currency?: string | null
           id?: string
+          language?: string | null
+          logo_url?: string | null
           name: string
+          timezone?: string | null
         }
         Update: {
           created_at?: string | null
+          currency?: string | null
           id?: string
+          language?: string | null
+          logo_url?: string | null
           name?: string
+          timezone?: string | null
         }
         Relationships: []
       }
@@ -1478,6 +2611,7 @@ export type Database = {
           lead_id: string | null
           project_id: string | null
           promo_code: string | null
+          sent_at: string | null
           status: string | null
           template_id: string | null
           trigger_date: string
@@ -1488,6 +2622,7 @@ export type Database = {
           lead_id?: string | null
           project_id?: string | null
           promo_code?: string | null
+          sent_at?: string | null
           status?: string | null
           template_id?: string | null
           trigger_date: string
@@ -1498,18 +2633,12 @@ export type Database = {
           lead_id?: string | null
           project_id?: string | null
           promo_code?: string | null
+          sent_at?: string | null
           status?: string | null
           template_id?: string | null
           trigger_date?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "retention_tasks_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "retention_tasks_project_id_fkey"
             columns: ["project_id"]
@@ -1713,6 +2842,87 @@ export type Database = {
           },
         ]
       }
+      scoring_insights: {
+        Row: {
+          created_at: string | null
+          id: string
+          impact_percent: number | null
+          insight_text: string | null
+          project_id: string | null
+          recommendation_type: string | null
+          recommended_points: number | null
+          status: string | null
+          suggested_field: string | null
+          suggested_operator: string | null
+          suggested_score_delta: number | null
+          suggested_value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          impact_percent?: number | null
+          insight_text?: string | null
+          project_id?: string | null
+          recommendation_type?: string | null
+          recommended_points?: number | null
+          status?: string | null
+          suggested_field?: string | null
+          suggested_operator?: string | null
+          suggested_score_delta?: number | null
+          suggested_value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          impact_percent?: number | null
+          insight_text?: string | null
+          project_id?: string | null
+          recommendation_type?: string | null
+          recommended_points?: number | null
+          status?: string | null
+          suggested_field?: string | null
+          suggested_operator?: string | null
+          suggested_score_delta?: number | null
+          suggested_value?: string | null
+        }
+        Relationships: []
+      }
+      scoring_rules: {
+        Row: {
+          created_at: string | null
+          criteria_name: string | null
+          field: string | null
+          id: string
+          is_active: boolean | null
+          operator: string | null
+          points: number | null
+          project_id: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criteria_name?: string | null
+          field?: string | null
+          id?: string
+          is_active?: boolean | null
+          operator?: string | null
+          points?: number | null
+          project_id?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criteria_name?: string | null
+          field?: string | null
+          id?: string
+          is_active?: boolean | null
+          operator?: string | null
+          points?: number | null
+          project_id?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1731,20 +2941,231 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_errors: {
+        Row: {
+          ad_account_id: string | null
+          client_name: string | null
+          created_at: string | null
+          error_message: string | null
+          error_type: string
+          id: string
+          input_data: Json | null
+          node_name: string
+          resolved: boolean | null
+          workflow_id: string | null
+          workflow_name: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          error_type: string
+          id?: string
+          input_data?: Json | null
+          node_name: string
+          resolved?: boolean | null
+          workflow_id?: string | null
+          workflow_name?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          client_name?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          error_type?: string
+          id?: string
+          input_data?: Json | null
+          node_name?: string
+          resolved?: boolean | null
+          workflow_id?: string | null
+          workflow_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       agency_metrics_view: {
         Row: {
           cac: number | null
+          clicks: number | null
           client_id: string | null
           client_name: string | null
           cpl: number | null
           cpv: number | null
+          followers: number | null
+          impressions: number | null
           is_active: boolean | null
+          is_agency: boolean | null
           meta_leads: number | null
+          project_id: string | null
           revenue: number | null
           romi: number | null
           sales: number | null
+          spend: number | null
+          visits: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_config_project_id_fkey1"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads_crm: {
+        Row: {
+          ai_score: number | null
+          ai_summary: string | null
+          amount: number | null
+          client_config_id: string | null
+          created_at: string | null
+          doctor_name: string | null
+          external_lead_id: string | null
+          extra_data: Json | null
+          fb_ad_account_id: string | null
+          fb_ad_id: string | null
+          fb_adset_id: string | null
+          fb_campaign_id: string | null
+          id: string | null
+          is_diagnostic: boolean | null
+          lead_score: string | null
+          name: string | null
+          office_name: string | null
+          phone: string | null
+          pipeline: string | null
+          prescribed_packages: string[] | null
+          project_id: string | null
+          refusal_reason: string | null
+          scheduled_at: string | null
+          score_label: string | null
+          service_category: string | null
+          serviced_by: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          amount?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          doctor_name?: string | null
+          external_lead_id?: string | null
+          extra_data?: Json | null
+          fb_ad_account_id?: string | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          id?: string | null
+          is_diagnostic?: boolean | null
+          lead_score?: string | null
+          name?: string | null
+          office_name?: string | null
+          phone?: string | null
+          pipeline?: string | null
+          prescribed_packages?: string[] | null
+          project_id?: string | null
+          refusal_reason?: string | null
+          scheduled_at?: string | null
+          score_label?: string | null
+          service_category?: string | null
+          serviced_by?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          ai_score?: number | null
+          ai_summary?: string | null
+          amount?: number | null
+          client_config_id?: string | null
+          created_at?: string | null
+          doctor_name?: string | null
+          external_lead_id?: string | null
+          extra_data?: Json | null
+          fb_ad_account_id?: string | null
+          fb_ad_id?: string | null
+          fb_adset_id?: string | null
+          fb_campaign_id?: string | null
+          id?: string | null
+          is_diagnostic?: boolean | null
+          lead_score?: string | null
+          name?: string | null
+          office_name?: string | null
+          phone?: string | null
+          pipeline?: string | null
+          prescribed_packages?: string[] | null
+          project_id?: string | null
+          refusal_reason?: string | null
+          scheduled_at?: string | null
+          score_label?: string | null
+          service_category?: string | null
+          serviced_by?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "agency_metrics_view"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "leads_client_config_id_fkey"
+            columns: ["client_config_id"]
+            isOneToOne: false
+            referencedRelation: "clients_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_analytics_view: {
+        Row: {
+          created_at: string | null
+          leads: number | null
+          project_id: string | null
+          revenue: number | null
+          sales: number | null
+          service_category: string | null
           spend: number | null
           visits: number | null
         }
@@ -1760,6 +3181,10 @@ export type Database = {
         Returns: boolean
       }
       is_project_member: { Args: { _project_id: string }; Returns: boolean }
+      recalculate_client_totals: {
+        Args: { p_client_config_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
@@ -1894,3 +3319,4 @@ export const Constants = {
     },
   },
 } as const
+

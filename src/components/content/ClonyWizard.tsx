@@ -126,11 +126,45 @@ const SOURCE_MODES: { value: SourceMode; label: string; desc: string; icon: type
 ];
 
 const RATIOS = [
-  { value: "1:1", label: "1:1", desc: "Квадрат" },
-  { value: "4:5", label: "4:5", desc: "Portrait" },
-  { value: "9:16", label: "9:16", desc: "Stories / Reels" },
-  { value: "16:9", label: "16:9", desc: "YouTube" },
+  { value: "1:1", label: "1:1", desc: "1080×1080 · Квадрат" },
+  { value: "3:4", label: "3:4", desc: "1080×1440 · Новый стандарт IG 2026" },
+  { value: "4:5", label: "4:5", desc: "1080×1350 · Устарел (−6.7% охвата)" },
+  { value: "9:16", label: "9:16", desc: "1080×1920 · Stories / Reels" },
+  { value: "16:9", label: "16:9", desc: "1920×1080 · YouTube" },
 ];
+
+// Стандарты Instagram 2026 — применяются при генерации контента
+const FORMAT_STANDARDS: Record<string, { size: string; notes: string[] }> = {
+  "1:1": {
+    size: "1080×1080",
+    notes: ["Квадратный пост для ленты."],
+  },
+  "3:4": {
+    size: "1080×1440",
+    notes: [
+      "НОВЫЙ СТАНДАРТ Instagram 2026 (лента/карусели) — даёт +6.7% охвата vs 4:5.",
+      "Безопасная зона для карусели: отступы 180px сверху и снизу, 50px по бокам. Весь важный контент и текст — только внутри безопасной зоны.",
+      "Не размещать текст или ключевые элементы ближе 180px к верхнему/нижнему краю и ближе 50px к боковым — обрежется интерфейсом.",
+    ],
+  },
+  "4:5": {
+    size: "1080×1350",
+    notes: [
+      "УСТАРЕВШИЙ формат — Instagram продвигает его хуже на 6.7% экрана. По возможности используйте 3:4.",
+    ],
+  },
+  "9:16": {
+    size: "1080×1920",
+    notes: [
+      "Stories — безопасная зона: отступы 250px сверху (аватар/имя) и 250px снизу (кнопки/ссылки). Стикеры и CTA размещать только внутри безопасной зоны.",
+      "Reels — безопасная зона строже: 250px сверху (интерфейс), 450px снизу (кнопки/описание), 35px по бокам. Весь текст и лица — только в центре.",
+    ],
+  },
+  "16:9": {
+    size: "1920×1080",
+    notes: ["Горизонтальный формат для YouTube/веб-баннеров."],
+  },
+};
 
 const CTA_OPTIONS = [
   { value: "follow", label: "Follow" },
@@ -567,7 +601,11 @@ export default function ClonyWizard() {
         sourceContext = "\n[ИСТОЧНИК: Ссылка на продукт/страницу — проанализировать контент и использовать информацию оттуда.]";
       }
 
-      const formatContext = `\n[ФОРМАТ: Размер ${form.aspect_ratio}, слайдов: ${form.slide_count}, язык: ${form.language === "KZ" ? "Казахский" : "Русский"}]`;
+      const standard = FORMAT_STANDARDS[form.aspect_ratio];
+      const standardsBlock = standard
+        ? `\n[СТАНДАРТЫ ФОРМАТА ${form.aspect_ratio} (${standard.size}) — ОБЯЗАТЕЛЬНО СОБЛЮДАТЬ]:\n- ${standard.notes.join("\n- ")}`
+        : "";
+      const formatContext = `\n[ФОРМАТ: Соотношение ${form.aspect_ratio}${standard ? ` (${standard.size})` : ""}, слайдов: ${form.slide_count}, язык: ${form.language === "KZ" ? "Казахский" : "Русский"}]${standardsBlock}`;
       const fullPrompt = [
         typeInstructions,
         sourceContext,
@@ -605,6 +643,8 @@ export default function ClonyWizard() {
         description: form.source_mode === "description" ? form.description_text : undefined,
         prompt: fullPrompt,
         aspect: form.aspect_ratio,
+        dimensions: standard?.size,
+        format_standards: standard ? { ratio: form.aspect_ratio, size: standard.size, rules: standard.notes } : undefined,
         ctas: form.cta.length > 0 ? form.cta : undefined,
         languege: form.language,
         slides: form.slide_count,
@@ -661,7 +701,7 @@ export default function ClonyWizard() {
     return (
       <div className="flex min-h-[55vh] items-center justify-center px-4">
         <div className="flex flex-col items-center gap-5 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
           <div>
@@ -681,7 +721,7 @@ export default function ClonyWizard() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className={cn(
-            "w-full max-w-xl rounded-3xl border p-10 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden",
+            "w-full max-w-xl rounded-xl border p-10 sm:p-12 text-center space-y-7 shadow-2xl relative overflow-hidden",
             isError
               ? "border-destructive/40 bg-gradient-to-br from-destructive/10 via-card to-card"
               : "border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card"
@@ -699,21 +739,21 @@ export default function ClonyWizard() {
 
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
             className={cn(
-              "relative h-24 w-24 rounded-3xl flex items-center justify-center mx-auto shadow-xl",
+              "relative h-24 w-24 rounded-xl flex items-center justify-center mx-auto shadow-xl",
               isError ? "bg-gradient-to-br from-destructive to-destructive/70 shadow-destructive/40"
                       : "bg-gradient-to-br from-green-400 to-primary shadow-primary/40"
             )}
           >
-            <div className="absolute inset-0 rounded-3xl bg-white/20 blur-md" />
+            <div className="absolute inset-0 rounded-xl bg-white/20 blur-md" />
             {isError ? (
-              <X className="relative h-12 w-12 text-white drop-shadow-lg" strokeWidth={3} />
+              <X className="relative h-10 w-10 text-white drop-shadow-lg" strokeWidth={3} />
             ) : (
-              <CheckCircle2 className="relative h-12 w-12 text-white drop-shadow-lg" strokeWidth={2.5} />
+              <CheckCircle2 className="relative h-10 w-10 text-white drop-shadow-lg" strokeWidth={2.5} />
             )}
           </motion.div>
 
           <div className="relative space-y-3">
-            <h2 className="text-3xl font-black tracking-tight">
+            <h2 className="text-3xl font-bold tracking-tight">
               {isError ? "Не удалось отправить" : "Спасибо! Задача принята в работу"}
             </h2>
             <p className="text-sm text-muted-foreground font-medium max-w-md mx-auto leading-relaxed">
@@ -722,8 +762,8 @@ export default function ClonyWizard() {
                 : "Clony AI уже начал генерацию вашего креатива. Результат появится в разделе «История» и придёт в Telegram, обычно через 1–3 минуты."}
             </p>
             {isError && submitError && (
-              <div className="mt-4 mx-auto max-w-md p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-destructive/80 mb-1.5">Текст ошибки</p>
+              <div className="mt-4 mx-auto max-w-md p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-left">
+                <p className="text-sm font-semibold text-destructive/80 mb-1.5">Текст ошибки</p>
                 <p className="text-xs font-mono text-destructive break-all">{submitError}</p>
               </div>
             )}
@@ -748,16 +788,16 @@ export default function ClonyWizard() {
                     )}
                     <div className="flex flex-col items-center gap-2">
                       <motion.div initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} transition={{ delay: 0.3 + i * 0.12, type: "spring" }}
-                        className={cn("relative h-12 w-12 rounded-2xl flex items-center justify-center",
+                        className={cn("relative h-10 w-10 rounded-lg flex items-center justify-center",
                           isActive
                             ? "bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg shadow-primary/40"
                             : "bg-secondary/30 text-muted-foreground/40"
                         )}
                       >
-                        {isActive && <div className="absolute inset-0 rounded-2xl bg-primary/40 blur-md animate-pulse" />}
+                        {isActive && <div className="absolute inset-0 rounded-lg bg-primary/40 blur-md animate-pulse" />}
                         <Icon className="relative h-5 w-5" />
                       </motion.div>
-                      <span className={cn("text-[9px] font-black uppercase tracking-[0.15em]",
+                      <span className={cn("text-[9px] font-bold uppercase tracking-[0.15em]",
                         isActive ? "text-primary" : "text-muted-foreground/30"
                       )}>
                         {stage.label}
@@ -801,7 +841,7 @@ export default function ClonyWizard() {
             )}
           >
             <div className={cn(
-              "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300",
+              "h-10 w-10 rounded-lg flex items-center justify-center transition-all duration-300",
               form.content_type === value
                 ? "bg-primary text-white shadow-md shadow-primary/30"
                 : "bg-secondary/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
@@ -809,7 +849,7 @@ export default function ClonyWizard() {
               <Icon className="h-5 w-5" />
             </div>
             <div className="text-center">
-              <span className="text-[11px] font-black uppercase tracking-wider block leading-tight">{label}</span>
+              <span className="text-sm font-semibold block leading-tight">{label}</span>
               <span className="text-[9px] text-muted-foreground/60 font-medium mt-1 block">{desc}</span>
             </div>
             {form.content_type === value && (
@@ -829,7 +869,7 @@ export default function ClonyWizard() {
   const renderStep1 = () => (
     <motion.div key="s1" {...anim} className="space-y-6">
       {/* Source mode selector */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
+      <div className="relative rounded-lg bg-gradient-to-br from-card via-card to-card/60 border border-border/50 p-6 sm:p-8 space-y-5 shadow-xl shadow-black/5 overflow-hidden">
         <div className="absolute -top-20 -right-20 h-64 w-64 bg-primary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
         <div className="relative flex items-center gap-2.5">
           <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
@@ -846,7 +886,7 @@ export default function ClonyWizard() {
             return (
               <button key={value} type="button" onClick={() => set("source_mode", value)}
                 className={cn(
-                  "group relative flex flex-col items-start gap-3 p-5 rounded-2xl border-2 transition-all duration-300 text-left overflow-hidden",
+                  "group relative flex flex-col items-start gap-3 p-5 rounded-lg border-2 transition-all duration-300 text-left overflow-hidden",
                   active
                     ? "border-primary/60 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent shadow-xl shadow-primary/20 scale-[1.02]"
                     : "border-border/40 bg-background/40 hover:border-primary/30 hover:bg-primary/5 hover:scale-[1.01]"
@@ -856,17 +896,17 @@ export default function ClonyWizard() {
                   <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary animate-pulse" />
                 )}
                 <div className={cn(
-                  "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-300 relative",
+                  "h-10 w-10 rounded-lg flex items-center justify-center transition-all duration-300 relative",
                   active
                     ? "bg-gradient-to-br from-primary to-primary/70 text-white shadow-lg shadow-primary/40"
                     : "bg-secondary/40 text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary"
                 )}>
-                  {active && <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-md" />}
+                  {active && <div className="absolute inset-0 rounded-lg bg-primary/30 blur-md" />}
                   <Icon className="relative h-5 w-5" />
                 </div>
                 <div>
                   <span className={cn(
-                    "text-[12px] font-black uppercase tracking-wider block transition-colors",
+                    "text-sm font-semibold block transition-colors",
                     active ? "text-primary" : "text-foreground"
                   )}>{label}</span>
                   <span className="text-[10px] text-muted-foreground/70 font-medium block mt-1 leading-snug">{desc}</span>
@@ -885,7 +925,7 @@ export default function ClonyWizard() {
                 value={form.source_url}
                 onChange={(e) => set("source_url", e.target.value)}
                 placeholder="https://instagram.com/reel/... или любая ссылка"
-                className="h-13 rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 px-5"
+                className="h-13 rounded-lg border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 px-5"
               />
             </motion.div>
           )}
@@ -909,14 +949,14 @@ export default function ClonyWizard() {
                           <button key={char.id} type="button"
                             onClick={() => set("saved_character_id", char.id === form.saved_character_id ? null : char.id)}
                             className={cn(
-                              "flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-2 transition-all duration-200 text-sm",
+                              "flex items-center gap-2.5 px-4 py-2.5 rounded-lg border-2 transition-all duration-200 text-sm",
                               form.saved_character_id === char.id
                                 ? "border-primary bg-primary/10 text-primary shadow-sm"
                                 : "border-border/30 bg-background hover:border-primary/30 text-foreground"
                             )}
                           >
                             <div className={cn(
-                              "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-black",
+                              "h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-bold",
                               form.saved_character_id === char.id ? "bg-primary text-white" : "bg-secondary text-muted-foreground"
                             )}>
                               {char.photo_urls?.[0] ? (
@@ -942,7 +982,7 @@ export default function ClonyWizard() {
 
                   {/* Create new character */}
                   {!form.saved_character_id && (
-                    <div className="rounded-2xl bg-secondary/20 border border-border/40 p-5 space-y-4">
+                    <div className="rounded-lg bg-secondary/20 border border-border/40 p-5 space-y-4">
                       <div className="flex items-center gap-2">
                         <Camera className="h-4 w-4 text-primary/60" />
                         <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>
@@ -962,7 +1002,7 @@ export default function ClonyWizard() {
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Фото для обучения</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground/60 font-medium">Фото для обучения</Label>
                           <span className={cn(
                             "text-[10px] font-bold px-2 py-0.5 rounded-full",
                             form.character_photos.length >= 3 ? "bg-green-500/10 text-green-600" : "bg-secondary text-muted-foreground/50"
@@ -1034,7 +1074,7 @@ export default function ClonyWizard() {
                       </div>
                       <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogo} />
                       {logoPreview ? (
-                        <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/30 bg-primary/5 group shadow-sm">
+                        <div className="relative h-28 rounded-lg overflow-hidden border-2 border-primary/30 bg-primary/5 group shadow-sm">
                           <img src={logoPreview} alt="" className="h-full w-full object-contain p-3" />
                           <button type="button" onClick={() => { set("logo_file", null); if (logoPreview) URL.revokeObjectURL(logoPreview); setLogoPreview(null); }}
                             className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
@@ -1044,10 +1084,10 @@ export default function ClonyWizard() {
                         </div>
                       ) : (
                         <button type="button" onClick={() => logoRef.current?.click()}
-                          className="w-full h-28 rounded-2xl border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all"
+                          className="w-full h-28 rounded-lg border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="h-5 w-5 text-muted-foreground/40" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">Загрузить лого</span>
+                          <span className="text-[9px] font-bold font-medium text-muted-foreground/50">Загрузить лого</span>
                         </button>
                       )}
                     </div>
@@ -1057,7 +1097,7 @@ export default function ClonyWizard() {
                       <div>
                         <div className="flex items-center gap-2">
                           <Label className={cn(cfStyles.label, "text-muted-foreground/70")}>Обложка</Label>
-                          <span className="text-[8px] font-bold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <span className="text-[8px] font-bold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full font-medium">
                             Главное фото
                           </span>
                         </div>
@@ -1067,7 +1107,7 @@ export default function ClonyWizard() {
                       </div>
                       <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={handleCoverPhoto} />
                       {coverPreview ? (
-                        <div className="relative h-28 rounded-2xl overflow-hidden border-2 border-primary/40 bg-primary/5 group shadow-sm">
+                        <div className="relative h-28 rounded-lg overflow-hidden border-2 border-primary/40 bg-primary/5 group shadow-sm">
                           <img src={coverPreview} alt="" className="h-full w-full object-cover" />
                           <button type="button" onClick={() => { set("cover_photo_file", null); if (coverPreview) URL.revokeObjectURL(coverPreview); setCoverPreview(null); }}
                             className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
@@ -1077,10 +1117,10 @@ export default function ClonyWizard() {
                         </div>
                       ) : (
                         <button type="button" onClick={() => coverRef.current?.click()}
-                          className="w-full h-28 rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-all"
+                          className="w-full h-28 rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-all"
                         >
                           <Camera className="h-5 w-5 text-primary/40" />
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-primary/50">Загрузить обложку</span>
+                          <span className="text-[9px] font-bold font-medium text-primary/50">Загрузить обложку</span>
                         </button>
                       )}
                     </div>
@@ -1107,7 +1147,7 @@ export default function ClonyWizard() {
                         <div key={idx} className="relative h-[72px] w-[72px] rounded-xl overflow-hidden border-2 border-border/40 group shadow-sm">
                           <img src={preview} alt="" className="h-full w-full object-cover" />
                           <div className="absolute top-1 left-1 h-4 w-4 rounded-full bg-black/60 flex items-center justify-center">
-                            <span className="text-[8px] font-black text-white">{idx + 1}</span>
+                            <span className="text-[8px] font-bold text-white">{idx + 1}</span>
                           </div>
                           <button type="button" onClick={() => handleRemoveAdditionalPhoto(idx)}
                             className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl"
@@ -1139,7 +1179,7 @@ export default function ClonyWizard() {
                 value={form.description_text}
                 onChange={(e) => set("description_text", e.target.value)}
                 placeholder="Например: Стоматологическая клиника в Алматы, премиум-сегмент, виниры и имплантация..."
-                className="min-h-[100px] rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
+                className="min-h-[100px] rounded-lg border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
               />
             </motion.div>
           )}
@@ -1147,7 +1187,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Main prompt */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <PenLine className="h-4 w-4 text-primary/60" />
@@ -1158,7 +1198,7 @@ export default function ClonyWizard() {
             onClick={handleEnhancePrompt}
             disabled={enhancing || !form.main_prompt.trim()}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300",
               enhancing
                 ? "bg-primary/10 text-primary/60 cursor-wait"
                 : form.main_prompt.trim()
@@ -1178,7 +1218,7 @@ export default function ClonyWizard() {
           value={form.main_prompt}
           onChange={(e) => set("main_prompt", e.target.value)}
           placeholder="Что именно создать? Какой текст должен быть? Какой посыл? Опишите максимально подробно..."
-          className="min-h-[120px] rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
+          className="min-h-[120px] rounded-lg border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
         />
         <p className="text-[10px] font-medium text-muted-foreground/40 italic px-1">
           Напишите идею кратко — кнопка «AI Магия» превратит её в чёткое ТЗ для генерации
@@ -1186,7 +1226,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Additional instructions */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Mic className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>
@@ -1198,7 +1238,7 @@ export default function ClonyWizard() {
           value={form.additional_instructions}
           onChange={(e) => set("additional_instructions", e.target.value)}
           placeholder="Особые пожелания, тон, акценты, что точно НЕ должно быть..."
-          className="min-h-[80px] rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
+          className="min-h-[80px] rounded-lg border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-5"
         />
       </div>
     </motion.div>
@@ -1208,7 +1248,7 @@ export default function ClonyWizard() {
   const renderStep2 = () => (
     <motion.div key="s2" {...anim} className="space-y-6">
       {/* Aspect Ratio */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Hash className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Соотношение сторон</Label>
@@ -1217,14 +1257,14 @@ export default function ClonyWizard() {
           {RATIOS.map(({ value, label, desc }) => (
             <button key={value} type="button" onClick={() => set("aspect_ratio", value)}
               className={cn(
-                "flex flex-col items-center gap-1.5 p-4 rounded-2xl transition-all duration-300",
+                "flex flex-col items-center gap-1.5 p-4 rounded-lg transition-all duration-300",
                 form.aspect_ratio === value
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
               )}
             >
-              <span className="text-sm font-black">{label}</span>
-              <span className={cn("text-[8px] font-bold uppercase tracking-wider",
+              <span className="text-sm font-bold">{label}</span>
+              <span className={cn("text-[8px] font-bold font-medium",
                 form.aspect_ratio === value ? "text-white/70" : "text-muted-foreground/50"
               )}>{desc}</span>
             </button>
@@ -1233,7 +1273,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* CTA */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <MousePointerClick className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Call to Action (CTA) <span className="text-muted-foreground/40 normal-case font-medium">— можно выбрать несколько</span></Label>
@@ -1242,7 +1282,7 @@ export default function ClonyWizard() {
           {CTA_OPTIONS.map(({ value, label }) => (
             <button key={value} type="button" onClick={() => toggleCta(value)}
               className={cn(
-                "h-10 px-5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-200",
+                "h-10 px-5 rounded-xl text-sm font-semibold transition-all duration-200",
                 form.cta.includes(value)
                   ? "bg-primary text-white shadow-md shadow-primary/20"
                   : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
@@ -1255,7 +1295,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Language */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Globe className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Язык текста</Label>
@@ -1264,21 +1304,21 @@ export default function ClonyWizard() {
           {LANGUAGES.map(({ value, label, flag }) => (
             <button key={value} type="button" onClick={() => set("language", value)}
               className={cn(
-                "flex items-center justify-center gap-3 h-14 rounded-2xl transition-all duration-300",
+                "flex items-center justify-center gap-3 h-14 rounded-lg transition-all duration-300",
                 form.language === value
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
               )}
             >
               <span className="text-xl">{flag}</span>
-              <span className="text-[11px] font-black uppercase tracking-widest">{label}</span>
+              <span className="text-sm font-semibold">{label}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Slide count */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <SquareStack className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Количество слайдов / вариантов</Label>
@@ -1287,13 +1327,13 @@ export default function ClonyWizard() {
           {SLIDE_COUNTS.map((n) => (
             <button key={n} type="button" onClick={() => set("slide_count", n)}
               className={cn(
-                "flex flex-col items-center gap-1 py-4 rounded-2xl transition-all duration-300",
+                "flex flex-col items-center gap-1 py-4 rounded-lg transition-all duration-300",
                 form.slide_count === n
                   ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
               )}
             >
-              <span className="text-lg font-black">{n}</span>
+              <span className="text-lg font-bold">{n}</span>
               <span className={cn("text-[8px] font-bold",
                 form.slide_count === n ? "text-white/70" : "text-muted-foreground/40"
               )}>
@@ -1305,7 +1345,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Style */}
-      <div className="rounded-2xl bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <Palette className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Стиль дизайна <span className="text-muted-foreground/40 normal-case font-medium">— если не выбрать, система подберёт сама</span></Label>
@@ -1315,14 +1355,14 @@ export default function ClonyWizard() {
             <button key={value} type="button"
               onClick={() => set("style", form.style === value ? "" : value)}
               className={cn(
-                "relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-300",
+                "relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-300",
                 form.style === value
                   ? "border-primary bg-primary/5 shadow-md"
                   : "border-border/30 bg-background hover:border-primary/20"
               )}
             >
               <span className="text-xl">{emoji}</span>
-              <span className="text-[11px] font-black uppercase tracking-wider">{label}</span>
+              <span className="text-sm font-semibold">{label}</span>
               {form.style === value && (
                 <motion.div layoutId="styleCheck"
                   className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-sm"
@@ -1339,14 +1379,14 @@ export default function ClonyWizard() {
               if (form.style !== "custom") set("custom_style", "");
             }}
             className={cn(
-              "relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-300",
+              "relative flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-300",
               form.style === "custom"
                 ? "border-primary bg-primary/5 shadow-md"
                 : "border-border/30 bg-background hover:border-primary/20"
             )}
           >
             <span className="text-xl">✏️</span>
-            <span className="text-[11px] font-black uppercase tracking-wider">Свой стиль</span>
+            <span className="text-sm font-semibold">Свой стиль</span>
             {form.style === "custom" && (
               <motion.div layoutId="styleCheck"
                 className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-sm"
@@ -1363,14 +1403,14 @@ export default function ClonyWizard() {
               value={form.custom_style}
               onChange={(e) => set("custom_style", e.target.value)}
               placeholder="Опишите желаемый стиль: цвета, настроение, референсы..."
-              className="min-h-[80px] rounded-2xl border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-4 mt-3"
+              className="min-h-[80px] rounded-lg border-border/40 bg-secondary/20 text-sm font-semibold focus-visible:ring-primary/30 resize-none p-4 mt-3"
             />
           </motion.div>
         )}
       </div>
 
       {/* Summary */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-6 sm:p-8 space-y-4">
+      <div className="rounded-lg bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 p-6 sm:p-8 space-y-4">
         <div className="flex items-center gap-2.5">
           <CheckCircle2 className="h-4 w-4 text-primary" />
           <Label className={cn(cfStyles.label, "text-primary")}>Сводка</Label>
@@ -1440,7 +1480,7 @@ export default function ClonyWizard() {
     <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <div className="space-y-8">
-          <div className="rounded-2xl border border-border/60 bg-card p-5">
+          <div className="rounded-lg border border-border/60 bg-card p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -1536,14 +1576,14 @@ export default function ClonyWizard() {
         </div>
 
         <aside className="xl:sticky xl:top-4 self-start space-y-4">
-          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border/50 bg-card p-5 shadow-sm">
             <p className="text-xs font-medium text-muted-foreground">Контроль качества</p>
             <div className="mt-4 space-y-3">
               {readinessChecklist.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-2xl bg-secondary/20 px-4 py-3">
+                <div key={item.label} className="flex items-center justify-between rounded-lg bg-secondary/20 px-4 py-3">
                   <span className="text-xs font-semibold text-foreground">{item.label}</span>
                   <span className={cn(
-                    "rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.16em]",
+                    "rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em]",
                     item.done ? "bg-emerald-500/10 text-emerald-600" : "bg-secondary text-muted-foreground/50"
                   )}>
                     {item.done ? "Готово" : "Ожидает"}
@@ -1553,7 +1593,7 @@ export default function ClonyWizard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
+          <div className="rounded-lg border border-border/50 bg-card p-5 shadow-sm">
             <p className="text-xs font-medium text-muted-foreground">Текущая конфигурация</p>
             <div className="mt-4 space-y-3 text-sm">
               {[
@@ -1563,7 +1603,7 @@ export default function ClonyWizard() {
                 ["Размер", form.aspect_ratio || "Не выбран"],
                 ["Слайды", String(form.slide_count)],
               ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary/20 px-4 py-3">
+                <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-secondary/20 px-4 py-3">
                   <span className="text-xs font-medium text-muted-foreground">{label}</span>
                   <span className="text-right font-semibold text-foreground">{value}</span>
                 </div>
@@ -1571,11 +1611,11 @@ export default function ClonyWizard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 shadow-sm">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 shadow-sm">
             <p className="text-xs font-medium text-primary">AI подсказка</p>
-            <h4 className="mt-3 text-lg font-black tracking-tight text-foreground">{selectedGuide.title}</h4>
+            <h4 className="mt-3 text-lg font-bold tracking-tight text-foreground">{selectedGuide.title}</h4>
             <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{selectedGuide.body}</p>
-            <div className="mt-4 rounded-2xl bg-background/70 px-4 py-3 text-sm font-semibold leading-relaxed text-foreground/85">
+            <div className="mt-4 rounded-lg bg-background/70 px-4 py-3 text-sm font-semibold leading-relaxed text-foreground/85">
               {selectedGuide.tip}
             </div>
           </div>
