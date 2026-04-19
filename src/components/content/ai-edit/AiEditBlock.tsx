@@ -132,21 +132,21 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const { data: project } = await supabase
         .from("ai_edit_projects")
         .select("id,status,stage,progress,progress_text,error_message")
-        .eq("id", projectId)
+        .eq("id" as any, projectId)
         .maybeSingle();
       if (!project || disposed) return;
 
       const { data: renders } = await supabase
         .from("ai_edit_renders")
         .select("id,version,output_url,variant_name,variant_notes,status")
-        .eq("project_id", projectId)
-        .eq("status", "completed")
+        .eq("project_id" as any, projectId)
+        .eq("status" as any, "completed")
         .order("version", { ascending: true });
 
       if (disposed) return;
       setStatus({
         ...mapRow(project as Record<string, unknown>),
-        renders: (renders ?? []).map((r) => ({
+        renders: ((renders as any[]) ?? []).map((r: any) => ({
           id: r.id as string,
           version: (r.version as number) ?? 1,
           output_url: (r.output_url as string) ?? "",
@@ -279,15 +279,15 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           stage: "upload",
           progress: 10,
           progress_text: "Задача поставлена в очередь",
-        })
+        } as any)
         .select("id,task_token")
-        .single();
+        .single() as any;
 
       if (insertError || !inserted) {
         throw new Error(insertError?.message ?? "Не удалось создать проект");
       }
 
-      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK, {
+      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK as any, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId: inserted.id, taskToken: inserted.task_token }),
