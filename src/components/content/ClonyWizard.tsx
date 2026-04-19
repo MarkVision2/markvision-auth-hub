@@ -277,8 +277,9 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
 
 const STEP_META = [
   { title: "Тип контента", desc: "Выберите формат рекламного креатива", icon: Layers },
-  { title: "Источник и описание", desc: "Укажите исходные материалы и задайте промт", icon: FileText },
-  { title: "Настройки формата", desc: "Формат, CTA, язык, количество и стиль", icon: Palette },
+  { title: "Источник", desc: "Как будем создавать контент?", icon: FileText },
+  { title: "Материалы", desc: "Укажите исходные ссылки и промт", icon: FileText },
+  { title: "Формат", desc: "Визуал, язык и переводы", icon: Palette },
 ] as const;
 
 const PIPELINE_STAGES = [
@@ -534,7 +535,9 @@ export default function ClonyWizard() {
     switch (step) {
       case 0:
         return Boolean(form.content_type);
-      case 1: {
+      case 1:
+        return Boolean(form.source_mode);
+      case 2: {
         if (!form.source_mode) return false;
         if (form.source_mode === "link" && !form.source_url.trim()) return false;
         if (form.source_mode === "description" && !form.description_text.trim()) return false;
@@ -547,7 +550,7 @@ export default function ClonyWizard() {
         }
         return Boolean(form.main_prompt.trim());
       }
-      case 2:
+      case 3:
         return Boolean(form.aspect_ratio && form.language);
       default:
         return false;
@@ -832,7 +835,7 @@ export default function ClonyWizard() {
     <motion.div key="s0" {...anim} className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {CONTENT_TYPES.map(({ value, label, desc, icon: Icon }) => (
-          <button key={value} type="button" onClick={() => set("content_type", value)}
+          <button key={value} type="button" onClick={() => { set("content_type", value); setStep(1); }}
             className={cn(
               "group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-xl border-2 transition-all duration-300",
               form.content_type === value
@@ -884,7 +887,7 @@ export default function ClonyWizard() {
           {SOURCE_MODES.map(({ value, label, desc, icon: Icon }) => {
             const active = form.source_mode === value;
             return (
-              <button key={value} type="button" onClick={() => set("source_mode", value)}
+              <button key={value} type="button" onClick={() => { set("source_mode", value); setStep(2); }}
                 className={cn(
                   "group relative flex flex-col items-start gap-3 p-5 rounded-lg border-2 transition-all duration-300 text-left overflow-hidden",
                   active
@@ -916,6 +919,11 @@ export default function ClonyWizard() {
           })}
         </div>
 
+    </motion.div>
+  );
+
+  const renderStep3 = () => (
+    <motion.div key="s2" {...anim} className="space-y-6">
         {/* Conditional source inputs */}
         <AnimatePresence mode="wait">
           {form.source_mode === "link" && (
@@ -1465,6 +1473,7 @@ export default function ClonyWizard() {
       Boolean(form.language),
       step >= 1,
       step >= 2,
+      step >= 3,
     ];
 
     return Math.round((checkpoints.filter(Boolean).length / checkpoints.length) * 100);
@@ -1490,22 +1499,6 @@ export default function ClonyWizard() {
                   <p className="text-base font-semibold text-foreground">{meta.title}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">{meta.desc}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 px-4 py-2.5">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Готовность</p>
-                  <p className="text-lg font-bold text-foreground">{completionPercent}%</p>
-                </div>
-                <div className="h-8 w-24 overflow-hidden rounded-full bg-muted">
-                  <motion.div
-                    className="h-full rounded-full bg-primary"
-                    animate={{ width: `${completionPercent}%` }}
-                    transition={{ duration: 0.35 }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">
-                  {step + 1}/{STEP_META.length}
-                </span>
               </div>
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
@@ -1542,6 +1535,7 @@ export default function ClonyWizard() {
             {step === 0 && renderStep0()}
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
           </AnimatePresence>
 
           <div className="flex items-center justify-between pt-4 pb-4">

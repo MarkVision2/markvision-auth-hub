@@ -42,10 +42,7 @@ const CONTENT_TABLE = "tblSppKHHKEDnyIoN";
 // ─── Options ─────────────────────────────────────────────────────────────────
 const OPTIONS = {
     formats: ["Говорящая голова", "Демонстрация экрана", "Закадровый голос", "Карусель", "Подложка под музыку"],
-    audiences: ["ВСЕ", "МАРКЕТОЛОГИ", "КОЛЛЕГИ AI", "ПРЕДПРИНИМАТЕЛИ", "Фрилансеры"],
     contentTypes: ["Информационный", "Репутационный", "Продающий", "Развлекательный", "Личный контент"],
-    shootTypes: ["СЪЕМКА", "HEYGEN", "HYBRID - ME+AI"],
-    funnels: ["Нет", "Да - ManyChat", "Да - WhatsApp", "Да - Telegram"],
 };
 
 interface ScenarioResult {
@@ -136,11 +133,8 @@ export default function ScenarioCreator() {
     // Form state
     const [topic, setTopic] = useState("");
     const [format, setFormat] = useState(OPTIONS.formats[0]);
-    const [audience, setAudience] = useState(OPTIONS.audiences[0]);
     const [contentType, setContentType] = useState(OPTIONS.contentTypes[0]);
-    const [shootType, setShootType] = useState(OPTIONS.shootTypes[0]);
     const [refs, setRefs] = useState("");
-    const [funnel, setFunnel] = useState("Нет");
     const [trigger, setTrigger] = useState("");
 
     // Recording
@@ -264,11 +258,8 @@ export default function ScenarioCreator() {
                 source_url: creationMode === "link" ? linkUrl : null,
                 topic: creationMode === "topic" ? finalTopic : null,
                 format,
-                audience,
                 contentType,
-                shootType,
                 refs,
-                funnel,
                 trigger,
                 timestamp: new Date().toISOString()
             };
@@ -340,7 +331,7 @@ export default function ScenarioCreator() {
             toast({ title: "Ошибка", description: message, variant: "destructive" });
             setIsGenerating(false);
         }
-    }, [creationMode, linkUrl, topic, audioBlob, format, audience, contentType, shootType, refs, funnel, trigger]);
+    }, [creationMode, linkUrl, topic, audioBlob, format, contentType, refs, trigger]);
 
     const handleReset = () => {
         setTopic(""); setLinkUrl(""); setAudioBlob(null); setAudioUrl(null); setResult(null);
@@ -503,10 +494,7 @@ export default function ScenarioCreator() {
                     <h3 className="text-base font-semibold text-foreground">Параметры сценария</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
-                        <ModernSelect label="Аудитория" value={audience} onChange={setAudience} options={OPTIONS.audiences} icon={Users} />
                         <ModernSelect label="Тип контента" value={contentType} onChange={setContentType} options={OPTIONS.contentTypes} icon={Type} />
-                        <ModernSelect label="Метод создания" value={shootType} onChange={setShootType} options={OPTIONS.shootTypes} icon={Zap} />
-                        <ModernSelect label="Воронка ManyChat" value={funnel} onChange={setFunnel} options={OPTIONS.funnels} icon={Target} />
                         <div className="space-y-1.5">
                             <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                                 <MessageSquare className="h-3.5 w-3.5" />

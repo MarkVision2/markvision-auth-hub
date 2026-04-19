@@ -60,7 +60,16 @@
       "Bash(lsof -ti:9876)",
       "Bash(xargs kill *)",
       "Bash(claude mcp *)",
-      "mcp__google-ads__get_campaign_performance"
+      "mcp__google-ads__get_campaign_performance",
+      "Bash(grep -rE \"\\(sk-[a-zA-Z0-9]{15,}|eyJ[a-zA-Z0-9_-]{40,}|AIza[a-zA-Z0-9_-]{20,}\\)\" src/ api/ scripts/ supabase/)",
+      "Bash(grep -rE \"\\(sk-[a-zA-Z0-9]{15,}|eyJ[a-zA-Z0-9_-]{40,}\\\\.eyJ[a-zA-Z0-9_-]{40,}\\)\" n8n-knowledge-base.json api/ supabase/functions/)",
+      "Bash(brew install *)",
+      "Bash(SSHPASS='+2lB;8J'\"'\"',lwx.W.-DY,W' sshpass -e ssh -o StrictHostKeyChecking=no root@72.62.115.154 \"docker cp n8n-n8n-1:/home/node/.n8n/database.sqlite /tmp/n8n.db && sqlite3 /tmp/n8n.db 'SELECT executionId, length\\(data\\) FROM execution_data WHERE executionId IN \\(35938,35939\\);'\")",
+      "Bash(export SSHPASS='+2lB;8J,lwx.W.-DY,W')",
+      "Bash(sshpass -e ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@72.62.115.154 \"echo OK\")",
+      "Bash(sshpass -f /tmp/sshpw ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no root@72.62.115.154 \"echo OK; docker logs --since 30m n8n-n8n-1 2>&1 | grep -iE 'error|35939|aim_|gemini|whisper' | tail -40\")",
+      "Bash(sshpass -f /tmp/sshpw ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no root@72.62.115.154 \"docker logs --tail 200 n8n-n8n-1 2>&1 | tail -120\")",
+      "Bash(sshpass -f /tmp/sshpw ssh -o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no root@72.62.115.154 \"docker cp n8n-n8n-1:/home/node/.n8n/database.sqlite /tmp/n8n.db && sqlite3 /tmp/n8n.db \\\\\"SELECT executionId, length\\(data\\) FROM execution_data WHERE executionId IN \\(35938,35939,35935,35932\\);\\\\\"\")"
     ],
     "deny": []
   }
