@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, ArrowRight, Zap, Target, PhoneMissed, EyeOff, FileSpreadsheet, Send, Users, ImageMinus, CheckCircle2, PlayCircle, Clock, Workflow } from "lucide-react";
+import { LeadModal } from "@/components/LeadModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuthReady } from "@/hooks/useAuthReady";
@@ -28,6 +29,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user, isReady } = useAuthReady();
 
@@ -130,7 +132,10 @@ export default function AuthPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <button className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:brightness-110 active:scale-[0.98] w-full sm:w-auto">
+              <button 
+                onClick={() => setIsLeadModalOpen(true)}
+                className="flex items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:shadow-primary/40 hover:brightness-110 active:scale-[0.98] w-full sm:w-auto"
+              >
                 Забронировать аудит
                 <ArrowRight className="h-5 w-5" />
               </button>
@@ -556,6 +561,7 @@ export default function AuthPage() {
         </div>
       </div>
 
+      <LeadModal open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen} />
     </div>
   );
 }

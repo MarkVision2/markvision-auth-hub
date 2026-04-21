@@ -1,0 +1,48 @@
+# HyperFrames Producer — Video Render Server
+# Добавить в docker-compose.yml на n8n.zapoinov.com
+#
+# Команда для деплоя:
+#   docker compose -f docker-compose.yml -f docker/hyperframes.yml up -d hyperframes
+#
+# Или добавить секцию вручную в основной docker-compose.yml
+
+services:
+  hyperframes:
+    image: node:22-bookworm-slim
+    container_name: hyperframes
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - PRODUCER_PORT=9847
+      - PRODUCER_RENDERS_DIR=/renders
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      - CONTAINER=true
+    ports:
+      - "9847:9847"
+    volumes:
+      - hyperframes_renders:/renders
+    command: >
+      sh -c "
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends
+          ffmpeg chromium libgbm1 libnss3 libatk-bridge2.0-0 libdrm2
+          libxcomposite1 libxdamage1 libxrandr2 libcups2 libasound2
+          libpangocairo-1.0-0 libxshmfence1 libgtk-3-0
+          fonts-liberation fonts-noto-core fonts-freefont-ttf ca-certificates curl
+          > /dev/null 2>&1 &&
+        npm install -g hyperframes@latest --silent &&
+        SHELL_PATH=$$(find /root/.cache/puppeteer/chrome-headless-shell -name chrome-headless-shell -type f 2>/dev/null | head -1) &&
+        npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path /root/.cache/puppeteer --silent &&
+        SHELL_PATH=$$(find /root/.cache/puppeteer/chrome-headless-shell -name chrome-headless-shell -type f | head -1) &&
+        PRODUCER_HEADLESS_SHELL_PATH=$$SHELL_PATH hyperframes serve --port 9847
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9847/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  hyperframes_renders:
+    driver: local
