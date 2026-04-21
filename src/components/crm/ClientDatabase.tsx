@@ -11,7 +11,9 @@ import { toast } from "@/hooks/use-toast";
 interface ClientRow {
   name: string;
   phone: string;
+  phone: string;
   source: string;
+  utm_source?: string;
   ltv: number;
   aiRating: number;
   lastVisit: string;
@@ -24,10 +26,13 @@ function ratingBadge(rating: number) {
   return <Badge variant="outline" className="bg-primary/15 text-primary border-primary/20 text-[10px]">❄️ {rating}%</Badge>;
 }
 
-function sourceIcon(source: string) {
-  const s = source?.toLowerCase() || "";
+function sourceIcon(source: string, utmSource?: string) {
+  const s = (utmSource || source || "").toLowerCase();
+  if (s.includes("google")) return <div className="flex items-center gap-1.5 text-xs text-primary font-bold"><Globe className="h-3 w-3" /> Google Ads</div>;
+  if (s.includes("fb") || s.includes("facebook") || s.includes("ig") || s.includes("instagram")) {
+    return <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--status-critical))] font-bold"><Instagram className="h-3 w-3" /> Facebook / Instagram</div>;
+  }
   if (s.includes("whatsapp")) return <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--status-good))]"><MessageCircle className="h-3 w-3" /> WhatsApp</div>;
-  if (s.includes("instagram")) return <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--status-critical))]"><Instagram className="h-3 w-3" /> Instagram</div>;
   return <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3 w-3" /> {source || "—"}</div>;
 }
 
@@ -38,7 +43,7 @@ export default function ClientDatabase() {
   const [loading, setLoading] = useState(true);
 
   const fetchClients = useCallback(async () => {
-    if (isAgency || !active) {
+    if (!active) {
       setClients([]);
       setLoading(false);
       return;
@@ -46,7 +51,7 @@ export default function ClientDatabase() {
     const currentActiveId = active?.id;
     setLoading(true);
     try {
-      let query = (supabase as any).from("leads_crm").select("name, phone, source, amount, ai_score, status, updated_at, created_at");
+      let query = (supabase as any).from("leads_crm").select("name, phone, source, utm_source, amount, ai_score, status, updated_at, created_at");
       query = query.eq("project_id", currentActiveId);
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -73,6 +78,7 @@ export default function ClientDatabase() {
             name: lead.name,
             phone: lead.phone || "—",
             source: lead.source || "—",
+            utm_source: lead.utm_source,
             ltv: amt,
             aiRating: score,
             lastVisit: lastDate,
@@ -165,7 +171,7 @@ export default function ClientDatabase() {
                 <TableRow key={i} className="border-border hover:bg-accent/30">
                   <TableCell className="text-sm font-medium text-foreground">{client.name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{client.phone}</TableCell>
-                  <TableCell>{sourceIcon(client.source)}</TableCell>
+                  <TableCell>{sourceIcon(client.source, client.utm_source)}</TableCell>
                   <TableCell className="text-sm font-semibold text-primary text-right">{client.ltv > 0 ? `${client.ltv.toLocaleString("ru-RU")} ₸` : "—"}</TableCell>
                   <TableCell>{client.aiRating > 0 ? ratingBadge(client.aiRating) : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">

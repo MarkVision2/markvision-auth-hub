@@ -73,10 +73,8 @@ export default function CrmSystem() {
   }, [active?.id]);
 
   useEffect(() => {
-    if (isAgency || !active) {
-      if (!isAgency && !active) {
-        setLeads([]);
-      }
+    if (!active) {
+      setLeads([]);
       return;
     }
 

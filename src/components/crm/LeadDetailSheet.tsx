@@ -366,6 +366,18 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const score = lead.ai_score ?? 0;
   const scoreBadge = getScoreLabel(score);
 
+  const isMarkVision = (lead as any).project_id === "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+  const sourceValue = (() => {
+    if (!isMarkVision) return lead.utm_campaign || "—";
+    
+    const utmSource = ((lead as any).utm_source || "").toLowerCase();
+    if (utmSource.includes("google")) return "Google Ads";
+    if (utmSource.includes("fb") || utmSource.includes("facebook") || utmSource.includes("ig") || utmSource.includes("instagram")) return "Facebook / Instagram";
+    
+    return (lead as any).utm_source || lead.source || "—";
+  })();
+
   const CAPI_STATUS_MAP: Record<string, string> = {
     "Записан": "scheduled",
     "Визит совершен": "diagnostic",
@@ -799,27 +811,29 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 >
                   <Stethoscope className="h-3 w-3" /> Диагностика
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
-                  onClick={async () => {
-                    try {
-                      const { error } = await (supabase as any).from("retention_tasks").insert({
-                        lead_id: lead.id,
-                        project_id: (lead as any).project_id || null,
-                        trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
-                        status: "pending",
-                      });
-                      if (error) throw error;
-                      toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
-                    } catch (err: unknown) {
-                      toast({ title: "Ошибка", description: (err as any).message, variant: "destructive" });
-                    }
-                  }}
-                >
-                  <Timer className="h-3 w-3" /> В отложенные
-                </Button>
+                {!isMarkVision && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs border-border h-8 gap-1 text-muted-foreground hover:text-primary"
+                    onClick={async () => {
+                      try {
+                        const { error } = await (supabase as any).from("retention_tasks").insert({
+                          lead_id: lead.id,
+                          project_id: (lead as any).project_id || null,
+                          trigger_date: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
+                          status: "pending",
+                        });
+                        if (error) throw error;
+                        toast({ title: "⏰ Запланировано", description: "Касание добавлено в Генератор LTV" });
+                      } catch (err: unknown) {
+                        toast({ title: "Ошибка", description: (err as any).message, variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Timer className="h-3 w-3" /> В отложенные
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -1021,10 +1035,10 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </details>
 
                 {[
-                  { icon: Hash, label: "Кампания", value: lead.utm_campaign || "—" },
+                  { icon: Hash, label: isMarkVision ? "Источник" : "Кампания", value: sourceValue },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
                   { icon: User, label: "Врач", value: lead.doctor_name || "—" },
-                  { icon: MapPin, label: "Кабинет", value: (() => {
+                  { icon: MapPin, label: isMarkVision ? "Название клиники" : "Кабинет", value: (() => {
                     if (lead.office_name) return lead.office_name;
                     if (lead.doctor_name) {
                       const doc = doctorsList.find(m => m.name === lead.doctor_name);

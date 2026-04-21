@@ -64,7 +64,7 @@ export function LeadModal({ open, onOpenChange }: LeadModalProps) {
         service_category: formData.niche,
         source: "Landing Page",
         status: "Новая заявка",
-        project_id: DEFAULT_PROJECT_ID,
+        project_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       });
 
       if (error) throw error;
