@@ -199,8 +199,7 @@ export default function ScoreboardPage() {
       try {
         let query = (supabase as any).from("clients_config")
           .select("id, client_name, project_id, spend, meta_leads, visits, sales, revenue")
-          .eq("is_active", true)
-          .eq("is_agency", false); // Only personal accounts for Scoreboard
+          .eq("is_active", true);
 
         if (!active) return;
         const currentActiveId = active.id;

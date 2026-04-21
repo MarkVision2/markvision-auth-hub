@@ -79,8 +79,7 @@ export function useAnalyticsData() {
 
       let query = (supabase as any)
         .from("clients_config")
-        .select("id")
-        .neq("is_agency", true);
+        .select("id");
 
       if (sharedIds.length > 0) {
         query = query.or(`project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`);

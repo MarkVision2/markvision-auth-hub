@@ -11,7 +11,6 @@ import { toast } from "@/hooks/use-toast";
 interface ClientRow {
   name: string;
   phone: string;
-  phone: string;
   source: string;
   utm_source?: string;
   ltv: number;
