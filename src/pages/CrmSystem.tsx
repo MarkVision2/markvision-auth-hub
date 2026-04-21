@@ -33,10 +33,28 @@ import {
 
 interface Lead {
   id: string;
+  name: string;
+  phone: string | null;
   status: string | null;
   amount: number | null;
+  source: string | null;
+  utm_campaign: string | null;
   ai_score: number | null;
+  ai_summary: string | null;
   created_at: string | null;
+  updated_at: string | null;
+  scheduled_at?: string | null;
+  doctor_name?: string | null;
+  office_name?: string | null;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
+  project_id?: string | null;
+  pipeline?: string | null;
+  is_diagnostic?: boolean | null;
+  prescribed_packages?: string[] | null;
+  serviced_by?: string | null;
 }
 
 function fmt(n: number) {
@@ -49,12 +67,14 @@ export default function CrmSystem() {
   const { active, isAgency } = useWorkspace();
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<AITask[]>([]);
 
   const load = useCallback(async () => {
     if (!active) return;
     try {
-      let query = (supabase as any).from("leads_crm").select("id, status, amount, ai_score, created_at");
+      setLoading(true);
+      let query = (supabase as any).from("leads_crm").select("*");
       query = query.eq("project_id", active?.id);
 
       const { data, error } = await query.order("created_at", { ascending: false });
@@ -69,18 +89,21 @@ export default function CrmSystem() {
         description: err?.message || "Не удалось загрузить лиды", 
         variant: "destructive" 
       });
+    } finally {
+      setLoading(false);
     }
   }, [active?.id]);
 
   useEffect(() => {
     if (!active) {
       setLeads([]);
+      setLoading(false);
       return;
     }
 
     load();
 
-    const channelId = `crm-stats-${active?.id}`;
+    const channelId = `crm-main-rt-${active?.id}`;
     const ch = supabase
       .channel(channelId)
       .on("postgres_changes", { 
@@ -88,7 +111,9 @@ export default function CrmSystem() {
         schema: "public", 
         table: "leads_crm",
         filter: `project_id=eq.${active.id}`
-      }, () => {
+      }, (payload) => {
+        console.log("CRM Realtime update:", payload.eventType, payload.new);
+        // Refresh entire list on any change for consistency
         load();
       })
       .subscribe();
@@ -266,9 +291,9 @@ export default function CrmSystem() {
               </Sheet>
             </div>
 
-            <TabsContent value="kanban" className="flex-1 min-h-0"><KanbanBoard onLeadCreated={load} /></TabsContent>
-            <TabsContent value="chats" className="flex-1 min-h-0"><ChatsView /></TabsContent>
-            <TabsContent value="clients" className="flex-1 min-h-0"><ClientDatabase /></TabsContent>
+            <TabsContent value="kanban" className="flex-1 min-h-0"><KanbanBoard leads={leads} loading={loading} refetch={load} /></TabsContent>
+            <TabsContent value="chats" className="flex-1 min-h-0"><ChatsView leads={leads} loading={loading} /></TabsContent>
+            <TabsContent value="clients" className="flex-1 min-h-0"><ClientDatabase leads={leads} loading={loading} /></TabsContent>
             <TabsContent value="automations" className="flex-1 min-h-0"><Automations /></TabsContent>
           </Tabs>
         </div>

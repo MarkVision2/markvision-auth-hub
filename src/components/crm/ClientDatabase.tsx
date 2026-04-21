@@ -35,76 +35,48 @@ function sourceIcon(source: string, utmSource?: string) {
   return <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3 w-3" /> {source || "—"}</div>;
 }
 
-export default function ClientDatabase() {
-  const { active, isAgency } = useWorkspace();
+import type { Lead } from "./KanbanBoard";
+
+interface ClientDatabaseProps {
+  leads: Lead[];
+  loading: boolean;
+}
+
+export default function ClientDatabase({ leads, loading }: ClientDatabaseProps) {
   const [search, setSearch] = useState("");
-  const [clients, setClients] = useState<ClientRow[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const fetchClients = useCallback(async () => {
-    if (!active) {
-      setClients([]);
-      setLoading(false);
-      return;
-    }
-    const currentActiveId = active?.id;
-    setLoading(true);
-    try {
-      let query = (supabase as any).from("leads_crm").select("name, phone, source, utm_source, amount, ai_score, status, updated_at, created_at");
-      query = query.eq("project_id", currentActiveId);
+  const clients = useMemo(() => {
+    // Aggregate by phone (or name if no phone)
+    const map = new Map<string, ClientRow>();
+    for (const lead of (leads || [])) {
+      const key = lead.phone || lead.name;
+      const existing = map.get(key);
+      const isPaid = lead.status === "Оплачен";
+      const amt = isPaid ? (Number(lead.amount) || 0) : 0;
+      const score = lead.ai_score || 0;
+      const lastDate = lead.updated_at || lead.created_at || "";
 
-      const { data, error } = await query.order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Aggregate by phone (or name if no phone)
-      const map = new Map<string, ClientRow>();
-      for (const lead of (data || [])) {
-        const key = lead.phone || lead.name;
-        const existing = map.get(key);
-        const isPaid = lead.status === "Оплачен";
-        const amt = isPaid ? (Number(lead.amount) || 0) : 0;
-        const score = lead.ai_score || 0;
-        const lastDate = lead.updated_at || lead.created_at || "";
-
-        if (existing) {
-          existing.ltv += amt;
-          existing.aiRating = Math.max(existing.aiRating, score);
-          existing.leadCount += 1;
-          if (lastDate > existing.lastVisit) existing.lastVisit = lastDate;
-        } else {
-          map.set(key, {
-            name: lead.name,
-            phone: lead.phone || "—",
-            source: lead.source || "—",
-            utm_source: lead.utm_source,
-            ltv: amt,
-            aiRating: score,
-            lastVisit: lastDate,
-            leadCount: 1,
-          });
-        }
+      if (existing) {
+        existing.ltv += amt;
+        existing.aiRating = Math.max(existing.aiRating, score);
+        existing.leadCount += 1;
+        if (lastDate > existing.lastVisit) existing.lastVisit = lastDate;
+      } else {
+        map.set(key, {
+          name: lead.name,
+          phone: lead.phone || "—",
+          source: lead.source || "—",
+          utm_source: lead.utm_source,
+          ltv: amt,
+          aiRating: score,
+          lastVisit: lastDate,
+          leadCount: 1,
+        });
       }
-      setClients(Array.from(map.values()));
-    } catch (err: any) {
-      console.error("ClientDatabase fetch error:", err);
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
     }
-  }, []);
+    return Array.from(map.values());
+  }, [leads]);
 
-  useEffect(() => { fetchClients(); }, [fetchClients]);
-
-  useEffect(() => {
-    if (!active) return;
-    const currentActiveId = active.id;
-    const ch = supabase
-      .channel("client_db_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads_crm", filter: `project_id=eq.${active?.id}` }, () => fetchClients())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchClients, active?.id]);
 
   const filtered = useMemo(
     () => clients.filter(

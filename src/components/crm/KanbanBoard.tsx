@@ -175,16 +175,27 @@ const LeadCard = memo(function LeadCard({ lead, stage, currentIdx, stages, isSup
 
 interface KanbanBoardProps {
   onLeadCreated?: () => void;
+  leads?: Lead[];
+  loading?: boolean;
+  refetch?: () => void;
 }
 
-export default function KanbanBoard({ onLeadCreated }: KanbanBoardProps) {
+export default function KanbanBoard({ onLeadCreated, leads: externalLeads, loading: externalLoading, refetch }: KanbanBoardProps) {
   const { isSuperadmin } = useRole();
   const { active } = useWorkspace();
   const [stages, setStages] = useState<CrmStage[]>(loadStages(active?.id || "default", "main"));
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>(externalLeads || []);
+  const [loading, setLoading] = useState(externalLoading ?? true);
+
+  useEffect(() => {
+    if (externalLeads) setLeads(externalLeads);
+  }, [externalLeads]);
+
+  useEffect(() => {
+    if (externalLoading !== undefined) setLoading(externalLoading);
+  }, [externalLoading]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(new Set());
@@ -200,45 +211,33 @@ export default function KanbanBoard({ onLeadCreated }: KanbanBoardProps) {
   }, [active?.id, activePipeline]);
 
   const fetchLeads = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (!active) return;
-      let query = (supabase as any).from("leads_crm").select("*");
-      query = query.eq("project_id", active.id);
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) throw error;
-      setLeads((data as Lead[]) ?? []);
-    } catch (err: any) {
-      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
+    if (refetch) {
+      refetch();
+      return;
     }
-  }, []);
-
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  }, [refetch]);
 
   useEffect(() => {
-    if (!active) return;
-    const channelId = `kanban-rt-${active.id}`;
-    const ch = supabase
-      .channel(channelId)
-      .on("postgres_changes", { 
-        event: "*", 
-        schema: "public", 
-        table: "leads_crm",
-        filter: `project_id=eq.${active.id}`
-      }, (payload) => {
-        console.log("Kanban Realtime payload:", payload);
-        fetchLeads();
-        if (onLeadCreated) onLeadCreated();
-      })
-      .subscribe();
-      
-    return () => { 
-      supabase.removeChannel(ch); 
-    };
-  }, [active?.id, fetchLeads, onLeadCreated]);
+    if (!externalLeads && !refetch) {
+      // Fallback if not controlled
+      const loadInternal = async () => {
+        setLoading(true);
+        try {
+          if (!active) return;
+          let query = (supabase as any).from("leads_crm").select("*");
+          query = query.eq("project_id", active.id);
+          const { data, error } = await query.order("created_at", { ascending: false });
+          if (error) throw error;
+          setLeads((data as Lead[]) ?? []);
+        } catch (err: any) {
+          toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadInternal();
+    }
+  }, [active?.id, externalLeads, refetch]);
 
   // Маппинг CRM-этапов на ключи CAPI (n8n CAPI-Status-Trigger)
   const CAPI_STATUS_MAP: Record<string, string> = {
@@ -333,14 +332,20 @@ export default function KanbanBoard({ onLeadCreated }: KanbanBoardProps) {
 
   const handleDeleteLead = useCallback(async (leadId: string, leadName: string) => {
     if (!confirm(`Удалить следку ${leadName}?`)) return;
+    
+    // Optimistic UI update
+    const previousLeads = [...leads];
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+
     const { error } = await (supabase as any).from("leads_crm").delete().eq("id", leadId);
     if (error) {
       toast({ title: "Ошибка удаления", description: error.message, variant: "destructive" });
+      setLeads(previousLeads); // Rollback
       return;
     }
     toast({ title: "Сделка удалена", description: leadName });
-    fetchLeads();
-  }, [fetchLeads]);
+    if (refetch) refetch();
+  }, [leads, refetch]);
 
   const handleCardClick = useCallback((lead: Lead) => {
     setSelectedLead(lead);

@@ -90,10 +90,15 @@ function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function ChatsView() {
+interface ChatsViewProps {
+  leads?: Lead[];
+  loading?: boolean;
+}
+
+export default function ChatsView({ leads: externalLeads, loading: externalLoading }: ChatsViewProps) {
   const { active, isAgency } = useWorkspace();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>(externalLeads || []);
+  const [loading, setLoading] = useState(externalLoading ?? true);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [search, setSearch] = useState("");
   const [filterStage, setFilterStage] = useState("all");
@@ -108,7 +113,18 @@ export default function ChatsView() {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (externalLeads) setLeads(externalLeads);
+  }, [externalLeads]);
+
+  useEffect(() => {
+    if (externalLoading !== undefined) setLoading(externalLoading);
+  }, [externalLoading]);
+
   const fetchLeads = useCallback(async () => {
+    // If not controlled, we would fetch here, but we are primarily controlled now.
+    if (externalLeads) return;
+
     if (!active) {
       setLoading(false);
       return;
@@ -117,60 +133,53 @@ export default function ChatsView() {
     setLoading(true);
     try {
       let query = (supabase as any).from("leads_crm").select("*");
-
-      if (isAgency) {
-        // HQ sees everything
-      } else {
-        // Client project: own + shared
-        const { data: shared } = await (supabase as any)
-          .from("client_config_visibility")
-          .select("client_config_id")
-          .eq("project_id", currentActiveId);
-        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
-
-        if (sharedCabIds.length > 0) {
-          query = query.or(`project_id.eq.${currentActiveId},client_config_id.in.(${sharedCabIds.join(",")})`);
-        } else {
-          query = query.eq("project_id", currentActiveId);
-        }
-      }
-
+      query = query.eq("project_id", currentActiveId);
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
-      const leadsData = (data as Lead[]) ?? [];
-      setLeads(leadsData);
-
-      // Fetch last messages and unread counts for all leads
-      if (leadsData.length > 0) {
-        const leadIds = leadsData.map(l => l.id);
-        const { data: allMsgs } = await (supabase as any)
-          .from("crm_messages")
-          .select("id, lead_id, sender_type, body, read, created_at, direction, channel")
-          .in("lead_id", leadIds)
-          .order("created_at", { ascending: false })
-          .limit(500);
-
-        if (allMsgs) {
-          const lastMap: Record<string, CrmMessage> = {};
-          const unreadMap: Record<string, number> = {};
-          for (const msg of allMsgs) {
-            if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
-            if (!msg.read && msg.sender_type === "client") {
-              unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
-            }
-          }
-          setLastMessages(lastMap);
-          setUnreadCounts(unreadMap);
-        }
-      }
+      setLeads((data as Lead[]) ?? []);
     } catch (err: any) {
       toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  }, [active, externalLeads, isAgency]);
+
+  const fetchChatStats = useCallback(async (leadsData: Lead[]) => {
+    if (leadsData.length === 0) return;
+    try {
+      const leadIds = leadsData.map(l => l.id);
+      const { data: allMsgs } = await (supabase as any)
+        .from("crm_messages")
+        .select("id, lead_id, sender_type, body, read, created_at, direction, channel")
+        .in("lead_id", leadIds)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      if (allMsgs) {
+        const lastMap: Record<string, CrmMessage> = {};
+        const unreadMap: Record<string, number> = {};
+        for (const msg of allMsgs) {
+          if (!lastMap[msg.lead_id]) lastMap[msg.lead_id] = msg;
+          if (!msg.read && msg.sender_type === "client") {
+            unreadMap[msg.lead_id] = (unreadMap[msg.lead_id] || 0) + 1;
+          }
+        }
+        setLastMessages(lastMap);
+        setUnreadCounts(unreadMap);
+      }
+    } catch (err) {
+      console.error("fetchChatStats error:", err);
+    }
   }, []);
 
-  useEffect(() => { fetchLeads(); }, [fetchLeads]);
+  useEffect(() => {
+    if (leads.length > 0) fetchChatStats(leads);
+  }, [leads, fetchChatStats]);
+
+  useEffect(() => {
+    if (!externalLeads) fetchLeads();
+  }, [fetchLeads, externalLeads]);
+
 
   useEffect(() => {
     if (!active) return;
