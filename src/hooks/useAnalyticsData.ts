@@ -202,7 +202,10 @@ export function useAnalyticsData() {
     const hasDaily = dailyAgg.spend > 0 || dailyAgg.leads > 0;
     const totalSpend = hasDaily ? dailyAgg.spend : channels.reduce((s, c) => s + c.spend, 0);
     const totalRevenue = hasDaily ? dailyAgg.revenue : channels.reduce((s, c) => s + c.revenue, 0);
-    const totalLeads = hasDaily ? dailyAgg.leads : channels.reduce((s, c) => s + c.leads, 0);
+    
+    // Fallback to CRM leads if marketing daily data is empty
+    const totalLeads = (hasDaily ? dailyAgg.leads : channels.reduce((s, c) => s + c.leads, 0)) || totalLeadsFromCrm;
+    
     const totalClicks = hasDaily ? dailyAgg.clicks : channels.reduce((s, c) => s + c.clicks, 0);
     const totalVisits = hasDaily ? dailyAgg.visits : channels.reduce((s, c) => s + c.visits, 0);
     const totalSales = hasDaily ? dailyAgg.sales : channels.reduce((s, c) => s + c.sales, 0);
