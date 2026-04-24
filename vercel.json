@@ -45,8 +45,18 @@
             "destination": "/api/ai-edit-render"
         },
         {
+            "source": "/api/ai-montage-render",
+            "destination": "/api/ai-montage-render"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
-    ]
+    ],
+    "functions": {
+        "api/ai-montage-render.js": {
+            "maxDuration": 300,
+            "memory": 3009
+        }
+    }
 }

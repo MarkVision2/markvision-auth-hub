@@ -293,7 +293,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const response = await fetch(N8N_AI_MONTAGE_WEBHOOK as any, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: inserted.id, taskToken: inserted.task_token }),
+        body: JSON.stringify({ project_id: inserted.id, projectId: inserted.id, task_token: inserted.task_token, taskToken: inserted.task_token }),
       });
 
       if (!response.ok) {
