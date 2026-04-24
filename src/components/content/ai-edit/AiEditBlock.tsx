@@ -13,6 +13,8 @@ import {
   Loader2,
   Maximize,
   Music4,
+  ArrowLeft,
+  ArrowRight,
   RefreshCcw,
   Sparkles,
   Type,
@@ -39,7 +41,6 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CfStepIndicator, CfButtonMd } from "@/components/content/contentFactoryDesignSystem";
 import { cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
@@ -248,7 +249,6 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const { data: project } = await supabase
         .from("ai_edit_projects")
         .select("id,status,stage,progress,progress_text,error_message")
-        // @ts-expect-error schema typing mismatch
         .eq("id", projectId)
         .maybeSingle();
       if (!project || disposed) return;
@@ -256,9 +256,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const { data: renders } = await supabase
         .from("ai_edit_renders")
         .select("id,version,output_url,variant_name,variant_notes,status")
-        // @ts-expect-error schema typing mismatch
         .eq("project_id", projectId)
-        // @ts-expect-error schema typing mismatch
         .eq("status", "completed")
         .order("version", { ascending: true });
 
@@ -1019,7 +1017,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         </aside>
       </div>
 
-      {status?.renders?.length ? (
+      {status?.renders && status.renders.length > 0 ? (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 space-y-5")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
