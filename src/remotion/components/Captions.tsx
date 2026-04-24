@@ -57,6 +57,70 @@ export const Captions: React.FC<CaptionsProps> = ({ words, captionBlocks = [], s
   const enter = spring({ frame: animationFrame, fps, config: { damping: 11, stiffness: 140 } });
   const scale = interpolate(enter, [0, 1], [0.88, 1]);
   const panelPop = interpolate(enter, [0, 1], [0.92, 1]);
+  const blockWords = activeBlock?.words ?? visibleWords.map((word) => word.word);
+  const splitAt = activeBlock?.lineBreakAfter ?? Math.ceil(blockWords.length / 2);
+  const lines = [blockWords.slice(0, splitAt), blockWords.slice(splitAt)].filter((line) => line.length > 0);
+  const sceneTone =
+    activeBlock?.sceneType === "hook"
+      ? {
+          panel: "linear-gradient(180deg, rgba(124, 58, 237, 0.22), rgba(2, 6, 23, 0.78))",
+          border: "rgba(250, 204, 21, 0.24)",
+        }
+      : activeBlock?.sceneType === "cta"
+        ? {
+            panel: "linear-gradient(180deg, rgba(14, 165, 233, 0.18), rgba(2, 6, 23, 0.82))",
+            border: "rgba(125, 211, 252, 0.22)",
+          }
+        : {
+            panel:
+              activeBlock?.emphasis === "high"
+                ? "linear-gradient(180deg, rgba(124, 58, 237, 0.18), rgba(2, 6, 23, 0.68))"
+                : "linear-gradient(180deg, rgba(2,6,23,0.22), rgba(2,6,23,0.56))",
+            border: "rgba(255,255,255,0.08)",
+          };
+
+  const renderWord = (rawWord: string, key: string) => {
+    const matchingWord = visibleWords.find((word) => word.word === rawWord) ?? visibleWords[0];
+    const isActive = matchingWord?.start === activeWord.start && matchingWord?.end === activeWord.end;
+    const isDominant = activeBlock?.dominantWord === rawWord;
+    const isHighlight =
+      activeBlock?.highlightWords.includes(rawWord) || matchingWord?.highlight || isActive;
+    const isPrimary = matchingWord?.emphasis === "primary" || isDominant;
+
+    return (
+      <span
+        key={key}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: isPrimary ? "14px 18px" : isHighlight ? "13px 17px" : "10px 14px",
+          borderRadius: isPrimary ? 20 : 16,
+          fontSize: isPrimary ? layout.fontSize : isHighlight ? Math.max(layout.fontSize - 4, 40) : Math.max(layout.fontSize - 10, 34),
+          lineHeight: 1,
+          fontWeight: 950,
+          letterSpacing: isPrimary ? "-0.06em" : "-0.045em",
+          textTransform: "uppercase",
+          background: isPrimary
+            ? "#facc15"
+            : isHighlight
+              ? preset.bg
+              : "rgba(15, 23, 42, 0.42)",
+          color: isPrimary ? "#0f172a" : isHighlight ? preset.color : "rgba(255,255,255,0.86)",
+          transform: isActive ? `scale(${scale}) translateY(-4px)` : isPrimary ? "scale(1.03)" : isHighlight ? "scale(1)" : "scale(0.96)",
+          boxShadow: isPrimary
+            ? "0 20px 44px rgba(250, 204, 21, 0.26)"
+            : isHighlight
+              ? "0 18px 40px rgba(0, 0, 0, 0.28)"
+              : "none",
+          border: isPrimary ? "1px solid rgba(255,255,255,0.28)" : "1px solid transparent",
+          textShadow: isPrimary ? "none" : "0 2px 12px rgba(0,0,0,0.28)",
+        }}
+      >
+        {rawWord}
+      </span>
+    );
+  };
 
   return (
     <AbsoluteFill pointerEvents="none">
@@ -69,13 +133,10 @@ export const Captions: React.FC<CaptionsProps> = ({ words, captionBlocks = [], s
           bottom: layout.bottom,
           padding: "18px 20px",
           borderRadius: 34,
-          background:
-            activeBlock?.emphasis === "high"
-              ? "linear-gradient(180deg, rgba(124, 58, 237, 0.18), rgba(2, 6, 23, 0.68))"
-              : "linear-gradient(180deg, rgba(2,6,23,0.22), rgba(2,6,23,0.56))",
+          background: sceneTone.panel,
           backdropFilter: "blur(18px)",
           minHeight: layout.minHeight,
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: `1px solid ${sceneTone.border}`,
           boxShadow: "0 18px 48px rgba(2, 6, 23, 0.28)",
           transform: `scale(${panelPop})`,
         }}
@@ -83,39 +144,29 @@ export const Captions: React.FC<CaptionsProps> = ({ words, captionBlocks = [], s
         {activeBlock ? (
           <div
             style={{
-              display: "flex",
+              display: "grid",
               alignItems: "center",
               justifyContent: "center",
-              gap: 12,
-              flexWrap: "wrap",
+              gap: 10,
               height: "100%",
             }}
           >
-            {activeBlock.words.map((rawWord, index) => {
-              const matchingWord = visibleWords[index] ?? visibleWords.find((word) => word.word === rawWord);
-              const isActive = matchingWord?.start === activeWord.start && matchingWord?.end === activeWord.end;
-              const isHighlight =
-                activeBlock.highlightWords.includes(rawWord) || matchingWord?.highlight || isActive;
-              return (
-                <span
-                  key={`${rawWord}-${index}-${activeBlock.start}`}
-                  style={{
-                    padding: isHighlight ? "14px 18px" : "12px 16px",
-                    borderRadius: 18,
-                    fontSize: isHighlight ? layout.fontSize : Math.max(layout.fontSize - 6, 38),
-                    fontWeight: 900,
-                    letterSpacing: "-0.04em",
-                    textTransform: "uppercase",
-                    background: isHighlight ? preset.bg : "rgba(15, 23, 42, 0.46)",
-                    color: isHighlight ? preset.color : "rgba(255,255,255,0.84)",
-                    transform: isActive ? `scale(${scale})` : isHighlight ? "scale(1)" : "scale(0.96)",
-                    boxShadow: isHighlight ? "0 18px 40px rgba(0, 0, 0, 0.28)" : "none",
-                  }}
-                >
-                  {rawWord}
-                </span>
-              );
-            })}
+            {lines.map((line, lineIndex) => (
+              <div
+                key={`${activeBlock.id}-line-${lineIndex}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                {line.map((rawWord, index) =>
+                  renderWord(rawWord, `${activeBlock.id}-${lineIndex}-${index}-${rawWord}`),
+                )}
+              </div>
+            ))}
           </div>
         ) : (
           <div
@@ -128,28 +179,7 @@ export const Captions: React.FC<CaptionsProps> = ({ words, captionBlocks = [], s
               height: "100%",
             }}
           >
-            {visibleWords.map((word, index) => {
-              const isActive = activeIndex === Math.max(0, activeIndex - 1) + index;
-              return (
-                <span
-                  key={`${word.word}-${word.start}`}
-                  style={{
-                    padding: "14px 18px",
-                    borderRadius: 18,
-                    fontSize: layout.fontSize,
-                    fontWeight: 900,
-                    letterSpacing: "-0.04em",
-                    textTransform: "uppercase",
-                    background: isActive ? preset.bg : "rgba(15, 23, 42, 0.46)",
-                    color: isActive ? preset.color : "rgba(255,255,255,0.82)",
-                    transform: isActive ? `scale(${scale})` : "scale(0.94)",
-                    boxShadow: isActive ? "0 18px 40px rgba(0, 0, 0, 0.28)" : "none",
-                  }}
-                >
-                  {word.word}
-                </span>
-              );
-            })}
+            {visibleWords.map((word, index) => renderWord(word.word, `${word.word}-${word.start}-${index}`))}
           </div>
         )}
       </div>

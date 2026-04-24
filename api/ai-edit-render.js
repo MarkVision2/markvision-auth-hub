@@ -68,6 +68,16 @@ const transitionForScene = (sceneType, emotion) => {
   if (sceneType === "cta") return "flash";
   return emotion === "high" ? "flash" : "swipe";
 };
+const rhythmForScene = (sceneType, emotion) => {
+  if (sceneType === "hook") return "aggressive";
+  if (sceneType === "cta") return "release";
+  return emotion === "high" ? "aggressive" : "steady";
+};
+const zoomModeForScene = (sceneType, emotion) => {
+  if (sceneType === "hook") return "punch";
+  if (sceneType === "cta") return "settle";
+  return emotion === "high" ? "punch" : "glide";
+};
 
 const buildImportantWords = (words, scenes) => {
   const sceneKeywords = scenes.flatMap((scene) => scene.keywords || []).map(normalizeWord);
@@ -98,20 +108,32 @@ const buildCaptionBlocks = (words, scenes) => {
 
     let cursor = 0;
     while (cursor < sceneWords.length) {
-      const chunk = sceneWords.slice(cursor, cursor + 4);
+      const preferredChunk =
+        scene.type === "hook" ? 3 : scene.type === "cta" ? 3 : scene.emotion === "high" ? 4 : 5;
+      const chunk = sceneWords.slice(cursor, cursor + preferredChunk);
       if (chunk.length === 0) break;
+      const highlightWords = chunk.filter((word) => word.highlight).map((word) => word.word);
+      const lineBreakAfter =
+        chunk.length <= 2 ? chunk.length : scene.type === "explanation" ? Math.min(3, chunk.length - 1) : Math.ceil(chunk.length / 2);
+      const dominantWord =
+        chunk.find((word) => word.emphasis === "primary")?.word ||
+        highlightWords[0] ||
+        chunk[0]?.word ||
+        null;
 
       blocks.push({
         id: `${scene.type}-${chunk[0].start.toFixed(2)}`,
         start: chunk[0].start,
         end: chunk[chunk.length - 1].end,
         words: chunk.map((word) => word.word),
-        highlightWords: chunk.filter((word) => word.highlight).map((word) => word.word),
+        highlightWords,
         sceneType: scene.type,
         emphasis: scene.emotion,
+        lineBreakAfter,
+        dominantWord,
       });
 
-      cursor += chunk.length >= 4 ? 3 : chunk.length;
+      cursor += scene.type === "explanation" ? Math.max(3, chunk.length - 1) : chunk.length;
     }
   }
 
@@ -127,7 +149,26 @@ const buildCaptionBlocks = (words, scenes) => {
     highlightWords: word.highlight ? [word.word] : [],
     sceneType: "explanation",
     emphasis: "normal",
+    lineBreakAfter: 1,
+    dominantWord: word.word,
   }));
+};
+
+const buildCutMoments = (scene, sceneWords) => {
+  const emphasized = sceneWords
+    .filter((word) => word.emphasis === "primary" || word.highlight)
+    .map((word) => Number(word.start.toFixed(2)));
+
+  const fallbackStep = scene.type === "hook" ? 2 : scene.type === "cta" ? 3 : 4;
+  const fallback = sceneWords
+    .filter((_, index) => index > 0 && index % fallbackStep === 0)
+    .map((word) => Number(word.start.toFixed(2)));
+
+  const unique = Array.from(new Set([...emphasized, ...fallback]))
+    .filter((point) => point > scene.start + 0.08 && point < scene.end - 0.08)
+    .sort((a, b) => a - b);
+
+  return unique.slice(0, scene.type === "hook" ? 5 : 3);
 };
 
 const buildSfxCues = (scenes, words, project) => {
@@ -249,8 +290,17 @@ const buildInputProps = (project, segments, assets) => {
   }
 
   const enrichedWords = buildImportantWords(words, scenes);
-  const captionBlocks = buildCaptionBlocks(enrichedWords, scenes);
-  const sfxCues = buildSfxCues(scenes, enrichedWords, project);
+  const enrichedScenes = scenes.map((scene) => {
+    const sceneWords = enrichedWords.filter((word) => word.start >= scene.start && word.end <= scene.end + 0.12);
+    return {
+      ...scene,
+      rhythm: rhythmForScene(scene.type, scene.emotion),
+      zoomMode: zoomModeForScene(scene.type, scene.emotion),
+      cutMoments: buildCutMoments(scene, sceneWords),
+    };
+  });
+  const captionBlocks = buildCaptionBlocks(enrichedWords, enrichedScenes);
+  const sfxCues = buildSfxCues(enrichedScenes, enrichedWords, project);
 
   const topDemoAsset =
     assets.find((asset) => asset.kind === "layout_demo_top" && asset.url) ||
@@ -274,7 +324,7 @@ const buildInputProps = (project, segments, assets) => {
     intensity: project.intensity || "medium",
     layoutTemplate: mapLayoutTemplate(project.business_template),
     words: enrichedWords,
-    scenes,
+    scenes: enrichedScenes,
     brollAssets,
     demoVideos,
     captionBlocks,

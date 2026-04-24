@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,9 +24,6 @@ import {
 import {
   Video,
   Image as ImageIcon,
-  Link,
-  FileText,
-  Upload,
   Download,
   Loader2,
   CheckCircle2,
@@ -38,15 +33,12 @@ import {
   Trash2,
   Layers,
   Zap,
-  Layout,
-  Smartphone,
   Plus,
   Play,
   ThumbsUp,
   ThumbsDown,
   MessageSquare,
   Send,
-  X,
   Search,
   Rocket,
   Wand2,
@@ -57,13 +49,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format as dateFmt } from "date-fns";
 
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { PhoneMockup } from "@/components/content/PhoneMockup";
 import ScenarioCreator from "@/components/content/ScenarioCreator";
 import ClonyWizard from "@/components/content/ClonyWizard";
 import { AiEditBlock } from "@/components/content/ai-edit/AiEditBlock";
 import CampaignBuilderSheet from "@/components/sheets/CampaignBuilderSheet";
 import { cn } from "@/lib/utils";
-import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
+import { CfButtonMd, CfH1, CfH2, CfH3, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
 type ContentFactoryTab = "scenario" | "create" | "ai-edit" | "my-content";
@@ -165,25 +156,8 @@ export default function ContentFactory() {
   const { section } = useParams<{ section?: string }>();
   const { active, isAgency } = useWorkspace();
   const [pageTab, setPageTab] = useState<ContentFactoryTab>(() => resolveContentFactoryTab(section));
-  const [mainType, setMainType] = useState<"video" | "photo">("video");
-  const [videoMode, setVideoMode] = useState<"link" | "description">("link");
-  const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
-  const [photoFormat, setPhotoFormat] = useState("banner");
-  const [aspectRatio, setAspectRatio] = useState("1:1");
-  const [designTab, setDesignTab] = useState<"ready" | "my">("ready");
-  const [designStyle, setDesignStyle] = useState("modern");
-  const [designTemplate, setDesignTemplate] = useState("tmpl1");
-
-  // Form field values
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [editFeedback, setEditFeedback] = useState("");
-
-  // File uploads
-  const [uploading, setUploading] = useState(false);
 
   // Generation state
-  const [submitting, setSubmitting] = useState(false);
-  const [magicLoading, setMagicLoading] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [task, setTask] = useState<ContentTask | null>(null);
 
@@ -209,12 +183,6 @@ export default function ContentFactory() {
   const [deleteDetails, setDeleteDetails] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historyFilter, setHistoryFilter] = useState<"all" | "video" | "image" | "liked">("all");
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const refFileInputRef = useRef<HTMLInputElement>(null);
-
-  const [videoFormat, setVideoFormat] = useState<"reels" | "slideshow">("reels");
-  const videoAspect = "9:16";
 
   const saveAbEvent = useCallback((event: string, meta?: Record<string, string | number | boolean>) => {
     if (!sessionId) return;
@@ -351,154 +319,9 @@ export default function ContentFactory() {
     return () => { supabase.removeChannel(channel); };
   }, [taskId, fetchHistory]);
 
-  const handleReferenceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setReferencePreview(url);
-  };
-
-  const uploadFile = useCallback(async (file: File): Promise<string | null> => {
-    const ext = file.name.split(".").pop();
-    const path = `uploads/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("content_assets").upload(path, file, { cacheControl: "3600", upsert: false });
-    if (error) { toast({ title: "Ошибка загрузки", description: error.message, variant: "destructive" }); return null; }
-    const { data } = supabase.storage.from("content_assets").getPublicUrl(path);
-    return data.publicUrl;
-  }, []);
-
-  const [expandingField, setExpandingField] = useState<string | null>(null);
-  const handleMagicExpand = async (fieldName: string, getter: string, setter: (v: string) => void) => {
-    if (!getter.trim()) {
-      toast({ title: "Напишите краткое описание", description: "AI развернёт его в полноценный текст", variant: "destructive" });
-      return;
-    }
-    setExpandingField(fieldName);
-    await new Promise(r => setTimeout(r, 1500));
-    const expansions: Record<string, (input: string) => string> = {
-      visualStyle: (input) => `${input}. Используйте динамичные переходы между сценами, крупные планы с акцентом на детали. Тёплая цветовая палитра с натуральным освещением. Минималистичный фон, современная типографика с контрастными акцентами.`,
-      speakerText: (input) => `${input}\n\nПредставьте себе результат, который говорит сам за себя. Каждый элемент продуман до мелочей — от идеи до реализации. Наш подход — это качество в каждой детали, которое вы почувствуете с первого взгляда.\n\nДействуйте прямо сейчас — количество мест ограничено.`,
-      mainText: (input) => `Слайд 1: ${input}\nСлайд 2: Ключевое преимущество — то, что отличает вас от конкурентов\nСлайд 3: Социальное доказательство — отзывы и результаты клиентов\nСлайд 4: Призыв к действию — запишитесь сегодня и получите бонус`,
-    };
-    const expand = expansions[fieldName] || ((i: string) => `${i}. Дополнительные детали, визуальные акценты, профессиональная подача контента с учётом целевой аудитории.`);
-    setter(expand(getter));
-    setExpandingField(null);
-    toast({ title: "✨ Текст расширен" });
-  };
-
-  const handleMagicAI = async () => {
-    if (!sourceUrl.trim()) {
-      toast({ title: "Укажите ссылку", description: "Вставьте ссылку, чтобы AI мог проанализировать контент", variant: "destructive" });
-      return;
-    }
-    setMagicLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    if (mainType === "video") {
-      setVisualStyle("Динамичные переходы, крупные планы продукта, тёплая цветовая палитра, натуральное освещение");
-      setSpeakerText("Представьте себе результат, который говорит сам за себя. Наш подход — это качество в каждой детали.");
-    } else {
-      setMainText("Слайд 1: Заголовок с главным оффером\nСлайд 2: Ключевое преимущество\nСлайд 3: Социальное доказательство\nСлайд 4: Призыв к действию");
-      setVisualStyle("Чистый минимализм, контрастные акценты, современная типографика");
-    }
-    setMagicLoading(false);
-    toast({ title: "✨ AI заполнил ТЗ", description: "Проверьте и скорректируйте под ваши задачи" });
-  };
-
-  const handleGenerate = async () => {
-    saveAbEvent("generate_click", { mainType, sourceMode: mainType === "video" ? videoMode : photoMode });
-    setSubmitting(true);
-    try {
-      let customLogoUrl: string | null = null;
-      if (logoFile) {
-        setUploading(true);
-        customLogoUrl = await uploadFile(logoFile);
-        setUploading(false);
-        if (!customLogoUrl) { setSubmitting(false); return; }
-      }
-
-      const isVideo = mainType === "video";
-      const mode = isVideo ? videoMode : photoMode;
-      const isCarousel = !isVideo && (photoFormat === "carousel-7" || photoFormat === "carousel-10");
-      const slideCount = photoFormat === "carousel-10" ? 10 : photoFormat === "carousel-7" ? 7 : 1;
-
-      const slides = (isVideo ? speakerText : mainText || "")
-        .split(/\n/)
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(line => line.replace(/^слайд\s*\d+\s*[:：]\s*/i, "").trim())
-        .filter(Boolean);
-
-      const payload: Record<string, any> = {
-        content_type: isCarousel ? "carousel" : mainType,
-        source_type: mode,
-        source_url: mode === "link" ? sourceUrl : null,
-        visual_style: visualStyle || null,
-        main_text: isCarousel ? (slides.length > 0 ? slides[0] : mainText) : (isVideo ? speakerText : mainText),
-        format: isVideo ? videoFormat : photoFormat,
-        aspect_ratio: isVideo ? videoAspect : aspectRatio,
-        design_template: !isVideo ? (designTab === "ready" ? designStyle : designTemplate) : null,
-        custom_logo_url: customLogoUrl,
-        project_id: isAgency ? null : active?.id,
-      };
-
-      const { data, error } = await (supabase as any)
-        .from("content_tasks")
-        .insert(payload)
-        .select("id, status, progress_text, result_urls, content_type, main_text, aspect_ratio, format, created_at")
-        .single();
-      if (error) throw error;
-
-      setTask(data as ContentTask);
-      setTaskId(data.id);
-
-      const formatMap: Record<string, string> = { banner: "fb-target", "carousel-7": "insta-carousel", "carousel-10": "insta-carousel" };
-
-      const n8nPayload = {
-        task_id: data.id,
-        project_id: active?.id,
-        client_name: active?.name,
-        content_type: isCarousel ? "carousel" : mainType,
-        source_type: payload.source_type,
-        source_url: payload.source_url,
-        format: isVideo ? videoFormat : (formatMap[photoFormat] || "fb-target"),
-        aspect_ratio: isVideo ? videoAspect : aspectRatio,
-        main_text: payload.main_text || "",
-        visual_style: payload.visual_style || "",
-        speaker_text: isVideo ? speakerText : "",
-        design_template: payload.design_template || "modern",
-        is_carousel: isCarousel,
-        num_slides: isCarousel ? Math.max(slideCount, slides.length) : 1,
-        slide_count: isCarousel ? Math.max(slideCount, slides.length) : 1,
-        slides: isCarousel ? slides : [],
-        custom_logo_url: payload.custom_logo_url,
-        timestamp: new Date().toISOString(),
-      };
-
-      const webhookRes = await fetch("https://n8n.zapoinov.com/webhook/content-factory-v3", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(n8nPayload),
-      });
-      if (!webhookRes.ok) {
-        toast({ title: "Ошибка связи с сервером", description: `Статус: ${webhookRes.status}`, variant: "destructive" });
-        saveAbEvent("generate_error", { status: webhookRes.status });
-      } else {
-        toast({ title: "Запуск выполнен", description: "Контент создается. Обычно это занимает до минуты." });
-        saveAbEvent("generate_started");
-      }
-    } catch (err: any) {
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
-    } finally { setSubmitting(false); }
-  };
-
   const handleReset = () => {
     setTaskId(null);
     setTask(null);
-    setSourceUrl("");
-    setVisualStyle("");
-    setSpeakerText("");
-    setMainText("");
-    setLogoFile(null);
-    setEditFeedback("");
-    setReferencePreview(null);
   };
 
   const openDeleteDialog = (task: ContentTask, e: React.MouseEvent) => {
@@ -822,7 +645,7 @@ export default function ContentFactory() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Контент-Завод</h1>
-                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] font-semibold font-medium">
+                <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] font-semibold">
                   {activeTabMeta.kicker}
                 </Badge>
               </div>
@@ -832,17 +655,14 @@ export default function ContentFactory() {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 lg:w-auto">
-            {topStats.map(({ label, value, icon: Icon, tone }) => (
-              <div
-                key={label}
-                className={cn(cfStyles.card, "flex flex-col items-start gap-1 px-3 py-2 sm:px-4 sm:py-3")}
-              >
-                <div className="flex w-full items-center justify-between">
-                  <span className="text-[9px] font-semibold font-medium text-muted-foreground">{label}</span>
-                  <Icon className={cn("h-3.5 w-3.5", tone)} />
+          <div className={cn(cfStyles.card, "flex items-center gap-4 px-4 py-2.5 lg:w-auto")}>
+            {topStats.map(({ label, value, icon: Icon, tone }, idx) => (
+              <div key={label} className={cn("flex items-center gap-2", idx > 0 && "border-l border-border/50 pl-4")}>
+                <Icon className={cn("h-4 w-4 shrink-0", tone)} />
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold text-foreground tabular-nums">{value}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
                 </div>
-                <p className="text-xl font-bold text-foreground sm:text-2xl">{value}</p>
               </div>
             ))}
           </div>

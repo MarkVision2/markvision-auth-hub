@@ -91,6 +91,7 @@ export const AutoEdit: React.FC<AutoEditCompositionProps> = ({
     demoVideos.find((clip) => clip.slot === "bottom")?.url ??
     demoVideos.find((clip) => clip.slot === "top")?.url ??
     videoUrl;
+  const activePunchMoments = scenes.flatMap((scene) => scene.cutMoments ?? []);
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#020617", overflow: "hidden" }}>
@@ -192,6 +193,16 @@ export const AutoEdit: React.FC<AutoEditCompositionProps> = ({
         style={style}
         layoutTemplate={layoutTemplate}
       />
+      {activePunchMoments.map((point, index) => (
+        <Sequence key={`cut-flash-${point}-${index}`} from={Math.max(0, Math.floor(point * 30))} durationInFrames={4}>
+          <AbsoluteFill
+            style={{
+              background: index % 2 === 0 ? "rgba(255,255,255,0.05)" : "rgba(250,204,21,0.04)",
+              mixBlendMode: "screen",
+            }}
+          />
+        </Sequence>
+      ))}
       {sfxCues.map((cue) => {
         const src = cue.kind === "custom" ? cue.src || customSfxUrl || undefined : SFX_MAP[cue.kind];
         if (!src) {

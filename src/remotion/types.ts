@@ -5,6 +5,8 @@ export type IntensityLevel = "low" | "medium" | "high";
 export type MontageLayoutTemplate = "split_demo_top" | "triple_demo_stack";
 export type TransitionKind = "flash" | "swipe" | "impact";
 export type SfxKind = "whoosh" | "ding" | "impact" | "custom";
+export type SceneRhythm = "aggressive" | "steady" | "release";
+export type ZoomMode = "punch" | "glide" | "settle";
 
 export interface Scene {
   start: number;
@@ -14,6 +16,9 @@ export interface Scene {
   emotion: EmotionLevel;
   transition?: TransitionKind;
   punchWords?: string[];
+  rhythm?: SceneRhythm;
+  zoomMode?: ZoomMode;
+  cutMoments?: number[];
 }
 
 export interface WordTiming {
@@ -47,6 +52,8 @@ export interface CaptionBlock {
   highlightWords: string[];
   sceneType: SceneType;
   emphasis: EmotionLevel;
+  lineBreakAfter?: number;
+  dominantWord?: string | null;
 }
 
 export interface SfxCue {

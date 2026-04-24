@@ -66,7 +66,7 @@ export default function ClientDatabase({ leads, loading }: ClientDatabaseProps) 
           name: lead.name,
           phone: lead.phone || "—",
           source: lead.source || "—",
-          utm_source: lead.utm_source,
+          utm_source: lead.utm_source || undefined,
           ltv: amt,
           aiRating: score,
           lastVisit: lastDate,

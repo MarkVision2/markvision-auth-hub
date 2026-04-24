@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -871,7 +871,7 @@ export default function ClonyWizard() {
     <motion.div key="s0" {...anim} className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {CONTENT_TYPES.map(({ value, label, desc, icon: Icon }) => (
-          <button key={value} type="button" onClick={() => { set("content_type", value); setStep(1); }}
+          <button key={value} type="button" onClick={() => set("content_type", value)}
             className={cn(
               "group relative flex flex-col items-center gap-3 p-5 sm:p-6 rounded-xl border-2 transition-all duration-300",
               form.content_type === value
@@ -923,7 +923,7 @@ export default function ClonyWizard() {
           {SOURCE_MODES.map(({ value, label, desc, icon: Icon }) => {
             const active = form.source_mode === value;
             return (
-              <button key={value} type="button" onClick={() => { set("source_mode", value); setStep(2); }}
+              <button key={value} type="button" onClick={() => set("source_mode", value)}
                 className={cn(
                   "group relative flex flex-col items-start gap-3 p-5 rounded-lg border-2 transition-all duration-300 text-left overflow-hidden",
                   active
@@ -1047,7 +1047,7 @@ export default function ClonyWizard() {
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-[10px] font-bold text-muted-foreground/60 font-medium">Фото для обучения</Label>
+                          <Label className="text-[10px] font-bold text-muted-foreground/60">Фото для обучения</Label>
                           <span className={cn(
                             "text-[10px] font-bold px-2 py-0.5 rounded-full",
                             form.character_photos.length >= 3 ? "bg-green-500/10 text-green-600" : "bg-secondary text-muted-foreground/50"
@@ -1132,7 +1132,7 @@ export default function ClonyWizard() {
                           className="w-full h-28 rounded-lg border-2 border-dashed border-border/40 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 flex flex-col items-center justify-center gap-2 transition-all"
                         >
                           <Upload className="h-5 w-5 text-muted-foreground/40" />
-                          <span className="text-[9px] font-bold font-medium text-muted-foreground/50">Загрузить лого</span>
+                          <span className="text-[9px] font-medium text-muted-foreground/50">Загрузить лого</span>
                         </button>
                       )}
                     </div>
@@ -1165,7 +1165,7 @@ export default function ClonyWizard() {
                           className="w-full h-28 rounded-lg border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 flex flex-col items-center justify-center gap-2 transition-all"
                         >
                           <Camera className="h-5 w-5 text-primary/40" />
-                          <span className="text-[9px] font-bold font-medium text-primary/50">Загрузить обложку</span>
+                          <span className="text-[9px] font-medium text-primary/50">Загрузить обложку</span>
                         </button>
                       )}
                     </div>
@@ -1309,7 +1309,7 @@ export default function ClonyWizard() {
               )}
             >
               <span className="text-sm font-bold">{label}</span>
-              <span className={cn("text-[8px] font-bold font-medium",
+              <span className={cn("text-[8px] font-medium",
                 form.aspect_ratio === value ? "text-white/70" : "text-muted-foreground/50"
               )}>{desc}</span>
             </button>
@@ -1501,20 +1501,7 @@ export default function ClonyWizard() {
     body: "Чем конкретнее задача, тем лучше AI подберёт композицию, текст и подачу.",
     tip: "Опишите результат глазами клиента: что он должен понять, почувствовать и сделать после просмотра.",
   };
-  const completionPercent = useMemo(() => {
-    const checkpoints = [
-      Boolean(form.content_type),
-      Boolean(form.source_mode),
-      Boolean(form.main_prompt.trim()),
-      Boolean(form.aspect_ratio),
-      Boolean(form.language),
-      step >= 1,
-      step >= 2,
-      step >= 3,
-    ];
 
-    return Math.round((checkpoints.filter(Boolean).length / checkpoints.length) * 100);
-  }, [form.aspect_ratio, form.content_type, form.language, form.main_prompt, form.source_mode, step]);
   const readinessChecklist = [
     { label: "Тип креатива", done: Boolean(form.content_type) },
     { label: "Источник", done: Boolean(form.source_mode) },
@@ -1526,29 +1513,15 @@ export default function ClonyWizard() {
     <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <div className="space-y-8">
-          <div className={cn(cfStyles.card, "p-6")}>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <StepIcon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-base font-semibold text-foreground">{meta.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{meta.desc}</p>
-                </div>
+          <div className={cn(cfStyles.card, "p-5")}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <StepIcon className="h-4.5 w-4.5" />
               </div>
-            </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {[
-                { label: "Тип", value: selectedType?.label || "Не выбран" },
-                { label: "Источник", value: selectedSource?.label || "Не выбран" },
-                { label: "Проект", value: active?.name || "HQ Workspace" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-xl border border-border/50 bg-background px-3 py-2.5">
-                  <p className="text-[10px] font-medium text-muted-foreground">{item.label}</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{item.value}</p>
-                </div>
-              ))}
+              <div>
+                <p className="text-sm font-semibold text-foreground">{meta.title}</p>
+                <p className="text-xs text-muted-foreground">{meta.desc}</p>
+              </div>
             </div>
           </div>
 
@@ -1606,14 +1579,15 @@ export default function ClonyWizard() {
         </div>
 
         <aside className="xl:sticky xl:top-4 self-start space-y-4">
+          {/* Readiness + Config merged */}
           <div className={cn(cfStyles.card, "p-5")}>
-            <p className="text-xs font-medium text-muted-foreground">Контроль качества</p>
-            <div className="mt-4 space-y-3">
+            <h3 className="text-xs font-bold tracking-tight text-muted-foreground mb-4">ГОТОВНОСТЬ К ЗАПУСКУ</h3>
+            <div className="space-y-2">
               {readinessChecklist.map((item) => (
-                <div key={item.label} className="flex items-center justify-between rounded-lg bg-secondary/20 px-4 py-3">
-                  <span className="text-xs font-semibold text-foreground">{item.label}</span>
+                <div key={item.label} className="flex items-center justify-between rounded-lg bg-secondary/15 px-3 py-2.5">
+                  <span className="text-xs font-medium text-foreground">{item.label}</span>
                   <span className={cn(
-                    "rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.16em]",
+                    "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
                     item.done ? "bg-emerald-500/10 text-emerald-600" : "bg-secondary text-muted-foreground/50"
                   )}>
                     {item.done ? "Готово" : "Ожидает"}
@@ -1621,31 +1595,28 @@ export default function ClonyWizard() {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className={cn(cfStyles.card, "p-5")}>
-            <p className="text-xs font-medium text-muted-foreground">Текущая конфигурация</p>
-            <div className="mt-4 space-y-3 text-sm">
+            <div className="mt-4 pt-4 border-t border-border/30 space-y-2">
               {[
-                ["Тип", selectedType?.label || "Не выбран"],
-                ["Источник", selectedSource?.label || "Не выбран"],
-                ["Язык", selectedLanguage?.label || "Не выбран"],
-                ["Размер", form.aspect_ratio || "Не выбран"],
+                ["Тип", selectedType?.label || "—"],
+                ["Источник", selectedSource?.label || "—"],
+                ["Язык", selectedLanguage?.label || "—"],
+                ["Размер", form.aspect_ratio || "—"],
                 ["Слайды", String(form.slide_count)],
               ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-secondary/20 px-4 py-3">
-                  <span className="text-xs font-medium text-muted-foreground">{label}</span>
-                  <span className="text-right font-semibold text-foreground">{value}</span>
+                <div key={label} className="flex items-center justify-between px-3 py-1.5">
+                  <span className="text-[11px] text-muted-foreground">{label}</span>
+                  <span className="text-xs font-semibold text-foreground">{value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 shadow-sm">
-            <p className="text-xs font-medium text-primary">AI подсказка</p>
-            <h4 className="mt-3 text-lg font-bold tracking-tight text-foreground">{selectedGuide.title}</h4>
-            <p className="mt-3 text-sm font-medium leading-relaxed text-muted-foreground">{selectedGuide.body}</p>
-            <div className="mt-4 rounded-lg bg-background/70 px-4 py-3 text-sm font-semibold leading-relaxed text-foreground/85">
+          {/* AI Guide */}
+          <div className={cn(cfStyles.card, "p-5 border-primary/20 bg-primary/5")}>
+            <p className="text-xs font-bold tracking-tight text-primary">AI ПОДСКАЗКА</p>
+            <h4 className="mt-2 text-base font-bold tracking-tight text-foreground">{selectedGuide.title}</h4>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{selectedGuide.body}</p>
+            <div className="mt-3 rounded-lg bg-background/60 px-3 py-2.5 text-xs font-medium leading-relaxed text-foreground/85">
               {selectedGuide.tip}
             </div>
           </div>

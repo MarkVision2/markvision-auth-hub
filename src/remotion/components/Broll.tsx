@@ -15,6 +15,10 @@ const BrollLayer: React.FC<{ asset: BrollAsset }> = ({ asset }) => {
   });
   const opacity = (asset.opacity ?? 0.82) * enter * exitProgress;
   const cardScale = asset.emphasis === "impact" ? interpolate(enter, [0, 1], [1.08, 1]) : interpolate(enter, [0, 1], [0.96, 1]);
+  const driftX =
+    asset.emphasis === "impact"
+      ? interpolate(frame, [0, durationInFrames], [24, -12], { extrapolateRight: "clamp" })
+      : interpolate(frame, [0, durationInFrames], [10, -8], { extrapolateRight: "clamp" });
 
   if (asset.mode === "cutaway") {
     const anchorStyle =
@@ -33,7 +37,7 @@ const BrollLayer: React.FC<{ asset: BrollAsset }> = ({ asset }) => {
             borderRadius: 30,
             overflow: "hidden",
             opacity,
-            transform: `scale(${cardScale})`,
+            transform: `translateX(${driftX}px) scale(${cardScale})`,
             boxShadow: "0 32px 90px rgba(2, 6, 23, 0.38)",
             border: "1px solid rgba(255,255,255,0.18)",
           }}
@@ -67,7 +71,7 @@ const BrollLayer: React.FC<{ asset: BrollAsset }> = ({ asset }) => {
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          transform: `scale(${cardScale})`,
+          transform: `translateX(${driftX}px) scale(${cardScale})`,
           filter: asset.emphasis === "impact" ? "saturate(1.1) contrast(1.08)" : "saturate(0.95)",
         }}
       />

@@ -37,6 +37,7 @@ export interface Lead {
   ai_score: number | null;
   ai_summary: string | null;
   created_at: string | null;
+  updated_at?: string | null;
   scheduled_at?: string | null;
   doctor_name?: string | null;
   office_name?: string | null;
