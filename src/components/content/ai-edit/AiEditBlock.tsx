@@ -1,24 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   CheckCircle2,
   Clapperboard,
   Download,
   FileType,
   Image as ImageIcon,
+  Layers,
   Languages,
+  Layout,
   Loader2,
   Maximize,
   Music4,
   RefreshCcw,
-  Settings2,
   Sparkles,
-  Type,
   Upload,
   Wand2,
-  Zap,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import type { MontageLayoutTemplate } from "@/remotion/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +39,7 @@ import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
-import { CfStepIndicator, CfButtonMd, cfStyles } from "@/components/content/contentFactoryDesignSystem";
+import { CfStepIndicator, CfButtonMd } from "@/components/content/contentFactoryDesignSystem";
 
 interface AiEditBlockProps {
   onTaskCreated?: (taskId: string) => void;
@@ -45,7 +47,7 @@ interface AiEditBlockProps {
 
 type EditStyle = "viral" | "minimal" | "business";
 type IntensityLevel = "low" | "medium" | "high";
-type StageId = "idle" | "upload" | "transcription" | "analysis" | "broll" | "rendering" | "completed";
+type StageId = "idle" | "upload" | "transcription" | "analysis" | "broll" | "rendering" | "completed" | "failed";
 
 interface ProjectStatus {
   projectId: string;
@@ -57,6 +59,25 @@ interface ProjectStatus {
   renders?: Array<{ id: string; version: number; output_url: string; variant_name: string; variant_notes: string }>;
 }
 
+interface VideoMetadata {
+  durationSec: number;
+  width: number;
+  height: number;
+}
+
+interface RenderRow {
+  id: string;
+  version: number | null;
+  output_url: string | null;
+  variant_name: string | null;
+  variant_notes: string | null;
+}
+
+interface ProjectInsertResult {
+  id: string;
+  task_token: string;
+}
+
 const N8N_AI_MONTAGE_WEBHOOK =
   import.meta.env.VITE_N8N_AI_MONTAGE_URL || "https://n8n.zapoinov.com/webhook/ai-montage-start";
 
@@ -64,8 +85,27 @@ const N8N_AI_MONTAGE_WEBHOOK =
 
 const AI_EDIT_STEPS = [
   "Материалы",
-  "Стиль монтажа",
+  "Шаблон монтажа",
   "Настройки"
+];
+const MONTAGE_TEMPLATES: Array<{
+  id: MontageLayoutTemplate;
+  label: string;
+  helper: string;
+  requirements: string;
+}> = [
+  {
+    id: "split_demo_top",
+    label: "2 экрана",
+    helper: "Сверху демонстрация, снизу эксперт, титры по центру.",
+    requirements: "Нужен 1 доп. ролик для верхнего экрана.",
+  },
+  {
+    id: "triple_demo_stack",
+    label: "3 экрана",
+    helper: "Сверху и снизу демонстрации, в центре эксперт.",
+    requirements: "Нужно 2 доп. ролика: верхний и нижний.",
+  },
 ];
 const EDIT_STYLES: Array<{ id: EditStyle; label: string; helper: string }> = [
   { id: "viral", label: "Viral captions", helper: "Хук, pop-caption, агрессивный ритм" },
@@ -82,18 +122,80 @@ const PIPELINE_STEPS: Array<{ id: StageId; label: string }> = [
   { id: "completed", label: "Готово" },
 ];
 
+const STAGE_ALIASES: Record<string, StageId> = {
+  idle: "idle",
+  queued: "upload",
+  uploading: "upload",
+  upload: "upload",
+  transcribing: "transcription",
+  transcription: "transcription",
+  analyzing: "analysis",
+  analysis: "analysis",
+  generating_broll: "broll",
+  broll: "broll",
+  rendering: "rendering",
+  completed: "completed",
+  failed: "failed",
+};
+
+const DEFAULT_STAGE_TEXT: Record<StageId, string> = {
+  idle: "Подготовьте исходник и запустите монтаж.",
+  upload: "Загружаем файл и ставим задачу в очередь.",
+  transcription: "Расшифровываем речь и собираем тайминги слов.",
+  analysis: "ИИ размечает сцены, акценты и логику монтажа.",
+  broll: "Подбираем B-roll, зумы и дополнительные вставки.",
+  rendering: "Собираем итоговый mp4 и сохраняем результат.",
+  completed: "Монтаж готов к просмотру и скачиванию.",
+  failed: "Пайплайн остановился с ошибкой.",
+};
+
+const normalizeStage = (rawStage?: string | null, rawStatus?: string | null): StageId => {
+  if (rawStatus === "failed" || rawStatus === "error") {
+    return "failed";
+  }
+
+  if (!rawStage) {
+    return "idle";
+  }
+
+  return STAGE_ALIASES[rawStage] ?? "idle";
+};
+
+const readVideoMetadata = (file: File) =>
+  new Promise<VideoMetadata>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const metadata = {
+        durationSec: Number.isFinite(video.duration) ? video.duration : 0,
+        width: video.videoWidth,
+        height: video.videoHeight,
+      };
+      URL.revokeObjectURL(objectUrl);
+      resolve(metadata);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Не удалось прочитать метаданные видео"));
+    };
+    video.src = objectUrl;
+  });
+
 export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const { active } = useWorkspace();
   const [step, setStep] = useState(0);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [brollFile, setBrollFile] = useState<File | null>(null);
+  const [bottomDemoFile, setBottomDemoFile] = useState<File | null>(null);
   const [soundFile, setSoundFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [videoMeta, setVideoMeta] = useState<VideoMetadata | null>(null);
   const [style, setStyle] = useState<EditStyle>("viral");
-  const [format, setFormat] = useState<"9:16" | "1:1">("9:16");
+  const [layoutTemplate, setLayoutTemplate] = useState<MontageLayoutTemplate>("split_demo_top");
+  const [format] = useState<"9:16">("9:16");
   const [captionLanguage, setCaptionLanguage] = useState("ru");
-  const [businessTemplate, setBusinessTemplate] = useState("clinic");
   const [clipDurationMode, setClipDurationMode] = useState<"auto" | "manual">("auto");
   const [clipDurationSec, setClipDurationSec] = useState("6");
   const [intensity, setIntensity] = useState<IntensityLevel>("medium");
@@ -122,9 +224,11 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     const mapRow = (row: Record<string, unknown>): ProjectStatus => ({
       projectId: row.id as string,
       status: (row.status as string) ?? "queued",
-      stage: (row.stage as StageId) ?? "upload",
+      stage: normalizeStage(row.stage as string | null, row.status as string | null),
       progress: (row.progress as number) ?? 0,
-      progressText: (row.progress_text as string) ?? "",
+      progressText:
+        (row.progress_text as string) ??
+        DEFAULT_STAGE_TEXT[normalizeStage(row.stage as string | null, row.status as string | null)],
       errorMessage: (row.error_message as string) ?? null,
     });
 
@@ -147,9 +251,12 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         .order("version", { ascending: true });
 
       if (disposed) return;
+      const renderRows: RenderRow[] = Array.isArray(renders) ? (renders as RenderRow[]) : [];
+      const projectStatus = (project as { status?: string | null }).status;
+
       setStatus({
         ...mapRow(project as Record<string, unknown>),
-        renders: ((renders as any[]) ?? []).map((r: any) => ({
+        renders: renderRows.map((r) => ({
           id: r.id as string,
           version: (r.version as number) ?? 1,
           output_url: (r.output_url as string) ?? "",
@@ -157,12 +264,16 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           variant_notes: (r.variant_notes as string) ?? "",
         })),
       });
-      if ((project as any).status === "completed" || (project as any).status === "failed") {
+      if (projectStatus === "completed" || projectStatus === "failed") {
         setIsSubmitting(false);
       }
     };
 
     void fetchState();
+
+    const pollId = window.setInterval(() => {
+      void fetchState();
+    }, 4000);
 
     const channel = supabase
       .channel(`ai-edit-${projectId}`)
@@ -180,6 +291,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
     return () => {
       disposed = true;
+      window.clearInterval(pollId);
       void supabase.removeChannel(channel);
     };
   }, [projectId]);
@@ -205,7 +317,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     return data.publicUrl;
   };
 
-  const handleVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     if (!file) {
       return;
@@ -226,6 +338,13 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
     setVideoFile(file);
     setVideoPreview(URL.createObjectURL(file));
+    try {
+      const metadata = await readVideoMetadata(file);
+      setVideoMeta(metadata);
+    } catch (error) {
+      console.warn("Video metadata read failed", error);
+      setVideoMeta(null);
+    }
   };
 
   const startAiEdit = async () => {
@@ -238,74 +357,176 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       return;
     }
 
+    if (!brollFile) {
+      toast({
+        title: "Нужно видео демонстрации",
+        description: "Для этих шаблонов загрузите ролик для верхнего экрана.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (layoutTemplate === "triple_demo_stack" && !bottomDemoFile) {
+      toast({
+        title: "Нужен нижний ролик",
+        description: "Для шаблона на 3 экрана загрузите второе видео для нижнего блока.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (clipDurationMode === "manual") {
+      const clipDuration = Number(clipDurationSec);
+      if (!Number.isFinite(clipDuration) || clipDuration <= 0) {
+        toast({
+          title: "Проверьте длину клипов",
+          description: "Укажите длительность в секундах, например 3 или 6.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setStatus({
       projectId: "pending",
       status: "uploading",
       stage: "upload",
-      progress: 8,
-      progressText: "Загрузка исходников в storage",
+      progress: 5,
+      progressText: "Загружаем исходник и дополнительные файлы",
     });
 
     try {
+      const metadata = videoMeta ?? (await readVideoMetadata(videoFile));
+      setVideoMeta(metadata);
+
       const [videoUrl, fontUrl, brollUrl, soundUrl] = await Promise.all([
         uploadAsset(videoFile, "source"),
         fontFile ? uploadAsset(fontFile, "fonts") : Promise.resolve(null),
-        brollFile ? uploadAsset(brollFile, "broll") : Promise.resolve(null),
+        brollFile ? uploadAsset(brollFile, "layout-top") : Promise.resolve(null),
         soundFile ? uploadAsset(soundFile, "sfx") : Promise.resolve(null),
       ]);
+      const bottomDemoUrl = bottomDemoFile ? await uploadAsset(bottomDemoFile, "layout-bottom") : null;
+
+      setStatus({
+        projectId: "pending",
+        status: "uploading",
+        stage: "upload",
+        progress: 22,
+        progressText: "Файл загружен, создаем проект монтажа",
+      });
 
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = userData?.user?.id ?? null;
 
+      const insertPayload: Database["public"]["Tables"]["ai_edit_projects"]["Insert"] = {
+        project_id: active?.id ?? null,
+        owner_id: ownerId,
+        source_video_url: videoUrl,
+        source_duration_sec: metadata.durationSec ? Math.ceil(metadata.durationSec) : null,
+        source_size_bytes: videoFile.size,
+        style,
+        format,
+        caption_language: captionLanguage,
+        business_template: layoutTemplate,
+        clip_duration_mode: clipDurationMode,
+        clip_duration_sec: clipDurationMode === "manual" ? Number(clipDurationSec) : null,
+        intensity,
+        auto_broll: autoBroll,
+        auto_zoom: autoZoom,
+        script_hint: scriptHint || null,
+        font_url: fontUrl,
+        custom_broll_url: brollUrl,
+        custom_sfx_url: soundUrl,
+        status: "queued",
+        stage: "upload",
+        progress: 10,
+        progress_text: "Задача поставлена в очередь",
+      };
+
       const { data: inserted, error: insertError } = await supabase
         .from("ai_edit_projects")
-        .insert({
-          project_id: active?.id ?? null,
-          owner_id: ownerId,
-          source_video_url: videoUrl,
-          source_size_bytes: videoFile.size,
-          style,
-          format,
-          caption_language: captionLanguage,
-          business_template: businessTemplate,
-          clip_duration_mode: clipDurationMode,
-          clip_duration_sec: clipDurationMode === "manual" ? Number(clipDurationSec) : null,
-          intensity,
-          auto_broll: autoBroll,
-          auto_zoom: autoZoom,
-          script_hint: scriptHint || null,
-          font_url: fontUrl,
-          custom_broll_url: brollUrl,
-          custom_sfx_url: soundUrl,
-          status: "queued",
-          stage: "upload",
-          progress: 10,
-          progress_text: "Задача поставлена в очередь",
-        } as any)
+        .insert(insertPayload)
         .select("id,task_token")
-        .single() as any;
+        .single();
 
-      if (insertError || !inserted) {
+      const insertedProject = inserted as ProjectInsertResult | null;
+
+      if (insertError || !insertedProject) {
         throw new Error(insertError?.message ?? "Не удалось создать проект");
       }
 
-      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK as any, {
+      const assetPayload: Database["public"]["Tables"]["ai_edit_assets"]["Insert"][] = [];
+      if (brollUrl) {
+        assetPayload.push({
+          project_id: insertedProject.id,
+          kind: "layout_demo_top",
+          source: "upload",
+          status: "ready",
+          url: brollUrl,
+          metadata: { slot: "top" },
+        });
+      }
+      if (bottomDemoUrl) {
+        assetPayload.push({
+          project_id: insertedProject.id,
+          kind: "layout_demo_bottom",
+          source: "upload",
+          status: "ready",
+          url: bottomDemoUrl,
+          metadata: { slot: "bottom" },
+        });
+      }
+      if (assetPayload.length > 0) {
+        const { error: assetError } = await supabase.from("ai_edit_assets").insert(assetPayload);
+        if (assetError) {
+          throw new Error(assetError.message);
+        }
+      }
+
+      setProjectId(insertedProject.id);
+      setStatus({
+        projectId: insertedProject.id,
+        status: "queued",
+        stage: "upload",
+        progress: 34,
+        progressText: "Проект создан, запускаем AI пайплайн",
+      });
+
+      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project_id: inserted.id, projectId: inserted.id, task_token: inserted.task_token, taskToken: inserted.task_token }),
+        body: JSON.stringify({
+          project_id: insertedProject.id,
+          projectId: insertedProject.id,
+          task_token: insertedProject.task_token,
+          taskToken: insertedProject.task_token,
+        }),
       });
 
       if (!response.ok) {
         throw new Error(`n8n webhook error: ${response.status}`);
       }
 
-      setProjectId(inserted.id);
-      onTaskCreated?.(inserted.id);
+      setStatus({
+        projectId: insertedProject.id,
+        status: "processing",
+        stage: "transcription",
+        progress: 42,
+        progressText: "Пайплайн запущен, ожидаем расшифровку видео",
+      });
+      onTaskCreated?.(insertedProject.id);
     } catch (error: unknown) {
       setIsSubmitting(false);
-      setStatus(null);
       const message = error instanceof Error ? error.message : "Не удалось запустить ИИ монтаж";
+      setStatus({
+        projectId: projectId ?? "failed",
+        status: "failed",
+        stage: "failed",
+        progress: 0,
+        progressText: "Запуск не удался",
+        errorMessage: message,
+      });
       toast({
         title: "Ошибка запуска",
         description: message,
@@ -318,16 +539,73 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     setProjectId(null);
     setStatus(null);
     setIsSubmitting(false);
+    setVideoFile(null);
+    setFontFile(null);
+    setBrollFile(null);
+    setBottomDemoFile(null);
+    setSoundFile(null);
+    setVideoMeta(null);
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+      setVideoPreview(null);
+    }
+    setStep(0);
   };
+
+  const uploadSummary = useMemo(() => {
+    if (!videoFile) return null;
+
+    const sizeMb = (videoFile.size / (1024 * 1024)).toFixed(1);
+    const durationLabel = videoMeta
+      ? `${Math.floor(videoMeta.durationSec / 60)}:${Math.floor(videoMeta.durationSec % 60)
+          .toString()
+          .padStart(2, "0")}`
+      : "—";
+    const resolutionLabel =
+      videoMeta && videoMeta.width && videoMeta.height ? `${videoMeta.width}x${videoMeta.height}` : "—";
+
+    return {
+      sizeMb,
+      durationLabel,
+      resolutionLabel,
+    };
+  }, [videoFile, videoMeta]);
+
+  const stageDescription = useMemo(() => {
+    const stage = status?.stage ?? "idle";
+    return status?.progressText || DEFAULT_STAGE_TEXT[stage];
+  }, [status]);
+
+  const stageChecklist = useMemo(
+    () => [
+      {
+        title: "Загрузка",
+        text: "Сохраняем исходник и создаем задачу монтажа.",
+      },
+      {
+        title: "Расшифровка",
+        text: "Получаем речь, тайминги слов и понимание структуры ролика.",
+      },
+      {
+        title: "Сборка",
+        text: "Подбираем эффекты, B-roll и собираем финальный mp4.",
+      },
+      {
+        title: "Результат",
+        text: "Показываем готовый ролик для проверки и скачивания.",
+      },
+    ],
+    []
+  );
 
     // --- STEPS RENDERERS ---
   const renderStep0 = () => (
     <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
-            <p className="mt-1 text-[11px] font-medium text-muted-foreground">Загрузите сырые материалы для нейронного монтажа</p>
+            <p className="mt-1 text-[11px] font-medium text-muted-foreground">Загрузите исходник. После запуска покажем понятные этапы: загрузка, расшифровка, сборка и готовый mp4.</p>
           </div>
           <Badge variant="secondary" className="text-[10px] font-semibold">Remotion</Badge>
         </div>
@@ -352,10 +630,28 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
           <div className="space-y-4">
             <AssetInput icon={Type} title="Шрифт" description=".ttf, опционально" accept=".ttf,font/ttf" file={fontFile} onChange={setFontFile} />
-            <AssetInput icon={ImageIcon} title="B-roll" description="доп. видео" accept="video/*" file={brollFile} onChange={setBrollFile} />
-            <AssetInput icon={Music4} title="SFX / переходы" description="mp3, wav" accept="audio/*" file={soundFile} onChange={setSoundFile} />
+            <AssetInput icon={ImageIcon} title="Верхний экран" description="демонстрация для верхнего блока" accept="video/*" file={brollFile} onChange={setBrollFile} />
+            <AssetInput icon={Clapperboard} title="Нижний экран" description="демонстрация для нижнего блока" accept="video/*" file={bottomDemoFile} onChange={setBottomDemoFile} />
+            <AssetInput icon={Music4} title="SFX / переходы" description="mp3, wav, опционально" accept="audio/*" file={soundFile} onChange={setSoundFile} />
           </div>
         </div>
+
+        {uploadSummary ? (
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-xl border border-border/50 bg-secondary/10 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Файл</p>
+              <p className="mt-1 truncate text-sm font-semibold text-foreground">{videoFile?.name}</p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-secondary/10 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Размер / длительность</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{uploadSummary.sizeMb} MB / {uploadSummary.durationLabel}</p>
+            </div>
+            <div className="rounded-xl border border-border/50 bg-secondary/10 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Разрешение</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{uploadSummary.resolutionLabel}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </motion.div>
   );
@@ -364,19 +660,19 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
       <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
         <div className="mb-5">
-          <h3 className="text-xl font-bold tracking-tight text-foreground">Стиль и динамика</h3>
-          <p className="mt-1 text-[11px] font-medium text-muted-foreground">Выберите темп и способ подачи контента</p>
+          <h3 className="text-xl font-bold tracking-tight text-foreground">Готовые шаблоны 9:16</h3>
+          <p className="mt-1 text-[11px] font-medium text-muted-foreground">Два фиксированных шаблона под экспертный вертикальный контент</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          {EDIT_STYLES.map((item) => (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {MONTAGE_TEMPLATES.map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => { setStyle(item.id); setStep(2); }}
+              onClick={() => { setLayoutTemplate(item.id); setStep(2); }}
               className={cn(
                 "rounded-lg border p-4 text-left transition-all",
-                style === item.id
+                layoutTemplate === item.id
                   ? "border-primary bg-primary/5 ring-2 ring-primary/20 scale-[1.02] shadow-sm"
                   : "border-border/50 bg-secondary/10 hover:border-primary/30 hover:bg-secondary/20 hover:scale-[1.01]"
               )}
@@ -384,13 +680,14 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               <div
                 className={cn(
                   "mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
-                  style === item.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                  layoutTemplate === item.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
                 )}
               >
-                {item.id === "viral" ? <Zap className="h-5 w-5" /> : item.id === "minimal" ? <Type className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
+                {item.id === "split_demo_top" ? <Layout className="h-5 w-5" /> : <Layers className="h-5 w-5" />}
               </div>
               <p className="text-sm font-semibold text-foreground">{item.label}</p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.helper}</p>
+              <p className="mt-3 text-[11px] font-medium text-primary/80">{item.requirements}</p>
             </button>
           ))}
         </div>
@@ -408,17 +705,11 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <Field title="Формат" icon={Clapperboard}>
-            <Select value={format} onValueChange={(value: "9:16" | "1:1") => setFormat(value)}>
-              <SelectTrigger className="h-10 rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="9:16">9:16 Reels / Shorts</SelectItem>
-                <SelectItem value="1:1">1:1 Square</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex h-10 items-center rounded-lg border border-border/50 bg-secondary/10 px-3 text-sm font-semibold text-foreground">
+              9:16 Vertical only
+            </div>
           </Field>
-          <Field title="Язык субтитров" icon={Languages}>
+          <Field title="Стиль титров" icon={Languages}>
             <Select value={captionLanguage} onValueChange={setCaptionLanguage}>
               <SelectTrigger className="h-10 rounded-lg">
                 <SelectValue />
@@ -430,16 +721,17 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               </SelectContent>
             </Select>
           </Field>
-          <Field title="Бизнес шаблон" icon={FileType}>
-            <Select value={businessTemplate} onValueChange={setBusinessTemplate}>
+          <Field title="Визуальный стиль титров" icon={FileType}>
+            <Select value={style} onValueChange={(value: EditStyle) => setStyle(value)}>
               <SelectTrigger className="h-10 rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="clinic">Клиники</SelectItem>
-                <SelectItem value="restaurant">Рестораны</SelectItem>
-                <SelectItem value="ecommerce">E-commerce</SelectItem>
-                <SelectItem value="general">Общий</SelectItem>
+                {EDIT_STYLES.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Field>
@@ -499,6 +791,9 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             placeholder="Опишите суть видео или ключевой текст, чтобы AI точнее собрал сцены."
             className="min-h-[100px] rounded-lg resize-none"
           />
+          <p className="mt-2 text-xs text-muted-foreground">
+            Для шаблона `2 экрана` нужен верхний ролик. Для `3 экрана` нужны оба ролика: верхний и нижний.
+          </p>
         </div>
       </div>
     </motion.div>
@@ -506,8 +801,32 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
   const canNext = () => {
     if (step === 0) return Boolean(videoFile);
-    if (step === 1) return Boolean(style);
+    if (step === 1) return Boolean(layoutTemplate);
     return true;
+  };
+
+  const handleNextStep = () => {
+    if (canNext()) {
+      setStep((s) => s + 1);
+    } else {
+      toast({
+        title: "Заполните все поля",
+        description: "Пожалуйста, загрузите необходимые файлы, чтобы продолжить.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFinalSubmit = () => {
+    if (canNext()) {
+      startAiEdit();
+    } else {
+      toast({
+        title: "Не все поля заполнены",
+        description: "Проверьте загруженные файлы и настройки перед запуском.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -537,16 +856,15 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
             {step < 2 ? (
               <CfButtonMd
-                onClick={() => setStep((s) => s + 1)}
-                disabled={!canNext()}
+                onClick={handleNextStep}
                 className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
               >
                 Далее <ArrowRight className="h-4 w-4" />
               </CfButtonMd>
             ) : (
               <CfButtonMd
-                onClick={startAiEdit}
-                disabled={!canNext() || isSubmitting}
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting}
                 className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8"
               >
                 {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
@@ -573,6 +891,20 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               </div>
             )}
 
+            <div className="mt-5 rounded-xl border border-border/50 bg-secondary/10 p-4">
+              <div className="flex items-start gap-2.5">
+                {status?.stage === "failed" ? (
+                  <AlertCircle className="mt-0.5 h-4 w-4 text-destructive" />
+                ) : (
+                  <Wand2 className="mt-0.5 h-4 w-4 text-primary" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Что происходит сейчас</p>
+                  <p className="mt-1 text-sm leading-relaxed text-foreground">{stageDescription}</p>
+                </div>
+              </div>
+            </div>
+
             <div className="mt-5 space-y-2">
               {PIPELINE_STEPS.map((pStep, index) => {
                 const isDone = currentStepIndex > index && currentStepIndex !== -1;
@@ -589,6 +921,23 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+            <p className="text-[12px] font-bold tracking-tight text-muted-foreground">ПОСЛЕ КНОПКИ “СОЗДАТЬ МОНТАЖ”</p>
+            <div className="mt-4 space-y-3">
+              {stageChecklist.map((item, index) => (
+                <div key={item.title} className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">{item.text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -615,8 +964,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           <div className="grid gap-4 md:grid-cols-3">
             {status.renders.map((render) => (
               <div key={render.id} className="overflow-hidden rounded-lg border border-border/50 bg-secondary/10">
-                <div className="aspect-[9/16] bg-black">
-                  <video src={render.output_url} controls className="h-full w-full object-cover" />
+                <div className="flex min-h-[320px] items-center justify-center bg-black p-3">
+                  <video src={render.output_url} controls className="max-h-[420px] w-full object-contain" />
                 </div>
                 <div className="space-y-2 p-4">
                   <div className="flex items-center justify-between">
