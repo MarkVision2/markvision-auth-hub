@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -65,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { CfButtonMd, CfH1, CfH2, CfH3, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 type TaskStatus = "pending" | "processing" | "completed" | "error";
+type ContentFactoryTab = "scenario" | "create" | "ai-edit" | "my-content";
 
 interface ContentTask {
   id: string;
@@ -126,9 +128,43 @@ const TAB_CONTENT = {
   },
 } as const;
 
+const resolveContentFactoryTab = (section?: string): ContentFactoryTab => {
+  switch (section) {
+    case undefined:
+    case "":
+    case "scenario":
+      return "scenario";
+    case "create":
+      return "create";
+    case "ai-edit":
+      return "ai-edit";
+    case "history":
+    case "my-content":
+      return "my-content";
+    default:
+      return "scenario";
+  }
+};
+
+const getContentFactoryPath = (tab: ContentFactoryTab) => {
+  switch (tab) {
+    case "create":
+      return "/content/create";
+    case "ai-edit":
+      return "/content/ai-edit";
+    case "my-content":
+      return "/content/history";
+    case "scenario":
+    default:
+      return "/content";
+  }
+};
+
 export default function ContentFactory() {
+  const navigate = useNavigate();
+  const { section } = useParams<{ section?: string }>();
   const { active, isAgency } = useWorkspace();
-  const [pageTab, setPageTab] = useState<"scenario" | "create" | "ai-edit" | "my-content">("scenario");
+  const [pageTab, setPageTab] = useState<ContentFactoryTab>(() => resolveContentFactoryTab(section));
   const [mainType, setMainType] = useState<"video" | "photo">("video");
   const [videoMode, setVideoMode] = useState<"link" | "description">("link");
   const [photoMode, setPhotoMode] = useState<"link" | "description">("link");
@@ -140,15 +176,10 @@ export default function ContentFactory() {
 
   // Form field values
   const [sourceUrl, setSourceUrl] = useState("");
-  const [visualStyle, setVisualStyle] = useState("");
-  const [speakerText, setSpeakerText] = useState("");
-  const [mainText, setMainText] = useState("");
   const [editFeedback, setEditFeedback] = useState("");
 
   // File uploads
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [referencePreview, setReferencePreview] = useState<string | null>(null);
 
   // Generation state
   const [submitting, setSubmitting] = useState(false);
@@ -199,6 +230,17 @@ export default function ContentFactory() {
     list.push(payload);
     localStorage.setItem(AB_STORAGE, JSON.stringify(list.slice(-5000)));
   }, [abVariant, sessionId]);
+
+  useEffect(() => {
+    const nextTab = resolveContentFactoryTab(section);
+    setPageTab((current) => (current === nextTab ? current : nextTab));
+  }, [section]);
+
+  const openPageTab = useCallback((tab: ContentFactoryTab) => {
+    setPageTab(tab);
+    const nextPath = getContentFactoryPath(tab);
+    navigate(nextPath);
+  }, [navigate]);
 
   useEffect(() => {
     const existingSession = localStorage.getItem(AB_SESSION_STORAGE);
@@ -638,7 +680,7 @@ export default function ContentFactory() {
             </CfButtonMd>
           </div>
 
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="rounded-xl border border-border/50 bg-card p-8 shadow-lg overflow-hidden relative">
+          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className={cn(cfStyles.card, "p-8 overflow-hidden relative")}>
             <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
             
             <div className="grid grid-cols-1 md:grid-cols-[1fr_350px] gap-12 items-start">
@@ -705,7 +747,7 @@ export default function ContentFactory() {
     return (
       <DashboardLayout breadcrumb="Контент-Завод">
         <div className="mx-auto max-w-4xl py-20 px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/40 bg-card p-8 md:p-12 text-center space-y-12 shadow-2xl relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-8 md:p-12 text-center space-y-12 shadow-2xl relative overflow-hidden")}>
             <div className="absolute top-0 left-0 w-full h-2 bg-primary/10 overflow-hidden">
                <motion.div 
                  className="h-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" 
@@ -794,7 +836,7 @@ export default function ContentFactory() {
             {topStats.map(({ label, value, icon: Icon, tone }) => (
               <div
                 key={label}
-                className="flex flex-col items-start gap-1 rounded-lg border border-border/50 bg-card px-3 py-2 sm:px-4 sm:py-3"
+                className={cn(cfStyles.card, "flex flex-col items-start gap-1 px-3 py-2 sm:px-4 sm:py-3")}
               >
                 <div className="flex w-full items-center justify-between">
                   <span className="text-[9px] font-semibold font-medium text-muted-foreground">{label}</span>
@@ -807,14 +849,14 @@ export default function ContentFactory() {
         </div>
 
         <div className="mb-6">
-          <div className="inline-flex w-full flex-wrap gap-1 rounded-lg border border-border/50 bg-card p-1 sm:w-auto">
+          <div className={cn(cfStyles.card, "inline-flex w-full flex-wrap gap-1 p-1 sm:w-auto")}>
             {tabs.map((tab) => {
               const TabIcon = tab.icon;
               const active = pageTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setPageTab(tab.id)}
+                  onClick={() => openPageTab(tab.id)}
                   className={cn(
                     "relative flex flex-1 items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-colors sm:flex-none",
                     active ? "text-white" : "text-muted-foreground hover:text-foreground"
@@ -860,10 +902,10 @@ export default function ContentFactory() {
                       value={historySearch}
                       onChange={(e) => setHistorySearch(e.target.value)}
                       placeholder="Поиск по описанию, типу или формату"
-                      className="h-10 rounded-xl border-border/50 bg-card pl-10 text-sm"
+                      className={cn(cfStyles.input, "h-10 pl-10")}
                     />
                   </div>
-                  <div className="flex flex-wrap gap-1.5 rounded-xl border border-border/50 bg-card p-1">
+                  <div className={cn(cfStyles.card, "flex flex-wrap gap-1.5 p-1")}>
                     {[
                       { id: "all" as const, label: "Все" },
                       { id: "video" as const, label: "Видео" },
@@ -903,7 +945,7 @@ export default function ContentFactory() {
                       Здесь появятся все задачи — в процессе и завершённые. Создайте первый контент, чтобы начать.
                     </p>
                   </div>
-                  <Button onClick={() => setPageTab("create")} className="gap-2 rounded-xl bg-primary px-6 text-white hover:bg-primary/90">
+                  <Button onClick={() => openPageTab("create")} className="gap-2 rounded-xl bg-primary px-6 text-white hover:bg-primary/90">
                     <Plus className="h-4 w-4" /> Создать первый контент
                   </Button>
                 </div>
@@ -924,7 +966,7 @@ export default function ContentFactory() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: idx * 0.05 }}
-                        className="group relative rounded-lg border border-border/50 bg-card hover:border-primary/40 transition-colors shadow-sm hover:shadow-lg cursor-pointer p-4 space-y-3 overflow-hidden"
+                        className={cn(cfStyles.card, "group relative hover:border-primary/40 transition-colors hover:shadow-lg cursor-pointer p-4 space-y-3 overflow-hidden")}
                         onClick={() => loadHistoryItem(task)}
                       >
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/20 via-primary/70 to-emerald-300/20 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />

@@ -342,6 +342,13 @@ export default function ClonyWizard() {
   const additionalRef = useRef<HTMLInputElement>(null);
   const characterRef = useRef<HTMLInputElement>(null);
 
+  // Scroll to top on state change
+  useEffect(() => {
+    if (submitting || submitted) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [submitting, submitted]);
+
   // Load saved characters when neuro-photo is selected
   useEffect(() => {
     if (form.content_type === "neuro-photo") {
@@ -613,7 +620,8 @@ export default function ClonyWizard() {
         typeInstructions,
         sourceContext,
         formatContext,
-        `\nОПИСАНИЕ ЗАДАЧИ:\n${form.main_prompt}`,
+        form.description_text?.trim() ? `\nОПИСАНИЕ ПРОДУКТА/НИШИ:\n${form.description_text}` : "",
+        `\nОСНОВНОЙ ЗАПРОС (ПРОМПТ):\n${form.main_prompt}`,
         form.additional_instructions?.trim() ? `\nДОПОЛНИТЕЛЬНЫЕ ИНСТРУКЦИИ:\n${form.additional_instructions}` : "",
       ].filter(Boolean).join("\n");
 
@@ -629,10 +637,12 @@ export default function ClonyWizard() {
         .select()
         .single();
 
-      if (dbError) console.error("Supabase insert error:", dbError);
+      if (dbError) throw new Error(`Ошибка БД: ${dbError.message}`);
 
       const payload = {
         task_id: dbTask?.id,
+        project_id: isAgency ? undefined : active?.id,
+        client_name: active?.name,
         content_type: form.content_type,
         input_mode: form.source_mode,
         link: form.source_mode === "link" ? form.source_url : undefined,
@@ -643,17 +653,17 @@ export default function ClonyWizard() {
         character_name: form.character_name || undefined,
         saved_character_id: form.saved_character_id || undefined,
         image_urls: imageUrls.length > 0 ? imageUrls : undefined,
-        description: form.source_mode === "description" ? form.description_text : undefined,
+        description: form.description_text || undefined,
         prompt: fullPrompt,
+        main_prompt: form.main_prompt,
+        additional_instructions: form.additional_instructions || undefined,
         aspect: form.aspect_ratio,
         dimensions: standard?.size,
         format_standards: standard ? { ratio: form.aspect_ratio, size: standard.size, rules: standard.notes } : undefined,
         ctas: form.cta.length > 0 ? form.cta : undefined,
-        languege: form.language,
+        language: form.language,
         slides: form.slide_count,
         style: form.style === "custom" ? form.custom_style : form.style || undefined,
-        name: active?.name,
-        project_id: isAgency ? undefined : active?.id,
         session_id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
       };
@@ -693,6 +703,30 @@ export default function ClonyWizard() {
     setCoverPreview(null);
     setAdditionalPreviews([]);
     setCharacterPreviews([]);
+  };
+
+  const handleNextStep = () => {
+    if (canNext()) {
+      setStep((s) => s + 1);
+    } else {
+      toast({
+        title: "Заполните все поля",
+        description: "Пожалуйста, заполните обязательные поля, чтобы продолжить.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFinalSubmit = () => {
+    if (canNext()) {
+      handleSubmit();
+    } else {
+      toast({
+        title: "Не все поля заполнены",
+        description: "Проверьте формат, язык и другие настройки перед запуском.",
+        variant: "destructive",
+      });
+    }
   };
 
   // ════════════════════════════════════════════════════
@@ -1198,7 +1232,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Main prompt */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-4")}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <PenLine className="h-4 w-4 text-primary/60" />
@@ -1237,7 +1271,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Additional instructions */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-4 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-4")}>
         <div className="flex items-center gap-2.5">
           <Mic className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>
@@ -1259,7 +1293,7 @@ export default function ClonyWizard() {
   const renderStep3 = () => (
     <motion.div key="s2" {...anim} className="space-y-6">
       {/* Aspect Ratio */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-5")}>
         <div className="flex items-center gap-2.5">
           <Hash className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Соотношение сторон</Label>
@@ -1284,7 +1318,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* CTA */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-5")}>
         <div className="flex items-center gap-2.5">
           <MousePointerClick className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Call to Action (CTA) <span className="text-muted-foreground/40 normal-case font-medium">— можно выбрать несколько</span></Label>
@@ -1306,7 +1340,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Language */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-5")}>
         <div className="flex items-center gap-2.5">
           <Globe className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Язык текста</Label>
@@ -1329,7 +1363,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Slide count */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-5")}>
         <div className="flex items-center gap-2.5">
           <SquareStack className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Количество слайдов / вариантов</Label>
@@ -1356,7 +1390,7 @@ export default function ClonyWizard() {
       </div>
 
       {/* Style */}
-      <div className="rounded-lg bg-card border border-border/40 p-6 sm:p-8 space-y-5 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6 sm:p-8 space-y-5")}>
         <div className="flex items-center gap-2.5">
           <Palette className="h-4 w-4 text-primary/60" />
           <Label className={cfStyles.label}>Стиль дизайна <span className="text-muted-foreground/40 normal-case font-medium">— если не выбрать, система подберёт сама</span></Label>
@@ -1492,7 +1526,7 @@ export default function ClonyWizard() {
     <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
       <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6">
         <div className="space-y-8">
-          <div className="rounded-lg border border-border/60 bg-card p-5">
+          <div className={cn(cfStyles.card, "p-6")}>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -1553,16 +1587,15 @@ export default function ClonyWizard() {
 
             {!isLastStep ? (
               <CfButtonMd
-                onClick={() => setStep((s) => s + 1)}
-                disabled={!canNext()}
+                onClick={handleNextStep}
                 className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
               >
                 Далее <ArrowRight className="h-4 w-4" />
               </CfButtonMd>
             ) : (
               <CfButtonMd
-                onClick={handleSubmit}
-                disabled={!canNext() || submitting}
+                onClick={handleFinalSubmit}
+                disabled={submitting}
                 className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8 h-13"
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
@@ -1573,7 +1606,7 @@ export default function ClonyWizard() {
         </div>
 
         <aside className="xl:sticky xl:top-4 self-start space-y-4">
-          <div className="rounded-lg border border-border/50 bg-card p-5 shadow-sm">
+          <div className={cn(cfStyles.card, "p-5")}>
             <p className="text-xs font-medium text-muted-foreground">Контроль качества</p>
             <div className="mt-4 space-y-3">
               {readinessChecklist.map((item) => (
@@ -1590,7 +1623,7 @@ export default function ClonyWizard() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-border/50 bg-card p-5 shadow-sm">
+          <div className={cn(cfStyles.card, "p-5")}>
             <p className="text-xs font-medium text-muted-foreground">Текущая конфигурация</p>
             <div className="mt-4 space-y-3 text-sm">
               {[

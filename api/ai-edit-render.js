@@ -22,7 +22,11 @@ const getServeUrl = () => {
   return bundlePromise;
 };
 
-const getCompositionId = (format) => (format === "1:1" ? "AutoEditSquare" : "AutoEdit");
+const getCompositionId = (format) => {
+  if (format === "1:1") return "AutoEditSquare";
+  if (format === "16:9") return "AutoEditWide";
+  return "AutoEdit";
+};
 
 const STYLE_MAP = {
   viral_hormozi: "viral",
@@ -31,11 +35,160 @@ const STYLE_MAP = {
 };
 
 const mapStyle = (preset) => STYLE_MAP[preset] ?? "viral";
+const mapLayoutTemplate = (template) =>
+  template === "triple_demo_stack" ? "triple_demo_stack" : "split_demo_top";
+const normalizeWord = (word) =>
+  String(word || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}-]/gu, "");
+const STRONG_WORDS = new Set([
+  "главное",
+  "важно",
+  "ошибка",
+  "решение",
+  "результат",
+  "рост",
+  "прибыль",
+  "деньги",
+  "боль",
+  "проблема",
+  "заявка",
+  "кейс",
+  "секрет",
+  "бесплатно",
+  "скидка",
+  "сейчас",
+  "почему",
+  "как",
+  "нельзя",
+  "нужно",
+]);
+const transitionForScene = (sceneType, emotion) => {
+  if (sceneType === "hook") return "impact";
+  if (sceneType === "cta") return "flash";
+  return emotion === "high" ? "flash" : "swipe";
+};
+
+const buildImportantWords = (words, scenes) => {
+  const sceneKeywords = scenes.flatMap((scene) => scene.keywords || []).map(normalizeWord);
+  const keywordSet = new Set(sceneKeywords.filter(Boolean));
+
+  return words.map((word, index) => {
+    const clean = normalizeWord(word.word);
+    const isSceneKeyword = keywordSet.has(clean);
+    const isStrongWord = STRONG_WORDS.has(clean) || clean.length >= 8;
+    const emphasis = isSceneKeyword || (isStrongWord && index % 2 === 0) ? "primary" : isStrongWord ? "secondary" : undefined;
+
+    return {
+      ...word,
+      highlight: Boolean(emphasis),
+      emphasis,
+    };
+  });
+};
+
+const buildCaptionBlocks = (words, scenes) => {
+  const blocks = [];
+
+  for (const scene of scenes) {
+    const sceneWords = words.filter((word) => word.start >= scene.start && word.end <= scene.end + 0.12);
+    if (sceneWords.length === 0) {
+      continue;
+    }
+
+    let cursor = 0;
+    while (cursor < sceneWords.length) {
+      const chunk = sceneWords.slice(cursor, cursor + 4);
+      if (chunk.length === 0) break;
+
+      blocks.push({
+        id: `${scene.type}-${chunk[0].start.toFixed(2)}`,
+        start: chunk[0].start,
+        end: chunk[chunk.length - 1].end,
+        words: chunk.map((word) => word.word),
+        highlightWords: chunk.filter((word) => word.highlight).map((word) => word.word),
+        sceneType: scene.type,
+        emphasis: scene.emotion,
+      });
+
+      cursor += chunk.length >= 4 ? 3 : chunk.length;
+    }
+  }
+
+  if (blocks.length > 0) {
+    return blocks;
+  }
+
+  return words.slice(0, 1).map((word) => ({
+    id: `fallback-${word.start.toFixed(2)}`,
+    start: word.start,
+    end: word.end,
+    words: [word.word],
+    highlightWords: word.highlight ? [word.word] : [],
+    sceneType: "explanation",
+    emphasis: "normal",
+  }));
+};
+
+const buildSfxCues = (scenes, words, project) => {
+  const cues = [];
+
+  scenes.forEach((scene, index) => {
+    if (scene.start > 0.05) {
+      cues.push({
+        id: `scene-${index}`,
+        start: scene.start,
+        kind: scene.type === "hook" ? "impact" : "whoosh",
+        volume: scene.emotion === "high" ? 0.45 : 0.28,
+      });
+    }
+
+    const punchWord = words.find(
+      (word) =>
+        word.start >= scene.start &&
+        word.start <= scene.end &&
+        (word.emphasis === "primary" || normalizeWord(word.word) === normalizeWord(scene.keywords?.[0])),
+    );
+
+    if (punchWord) {
+      cues.push({
+        id: `word-${index}`,
+        start: punchWord.start,
+        kind: scene.type === "cta" ? "ding" : "impact",
+        volume: scene.type === "cta" ? 0.34 : 0.24,
+      });
+    }
+
+    if (project.custom_sfx_url && scene.emotion === "high") {
+      cues.push({
+        id: `custom-${index}`,
+        start: scene.start + 0.08,
+        kind: "custom",
+        volume: 0.3,
+        src: project.custom_sfx_url,
+      });
+    }
+  });
+
+  return cues;
+};
+
+const getFallbackDurationSec = (inputProps) => {
+  const wordEnd = inputProps.words.length
+    ? Math.max(...inputProps.words.map((word) => Number(word.end) || 0))
+    : 0;
+  const sceneEnd = inputProps.scenes.length
+    ? Math.max(...inputProps.scenes.map((scene) => Number(scene.end) || 0))
+    : 0;
+
+  return Math.max(wordEnd, sceneEnd, 8);
+};
 
 const buildInputProps = (project, segments, assets) => {
   const words = [];
   const scenes = [];
   const brollAssets = [];
+  const demoVideos = [];
   const brollByQuery = new Map(
     assets.filter((a) => a.kind === "broll").map((a) => [String(a.prompt || "").toLowerCase(), a]),
   );
@@ -56,12 +209,18 @@ const buildInputProps = (project, segments, assets) => {
       const asset = brollByQuery.get(query) || assets.find((a) => a.kind === "broll");
       const url = asset?.url;
       if (url) {
+        const sceneForBroll = scenes.find((scene) => start >= scene.start && start <= scene.end);
         brollAssets.push({
           url,
           start,
           end,
-          mode: data.mode === "cutaway" ? "cutaway" : "overlay",
-          opacity: typeof data.opacity === "number" ? data.opacity : 1,
+          mode:
+            data.mode === "cutaway" || sceneForBroll?.type === "hook" || sceneForBroll?.type === "cta"
+              ? "cutaway"
+              : "overlay",
+          opacity: typeof data.opacity === "number" ? data.opacity : sceneForBroll?.emotion === "high" ? 0.94 : 0.78,
+          emphasis: sceneForBroll?.emotion === "high" ? "impact" : "soft",
+          anchor: sceneForBroll?.type === "cta" ? "bottom" : sceneForBroll?.type === "hook" ? "top" : "full",
         });
       }
     } else if (seg.type === "scene" || seg.type === "cut") {
@@ -71,6 +230,8 @@ const buildInputProps = (project, segments, assets) => {
         type: data.scene_type ?? data.type ?? "explanation",
         keywords: Array.isArray(data.keywords) ? data.keywords : [],
         emotion: data.emotion === "high" ? "high" : "normal",
+        transition: transitionForScene(data.scene_type ?? data.type ?? "explanation", data.emotion === "high" ? "high" : "normal"),
+        punchWords: Array.isArray(data.keywords) ? data.keywords.slice(0, 2) : [],
       });
     }
   }
@@ -82,16 +243,43 @@ const buildInputProps = (project, segments, assets) => {
       type: "explanation",
       keywords: [],
       emotion: "normal",
+      transition: "swipe",
+      punchWords: [],
     });
+  }
+
+  const enrichedWords = buildImportantWords(words, scenes);
+  const captionBlocks = buildCaptionBlocks(enrichedWords, scenes);
+  const sfxCues = buildSfxCues(scenes, enrichedWords, project);
+
+  const topDemoAsset =
+    assets.find((asset) => asset.kind === "layout_demo_top" && asset.url) ||
+    assets.find((asset) => asset.kind === "broll" && asset.url);
+  const bottomDemoAsset =
+    assets.find((asset) => asset.kind === "layout_demo_bottom" && asset.url) ||
+    assets.filter((asset) => asset.kind === "broll" && asset.url)[1] ||
+    topDemoAsset;
+
+  if (topDemoAsset?.url) {
+    demoVideos.push({ slot: "top", url: topDemoAsset.url });
+  }
+
+  if (bottomDemoAsset?.url) {
+    demoVideos.push({ slot: "bottom", url: bottomDemoAsset.url });
   }
 
   return {
     videoUrl: project.source_video_url,
     style: mapStyle(project.style),
     intensity: project.intensity || "medium",
-    words,
+    layoutTemplate: mapLayoutTemplate(project.business_template),
+    words: enrichedWords,
     scenes,
     brollAssets,
+    demoVideos,
+    captionBlocks,
+    sfxCues,
+    customSfxUrl: project.custom_sfx_url || null,
   };
 };
 
@@ -122,7 +310,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, intensity, source_duration_sec")
+      .select("id, owner_id, source_video_url, format, style, intensity, source_duration_sec, business_template, custom_sfx_url")
       .eq("id", projectId)
       .single();
 
@@ -152,15 +340,17 @@ export default async function handler(req, res) {
       inputProps,
     });
 
+    const safeDurationSec = project.source_duration_sec || getFallbackDurationSec(inputProps);
     const durationInFrames = Math.max(
       composition.durationInFrames,
-      Math.ceil((project.source_duration_sec || 8) * composition.fps),
+      Math.ceil(safeDurationSec * composition.fps),
     );
 
     const { buffer } = await renderMedia({
       serveUrl,
       composition: { ...composition, durationInFrames },
       codec: "h264",
+      audioCodec: "aac",
       outputLocation: null,
       inputProps,
       concurrency: 1,
@@ -198,7 +388,7 @@ export default async function handler(req, res) {
 
     await supabase
       .from("ai_edit_projects")
-      .update({ status: "completed", progress: 100 })
+      .update({ status: "completed", stage: "completed", progress: 100, progress_text: "Монтаж готов" })
       .eq("id", projectId);
 
     return res.status(200).json({ success: true, renderId: render.id, url: publicUrl.publicUrl });
@@ -206,7 +396,7 @@ export default async function handler(req, res) {
     const message = error instanceof Error ? error.message : "Render failed";
     await supabase
       .from("ai_edit_projects")
-      .update({ status: "failed", error_message: message })
+      .update({ status: "failed", stage: "failed", progress_text: "Ошибка рендера", error_message: message })
       .eq("id", projectId);
     return res.status(500).json({ error: message });
   }

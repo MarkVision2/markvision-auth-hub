@@ -31,6 +31,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { CfButtonMd, CfH2, CfSection, cfStyles } from "@/components/content/contentFactoryDesignSystem";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -126,6 +128,7 @@ const SCENARIO_PRESETS = [
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function ScenarioCreator() {
+    const { active, isAgency } = useWorkspace();
     // Mode state
     const [creationMode, setCreationMode] = useState<"link" | "topic">("topic");
     const [linkUrl, setLinkUrl] = useState("");
@@ -152,6 +155,13 @@ export default function ScenarioCreator() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Scroll to top when submitted
+    useEffect(() => {
+        if (isGenerating || isSubmitted) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+    }, [isGenerating, isSubmitted]);
 
     useEffect(() => {
         return () => {
@@ -226,15 +236,19 @@ export default function ScenarioCreator() {
     };
 
     // ── Main generate ────────────────────────────────────────────────────────
-    const handleGenerate = useCallback(async () => {
+    const handleGenerateClick = () => {
         if (creationMode === "link" && !linkUrl.trim()) {
-            toast({ title: "Добавьте ссылку на видео", variant: "destructive" });
+            toast({ title: "Добавьте ссылку на видео", description: "Нужна ссылка для анализа сценария", variant: "destructive" });
             return;
         }
         if (creationMode === "topic" && !topic.trim() && !audioBlob) {
-            toast({ title: "Введите тему или запишите голос", variant: "destructive" });
+            toast({ title: "Введите тему или запишите голос", description: "AI нужно описание, чтобы составить сценарий", variant: "destructive" });
             return;
         }
+        handleGenerate();
+    };
+
+    const handleGenerate = useCallback(async () => {
 
         setIsGenerating(true);
         setResult(null);
@@ -255,14 +269,33 @@ export default function ScenarioCreator() {
             setLoaderText("Отправляем запрос...");
             setLoaderProgress(40);
 
+            // Create record in Supabase first
+            const { data: dbRecord, error: dbError } = await (supabase as any)
+                .from("content_tasks")
+                .insert({
+                    content_type: "scenario",
+                    status: "pending",
+                    progress_text: "Генерация сценария...",
+                    project_id: isAgency ? null : active?.id,
+                    main_text: creationMode === "topic" ? topic : linkUrl,
+                })
+                .select()
+                .single();
+
+            if (dbError) console.error("Supabase error:", dbError);
+
             const payload = {
+                task_id: dbRecord?.id,
                 mode: creationMode,
                 source_url: creationMode === "link" ? linkUrl : null,
                 topic: creationMode === "topic" ? finalTopic : null,
+                main_topic: topic,
                 format,
                 contentType,
                 refs,
                 trigger,
+                project_id: active?.id,
+                client_name: active?.name,
                 timestamp: new Date().toISOString()
             };
 
@@ -354,7 +387,7 @@ export default function ScenarioCreator() {
     return (
         <div className="w-full max-w-4xl space-y-6 pb-16">
             {/* Mode toggle */}
-            <div className="rounded-lg border border-border/60 bg-card p-4">
+            <div className={cn(cfStyles.card, "p-4")}>
                 <Label className="mb-2 block text-xs font-medium text-muted-foreground">Способ создания</Label>
                 <div className="flex gap-1.5 rounded-xl bg-muted/60 p-1">
                     <button
@@ -379,7 +412,7 @@ export default function ScenarioCreator() {
             </div>
 
             {/* Presets */}
-            <div className="rounded-lg border border-border/60 bg-card p-5">
+            <div className={cn(cfStyles.card, "p-5")}>
                 <div className="mb-4 flex items-baseline justify-between gap-3">
                     <h3 className="text-base font-semibold text-foreground">Быстрый старт</h3>
                     <p className="hidden text-xs text-muted-foreground sm:block">Нажмите, чтобы заполнить заготовку</p>
@@ -418,7 +451,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="rounded-lg border border-border/60 bg-card p-5"
+                        className={cn(cfStyles.card, "p-5")}
                     >
                         <Label className="mb-2 block text-xs font-medium text-muted-foreground">Ссылка на Reels / Shorts / TikTok</Label>
                         <div className="relative">
@@ -440,7 +473,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="space-y-3 rounded-lg border border-border/60 bg-card p-5"
+                        className={cn(cfStyles.card, "p-5 space-y-3")}
                     >
                         <Label className="block text-xs font-medium text-muted-foreground">Тема / Идея (текст или голос)</Label>
                         <div className="relative">
@@ -493,7 +526,7 @@ export default function ScenarioCreator() {
 
             {/* Form grid — only for "topic" mode */}
             {creationMode === "topic" && (
-                <div className="space-y-5 rounded-lg border border-border/60 bg-card p-5">
+                <div className={cn(cfStyles.card, "p-5 space-y-5")}>
                     <h3 className="text-base font-semibold text-foreground">Параметры сценария</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <ModernSelect label="Формат" value={format} onChange={setFormat} options={OPTIONS.formats} icon={Video} />
@@ -524,10 +557,9 @@ export default function ScenarioCreator() {
                 </div>
             )}
 
-            {/* CTA */}
             <div className="flex flex-col gap-3 sm:flex-row">
                 <CfButtonMd
-                    onClick={handleGenerate}
+                    onClick={handleGenerateClick}
                     disabled={isGenerating}
                     className="h-12 flex-1 gap-2 rounded-xl bg-primary text-sm text-primary-foreground hover:bg-primary/90"
                 >
@@ -553,7 +585,7 @@ export default function ScenarioCreator() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -8 }}
-                        className="overflow-hidden rounded-lg border border-border/60 bg-card"
+                        className={cn(cfStyles.card, "overflow-hidden")}
                     >
                         <div className="h-1 bg-muted">
                             <motion.div
@@ -583,7 +615,7 @@ export default function ScenarioCreator() {
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="overflow-hidden rounded-lg border border-border/60 bg-card"
+                        className={cn(cfStyles.card, "overflow-hidden")}
                     >
                         <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-emerald-500/5 px-5 py-4">
                             <div className="flex items-center gap-3">

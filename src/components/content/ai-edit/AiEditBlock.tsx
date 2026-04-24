@@ -206,6 +206,13 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState<ProjectStatus | null>(null);
 
+  // Scroll to top on submit/error
+  useEffect(() => {
+    if (isSubmitting || status?.errorMessage) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isSubmitting, status?.errorMessage]);
+
   useEffect(() => {
     return () => {
       if (videoPreview) {
@@ -601,7 +608,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     // --- STEPS RENDERERS ---
   const renderStep0 = () => (
     <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-          <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+          <div className={cn(cfStyles.card, "p-6")}>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold tracking-tight text-foreground">Исходное видео и ассеты</h3>
@@ -658,7 +665,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
   const renderStep1 = () => (
     <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6")}>
         <div className="mb-5">
           <h3 className="text-xl font-bold tracking-tight text-foreground">Готовые шаблоны 9:16</h3>
           <p className="mt-1 text-[11px] font-medium text-muted-foreground">Два фиксированных шаблона под экспертный вертикальный контент</p>
@@ -697,7 +704,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
 
   const renderStep2 = () => (
     <motion.div key="s2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-      <div className="rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+      <div className={cn(cfStyles.card, "p-6")}>
         <div>
           <h3 className="text-xl font-bold tracking-tight text-foreground">Детали и генерация</h3>
           <p className="mt-1 text-[11px] font-medium text-muted-foreground mb-5">Финальные настройки перед запуском пайплайна</p>
@@ -875,7 +882,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         </div>
 
         <aside className="xl:sticky xl:top-4 self-start space-y-4">
-          <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+          <div className={cn(cfStyles.card, "p-5")}>
             <div className="flex items-center justify-between">
                <h3 className="text-[12px] font-bold tracking-tight text-muted-foreground">ПРОГРЕСС МОНТАЖА</h3>
                {projectId && <Badge variant="secondary" className="font-mono text-[10px]">{projectId.slice(-8)}</Badge>}
@@ -924,7 +931,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border/50 bg-card p-5 shadow-sm">
+          <div className={cn(cfStyles.card, "p-5")}>
             <p className="text-[12px] font-bold tracking-tight text-muted-foreground">ПОСЛЕ КНОПКИ “СОЗДАТЬ МОНТАЖ”</p>
             <div className="mt-4 space-y-3">
               {stageChecklist.map((item, index) => (
@@ -951,7 +958,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       </div>
 
       {status?.renders?.length ? (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 rounded-xl border border-border/50 bg-card p-6 shadow-sm">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 space-y-5")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold font-medium text-muted-foreground">Results</p>
