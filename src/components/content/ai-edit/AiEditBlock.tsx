@@ -891,9 +891,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   };
 
   return (
-    <div className="h-full overflow-y-auto pr-2 custom-scrollbar pb-10">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
-        <div className="space-y-6">
+    <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
+      <div className="space-y-6">
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
             <CfStepIndicator steps={AI_EDIT_STEPS} current={step} />
           </div>
