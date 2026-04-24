@@ -12,13 +12,9 @@ export const config = {
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const PEXELS_API_KEY =
-  process.env.PEXELS_API_KEY || "6isRh99X3VgcUFBrogY3kp9rQ6JhZw3HyyVLpdDRd446ddpSTNhxBMZA";
-const TELEGRAM_BOT_TOKEN =
-  process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN ||
-  "8613452966:AAEjorCTNAWRcSJeCUp2fvWkiGRRxYE2k1I";
-const TELEGRAM_DEFAULT_CHAT_ID =
-  process.env.TELEGRAM_AI_MONTAGE_CHAT_ID || "8401162135";
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
+const TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_AI_MONTAGE_CHAT_ID;
 const RENDER_BUCKET = "ai-edit-renders";
 
 const downloadTo = async (url, destPath) => {
@@ -43,6 +39,7 @@ const runFfmpeg = (args) =>
   });
 
 const pickPexelsClips = async (keyword, limit = 3) => {
+  if (!PEXELS_API_KEY) return [];
   const url = `https://api.pexels.com/videos/search?per_page=8&query=${encodeURIComponent(keyword)}`;
   const res = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
   if (!res.ok) throw new Error(`Pexels ${res.status}`);
@@ -63,6 +60,7 @@ const progressPatch = async (supabase, projectId, patch) => {
 };
 
 const sendTelegramVideo = async (chatId, videoPath, caption) => {
+  if (!TELEGRAM_BOT_TOKEN || !chatId) return null;
   const { Blob } = await import("node:buffer");
   const fileBuffer = await fs.readFile(videoPath);
   const form = new FormData();
