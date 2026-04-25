@@ -144,14 +144,37 @@ const geminiTranscribeFileApi = async (videoPath, sizeBytes) => {
   return JSON.parse(text);
 };
 
+const wordsFromSegments = (segments) => {
+  if (!Array.isArray(segments)) return [];
+  const out = [];
+  for (const seg of segments) {
+    const start = Number(seg?.start ?? 0);
+    const end = Number(seg?.end ?? start + 1);
+    const text = String(seg?.text ?? "").trim();
+    if (!text || end <= start) continue;
+    const tokens = text.split(/\s+/).filter(Boolean);
+    if (!tokens.length) continue;
+    const slice = (end - start) / tokens.length;
+    tokens.forEach((tok, i) => {
+      out.push({ t: +(start + slice * i).toFixed(3), d: +slice.toFixed(3), w: tok });
+    });
+  }
+  return out;
+};
+
 const geminiTranscribe = async (videoPath) => {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
   const stat = await fs.stat(videoPath);
-  if (stat.size < 18 * 1024 * 1024) {
-    const buffer = await fs.readFile(videoPath);
-    return geminiTranscribeInline(buffer);
+  const result =
+    stat.size < 18 * 1024 * 1024
+      ? await geminiTranscribeInline(await fs.readFile(videoPath))
+      : await geminiTranscribeFileApi(videoPath, stat.size);
+  log("gemini raw: words=", result?.words?.length || 0, "segments=", result?.segments?.length || 0);
+  if ((!Array.isArray(result.words) || result.words.length === 0) && Array.isArray(result.segments)) {
+    result.words = wordsFromSegments(result.segments);
+    log("gemini fallback: derived", result.words.length, "words from segments");
   }
-  return geminiTranscribeFileApi(videoPath, stat.size);
+  return result;
 };
 
 const pickPexelsVideo = async (query, orientation) => {
