@@ -488,7 +488,7 @@ export default function ClonyWizard() {
         .insert({
           name: form.character_name,
           photo_urls: photoUrls,
-          project_id: isAgency ? null : active?.id,
+          project_id: active?.id,
         })
         .select()
         .single();
@@ -631,7 +631,7 @@ export default function ClonyWizard() {
           content_type: form.content_type,
           status: "pending",
           progress_text: "Запрос отправлен в Clony AI...",
-          project_id: isAgency ? null : active?.id,
+          project_id: active?.id,
           main_text: form.main_prompt,
         })
         .select()

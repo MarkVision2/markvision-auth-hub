@@ -243,7 +243,7 @@ export default function DecompositionTab() {
                                     plan_visits: calc.diagnostics,
                                     plan_sales: calc.sales,
                                     plan_revenue: Math.round(calc.revenue),
-                                    project_id: isAgency ? null : active?.id
+                                    project_id: active?.id
                                 };
 
                                 const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);

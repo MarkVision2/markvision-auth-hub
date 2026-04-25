@@ -276,7 +276,7 @@ export default function ScenarioCreator() {
                     content_type: "scenario",
                     status: "pending",
                     progress_text: "Генерация сценария...",
-                    project_id: isAgency ? null : active?.id,
+                    project_id: active?.id,
                     main_text: creationMode === "topic" ? topic : linkUrl,
                 })
                 .select()

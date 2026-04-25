@@ -281,7 +281,7 @@ export function CompetitorAnalysis() {
 
             const { data, error } = await (supabase as any)
                 .from("competitors")
-                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: isAgency ? null : active?.id })
+                .insert({ username, platform: "instagram", display_name: username, is_active: true, project_id: active?.id })
                 .select()
                 .single();
             if (error) throw error;
@@ -307,7 +307,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(String(N8N_SCRAPE_HEAVY), {
                     username,
                     competitor_id: data.id,
-                    project_id: isAgency ? null : active?.id,
+                    project_id: active?.id,
                 });
                 toast({ title: "🚀 Сканирование запущено!", description: "Посты появятся через 1-2 мин" });
             } catch {
@@ -339,7 +339,7 @@ export function CompetitorAnalysis() {
                 await triggerScrape(String(url), {
                     username: comp.username,
                     competitor_id: comp.id,
-                    project_id: isAgency ? null : active?.id,
+                    project_id: active?.id,
                 }).catch(() => {/* n8n optional */});
             }
 
@@ -403,7 +403,7 @@ export function CompetitorAnalysis() {
                 body: {
                     action: "analyze_video",
                     url: postUrl.trim(),
-                    project_id: isAgency ? null : active?.id,
+                    project_id: active?.id,
                 },
             });
             if (error) throw new Error((error as any).message);
@@ -522,7 +522,7 @@ export function CompetitorAnalysis() {
                 body: JSON.stringify({
                     url: instagramUrl,
                     username,
-                    project_id: isAgency ? null : active?.id,
+                    project_id: active?.id,
                 }),
             });
 
