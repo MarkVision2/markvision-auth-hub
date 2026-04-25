@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -808,7 +808,7 @@ export default function ClonyWizard() {
             )}
             {!isError && submittedTaskId && (
               <p className="text-[10px] font-mono text-muted-foreground/50 pt-1">
-                ID задачи: <span className="text-primary/70">{submittedTaskId.slice(0, 8)}</span>
+                ID задачи: <span className="text-primary/70">{submittedTaskId?.slice(0, 8) || "..."}</span>
               </p>
             )}
           </div>

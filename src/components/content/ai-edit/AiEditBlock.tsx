@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
   Clapperboard,
+  Clock,
   Download,
   FileType,
   Image as ImageIcon,
@@ -13,13 +16,14 @@ import {
   Loader2,
   Maximize,
   Music4,
-  ArrowLeft,
-  ArrowRight,
+  Plus,
   RefreshCcw,
+  RotateCcw,
   Sparkles,
   Type,
   Upload,
   Wand2,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -889,8 +893,9 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
-      <div className="space-y-6">
+    <>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
+        <div className="space-y-6">
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
             <CfStepIndicator steps={AI_EDIT_STEPS} current={step} />
           </div>
@@ -1017,8 +1022,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         </aside>
       </div>
 
-      {status?.renders && status.renders.length > 0 ? (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 space-y-5")}>
+      {status?.renders && status.renders.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 mt-8 space-y-5")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-medium text-muted-foreground">Results</p>
@@ -1050,8 +1055,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             ))}
           </div>
         </motion.div>
-      ) : null}
-    </div>
+      )}
+    </>
   );
 };
 
