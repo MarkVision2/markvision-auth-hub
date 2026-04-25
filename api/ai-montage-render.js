@@ -406,6 +406,7 @@ export default async function handler(req, res) {
     });
 
     let telegramMessageId = null;
+    let telegramError = null;
     try {
       const caption =
         `🎬 AI Montage готов\n` +
@@ -414,7 +415,15 @@ export default async function handler(req, res) {
         `B-roll: ${pickedOverlaySegs.length}× · Титры: ${analysis.words?.length || 0} слов\n` +
         `URL: ${publicUrl.publicUrl}`;
       telegramMessageId = await sendTelegramVideo(telegramChatId, outPath, caption);
+      if (!telegramMessageId) {
+        telegramError = !TELEGRAM_BOT_TOKEN
+          ? "TELEGRAM_AI_MONTAGE_BOT_TOKEN missing"
+          : !telegramChatId
+            ? "telegram_chat_id missing"
+            : "unknown silent skip";
+      }
     } catch (tgErr) {
+      telegramError = tgErr.message;
       log("telegram failed:", tgErr.message);
     }
 
@@ -432,6 +441,13 @@ export default async function handler(req, res) {
       words: analysis.words?.length || 0,
       overlays: pickedOverlaySegs.length,
       telegram_message_id: telegramMessageId,
+      telegram_error: telegramError,
+      env: {
+        gemini: Boolean(GEMINI_API_KEY),
+        pexels: Boolean(PEXELS_API_KEY),
+        tg_token: Boolean(TELEGRAM_BOT_TOKEN),
+        tg_default_chat: Boolean(TELEGRAM_DEFAULT_CHAT_ID),
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Render failed";
