@@ -529,6 +529,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         progress: 42,
         progressText: "Пайплайн запущен, ожидаем расшифровку видео",
       });
+      setIsSubmitting(false);
       onTaskCreated?.(insertedProject.id);
     } catch (error: unknown) {
       setIsSubmitting(false);
