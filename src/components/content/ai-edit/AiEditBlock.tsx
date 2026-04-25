@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -213,8 +213,27 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [scriptHint, setScriptHint] = useState("");
   const [showExtraAssets, setShowExtraAssets] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectId, setProjectIdRaw] = useState<string | null>(() => {
+    try {
+      return typeof window !== "undefined" ? window.localStorage.getItem("ai-edit-project-id") : null;
+    } catch {
+      return null;
+    }
+  });
+  const setProjectId = (id: string | null) => {
+    setProjectIdRaw(id);
+    try {
+      if (typeof window !== "undefined") {
+        if (id) window.localStorage.setItem("ai-edit-project-id", id);
+        else window.localStorage.removeItem("ai-edit-project-id");
+      }
+    } catch {
+      /* ignore */
+    }
+  };
   const [status, setStatus] = useState<ProjectStatus | null>(null);
+  const completionToastedRef = useRef(false);
+  const renderResultsRef = useRef<HTMLDivElement | null>(null);
 
   // Scroll to top on submit/error
   useEffect(() => {
@@ -222,6 +241,23 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [isSubmitting, status?.errorMessage]);
+
+  useEffect(() => {
+    const isDone = status?.status === "completed" && (status.renders?.length ?? 0) > 0;
+    if (!isDone) {
+      completionToastedRef.current = false;
+      return;
+    }
+    if (completionToastedRef.current) return;
+    completionToastedRef.current = true;
+    toast({
+      title: "Монтаж готов",
+      description: "Результат доступен ниже — можно скачать или отправить.",
+    });
+    setTimeout(() => {
+      renderResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 200);
+  }, [status?.status, status?.renders?.length, toast]);
 
   useEffect(() => {
     return () => {
@@ -893,8 +929,32 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     }
   };
 
+  const isCompleted = status?.status === "completed" && (status.renders?.length ?? 0) > 0;
+
   return (
     <>
+      {isCompleted && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-6xl mx-auto mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3"
+        >
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+            <div>
+              <p className="text-sm font-bold text-foreground">Монтаж готов</p>
+              <p className="text-[11px] text-muted-foreground">Видео отрендерено и доступно для скачивания.</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="bg-emerald-500 text-white hover:bg-emerald-600"
+            onClick={() => renderResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          >
+            Смотреть результат
+          </Button>
+        </motion.div>
+      )}
       <div className="max-w-6xl mx-auto grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-6">
         <div className="space-y-6">
           <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
@@ -1024,7 +1084,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       </div>
 
       {status?.renders && status.renders.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 mt-8 space-y-5")}>
+        <motion.div ref={renderResultsRef} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className={cn(cfStyles.card, "p-6 mt-8 space-y-5")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-medium text-muted-foreground">Results</p>
