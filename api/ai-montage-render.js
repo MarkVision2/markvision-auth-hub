@@ -200,6 +200,7 @@ const progressPatch = async (supabase, projectId, patch) => {
 };
 
 const sendTelegramVideo = async (chatId, videoPath, caption) => {
+  log("tg.sendVideo: token=", TELEGRAM_BOT_TOKEN ? "set" : "MISSING", "chatId=", chatId || "MISSING");
   if (!TELEGRAM_BOT_TOKEN || !chatId) return null;
   const { Blob } = await import("node:buffer");
   const fileBuffer = await fs.readFile(videoPath);
@@ -367,8 +368,8 @@ export default async function handler(req, res) {
     args.push("-map", "0:a?");
     args.push(
       "-c:v", "libx264",
-      "-preset", "medium",
-      "-crf", "20",
+      "-preset", "veryfast",
+      "-crf", "21",
       "-pix_fmt", "yuv420p",
       "-movflags", "+faststart",
       "-c:a", "aac",
