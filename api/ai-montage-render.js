@@ -22,7 +22,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_AI_MONTAGE_CHAT_ID;
 const RENDER_BUCKET = "ai-edit-renders";
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const log = (...args) => console.log("[ai-montage]", ...args);
 
@@ -102,6 +102,7 @@ const geminiTranscribeInline = async (buffer) => {
   if (!res.ok) throw new Error(`Gemini inline ${res.status}: ${(await res.text()).slice(0, 400)}`);
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  log("gemini inline text head:", text.slice(0, 300));
   return JSON.parse(text);
 };
 
@@ -141,6 +142,7 @@ const geminiTranscribeFileApi = async (videoPath, sizeBytes) => {
   if (!res.ok) throw new Error(`Gemini analyze ${res.status}: ${(await res.text()).slice(0, 400)}`);
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  log("gemini fileapi text head:", text.slice(0, 300));
   return JSON.parse(text);
 };
 
@@ -384,10 +386,10 @@ export default async function handler(req, res) {
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
       filter.push(
-        `[0:v]scale=${outW}:${halfH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[bot]`,
+        `[0:v]scale=${outW}:${halfH}:force_original_aspect_ratio=decrease,pad=${outW}:${halfH}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1[bot]`,
       );
       filter.push(
-        `[1:v]scale=${outW}:${halfH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[top]`,
+        `[1:v]scale=${outW}:${halfH}:force_original_aspect_ratio=decrease,pad=${outW}:${halfH}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1[top]`,
       );
       filter.push(`[top][bot]vstack=inputs=2[base0]`);
       cur = "base0";
