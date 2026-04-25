@@ -1,14 +1,15 @@
 import { spawn } from "node:child_process";
-import { promises as fs } from "node:fs";
+import { promises as fs, createReadStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Readable } from "node:stream";
 import ffmpegPath from "ffmpeg-static";
 import { createClient } from "@supabase/supabase-js";
 
 export const config = {
   maxDuration: 300,
-  memory: 3009,
+  memory: 1024,
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -104,13 +105,19 @@ const geminiTranscribeInline = async (buffer) => {
   return JSON.parse(text);
 };
 
-const geminiTranscribeFileApi = async (buffer) => {
+const geminiTranscribeFileApi = async (videoPath, sizeBytes) => {
+  const stream = createReadStream(videoPath);
   const upload = await fetch(
     `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`,
     {
       method: "POST",
-      headers: { "X-Goog-Upload-Protocol": "raw", "Content-Type": "video/mp4" },
-      body: buffer,
+      headers: {
+        "X-Goog-Upload-Protocol": "raw",
+        "Content-Type": "video/mp4",
+        "Content-Length": String(sizeBytes),
+      },
+      body: Readable.toWeb(stream),
+      duplex: "half",
     },
   );
   if (!upload.ok) throw new Error(`Gemini upload ${upload.status}`);
@@ -139,9 +146,12 @@ const geminiTranscribeFileApi = async (buffer) => {
 
 const geminiTranscribe = async (videoPath) => {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
-  const buffer = await fs.readFile(videoPath);
-  if (buffer.length < 18 * 1024 * 1024) return geminiTranscribeInline(buffer);
-  return geminiTranscribeFileApi(buffer);
+  const stat = await fs.stat(videoPath);
+  if (stat.size < 18 * 1024 * 1024) {
+    const buffer = await fs.readFile(videoPath);
+    return geminiTranscribeInline(buffer);
+  }
+  return geminiTranscribeFileApi(videoPath, stat.size);
 };
 
 const pickPexelsVideo = async (query, orientation) => {

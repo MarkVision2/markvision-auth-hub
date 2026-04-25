@@ -55,8 +55,8 @@
     ],
     "functions": {
         "api/ai-montage-render.js": {
-            "maxDuration": 10,
-            "memory": 2048
+            "maxDuration": 300,
+            "memory": 1024
         }
     }
 }
