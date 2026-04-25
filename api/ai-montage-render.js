@@ -244,7 +244,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language")
+      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error(projectError?.message || "Project not found");
@@ -288,36 +288,52 @@ export default async function handler(req, res) {
     });
 
     const segments = (analysis.segments || []).filter((s) => s && s.end > s.start);
-    const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, 5);
-    const brollByQuery = new Map();
-    for (const q of uniqueQueries) {
-      const url = await pickPexelsVideo(q, orientation);
-      if (url) {
-        const p = path.join(workDir, `broll_${brollByQuery.size}.mp4`);
-        try {
-          await downloadTo(url, p);
-          brollByQuery.set(q, p);
-        } catch (e) {
-          log("broll dl fail", q, e.message);
-        }
+    const layout = project.business_template || "default";
+    const isSplitTop = layout === "split_demo_top" && project.custom_broll_url;
+
+    let topVideoPath = null;
+    if (isSplitTop) {
+      topVideoPath = path.join(workDir, "top.mp4");
+      try {
+        await downloadTo(project.custom_broll_url, topVideoPath);
+        log("split_demo_top: top video downloaded");
+      } catch (e) {
+        log("top video download failed:", e.message);
+        topVideoPath = null;
       }
     }
 
     const pickedOverlaySegs = [];
-    for (let i = 1; i < segments.length - 1 && pickedOverlaySegs.length < 3; i += 1) {
-      const seg = segments[i];
-      if (seg.end - seg.start < 2.5) continue;
-      const p = brollByQuery.get(seg.broll_query);
-      if (p) {
-        const overlayDur = Math.min(3.5, seg.end - seg.start - 0.3);
-        pickedOverlaySegs.push({
-          path: p,
-          start: seg.start + 0.2,
-          end: seg.start + 0.2 + overlayDur,
-        });
+    if (!isSplitTop) {
+      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, 5);
+      const brollByQuery = new Map();
+      for (const q of uniqueQueries) {
+        const url = await pickPexelsVideo(q, orientation);
+        if (url) {
+          const p = path.join(workDir, `broll_${brollByQuery.size}.mp4`);
+          try {
+            await downloadTo(url, p);
+            brollByQuery.set(q, p);
+          } catch (e) {
+            log("broll dl fail", q, e.message);
+          }
+        }
+      }
+      for (let i = 1; i < segments.length - 1 && pickedOverlaySegs.length < 3; i += 1) {
+        const seg = segments[i];
+        if (seg.end - seg.start < 2.5) continue;
+        const p = brollByQuery.get(seg.broll_query);
+        if (p) {
+          const overlayDur = Math.min(3.5, seg.end - seg.start - 0.3);
+          pickedOverlaySegs.push({
+            path: p,
+            start: seg.start + 0.2,
+            end: seg.start + 0.2 + overlayDur,
+          });
+        }
       }
     }
-    log("overlays:", pickedOverlaySegs.length);
+    log("layout:", layout, "splitTop:", Boolean(topVideoPath), "overlays:", pickedOverlaySegs.length);
 
     const srt = buildSrtFromWords(analysis.words || [], { chunkWords: 3 });
     if (srt) await fs.writeFile(srtPath, srt);
@@ -333,30 +349,49 @@ export default async function handler(req, res) {
     const hasFont = await fs.access(fontRel).then(() => true).catch(() => false);
 
     const args = ["-y", "-i", userPath];
+    if (topVideoPath) {
+      args.push("-stream_loop", "-1", "-i", topVideoPath);
+    }
     for (const ov of pickedOverlaySegs) args.push("-i", ov.path);
 
     const filter = [];
-    filter.push(
-      `[0:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
-    );
-    let cur = "base0";
-    pickedOverlaySegs.forEach((ov, i) => {
-      const inIdx = i + 1;
+    let cur;
+    let subtitleMarginV = Math.round(outH * 0.12);
+
+    if (topVideoPath) {
+      const halfH = Math.round(outH / 2);
       filter.push(
-        `[${inIdx}:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,setpts=PTS-STARTPTS+${ov.start.toFixed(2)}/TB[ov${i}]`,
+        `[0:v]scale=${outW}:${halfH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[bot]`,
       );
-      const next = `v${i}`;
       filter.push(
-        `[${cur}][ov${i}]overlay=enable='between(t,${ov.start.toFixed(2)},${ov.end.toFixed(2)})':shortest=0[${next}]`,
+        `[1:v]scale=${outW}:${halfH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[top]`,
       );
-      cur = next;
-    });
+      filter.push(`[top][bot]vstack=inputs=2[base0]`);
+      cur = "base0";
+      subtitleMarginV = Math.round(outH * 0.5) - Math.round(outH * 0.04);
+    } else {
+      filter.push(
+        `[0:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
+      );
+      cur = "base0";
+      pickedOverlaySegs.forEach((ov, i) => {
+        const inIdx = i + 1;
+        filter.push(
+          `[${inIdx}:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,setpts=PTS-STARTPTS+${ov.start.toFixed(2)}/TB[ov${i}]`,
+        );
+        const next = `v${i}`;
+        filter.push(
+          `[${cur}][ov${i}]overlay=enable='between(t,${ov.start.toFixed(2)},${ov.end.toFixed(2)})':shortest=0[${next}]`,
+        );
+        cur = next;
+      });
+    }
 
     if (srt && hasFont) {
       const styled =
-        `FontName=Montserrat,FontSize=16,PrimaryColour=&H00FFFFFF,` +
+        `FontName=Montserrat,FontSize=18,PrimaryColour=&H00FFFFFF,` +
         `OutlineColour=&H00000000,BackColour=&HA0000000,BorderStyle=3,` +
-        `Outline=3,Shadow=0,Alignment=2,MarginV=${Math.round(outH * 0.12)},Bold=1`;
+        `Outline=3,Shadow=0,Alignment=2,MarginV=${subtitleMarginV},Bold=1`;
       const escSrt = srtPath.replace(/:/g, "\\:").replace(/'/g, "\\'");
       const fontsDir = path.dirname(fontRel).replace(/:/g, "\\:");
       filter.push(`[${cur}]subtitles='${escSrt}':fontsdir='${fontsDir}':force_style='${styled}'[vout]`);
@@ -375,7 +410,7 @@ export default async function handler(req, res) {
       "-c:a", "aac",
       "-b:a", "128k",
       "-ar", "44100",
-      "-shortest",
+      "-t", String(sourceDur),
       outPath,
     );
 
