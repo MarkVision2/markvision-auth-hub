@@ -276,7 +276,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec, expert_crop_y_pct, expert_zoom_pct")
+      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec, expert_crop_y_pct, expert_zoom_pct, analysis_json")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error(projectError?.message || "Project not found");
@@ -305,14 +305,21 @@ export default async function handler(req, res) {
     });
 
     let analysis = { words: [], segments: [], summary: "" };
-    try {
-      analysis = await geminiTranscribe(userPath, {
-        language: project.caption_language,
-        scriptHint: project.script_hint,
-      });
-      log("gemini words:", analysis.words?.length, "segments:", analysis.segments?.length);
-    } catch (e) {
-      log("Gemini failed, continuing without captions:", e.message);
+    if (project.analysis_json && Array.isArray(project.analysis_json.words) && project.analysis_json.words.length > 0) {
+      analysis = project.analysis_json;
+      log("using cached analysis_json:", analysis.words.length, "words", analysis.segments?.length || 0, "segments");
+    } else {
+      try {
+        analysis = await geminiTranscribe(userPath, {
+          language: project.caption_language,
+          scriptHint: project.script_hint,
+        });
+        log("gemini fresh:", analysis.words?.length, "words", analysis.segments?.length, "segments");
+        // Сохраняем для повторного использования (и видимости в n8n).
+        await supabase.from("ai_edit_projects").update({ analysis_json: analysis }).eq("id", projectId);
+      } catch (e) {
+        log("Gemini failed, continuing without captions:", e.message);
+      }
     }
 
     await progressPatch(supabase, projectId, {

@@ -49,6 +49,10 @@
             "destination": "/api/ai-montage-render"
         },
         {
+            "source": "/api/ai-montage-transcribe",
+            "destination": "/api/ai-montage-transcribe"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
@@ -58,6 +62,10 @@
             "maxDuration": 300,
             "memory": 1024,
             "includeFiles": "api/fonts/**"
+        },
+        "api/ai-montage-transcribe.js": {
+            "maxDuration": 120,
+            "memory": 1024
         }
     }
 }
