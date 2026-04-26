@@ -276,7 +276,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec")
+      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec, expert_crop_y_pct, expert_zoom_pct")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error(projectError?.message || "Project not found");
@@ -427,11 +427,14 @@ export default async function handler(req, res) {
 
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
-      // BOT (эксперт): fill без полей. Crop смещён к ВЕРХУ источника (y=ih*0.1),
-      // чтобы голова и плечи остались, а лишний фон/руки ушли. Это безопаснее
-      // чем center-crop (срезает голову) и чем pad (даёт чёрные поля).
+      // Параметры из UI (UI-слайдер): expert_crop_y_pct (0-50) — смещение crop по вертикали,
+      // expert_zoom_pct (80-150) — зум на эксперта. Default 10% offset, 100% zoom.
+      const cropYPct = Math.max(0, Math.min(50, Number(project.expert_crop_y_pct ?? 10))) / 100;
+      const zoomPct = Math.max(80, Math.min(150, Number(project.expert_zoom_pct ?? 100))) / 100;
+      const scaledW = Math.round(outW * zoomPct);
+      // BOT (эксперт): fill, smart crop из UI.
       filter.push(
-        `[0:v]scale=${outW}:-2:force_original_aspect_ratio=increase,crop=${outW}:${halfH}:(iw-${outW})/2:ih*0.10,fps=30,setsar=1[bot]`,
+        `[0:v]scale=${scaledW}:-2:force_original_aspect_ratio=increase,crop=${outW}:${halfH}:(iw-${outW})/2:ih*${cropYPct.toFixed(3)},fps=30,setsar=1[bot]`,
       );
       // TOP (демо): zoom-crop center — демо обычно landscape, центр-кроп норм.
       filter.push(

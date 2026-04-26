@@ -15,6 +15,7 @@ import {
   Layout,
   Loader2,
   Maximize,
+  Move,
   Music4,
   Plus,
   RefreshCcw,
@@ -211,6 +212,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [autoBroll, setAutoBroll] = useState(true);
   const [autoZoom, setAutoZoom] = useState(true);
   const [scriptHint, setScriptHint] = useState("");
+  const [expertCropYPct, setExpertCropYPct] = useState(10);
+  const [expertZoomPct, setExpertZoomPct] = useState(100);
   const [showExtraAssets, setShowExtraAssets] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectIdRaw] = useState<string | null>(() => {
@@ -485,6 +488,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         auto_broll: autoBroll,
         auto_zoom: autoZoom,
         script_hint: scriptHint || null,
+        expert_crop_y_pct: expertCropYPct,
+        expert_zoom_pct: expertZoomPct,
         font_url: fontUrl,
         custom_broll_url: brollUrl,
         custom_sfx_url: soundUrl,
@@ -790,6 +795,62 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             );
           })}
         </div>
+
+        {/* Тонкая настройка размещения эксперта (для split-шаблонов) */}
+        {(layoutTemplate === "split_demo_top" || layoutTemplate === "triple_demo_stack") && (
+          <div className="mt-6 rounded-xl border border-border/40 bg-secondary/10 p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Move className="h-4 w-4 text-primary" />
+              <p className="text-sm font-bold text-foreground">Размещение эксперта в кадре</p>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Эти ползунки управляют crop'ом нижней панели. Если голову срезает — уменьшите «Смещение по вертикали».
+              Если эксперт мелкий — увеличьте «Зум».
+            </p>
+            <div className="grid gap-4">
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground/80">Смещение по вертикали</span>
+                  <span className="text-xs font-mono text-primary">{expertCropYPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  step={1}
+                  value={expertCropYPct}
+                  onChange={(e) => setExpertCropYPct(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                  <span>верх (0%)</span>
+                  <span>середина (25%)</span>
+                  <span>низ (50%)</span>
+                </div>
+              </div>
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground/80">Зум на эксперта</span>
+                  <span className="text-xs font-mono text-primary">{expertZoomPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={80}
+                  max={150}
+                  step={5}
+                  value={expertZoomPct}
+                  onChange={(e) => setExpertZoomPct(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
+                  <span>дальше (80%)</span>
+                  <span>норма (100%)</span>
+                  <span>ближе (150%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
