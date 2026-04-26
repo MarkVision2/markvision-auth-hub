@@ -427,12 +427,13 @@ export default async function handler(req, res) {
 
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
-      // BOT (эксперт): fit (decrease+pad) — сохраняем полное тело, без обрезки рук/головы.
-      // Лёгкие боковые отступы допустимы — главное виден весь эксперт.
+      // BOT (эксперт): fill без полей. Crop смещён к ВЕРХУ источника (y=ih*0.1),
+      // чтобы голова и плечи остались, а лишний фон/руки ушли. Это безопаснее
+      // чем center-crop (срезает голову) и чем pad (даёт чёрные поля).
       filter.push(
-        `[0:v]scale=${outW}:${halfH}:force_original_aspect_ratio=decrease,pad=${outW}:${halfH}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1[bot]`,
+        `[0:v]scale=${outW}:-2:force_original_aspect_ratio=increase,crop=${outW}:${halfH}:(iw-${outW})/2:ih*0.10,fps=30,setsar=1[bot]`,
       );
-      // TOP (демо): zoom-crop fill — здесь обрезка норм, демо обычно landscape.
+      // TOP (демо): zoom-crop center — демо обычно landscape, центр-кроп норм.
       filter.push(
         `[1:v]scale=${outW}:${halfH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[top]`,
       );
