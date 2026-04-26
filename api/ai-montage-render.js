@@ -65,11 +65,16 @@ const ffprobeDuration = (filePath) =>
     });
   });
 
-const PROMPT = `Ты — ассистент AI-монтажёра. Проанализируй это видео эксперта на русском.
-
+const LANG_NAME = { ru: "русском", en: "English", kk: "казахском", uz: "узбекском" };
+const buildPrompt = ({ language = "ru", scriptHint = "" } = {}) => {
+  const lang = LANG_NAME[language] || "русском";
+  const hint = scriptHint
+    ? `\nКонтекст эксперта (учитывай при сегментации и выборе ключевых слов):\n"""${scriptHint.slice(0, 600)}"""\n`
+    : "";
+  return `Ты — ассистент AI-монтажёра. Проанализируй это видео эксперта на ${lang}.${hint}
 Верни СТРОГО JSON вида:
 {
-  "language": "ru",
+  "language": "${language}",
   "summary": "1-2 предложения о теме видео",
   "words": [{"t": 0.12, "d": 0.35, "w": "Привет"}],
   "segments": [
@@ -82,14 +87,15 @@ const PROMPT = `Ты — ассистент AI-монтажёра. Проана�
 - segments: логические смысловые блоки по 4-8 секунд; broll_query — английское поисковое выражение для Pexels (2-4 слова)
 - emphasis: "high" для ключевых эмоциональных слов, иначе "normal"
 - Никаких преамбул, только чистый JSON.`;
+};
 
-const geminiTranscribeInline = async (buffer) => {
+const geminiTranscribeInline = async (buffer, prompt) => {
   const body = {
     contents: [
       {
         parts: [
           { inline_data: { mime_type: "video/mp4", data: buffer.toString("base64") } },
-          { text: PROMPT },
+          { text: prompt },
         ],
       },
     ],
@@ -106,7 +112,7 @@ const geminiTranscribeInline = async (buffer) => {
   return JSON.parse(text);
 };
 
-const geminiTranscribeFileApi = async (videoPath, sizeBytes) => {
+const geminiTranscribeFileApi = async (videoPath, sizeBytes, prompt) => {
   const stream = createReadStream(videoPath);
   const upload = await fetch(
     `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${GEMINI_API_KEY}`,
@@ -132,7 +138,7 @@ const geminiTranscribeFileApi = async (videoPath, sizeBytes) => {
     await new Promise((r) => setTimeout(r, 2000));
   }
   const body = {
-    contents: [{ parts: [{ file_data: { mime_type: "video/mp4", file_uri: fileUri } }, { text: PROMPT }] }],
+    contents: [{ parts: [{ file_data: { mime_type: "video/mp4", file_uri: fileUri } }, { text: prompt }] }],
     generationConfig: { response_mime_type: "application/json", temperature: 0.2 },
   };
   const res = await fetch(
@@ -164,13 +170,14 @@ const wordsFromSegments = (segments) => {
   return out;
 };
 
-const geminiTranscribe = async (videoPath) => {
+const geminiTranscribe = async (videoPath, options = {}) => {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing");
+  const prompt = buildPrompt(options);
   const stat = await fs.stat(videoPath);
   const result =
     stat.size < 18 * 1024 * 1024
-      ? await geminiTranscribeInline(await fs.readFile(videoPath))
-      : await geminiTranscribeFileApi(videoPath, stat.size);
+      ? await geminiTranscribeInline(await fs.readFile(videoPath), prompt)
+      : await geminiTranscribeFileApi(videoPath, stat.size, prompt);
   log("gemini raw: words=", result?.words?.length || 0, "segments=", result?.segments?.length || 0);
   if ((!Array.isArray(result.words) || result.words.length === 0) && Array.isArray(result.segments)) {
     result.words = wordsFromSegments(result.segments);
@@ -269,7 +276,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url")
+      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error(projectError?.message || "Project not found");
@@ -299,7 +306,10 @@ export default async function handler(req, res) {
 
     let analysis = { words: [], segments: [], summary: "" };
     try {
-      analysis = await geminiTranscribe(userPath);
+      analysis = await geminiTranscribe(userPath, {
+        language: project.caption_language,
+        scriptHint: project.script_hint,
+      });
       log("gemini words:", analysis.words?.length, "segments:", analysis.segments?.length);
     } catch (e) {
       log("Gemini failed, continuing without captions:", e.message);
@@ -328,9 +338,16 @@ export default async function handler(req, res) {
       }
     }
 
+    const intensity = (project.intensity || "medium").toLowerCase();
+    const intensityCap = intensity === "low" ? 1 : intensity === "high" ? 5 : 3;
+    const autoBroll = project.auto_broll !== false;
+    const clipMode = project.clip_duration_mode || "auto";
+    const clipSec = Number(project.clip_duration_sec) || 0;
+    const overlayDurCap = clipMode === "fixed" && clipSec > 0 ? Math.max(1.5, Math.min(8, clipSec)) : 3.5;
+
     const pickedOverlaySegs = [];
-    if (!isSplitTop) {
-      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, 5);
+    if (!isSplitTop && autoBroll) {
+      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, intensityCap + 2);
       const brollByQuery = new Map();
       for (const q of uniqueQueries) {
         const url = await pickPexelsVideo(q, orientation);
@@ -344,12 +361,12 @@ export default async function handler(req, res) {
           }
         }
       }
-      for (let i = 1; i < segments.length - 1 && pickedOverlaySegs.length < 3; i += 1) {
+      for (let i = 1; i < segments.length - 1 && pickedOverlaySegs.length < intensityCap; i += 1) {
         const seg = segments[i];
         if (seg.end - seg.start < 2.5) continue;
         const p = brollByQuery.get(seg.broll_query);
         if (p) {
-          const overlayDur = Math.min(3.5, seg.end - seg.start - 0.3);
+          const overlayDur = Math.min(overlayDurCap, seg.end - seg.start - 0.3);
           pickedOverlaySegs.push({
             path: p,
             start: seg.start + 0.2,
@@ -358,6 +375,7 @@ export default async function handler(req, res) {
         }
       }
     }
+    log("settings:", { intensity, intensityCap, autoBroll, clipMode, clipSec, overlayDurCap });
     log("layout:", layout, "splitTop:", Boolean(topVideoPath), "overlays:", pickedOverlaySegs.length);
 
     const srt = buildSrtFromWords(analysis.words || [], { chunkWords: 3 });
@@ -399,10 +417,14 @@ export default async function handler(req, res) {
         `[0:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
       );
       cur = "base0";
+      const autoZoom = project.auto_zoom !== false;
       pickedOverlaySegs.forEach((ov, i) => {
         const inIdx = i + 1;
+        const zoomFilter = autoZoom
+          ? `,zoompan=z='min(zoom+0.0015,1.10)':d=1:s=${outW}x${outH}:fps=30`
+          : "";
         filter.push(
-          `[${inIdx}:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,setpts=PTS-STARTPTS+${ov.start.toFixed(2)}/TB[ov${i}]`,
+          `[${inIdx}:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH}${zoomFilter},fps=30,setsar=1,setpts=PTS-STARTPTS+${ov.start.toFixed(2)}/TB[ov${i}]`,
         );
         const next = `v${i}`;
         filter.push(
@@ -413,10 +435,17 @@ export default async function handler(req, res) {
     }
 
     if (srt && hasFont) {
+      const styleKey = (project.style || "viral").toLowerCase();
+      const stylePreset =
+        styleKey === "talking" || styleKey === "talking_head"
+          ? { size: 16, primary: "&H00FFFFFF", back: "&H80000000", outline: 2, bold: 0 }
+          : styleKey === "calm" || styleKey === "minimal"
+            ? { size: 14, primary: "&H00FFFFFF", back: "&H60000000", outline: 1, bold: 0 }
+            : { size: 20, primary: "&H0000FFFF", back: "&HA0000000", outline: 3, bold: 1 };
       const styled =
-        `FontName=Montserrat,FontSize=18,PrimaryColour=&H00FFFFFF,` +
-        `OutlineColour=&H00000000,BackColour=&HA0000000,BorderStyle=3,` +
-        `Outline=3,Shadow=0,Alignment=2,MarginV=${subtitleMarginV},Bold=1`;
+        `FontName=Montserrat,FontSize=${stylePreset.size},PrimaryColour=${stylePreset.primary},` +
+        `OutlineColour=&H00000000,BackColour=${stylePreset.back},BorderStyle=3,` +
+        `Outline=${stylePreset.outline},Shadow=0,Alignment=2,MarginV=${subtitleMarginV},Bold=${stylePreset.bold}`;
       const escSrt = srtPath.replace(/:/g, "\\:").replace(/'/g, "\\'");
       const fontsDir = path.dirname(fontRel).replace(/:/g, "\\:");
       filter.push(`[${cur}]subtitles='${escSrt}':fontsdir='${fontsDir}':force_style='${styled}'[vout]`);
