@@ -388,8 +388,21 @@ export default async function handler(req, res) {
       progress_text: `Рендер ${outW}×${outH}`,
     });
 
-    const fontRel = path.resolve(__dirname, "../public/fonts/Montserrat.ttf");
-    const hasFont = await fs.access(fontRel).then(() => true).catch(() => false);
+    const fontCandidates = [
+      path.resolve(__dirname, "fonts/Montserrat.ttf"),
+      path.resolve(__dirname, "../public/fonts/Montserrat.ttf"),
+    ];
+    let fontRel = fontCandidates[0];
+    let hasFont = false;
+    for (const candidate of fontCandidates) {
+      // eslint-disable-next-line no-await-in-loop
+      if (await fs.access(candidate).then(() => true).catch(() => false)) {
+        fontRel = candidate;
+        hasFont = true;
+        break;
+      }
+    }
+    log("font:", hasFont ? fontRel : "NOT FOUND");
 
     const args = ["-y", "-i", userPath];
     if (topVideoPath) {
@@ -413,8 +426,11 @@ export default async function handler(req, res) {
       cur = "base0";
       subtitleMarginV = Math.round(outH * 0.5) - Math.round(outH * 0.04);
     } else {
+      // zoom-fill: scale 1.18x bigger than canvas then center-crop, чтобы убрать чёрные поля сверху/снизу
+      const zoomW = Math.round(outW * 1.18);
+      const zoomH = Math.round(outH * 1.18);
       filter.push(
-        `[0:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
+        `[0:v]scale=${zoomW}:${zoomH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
       );
       cur = "base0";
       const autoZoom = project.auto_zoom !== false;
