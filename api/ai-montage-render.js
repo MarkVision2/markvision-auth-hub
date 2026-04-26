@@ -416,11 +416,15 @@ export default async function handler(req, res) {
 
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
+      // fill каждую панель zoom-crop'ом (без чёрных полей).
+      // 1.05x чтобы немного срезать любые baked-in margins исходника.
+      const zoomPanelW = Math.round(outW * 1.05);
+      const zoomPanelH = Math.round(halfH * 1.05);
       filter.push(
-        `[0:v]scale=${outW}:${halfH}:force_original_aspect_ratio=decrease,pad=${outW}:${halfH}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1[bot]`,
+        `[0:v]scale=${zoomPanelW}:${zoomPanelH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[bot]`,
       );
       filter.push(
-        `[1:v]scale=${outW}:${halfH}:force_original_aspect_ratio=decrease,pad=${outW}:${halfH}:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,setsar=1[top]`,
+        `[1:v]scale=${zoomPanelW}:${zoomPanelH}:force_original_aspect_ratio=increase,crop=${outW}:${halfH},fps=30,setsar=1[top]`,
       );
       filter.push(`[top][bot]vstack=inputs=2[base0]`);
       cur = "base0";

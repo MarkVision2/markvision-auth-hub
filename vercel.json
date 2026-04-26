@@ -56,7 +56,8 @@
     "functions": {
         "api/ai-montage-render.js": {
             "maxDuration": 300,
-            "memory": 1024
+            "memory": 1024,
+            "includeFiles": "api/fonts/**"
         }
     }
 }
