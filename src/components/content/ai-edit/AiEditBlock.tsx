@@ -96,8 +96,15 @@ const N8N_AI_MONTAGE_WEBHOOK =
 const AI_EDIT_STEPS = [
   "Материалы",
   "Шаблон монтажа",
-  "Настройки"
+  "Настройки",
+  "Предпросмотр и правка",
 ];
+
+interface TranscriptWord {
+  t: number;
+  d: number;
+  w: string;
+}
 const MONTAGE_TEMPLATES: Array<{
   id: MontageLayoutTemplate;
   label: string;
@@ -214,6 +221,10 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [scriptHint, setScriptHint] = useState("");
   const [expertCropYPct, setExpertCropYPct] = useState(10);
   const [expertZoomPct, setExpertZoomPct] = useState(100);
+  const [draftProjectId, setDraftProjectId] = useState<string | null>(null);
+  const [transcriptWords, setTranscriptWords] = useState<TranscriptWord[]>([]);
+  const [transcribeStatus, setTranscribeStatus] = useState<"idle" | "uploading" | "transcribing" | "ready" | "error">("idle");
+  const [transcribeError, setTranscribeError] = useState<string | null>(null);
   const [showExtraAssets, setShowExtraAssets] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectIdRaw] = useState<string | null>(() => {
@@ -397,6 +408,142 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     } catch (error) {
       console.warn("Video metadata read failed", error);
       setVideoMeta(null);
+    }
+  };
+
+  // Создаёт черновик проекта в БД и запускает транскрибацию (без рендера).
+  // Используется при переходе на шаг "Предпросмотр и правка".
+  const prepareDraft = async (): Promise<string | null> => {
+    if (!videoFile || !active?.id) return null;
+    if (draftProjectId) return draftProjectId; // уже создан
+    try {
+      setTranscribeStatus("uploading");
+      setTranscribeError(null);
+
+      const ext = videoFile.name.split(".").pop() || "mp4";
+      const videoPath = `ai-edit/source/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("content_assets")
+        .upload(videoPath, videoFile, { contentType: videoFile.type, upsert: false });
+      if (uploadError) throw new Error(uploadError.message);
+      const { data: pub } = supabase.storage.from("content_assets").getPublicUrl(videoPath);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const ownerId = user?.id;
+      if (!ownerId) throw new Error("Нет авторизации");
+
+      const metadata = videoMeta ?? {};
+      const insertPayload: Database["public"]["Tables"]["ai_edit_projects"]["Insert"] = {
+        project_id: active.id,
+        owner_id: ownerId,
+        source_video_url: pub.publicUrl,
+        source_duration_sec: metadata.durationSec ? Math.ceil(metadata.durationSec) : null,
+        source_size_bytes: videoFile.size,
+        style,
+        format,
+        caption_language: captionLanguage,
+        business_template: layoutTemplate,
+        clip_duration_mode: clipDurationMode,
+        clip_duration_sec: clipDurationMode === "manual" ? Number(clipDurationSec) : null,
+        intensity,
+        auto_broll: autoBroll,
+        auto_zoom: autoZoom,
+        script_hint: scriptHint || null,
+        expert_crop_y_pct: expertCropYPct,
+        expert_zoom_pct: expertZoomPct,
+        status: "draft",
+        stage: "draft",
+        progress: 5,
+        progress_text: "Подготовка предпросмотра",
+      };
+      const { data: inserted, error: insertError } = await supabase
+        .from("ai_edit_projects")
+        .insert(insertPayload)
+        .select("id")
+        .single();
+      if (insertError || !inserted) throw new Error(insertError?.message || "Не удалось создать черновик");
+      setDraftProjectId(inserted.id);
+      setTranscribeStatus("transcribing");
+
+      // Запуск транскрибации
+      const transcribeRes = await fetch("/api/ai-montage-transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: inserted.id }),
+      });
+      if (!transcribeRes.ok) {
+        const txt = await transcribeRes.text();
+        throw new Error(`Транскрибация не удалась: ${txt.slice(0, 200)}`);
+      }
+      const transcribeJson = await transcribeRes.json();
+
+      // Достаём analysis_json из БД
+      const { data: project } = await supabase
+        .from("ai_edit_projects")
+        .select("analysis_json")
+        .eq("id", inserted.id)
+        .single();
+      const words = (project?.analysis_json as { words?: TranscriptWord[] } | null)?.words || [];
+      setTranscriptWords(words);
+      setTranscribeStatus("ready");
+      toast({
+        title: "Транскрибация готова",
+        description: `${transcribeJson.words_count || words.length} слов · ${transcribeJson.segments_count || 0} сегментов`,
+      });
+      return inserted.id;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Ошибка подготовки черновика";
+      setTranscribeError(message);
+      setTranscribeStatus("error");
+      toast({ title: "Ошибка", description: message, variant: "destructive" });
+      return null;
+    }
+  };
+
+  // Запуск финального рендера: сохраняет правки в БД и зовёт n8n webhook.
+  const submitFinalRender = async () => {
+    if (!draftProjectId) {
+      toast({ title: "Ошибка", description: "Черновик не создан", variant: "destructive" });
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      // Сохраняем отредактированные титры и параметры размещения
+      await supabase
+        .from("ai_edit_projects")
+        .update({
+          analysis_json: { words: transcriptWords, segments: [], summary: "" },
+          expert_crop_y_pct: expertCropYPct,
+          expert_zoom_pct: expertZoomPct,
+          status: "queued",
+          stage: "upload",
+          progress: 10,
+          progress_text: "Задача поставлена в очередь",
+        })
+        .eq("id", draftProjectId);
+
+      setProjectId(draftProjectId);
+      setStatus({
+        projectId: draftProjectId,
+        status: "queued",
+        stage: "upload",
+        progress: 20,
+        progressText: "Запускаем рендер",
+      });
+
+      const response = await fetch(N8N_AI_MONTAGE_WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: draftProjectId, projectId: draftProjectId }),
+      });
+      if (!response.ok) throw new Error(`n8n webhook error: ${response.status}`);
+
+      setIsSubmitting(false);
+      onTaskCreated?.(draftProjectId);
+    } catch (error: unknown) {
+      setIsSubmitting(false);
+      const message = error instanceof Error ? error.message : "Ошибка запуска монтажа";
+      toast({ title: "Ошибка запуска", description: message, variant: "destructive" });
     }
   };
 
@@ -960,34 +1107,178 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     </motion.div>
   );
 
+  const renderStep3 = () => (
+    <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+      <div className={cn(cfCard, "p-6")}>
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-bold tracking-tight text-foreground">Предпросмотр и правка</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Расшифруй видео, поправь титры и положение эксперта — потом отправляй на монтаж
+            </p>
+          </div>
+          {transcribeStatus !== "ready" && (
+            <CfButtonMd
+              onClick={() => prepareDraft()}
+              disabled={transcribeStatus === "uploading" || transcribeStatus === "transcribing"}
+              className="gap-2"
+            >
+              {transcribeStatus === "transcribing" || transcribeStatus === "uploading" ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Идёт транскрибация…</>
+              ) : (
+                <><Wand2 className="h-4 w-4" /> Расшифровать</>
+              )}
+            </CfButtonMd>
+          )}
+        </div>
+
+        {transcribeError && (
+          <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+            {transcribeError}
+          </div>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+          {/* Left: live preview видео с CSS-рамкой crop'а */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-foreground/80">Превью кадра</p>
+            <div className="relative overflow-hidden rounded-xl bg-black" style={{ aspectRatio: "9/16" }}>
+              {videoPreview && (
+                <video
+                  src={videoPreview}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  style={{
+                    transform: `scale(${expertZoomPct / 100}) translateY(${-(expertCropYPct - 25) * 0.6}%)`,
+                    transformOrigin: "center top",
+                  }}
+                  muted
+                  playsInline
+                />
+              )}
+              {/* верхняя половина: место для демо */}
+              {(layoutTemplate === "split_demo_top" || layoutTemplate === "triple_demo_stack") && (
+                <div className="absolute inset-x-0 top-0 h-1/2 border-b border-primary/40 bg-gradient-to-b from-primary/20 to-primary/5">
+                  <div className="flex h-full items-center justify-center text-[10px] font-bold text-primary">ДЕМО</div>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              Это приблизительное превью. Реальный crop сделает FFmpeg на сервере с теми же значениями.
+            </p>
+          </div>
+
+          {/* Right: titres editor */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-foreground/80">
+                Титры {transcriptWords.length > 0 && `(${transcriptWords.length} слов)`}
+              </p>
+              {transcriptWords.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = transcriptWords.map((w) => w.w).join(" ");
+                    const updated = prompt("Отредактируй текст (слова через пробел):", text);
+                    if (updated && updated.trim()) {
+                      const newWords = updated.trim().split(/\s+/);
+                      const total = transcriptWords.length;
+                      const lastT = transcriptWords[total - 1]?.t || 0;
+                      const lastD = transcriptWords[total - 1]?.d || 0.3;
+                      const span = lastT + lastD;
+                      const slice = span / Math.max(1, newWords.length);
+                      setTranscriptWords(newWords.map((w, i) => ({ t: +(slice * i).toFixed(3), d: +slice.toFixed(3), w })));
+                    }
+                  }}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Редактировать целиком
+                </button>
+              )}
+            </div>
+            {transcribeStatus === "idle" && (
+              <div className="rounded-lg border border-dashed border-border/50 p-6 text-center text-xs text-muted-foreground">
+                Нажми «Расшифровать» — Gemini проанализирует видео (1–2 мин)
+              </div>
+            )}
+            {(transcribeStatus === "uploading" || transcribeStatus === "transcribing") && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-6 text-center text-xs text-foreground">
+                <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin text-primary" />
+                {transcribeStatus === "uploading" ? "Загрузка видео…" : "Идёт транскрибация (Gemini 2.5)…"}
+              </div>
+            )}
+            {transcribeStatus === "ready" && transcriptWords.length === 0 && (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-xs text-foreground">
+                Не получилось распознать ни одного слова — проверь что в видео есть речь и нажми «Расшифровать» снова.
+              </div>
+            )}
+            {transcribeStatus === "ready" && transcriptWords.length > 0 && (
+              <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/40 bg-secondary/10 p-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {transcriptWords.map((word, idx) => (
+                    <div key={idx} className="group flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-1 text-xs">
+                      <input
+                        value={word.w}
+                        onChange={(e) => {
+                          const next = [...transcriptWords];
+                          next[idx] = { ...next[idx], w: e.target.value };
+                          setTranscriptWords(next);
+                        }}
+                        className="w-auto bg-transparent outline-none focus:text-primary"
+                        size={Math.max(3, word.w.length)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setTranscriptWords(transcriptWords.filter((_, i) => i !== idx))}
+                        className="opacity-0 transition-opacity group-hover:opacity-100 text-destructive hover:text-destructive/80"
+                        aria-label="Удалить слово"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
   const canNext = () => {
     if (step === 0) return Boolean(videoFile);
     if (step === 1) return Boolean(layoutTemplate);
+    if (step === 2) return true;
+    if (step === 3) return transcribeStatus === "ready";
     return true;
   };
 
   const handleNextStep = () => {
-    if (canNext()) {
-      setStep((s) => s + 1);
-    } else {
+    if (!canNext()) {
       toast({
         title: "Заполните все поля",
         description: "Пожалуйста, загрузите необходимые файлы, чтобы продолжить.",
         variant: "destructive",
       });
+      return;
     }
+    if (step === 2) {
+      // Переход на предпросмотр — стартуем prepareDraft автоматически если ещё не запускали
+      setStep(3);
+      if (!draftProjectId && transcribeStatus === "idle") {
+        prepareDraft();
+      }
+      return;
+    }
+    setStep((s) => s + 1);
   };
 
   const handleFinalSubmit = () => {
-    if (canNext()) {
-      startAiEdit();
-    } else {
-      toast({
-        title: "Не все поля заполнены",
-        description: "Проверьте загруженные файлы и настройки перед запуском.",
-        variant: "destructive",
-      });
+    if (transcribeStatus !== "ready") {
+      toast({ title: "Сначала расшифруйте видео", variant: "destructive" });
+      return;
     }
+    submitFinalRender();
   };
 
   const isCompleted = status?.status === "completed" && (status.renders?.length ?? 0) > 0;
@@ -1026,6 +1317,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
             {step === 0 && renderStep0()}
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
           </AnimatePresence>
 
           <div className="flex items-center justify-between pt-2 pb-4">
@@ -1038,17 +1330,17 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               <ArrowLeft className="h-4 w-4" /> Назад
             </CfButtonMd>
 
-            {step < 2 ? (
+            {step < 3 ? (
               <CfButtonMd
                 onClick={handleNextStep}
                 className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 px-8"
               >
-                Далее <ArrowRight className="h-4 w-4" />
+                {step === 2 ? "К предпросмотру" : "Далее"} <ArrowRight className="h-4 w-4" />
               </CfButtonMd>
             ) : (
               <CfButtonMd
                 onClick={handleFinalSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || transcribeStatus !== "ready"}
                 className="gap-2.5 bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/30 px-8"
               >
                 {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
