@@ -388,21 +388,32 @@ export default async function handler(req, res) {
       progress_text: `Рендер ${outW}×${outH}`,
     });
 
+    // Шрифт: сначала пробуем bundled api/fonts, потом fallback — качаем с публичного CDN
     const fontCandidates = [
       path.resolve(__dirname, "fonts/Montserrat.ttf"),
       path.resolve(__dirname, "../public/fonts/Montserrat.ttf"),
     ];
-    let fontRel = fontCandidates[0];
+    let fontRel = path.join(workDir, "Montserrat.ttf");
     let hasFont = false;
     for (const candidate of fontCandidates) {
       // eslint-disable-next-line no-await-in-loop
       if (await fs.access(candidate).then(() => true).catch(() => false)) {
         fontRel = candidate;
         hasFont = true;
+        log("font: bundled at", candidate);
         break;
       }
     }
-    log("font:", hasFont ? fontRel : "NOT FOUND");
+    if (!hasFont) {
+      try {
+        const fontUrl = "https://www.markvision.kz/fonts/Montserrat.ttf";
+        await downloadTo(fontUrl, fontRel);
+        hasFont = true;
+        log("font: downloaded from CDN to", fontRel);
+      } catch (e) {
+        log("font: CDN download failed:", e.message);
+      }
+    }
 
     const args = ["-y", "-i", userPath];
     if (topVideoPath) {
