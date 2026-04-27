@@ -169,8 +169,10 @@ function SubtitleOverlay({ words, time, fontSize = 11, yPct, onChange }: Subtitl
       onPointerUp={handleUp}
       onPointerCancel={handleUp}
       className={cn(
-        "absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-sm px-2 py-1 font-bold tracking-wide select-none",
-        dragging ? "cursor-grabbing ring-2 ring-yellow-400" : "cursor-grab hover:ring-1 hover:ring-yellow-300/60",
+        "absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 font-bold tracking-wide select-none border-2",
+        dragging
+          ? "cursor-grabbing border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.6)]"
+          : "cursor-grab border-yellow-300/40 hover:border-yellow-300",
       )}
       style={{
         top: `${yPct}%`,
@@ -178,11 +180,14 @@ function SubtitleOverlay({ words, time, fontSize = 11, yPct, onChange }: Subtitl
         fontFamily: "Montserrat, system-ui, sans-serif",
         fontSize: `${fontSize}px`,
         color: "#ffff00",
-        backgroundColor: "rgba(0,0,0,0.65)",
+        backgroundColor: "rgba(0,0,0,0.78)",
         textShadow: "0 0 2px #000, 0 0 2px #000",
         touchAction: "none",
+        pointerEvents: "auto",
       }}
     >
+      {/* drag-индикатор (точки) — визуальная ручка */}
+      <span className="opacity-60 leading-none" style={{ fontSize: "8px" }}>⋮⋮</span>
       {text}
     </div>
   );

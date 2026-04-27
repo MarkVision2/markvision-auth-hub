@@ -1193,32 +1193,140 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               </div>
             )}
             {transcribeStatus === "ready" && transcriptWords.length > 0 && (
-              <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/40 bg-secondary/10 p-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {transcriptWords.map((word, idx) => (
-                    <div key={idx} className="group flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-1 text-xs">
-                      <input
-                        value={word.w}
-                        onChange={(e) => {
-                          const next = [...transcriptWords];
-                          next[idx] = { ...next[idx], w: e.target.value };
-                          setTranscriptWords(next);
-                        }}
-                        className="w-auto bg-transparent outline-none focus:text-primary"
-                        size={Math.max(3, word.w.length)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setTranscriptWords(transcriptWords.filter((_, i) => i !== idx))}
-                        className="opacity-0 transition-opacity group-hover:opacity-100 text-destructive hover:text-destructive/80"
-                        aria-label="Удалить слово"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+              <>
+                {/* Большой текстовый редактор всех титров */}
+                <div className="rounded-lg border border-border/40 bg-secondary/5 p-3">
+                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Полный текст (слова через пробел)
+                  </div>
+                  <Textarea
+                    value={transcriptWords.map((w) => w.w).join(" ")}
+                    onChange={(e) => {
+                      const newWords = e.target.value.trim().split(/\s+/).filter(Boolean);
+                      const total = transcriptWords.length;
+                      const lastT = transcriptWords[total - 1]?.t || 0;
+                      const lastD = transcriptWords[total - 1]?.d || 0.3;
+                      const span = lastT + lastD;
+                      const slice = span / Math.max(1, newWords.length);
+                      setTranscriptWords(
+                        newWords.map((w, i) => ({
+                          t: +(slice * i).toFixed(3),
+                          d: +slice.toFixed(3),
+                          w,
+                        })),
+                      );
+                    }}
+                    className="min-h-[140px] resize-y rounded-md font-mono text-xs leading-relaxed"
+                    placeholder="Текст титров появится здесь после расшифровки…"
+                  />
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    Тайминги пересчитаются автоматически. Для точечной правки одного слова — используй чипы ниже.
+                  </p>
                 </div>
-              </div>
+
+                {/* Чипы для точечной правки конкретного слова */}
+                <div className="max-h-[300px] overflow-y-auto rounded-lg border border-border/40 bg-secondary/10 p-3">
+                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Точечная правка
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {transcriptWords.map((word, idx) => (
+                      <div key={idx} className="group flex items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-1 text-xs">
+                        <input
+                          value={word.w}
+                          onChange={(e) => {
+                            const next = [...transcriptWords];
+                            next[idx] = { ...next[idx], w: e.target.value };
+                            setTranscriptWords(next);
+                          }}
+                          className="w-auto bg-transparent outline-none focus:text-primary"
+                          size={Math.max(3, word.w.length)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setTranscriptWords(transcriptWords.filter((_, i) => i !== idx))}
+                          className="opacity-0 transition-opacity group-hover:opacity-100 text-destructive hover:text-destructive/80"
+                          aria-label="Удалить слово"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Сохранить как шаблон */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const preset = {
+                        layoutTemplate,
+                        style,
+                        captionLanguage,
+                        intensity,
+                        autoBroll,
+                        autoZoom,
+                        clipDurationMode,
+                        clipDurationSec,
+                        expertCropYPct,
+                        expertZoomPct,
+                        topPanYPct,
+                        topZoomPct,
+                        subtitleYPct,
+                      };
+                      try {
+                        localStorage.setItem("ai-edit-preset", JSON.stringify(preset));
+                        toast({
+                          title: "Шаблон сохранён",
+                          description: "В следующем монтаже эти настройки будут применены автоматически.",
+                        });
+                      } catch (err) {
+                        toast({ title: "Ошибка", description: String(err), variant: "destructive" });
+                      }
+                    }}
+                    className="text-xs"
+                  >
+                    Сохранить как шаблон
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        const raw = localStorage.getItem("ai-edit-preset");
+                        if (!raw) {
+                          toast({ title: "Шаблонов нет", description: "Сначала сохрани текущие настройки." });
+                          return;
+                        }
+                        const p = JSON.parse(raw);
+                        if (p.layoutTemplate) setLayoutTemplate(p.layoutTemplate);
+                        if (p.style) setStyle(p.style);
+                        if (p.captionLanguage) setCaptionLanguage(p.captionLanguage);
+                        if (p.intensity) setIntensity(p.intensity);
+                        if (typeof p.autoBroll === "boolean") setAutoBroll(p.autoBroll);
+                        if (typeof p.autoZoom === "boolean") setAutoZoom(p.autoZoom);
+                        if (p.clipDurationMode) setClipDurationMode(p.clipDurationMode);
+                        if (p.clipDurationSec) setClipDurationSec(String(p.clipDurationSec));
+                        if (typeof p.expertCropYPct === "number") setExpertCropYPct(p.expertCropYPct);
+                        if (typeof p.expertZoomPct === "number") setExpertZoomPct(p.expertZoomPct);
+                        if (typeof p.topPanYPct === "number") setTopPanYPct(p.topPanYPct);
+                        if (typeof p.topZoomPct === "number") setTopZoomPct(p.topZoomPct);
+                        if (typeof p.subtitleYPct === "number") setSubtitleYPct(p.subtitleYPct);
+                        toast({ title: "Шаблон применён" });
+                      } catch (err) {
+                        toast({ title: "Ошибка", description: String(err), variant: "destructive" });
+                      }
+                    }}
+                    className="text-xs"
+                  >
+                    Загрузить шаблон
+                  </Button>
+                </div>
+              </>
             )}
           </div>
         </div>
