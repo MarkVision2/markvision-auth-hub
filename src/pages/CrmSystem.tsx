@@ -55,6 +55,8 @@ interface Lead {
   is_diagnostic?: boolean | null;
   prescribed_packages?: string[] | null;
   serviced_by?: string | null;
+  niche?: string | null;
+  refusal_reason?: string | null;
 }
 
 function fmt(n: number) {

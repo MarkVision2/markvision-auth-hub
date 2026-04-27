@@ -115,7 +115,19 @@
       "Bash(vercel project *)",
       "Bash(vercel domains *)",
       "Bash(vercel teams *)",
-      "Bash(nslookup markvision.kz)"
+      "Bash(nslookup markvision.kz)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\([{'chat_id':u['message']['chat'].get\\('id'\\),'type':u['message']['chat'].get\\('type'\\),'title':u['message']['chat'].get\\('title'\\) or u['message']['chat'].get\\('username'\\)} for u in d.get\\('result',[]\\) if 'message' in u][-5:], ensure_ascii=False, indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);[print\\(u.get\\('channel_post',u.get\\('message',{}\\)\\).get\\('chat',{}\\).get\\('id'\\),'|',u.get\\('channel_post',u.get\\('message',{}\\)\\).get\\('chat',{}\\).get\\('title'\\),'|',u.get\\('channel_post',u.get\\('message',{}\\)\\).get\\('caption',''\\)[:60]\\) for u in d.get\\('result',[]\\)]\")",
+      "Bash(python3 -c \"import sys,json;d=json.load\\(sys.stdin\\);print\\('OK' if d.get\\('ok'\\) else 'ERR:'+str\\(d\\)\\)\")",
+      "Read(//private/tmp/**)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,duration:format=duration src.mp4)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,duration:format=duration out.mp4)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,duration:format=duration out2.mp4)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,duration:format=duration new.mp4)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,duration latest.mp4)",
+      "Bash(ffprobe -v error -show_entries stream=codec_type,codec_name,width,height,duration -show_entries format=duration,size -of json split_test.mp4)",
+      "Bash(ffmpeg -y -ss 10 -i split_test.mp4 -frames:v 1 split_frame.png)",
+      "Bash(ffprobe -v error -select_streams v -show_entries stream=width,height,codec_name -of csv=p=0 /tmp/latest-render.mp4)"
     ],
     "deny": []
   }

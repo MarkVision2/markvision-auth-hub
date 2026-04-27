@@ -248,6 +248,55 @@ const buildSrtFromWords = (words, { chunkWords = 3 } = {}) => {
   return lines.join("\n");
 };
 
+// Тайм-код в формате ASS: H:MM:SS.cc
+const tcAss = (sec) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const cs = Math.floor((sec - Math.floor(sec)) * 100);
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+};
+
+// ASS формат: каждое слово — отдельный event, текущее жёлтое+крупнее, контекст белым.
+const buildAssFromWords = (words, { marginV, baseFontSize, primary, back, outline, bold, contextWindow = 1 }) => {
+  if (!Array.isArray(words) || words.length === 0) return "";
+  const hiSize = Math.round(baseFontSize * 1.18);
+  const header = [
+    "[Script Info]",
+    "ScriptType: v4.00+",
+    "WrapStyle: 0",
+    "ScaledBorderAndShadow: yes",
+    "PlayResX: 1080",
+    "PlayResY: 1920",
+    "",
+    "[V4+ Styles]",
+    "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
+    `Style: Base,Montserrat,${baseFontSize},${primary},&H00FFFFFF,&H00000000,${back},${bold ? 1 : 0},0,0,0,100,100,0,0,3,${outline},0,2,80,80,${marginV},1`,
+    "",
+    "[Events]",
+    "Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text",
+  ].join("\n");
+
+  const lines = [];
+  for (let i = 0; i < words.length; i += 1) {
+    const w = words[i];
+    if (!w || typeof w.t !== "number") continue;
+    const start = Math.max(0, w.t - 0.04);
+    const end = w.t + (w.d || 0.3) + 0.04;
+    const before = words.slice(Math.max(0, i - contextWindow), i).map((x) => (x.w || "").toUpperCase());
+    const after = words.slice(i + 1, i + 1 + contextWindow).map((x) => (x.w || "").toUpperCase());
+    const current = (w.w || "").toUpperCase();
+    // ASS inline override: \c — primary color, \fs — font size, \b — bold
+    const text = [
+      ...before,
+      `{\\c&H0000FFFF&\\fs${hiSize}\\b1}${current}{\\r}`,
+      ...after,
+    ].join(" ");
+    lines.push(`Dialogue: 0,${tcAss(start)},${tcAss(end)},Base,,0,0,0,,${text}`);
+  }
+  return `${header}\n${lines.join("\n")}\n`;
+};
+
 const progressPatch = async (supabase, projectId, patch) => {
   await supabase.from("ai_edit_projects").update(patch).eq("id", projectId);
 };

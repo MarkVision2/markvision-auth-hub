@@ -228,6 +228,10 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
   const [tempName, setTempName] = useState("");
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [tempPhone, setTempPhone] = useState("");
+  const [isEditingNiche, setIsEditingNiche] = useState(false);
+  const [tempNiche, setTempNiche] = useState("");
+  const [isEditingRefusal, setIsEditingRefusal] = useState(false);
+  const [tempRefusal, setTempRefusal] = useState("");
 
   const [doctorsList, setDoctorsList] = useState<TeamMember[]>([]);
   const [isFetchingDoctors, setIsFetchingDoctors] = useState(false);
@@ -332,6 +336,8 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       setIsAnalyzing(false);
       setAmountValue(Number(lead.amount) || 0);
       setTempAmount(String(lead.amount || "0"));
+      setTempNiche(lead.niche || "");
+      setTempRefusal(lead.refusal_reason || "");
     }
   }, [lead, open, fetchChatMessages, fetchNotes]);
 
@@ -528,6 +534,30 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
       toast({ title: "Ошибка", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Телефон обновлен", description: tempPhone.trim() });
+      onLeadUpdated?.();
+    }
+  };
+  
+  const handleNicheSave = async () => {
+    setIsEditingNiche(false);
+    if (!lead) return;
+    const { error } = await (supabase as any).from("leads_crm").update({ niche: tempNiche.trim() || null }).eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Ниша обновлена", description: tempNiche.trim() || "—" });
+      onLeadUpdated?.();
+    }
+  };
+
+  const handleRefusalSave = async () => {
+    setIsEditingRefusal(false);
+    if (!lead) return;
+    const { error } = await (supabase as any).from("leads_crm").update({ refusal_reason: tempRefusal.trim() || null }).eq("id", lead.id);
+    if (error) {
+      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Причина отказа обновлена", description: tempRefusal.trim() || "—" });
       onLeadUpdated?.();
     }
   };
@@ -762,7 +792,7 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] text-muted-foreground uppercase font-medium">Врач</label>
+                          <label className="text-[10px] text-muted-foreground uppercase font-medium">Ответственный</label>
                           <Select 
                             value={doctorName} 
                             onValueChange={(val) => {
@@ -1035,18 +1065,48 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                 </details>
 
                 {[
-                  { icon: Hash, label: isMarkVision ? "Источник" : "Кампания", value: sourceValue },
+                  { icon: Hash, label: "Источник", value: lead.utm_campaign || lead.source || "—", key: "source" },
+                  { 
+                    icon: Globe, 
+                    label: "Канал", 
+                    value: (() => {
+                      const utmSource = ((lead as any).utm_source || "").toLowerCase();
+                      if (utmSource.includes("google")) return "Google Ads";
+                      if (utmSource.includes("fb") || utmSource.includes("facebook")) return "Facebook";
+                      if (utmSource.includes("ig") || utmSource.includes("instagram") || utmSource.includes("insta")) return "Instagram";
+                      if (utmSource.includes("tg") || utmSource.includes("telegram")) return "Telegram";
+                      return (lead as any).utm_source || "—";
+                    })() 
+                  },
                   { icon: Calendar, label: "Запись", value: lead.scheduled_at ? `${new Date(lead.scheduled_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} в ${new Date(lead.scheduled_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}` : "Не назначена" },
-                  { icon: User, label: "Врач", value: lead.doctor_name || "—" },
-                  { icon: MapPin, label: isMarkVision ? "Название клиники" : "Кабинет", value: (() => {
-                    if (lead.office_name) return lead.office_name;
-                    if (lead.doctor_name) {
-                      const doc = doctorsList.find(m => m.name === lead.doctor_name);
-                      if (doc?.office) return `Кабинет ${doc.office}`;
-                    }
-                    return "—";
-                  })() },
-                  { icon: Ban, label: "Причина отказа", value: (lead as any).refusal_reason || "—" },
+                  { icon: User, label: "Ответственный", value: lead.doctor_name || "—" },
+                  { icon: MapPin, label: "Название клиники", value: lead.office_name || "—" },
+                  { 
+                    icon: Sparkles, 
+                    label: "Ниша", 
+                    value: lead.niche || "—", 
+                    key: "niche",
+                    editable: true,
+                    isEditing: isEditingNiche,
+                    tempValue: tempNiche,
+                    onEdit: () => { setTempNiche(lead.niche || ""); setIsEditingNiche(true); },
+                    onSave: handleNicheSave,
+                    onCancel: () => setIsEditingNiche(false),
+                    onChange: (v: string) => setTempNiche(v)
+                  },
+                  { 
+                    icon: Ban, 
+                    label: "Причина отказа", 
+                    value: lead.refusal_reason || "—", 
+                    key: "refusal",
+                    editable: true,
+                    isEditing: isEditingRefusal,
+                    tempValue: tempRefusal,
+                    onEdit: () => { setTempRefusal(lead.refusal_reason || ""); setIsEditingRefusal(true); },
+                    onSave: handleRefusalSave,
+                    onCancel: () => setIsEditingRefusal(false),
+                    onChange: (v: string) => setTempRefusal(v)
+                  },
                   { icon: Clock, label: "Создан", value: lead.created_at ? new Date(lead.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "—" },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between py-1.5 group">
@@ -1054,9 +1114,34 @@ export default function LeadDetailSheet({ lead, open, onOpenChange, onLeadUpdate
                       <item.icon className="h-3.5 w-3.5" />
                       <span className="text-xs">{item.label}</span>
                     </div>
-                    <span className="text-xs font-medium text-foreground/80 max-w-[55%] truncate text-right">
-                      {item.value}
-                    </span>
+                    {(item as any).editable && (item as any).isEditing ? (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          value={(item as any).tempValue}
+                          onChange={(e) => (item as any).onChange(e.target.value)}
+                          className="h-7 w-32 text-right text-xs bg-secondary/50 border-primary/30"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (item as any).onSave();
+                            if (e.key === "Escape") (item as any).onCancel();
+                          }}
+                        />
+                        <button onClick={(item as any).onSave} className="text-emerald-500 hover:text-emerald-600 p-1">
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div 
+                        className={cn(
+                          "text-xs font-medium text-foreground/80 max-w-[55%] truncate text-right",
+                          (item as any).editable && "cursor-pointer hover:text-primary transition-colors flex items-center gap-1.5"
+                        )}
+                        onClick={() => (item as any).editable && (item as any).onEdit()}
+                      >
+                        <span className="truncate">{item.value}</span>
+                        {(item as any).editable && <Edit2 className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

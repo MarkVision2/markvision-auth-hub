@@ -31,7 +31,8 @@ export default function AddLeadSheet({ open, onOpenChange, onLeadCreated }: Prop
     amount: "",
     status: "Новая заявка",
     doctor_name: "",
-    office_name: ""
+    office_name: "",
+    niche: ""
   });
   const [saving, setSaving] = useState(false);
 
@@ -56,6 +57,7 @@ export default function AddLeadSheet({ open, onOpenChange, onLeadCreated }: Prop
       status: form.status,
       doctor_name: form.doctor_name || null,
       office_name: form.office_name || null,
+      niche: form.niche || null,
       project_id: active?.id,
     });
     setSaving(false);
@@ -68,7 +70,8 @@ export default function AddLeadSheet({ open, onOpenChange, onLeadCreated }: Prop
       amount: "",
       status: "Новая заявка",
       doctor_name: "",
-      office_name: ""
+      office_name: "",
+      niche: ""
     });
     if (onLeadCreated) onLeadCreated();
     onOpenChange(false);
@@ -146,10 +149,14 @@ export default function AddLeadSheet({ open, onOpenChange, onLeadCreated }: Prop
             <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Сумма сделки (₸)</label>
             <Input className="mt-1 bg-secondary/50 border-border text-sm" placeholder="0" type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
           </div>
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Ниша</label>
+            <Input className="mt-1 bg-secondary/50 border-border text-sm" placeholder="Стоматология, Косметология и т.д." value={form.niche} onChange={e => setForm(f => ({ ...f, niche: e.target.value }))} />
+          </div>
           {form.status === "Записан" && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Врач</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Ответственный</label>
                 <Select 
                   value={form.doctor_name} 
                   onValueChange={v => {
