@@ -276,7 +276,7 @@ export default async function handler(req, res) {
   try {
     const { data: project, error: projectError } = await supabase
       .from("ai_edit_projects")
-      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec, expert_crop_y_pct, expert_zoom_pct, top_pan_y_pct, top_zoom_pct, analysis_json")
+      .select("id, owner_id, source_video_url, format, style, script_hint, caption_language, business_template, custom_broll_url, intensity, auto_broll, auto_zoom, clip_duration_mode, clip_duration_sec, expert_crop_y_pct, expert_zoom_pct, top_pan_y_pct, top_zoom_pct, subtitle_y_pct, analysis_json")
       .eq("id", projectId)
       .single();
     if (projectError || !project) throw new Error(projectError?.message || "Project not found");
@@ -430,7 +430,18 @@ export default async function handler(req, res) {
 
     const filter = [];
     let cur;
-    let subtitleMarginV = Math.round(outH * 0.12);
+    // subtitle_y_pct: 0=верх канвы, 100=низ. ASS Alignment=2 (bottom-center) считает MarginV от низа.
+    // Поэтому MarginV = outH * (1 - yPct/100) - небольшой отступ для текста.
+    const subtitleYPctRaw = Number(project.subtitle_y_pct);
+    const subtitleYPct = Number.isFinite(subtitleYPctRaw)
+      ? Math.max(5, Math.min(95, subtitleYPctRaw))
+      : null;
+    let subtitleMarginV;
+    if (subtitleYPct !== null) {
+      subtitleMarginV = Math.max(20, Math.round(outH * (1 - subtitleYPct / 100)));
+    } else {
+      subtitleMarginV = Math.round(outH * 0.12);
+    }
 
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
@@ -454,7 +465,10 @@ export default async function handler(req, res) {
       );
       filter.push(`[top][bot]vstack=inputs=2[base0]`);
       cur = "base0";
-      subtitleMarginV = Math.round(outH * 0.5) - Math.round(outH * 0.04);
+      // В split-режиме, если пользователь не задавал — кладём на стык панелей.
+      if (subtitleYPct === null) {
+        subtitleMarginV = Math.round(outH * 0.5) - Math.round(outH * 0.04);
+      }
     } else {
       // zoom-fill: scale 1.18x bigger than canvas then center-crop, чтобы убрать чёрные поля сверху/снизу
       const zoomW = Math.round(outW * 1.18);

@@ -224,6 +224,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [expertZoomPct, setExpertZoomPct] = useState(100);
   const [topPanYPct, setTopPanYPct] = useState(50);
   const [topZoomPct, setTopZoomPct] = useState(100);
+  const [subtitleYPct, setSubtitleYPct] = useState(50); // 50=по центру, в split — на стыке
   const [draftProjectId, setDraftProjectId] = useState<string | null>(null);
   const [transcriptWords, setTranscriptWords] = useState<TranscriptWord[]>([]);
   const [transcribeStatus, setTranscribeStatus] = useState<"idle" | "uploading" | "transcribing" | "ready" | "error">("idle");
@@ -471,6 +472,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         expert_zoom_pct: expertZoomPct,
         top_pan_y_pct: topPanYPct,
         top_zoom_pct: topZoomPct,
+        subtitle_y_pct: subtitleYPct,
         custom_broll_url: brollUrl,
         status: "draft",
         stage: "draft",
@@ -538,6 +540,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           expert_zoom_pct: expertZoomPct,
           top_pan_y_pct: topPanYPct,
           top_zoom_pct: topZoomPct,
+          subtitle_y_pct: subtitleYPct,
           status: "queued",
           stage: "upload",
           progress: 10,
@@ -1140,6 +1143,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
               }}
               words={transcriptWords}
               durationSec={videoMeta?.durationSec || 60}
+              subtitleYPct={subtitleYPct}
+              onSubtitleYChange={(y) => setSubtitleYPct(Math.round(y))}
             />
           </div>
 

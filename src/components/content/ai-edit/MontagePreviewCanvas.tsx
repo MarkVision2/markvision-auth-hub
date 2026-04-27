@@ -103,9 +103,41 @@ interface SubtitleOverlayProps {
   words: TranscriptWord[];
   time: number;
   fontSize?: number;
+  yPct: number; // 0..100 — позиция (0=верх, 100=низ)
+  onChange: (yPct: number) => void;
 }
 
-function SubtitleOverlay({ words, time, fontSize = 11 }: SubtitleOverlayProps) {
+function SubtitleOverlay({ words, time, fontSize = 11, yPct, onChange }: SubtitleOverlayProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startY: number; startYPct: number; parentH: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const handleDown = (e: React.PointerEvent) => {
+    if (!ref.current) return;
+    const parent = ref.current.parentElement;
+    if (!parent) return;
+    ref.current.setPointerCapture(e.pointerId);
+    dragRef.current = {
+      startY: e.clientY,
+      startYPct: yPct,
+      parentH: parent.getBoundingClientRect().height,
+    };
+    setDragging(true);
+    e.stopPropagation();
+  };
+  const handleMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const deltaPx = e.clientY - dragRef.current.startY;
+    const deltaPct = (deltaPx / dragRef.current.parentH) * 100;
+    onChange(Math.max(5, Math.min(95, dragRef.current.startYPct + deltaPct)));
+    e.stopPropagation();
+  };
+  const handleUp = (e: React.PointerEvent) => {
+    if (ref.current?.hasPointerCapture(e.pointerId)) ref.current.releasePointerCapture(e.pointerId);
+    dragRef.current = null;
+    setDragging(false);
+  };
+
   if (!words.length) return null;
   // Берём 3 слова вокруг текущего времени (как в SRT chunkWords=3).
   let activeIdx = -1;
@@ -131,14 +163,24 @@ function SubtitleOverlay({ words, time, fontSize = 11 }: SubtitleOverlayProps) {
   const text = group.map((w) => w.w.toUpperCase()).join(" ");
   return (
     <div
-      className="pointer-events-none absolute left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm px-2 py-1 font-bold tracking-wide"
+      ref={ref}
+      onPointerDown={handleDown}
+      onPointerMove={handleMove}
+      onPointerUp={handleUp}
+      onPointerCancel={handleUp}
+      className={cn(
+        "absolute left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-sm px-2 py-1 font-bold tracking-wide select-none",
+        dragging ? "cursor-grabbing ring-2 ring-yellow-400" : "cursor-grab hover:ring-1 hover:ring-yellow-300/60",
+      )}
       style={{
-        top: "calc(50% + 6px)",
+        top: `${yPct}%`,
+        transform: "translate(-50%, -50%)",
         fontFamily: "Montserrat, system-ui, sans-serif",
         fontSize: `${fontSize}px`,
         color: "#ffff00",
         backgroundColor: "rgba(0,0,0,0.65)",
         textShadow: "0 0 2px #000, 0 0 2px #000",
+        touchAction: "none",
       }}
     >
       {text}
@@ -158,6 +200,8 @@ export interface MontagePreviewCanvasProps {
   words: TranscriptWord[];
   durationSec: number;
   isSplit: boolean; // если false — нижняя панель занимает всю высоту
+  subtitleYPct: number;
+  onSubtitleYChange: (yPct: number) => void;
 }
 
 export default function MontagePreviewCanvas({
@@ -172,6 +216,8 @@ export default function MontagePreviewCanvas({
   words,
   durationSec,
   isSplit,
+  subtitleYPct,
+  onSubtitleYChange,
 }: MontagePreviewCanvasProps) {
   const topVideoRef = useRef<HTMLVideoElement>(null);
   const bottomVideoRef = useRef<HTMLVideoElement>(null);
@@ -264,7 +310,13 @@ export default function MontagePreviewCanvas({
             videoRef={bottomVideoRef}
           />
         )}
-        <SubtitleOverlay words={words} time={time} fontSize={11} />
+        <SubtitleOverlay
+          words={words}
+          time={time}
+          fontSize={11}
+          yPct={subtitleYPct}
+          onChange={onSubtitleYChange}
+        />
       </div>
 
       {/* Scrubber + play/pause */}
@@ -331,7 +383,7 @@ export default function MontagePreviewCanvas({
       </div>
 
       <p className="mx-auto max-w-[300px] text-center text-[10px] leading-relaxed text-muted-foreground">
-        Перетаскивай каждое видео мышью вверх/вниз. Скрабер показывает кадры по времени с титрами.
+        Перетаскивай: видео — для кадрирования, жёлтый блок титров — чтобы переместить их по экрану. Скрабер показывает кадры по времени.
       </p>
     </div>
   );
