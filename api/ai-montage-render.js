@@ -22,7 +22,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const TELEGRAM_DEFAULT_CHAT_ID = process.env.TELEGRAM_AI_MONTAGE_CHAT_ID;
 const RENDER_BUCKET = "ai-edit-renders";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-1.5-flash";
 
 const log = (...args) => console.log("[ai-montage]", ...args);
 
