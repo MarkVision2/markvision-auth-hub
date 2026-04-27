@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import MontagePreviewCanvas from "./MontagePreviewCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { MontageLayoutTemplate } from "@/remotion/types";
@@ -219,12 +220,15 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
   const [autoBroll, setAutoBroll] = useState(true);
   const [autoZoom, setAutoZoom] = useState(true);
   const [scriptHint, setScriptHint] = useState("");
-  const [expertCropYPct, setExpertCropYPct] = useState(10);
+  const [expertCropYPct, setExpertCropYPct] = useState(50); // 0=верх источника, 50=центр (default), 100=низ
   const [expertZoomPct, setExpertZoomPct] = useState(100);
+  const [topPanYPct, setTopPanYPct] = useState(50);
+  const [topZoomPct, setTopZoomPct] = useState(100);
   const [draftProjectId, setDraftProjectId] = useState<string | null>(null);
   const [transcriptWords, setTranscriptWords] = useState<TranscriptWord[]>([]);
   const [transcribeStatus, setTranscribeStatus] = useState<"idle" | "uploading" | "transcribing" | "ready" | "error">("idle");
   const [transcribeError, setTranscribeError] = useState<string | null>(null);
+  const [brollUploadedUrl, setBrollUploadedUrl] = useState<string | null>(null);
   const [showExtraAssets, setShowExtraAssets] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projectId, setProjectIdRaw] = useState<string | null>(() => {
@@ -428,6 +432,20 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       if (uploadError) throw new Error(uploadError.message);
       const { data: pub } = supabase.storage.from("content_assets").getPublicUrl(videoPath);
 
+      // Параллельно загрузим демо-ролик (broll), если выбран — нужен render'у.
+      let brollUrl: string | null = null;
+      if (brollFile) {
+        const brollExt = brollFile.name.split(".").pop() || "mp4";
+        const brollPath = `ai-edit/layout-top/${crypto.randomUUID()}.${brollExt}`;
+        const { error: brollErr } = await supabase.storage
+          .from("content_assets")
+          .upload(brollPath, brollFile, { contentType: brollFile.type, upsert: false });
+        if (!brollErr) {
+          brollUrl = supabase.storage.from("content_assets").getPublicUrl(brollPath).data.publicUrl;
+          setBrollUploadedUrl(brollUrl);
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       const ownerId = user?.id;
       if (!ownerId) throw new Error("Нет авторизации");
@@ -451,6 +469,9 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
         script_hint: scriptHint || null,
         expert_crop_y_pct: expertCropYPct,
         expert_zoom_pct: expertZoomPct,
+        top_pan_y_pct: topPanYPct,
+        top_zoom_pct: topZoomPct,
+        custom_broll_url: brollUrl,
         status: "draft",
         stage: "draft",
         progress: 5,
@@ -508,13 +529,15 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     }
     try {
       setIsSubmitting(true);
-      // Сохраняем отредактированные титры и параметры размещения
+      // Сохраняем отредактированные титры и все параметры размещения
       await supabase
         .from("ai_edit_projects")
         .update({
           analysis_json: { words: transcriptWords, segments: [], summary: "" },
           expert_crop_y_pct: expertCropYPct,
           expert_zoom_pct: expertZoomPct,
+          top_pan_y_pct: topPanYPct,
+          top_zoom_pct: topZoomPct,
           status: "queued",
           stage: "upload",
           progress: 10,
@@ -943,59 +966,16 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           })}
         </div>
 
-        {/* Тонкая настройка размещения эксперта (для split-шаблонов) */}
+        {/* Подсказка: тонкая настройка происходит в шаге "Предпросмотр" */}
         {(layoutTemplate === "split_demo_top" || layoutTemplate === "triple_demo_stack") && (
-          <div className="mt-6 rounded-xl border border-border/40 bg-secondary/10 p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Move className="h-4 w-4 text-primary" />
-              <p className="text-sm font-bold text-foreground">Размещение эксперта в кадре</p>
+          <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-xs text-foreground/80">
+            <div className="mb-1 flex items-center gap-2 font-bold">
+              <Move className="h-3.5 w-3.5 text-primary" />
+              Положение видео настраивается в шаге «Предпросмотр»
             </div>
-            <p className="mb-4 text-xs text-muted-foreground">
-              Эти ползунки управляют crop'ом нижней панели. Если голову срезает — уменьшите «Смещение по вертикали».
-              Если эксперт мелкий — увеличьте «Зум».
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Там ты сможешь перетаскивать каждое видео мышью, видеть титры и вживую смотреть как будет выглядеть результат.
             </p>
-            <div className="grid gap-4">
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-foreground/80">Смещение по вертикали</span>
-                  <span className="text-xs font-mono text-primary">{expertCropYPct}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={50}
-                  step={1}
-                  value={expertCropYPct}
-                  onChange={(e) => setExpertCropYPct(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                  <span>верх (0%)</span>
-                  <span>середина (25%)</span>
-                  <span>низ (50%)</span>
-                </div>
-              </div>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-foreground/80">Зум на эксперта</span>
-                  <span className="text-xs font-mono text-primary">{expertZoomPct}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={80}
-                  max={150}
-                  step={5}
-                  value={expertZoomPct}
-                  onChange={(e) => setExpertZoomPct(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                  <span>дальше (80%)</span>
-                  <span>норма (100%)</span>
-                  <span>ближе (150%)</span>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>
@@ -1138,33 +1118,29 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-          {/* Left: live preview видео с CSS-рамкой crop'а */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+          {/* Left: WYSIWYG canvas — обе панели + drag + scrubber + субтитры overlay */}
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-foreground/80">Превью кадра</p>
-            <div className="relative overflow-hidden rounded-xl bg-black" style={{ aspectRatio: "9/16" }}>
-              {videoPreview && (
-                <video
-                  src={videoPreview}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  style={{
-                    transform: `scale(${expertZoomPct / 100}) translateY(${-(expertCropYPct - 25) * 0.6}%)`,
-                    transformOrigin: "center top",
-                  }}
-                  muted
-                  playsInline
-                />
-              )}
-              {/* верхняя половина: место для демо */}
-              {(layoutTemplate === "split_demo_top" || layoutTemplate === "triple_demo_stack") && (
-                <div className="absolute inset-x-0 top-0 h-1/2 border-b border-primary/40 bg-gradient-to-b from-primary/20 to-primary/5">
-                  <div className="flex h-full items-center justify-center text-[10px] font-bold text-primary">ДЕМО</div>
-                </div>
-              )}
-            </div>
-            <p className="text-[10px] leading-relaxed text-muted-foreground">
-              Это приблизительное превью. Реальный crop сделает FFmpeg на сервере с теми же значениями.
-            </p>
+            <p className="text-xs font-semibold text-foreground/80">Предпросмотр кадра</p>
+            <MontagePreviewCanvas
+              isSplit={layoutTemplate === "split_demo_top" || layoutTemplate === "triple_demo_stack"}
+              topVideoUrl={brollUploadedUrl || (brollFile ? URL.createObjectURL(brollFile) : null)}
+              bottomVideoUrl={videoPreview}
+              topPanY={topPanYPct}
+              topZoom={topZoomPct}
+              expertPanY={expertCropYPct}
+              expertZoom={expertZoomPct}
+              onTopChange={({ panY, zoom }) => {
+                setTopPanYPct(Math.round(panY));
+                setTopZoomPct(Math.round(zoom));
+              }}
+              onExpertChange={({ panY, zoom }) => {
+                setExpertCropYPct(Math.round(panY));
+                setExpertZoomPct(Math.round(zoom));
+              }}
+              words={transcriptWords}
+              durationSec={videoMeta?.durationSec || 60}
+            />
           </div>
 
           {/* Right: titres editor */}
