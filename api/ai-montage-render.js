@@ -65,6 +65,27 @@ const ffprobeDuration = (filePath) =>
     });
   });
 
+// Возвращает {width, height, duration} через ffmpeg -i parsing.
+const ffprobeMeta = (filePath) =>
+  new Promise((resolve) => {
+    const proc = spawn(ffmpegPath, ["-i", filePath], { stdio: ["ignore", "ignore", "pipe"] });
+    let stderr = "";
+    proc.stderr.on("data", (c) => { stderr += c.toString(); });
+    proc.on("close", () => {
+      const wh = stderr.match(/Stream.*Video.*?(\d{2,5})x(\d{2,5})/);
+      const dur = stderr.match(/Duration:\s*(\d{2}):(\d{2}):(\d{2})\.(\d{2})/);
+      const result = { width: 0, height: 0, duration: 0 };
+      if (wh) {
+        result.width = Number(wh[1]);
+        result.height = Number(wh[2]);
+      }
+      if (dur) {
+        result.duration = Number(dur[1]) * 3600 + Number(dur[2]) * 60 + Number(dur[3]) + Number(dur[4]) / 100;
+      }
+      resolve(result);
+    });
+  });
+
 const LANG_NAME = { ru: "русском", en: "English", kk: "казахском", uz: "узбекском" };
 const buildPrompt = ({ language = "ru", scriptHint = "" } = {}) => {
   const lang = LANG_NAME[language] || "русском";
@@ -445,23 +466,46 @@ export default async function handler(req, res) {
 
     if (topVideoPath) {
       const halfH = Math.round(outH / 2);
-      // Параметры из UI (WYSIWYG drag canvas):
-      // expert_crop_y_pct, top_pan_y_pct: 0=верх источника, 50=центр, 100=низ
-      // expert_zoom_pct, top_zoom_pct: 80-150
       const expertPanY = Math.max(0, Math.min(100, Number(project.expert_crop_y_pct ?? 50))) / 100;
       const expertZoom = Math.max(80, Math.min(150, Number(project.expert_zoom_pct ?? 100))) / 100;
       const topPanY = Math.max(0, Math.min(100, Number(project.top_pan_y_pct ?? 50))) / 100;
       const topZoom = Math.max(80, Math.min(150, Number(project.top_zoom_pct ?? 100))) / 100;
-      // Конвертируем panY (UI: где центр кропа в источнике, 0..1) → ffmpeg crop y offset.
-      // Если panY=0.5 → crop посередине → y = (ih-halfH)/2; FFmpeg формула:
-      //   y_off = ih*panY - halfH/2, кламп [0, ih-halfH]
-      const expertScaledW = Math.round(outW * expertZoom);
-      const topScaledW = Math.round(outW * topZoom);
+
+      // Pre-compute scaled dims через ffprobe чтобы не было expressions в crop.
+      const botMeta = await ffprobeMeta(userPath);
+      const topMeta = await ffprobeMeta(topVideoPath);
+      log("ffprobe bot:", botMeta, "top:", topMeta);
+
+      const computeCrop = (meta, panY, zoom, label) => {
+        const targetW = Math.round(outW * zoom);
+        if (!meta.width || !meta.height) {
+          log(`${label}: probe failed, using simple scale+crop`);
+          return { scaleW: targetW, scaleH: -2, cropY: 0 };
+        }
+        // scale to width=targetW preserving aspect
+        const aspectRatio = meta.height / meta.width;
+        let scaleW = targetW;
+        let scaleH = Math.round(targetW * aspectRatio);
+        // Если scaleH < halfH — увеличим по высоте чтобы покрыть панель
+        if (scaleH < halfH) {
+          scaleH = halfH;
+          scaleW = Math.round(halfH / aspectRatio);
+        }
+        scaleW = Math.max(scaleW, outW);
+        scaleH = Math.max(scaleH, halfH);
+        // crop y: panY (0..1) — где центр кропа в источнике
+        const cropY = Math.max(0, Math.min(scaleH - halfH, Math.round(scaleH * panY - halfH / 2)));
+        return { scaleW, scaleH, cropY };
+      };
+
+      const bot = computeCrop(botMeta, expertPanY, expertZoom, "bot");
+      const top = computeCrop(topMeta, topPanY, topZoom, "top");
+
       filter.push(
-        `[0:v]scale=${expertScaledW}:-2:force_original_aspect_ratio=increase,crop=${outW}:${halfH}:(iw-${outW})/2:'max(0,min(ih-${halfH},ih*${expertPanY.toFixed(3)}-${halfH}/2))',fps=30,setsar=1[bot]`,
+        `[0:v]scale=${bot.scaleW}:${bot.scaleH},crop=${outW}:${halfH}:${Math.round((bot.scaleW - outW) / 2)}:${bot.cropY},fps=30,setsar=1[bot]`,
       );
       filter.push(
-        `[1:v]scale=${topScaledW}:-2:force_original_aspect_ratio=increase,crop=${outW}:${halfH}:(iw-${outW})/2:'max(0,min(ih-${halfH},ih*${topPanY.toFixed(3)}-${halfH}/2))',fps=30,setsar=1[top]`,
+        `[1:v]scale=${top.scaleW}:${top.scaleH},crop=${outW}:${halfH}:${Math.round((top.scaleW - outW) / 2)}:${top.cropY},fps=30,setsar=1[top]`,
       );
       filter.push(`[top][bot]vstack=inputs=2[base0]`);
       cur = "base0";
