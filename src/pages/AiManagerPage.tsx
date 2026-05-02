@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 /* ── KPI Card ── */
 function StatusCard({ icon: Icon, label, value, sub, glow }: {
@@ -150,16 +151,30 @@ const typeColors: Record<string, string> = {
 };
 
 export default function AiManagerPage() {
+  const { active, isAgency } = useWorkspace();
   const [activeClients, setActiveClients] = useState<number>(0);
   const [todayActions, setTodayActions] = useState<number>(0);
   const [systemLogs, setSystemLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  interface PeriodMetrics {
+    spend: number;
+    leads: number;
+    cpl: number;
+    visits: number;
+    sales: number;
+    revenue: number;
+    auditCount: number;
+    avgScore: number;
+    crDiag: number;
+    romi: number;
+  }
+
   // Report Data State
   const [reportData, setReportData] = useState<{
-    yesterday: unknown;
-    week: unknown;
-    month: unknown;
+    yesterday: PeriodMetrics | null;
+    week: PeriodMetrics | null;
+    month: PeriodMetrics | null;
   }>({
     yesterday: null,
     week: null,
@@ -254,7 +269,7 @@ export default function AiManagerPage() {
           logs.push({
             id: "sys-healthy",
             type: "action",
-            text: "Система успешно инициализирована. Ожидание событий.",
+            text: "Система успешно инициализована. Ожидание событий.",
             time: format(new Date(), "HH:mm"),
             timestamp: new Date().getTime(),
           });
@@ -280,11 +295,36 @@ export default function AiManagerPage() {
         const monthStart = new Date(todayStart);
         monthStart.setDate(monthStart.getDate() - 30);
 
-        // Scoreboard wrapper for periods
-        const { data: allFacts } = await supabase
-          .from("scoreboard_daily_facts")
+        // Get all visible client configs for this project
+        let cQuery = supabase.from("clients_config").select("id").eq("is_active", true);
+        if (!isAgency) {
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", active?.id);
+          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+          if (sharedIds.length > 0) {
+            cQuery = cQuery.or(`project_id.eq.${active?.id},id.in.(${sharedIds.join(",")})`);
+          } else {
+            cQuery = (cQuery as any).eq("project_id", active?.id);
+          }
+        }
+        const { data: visibleConfigs } = await cQuery;
+        const visibleIds = (visibleConfigs || []).map(c => c.id);
+
+        // Fetch daily data for visible clients
+        let factsQ = supabase
+          .from("daily_data")
           .select("date, spend, leads, visits, sales, revenue")
           .gte("date", format(monthStart, "yyyy-MM-dd"));
+        
+        if (visibleIds.length > 0) {
+          factsQ = factsQ.in("client_config_id", visibleIds);
+        } else if (!isAgency) {
+          factsQ = factsQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+        }
+
+        const { data: allFacts } = await factsQ;
 
         const { data: allAudits } = await supabase
           .from("ai_rop_audits")
@@ -457,7 +497,7 @@ export default function AiManagerPage() {
               <TabsTrigger value="month">За Месяц</TabsTrigger>
             </TabsList>
 
-            {loading || !reportData.yesterday ? (
+            {loading || !reportData.yesterday || !reportData.week || !reportData.month ? (
               <div className="p-8 text-center text-sm text-muted-foreground">Формирование отчётов ИИ...</div>
             ) : (
               <>
@@ -466,39 +506,39 @@ export default function AiManagerPage() {
                     <ReportCard
                       title="ИИ-Таргетолог" icon={PieChart} dateLabel="За вчера"
                       metrics={[
-                        { label: "Расход", value: `${reportData.yesterday.spend.toLocaleString("ru-RU")} ₸`, trend: "neutral" },
-                        { label: "Лидов", value: String(reportData.yesterday.leads), trend: "up" },
-                        { label: "Стоимость (CPL)", value: `${reportData.yesterday.cpl.toLocaleString("ru-RU")} ₸`, trend: "down" },
+                        { label: "Расход", value: `${reportData.yesterday!.spend.toLocaleString("ru-RU")} ₸`, trend: "neutral" },
+                        { label: "Лидов", value: String(reportData.yesterday!.leads), trend: "up" },
+                        { label: "Стоимость (CPL)", value: `${reportData.yesterday!.cpl.toLocaleString("ru-RU")} ₸`, trend: "down" },
                       ]}
                       analysis={<>
-                        <p>• Было привлечено {reportData.yesterday.leads} лидов со средней стоимостью {reportData.yesterday.cpl}₸.</p>
-                        <p>• Расход составил {reportData.yesterday.spend.toLocaleString("ru-RU")}₸. Обучение кампаний проходит штатно.</p>
+                        <p>• Было привлечено {reportData.yesterday!.leads} лидов со средней стоимостью {reportData.yesterday!.cpl}₸.</p>
+                        <p>• Расход составил {reportData.yesterday!.spend.toLocaleString("ru-RU")}₸. Обучение кампаний проходит штатно.</p>
                       </>}
                     />
                     <ReportCard
                       title="Сквозная Аналитика" icon={BarChart} dateLabel="За вчера"
                       metrics={[
-                        { label: "Визиты (Диаг.)", value: String(reportData.yesterday.visits), trend: "up" },
-                        { label: "Продажи", value: String(reportData.yesterday.sales), trend: "neutral" },
-                        { label: "Выручка", value: `${(reportData.yesterday.revenue / 1000).toFixed(1)}k ₸`, trend: "up" },
+                        { label: "Визиты (Диаг.)", value: String(reportData.yesterday!.visits), trend: "up" },
+                        { label: "Продажи", value: String(reportData.yesterday!.sales), trend: "neutral" },
+                        { label: "Выручка", value: `${(reportData.yesterday!.revenue / 1000).toFixed(1)}k ₸`, trend: "up" },
                       ]}
                       analysis={<>
-                        <p>• Конверсия Лид → Диагностика составила {reportData.yesterday.crDiag}%. {reportData.yesterday.crDiag < 15 ? "(Ниже нормы)" : "(Штатно)"}</p>
-                        <p>• Зарегистрировано выручки на {reportData.yesterday.revenue.toLocaleString("ru-RU")}₸. Общий маркетинг ROMI составил {reportData.yesterday.romi}%.</p>
+                        <p>• Конверсия Лид → Диагностика составила {reportData.yesterday!.crDiag}%. {reportData.yesterday!.crDiag < 15 ? "(Ниже нормы)" : "(Штатно)"}</p>
+                        <p>• Зарегистрировано выручки на {reportData.yesterday!.revenue.toLocaleString("ru-RU")}₸. Общий маркетинг ROMI составил {reportData.yesterday!.romi}%.</p>
                       </>}
                     />
                     <ReportCard
                       title="AI РОП (Контроль)" icon={Users} dateLabel="За вчера"
                       metrics={[
-                        { label: "Аудитов", value: String(reportData.yesterday.auditCount), trend: "up" },
-                        { label: "Оценка", value: `${reportData.yesterday.avgScore}/100`, trend: "neutral" },
-                        { label: "Ошибок", value: reportData.yesterday.avgScore < 70 ? "Критично" : "Штатно", trend: "down" },
+                        { label: "Аудитов", value: String(reportData.yesterday!.auditCount), trend: "up" },
+                        { label: "Оценка", value: `${reportData.yesterday!.avgScore}/100`, trend: "neutral" },
+                        { label: "Ошибок", value: reportData.yesterday!.avgScore < 70 ? "Критично" : "Штатно", trend: "down" },
                       ]}
                       analysis={<>
-                        <p>• Проведено {reportData.yesterday.auditCount} проверок звонков/чатов.</p>
-                        <p>• Среднее качество диалогов {reportData.yesterday.avgScore} из 100 б.</p>
+                        <p>• Проведено {reportData.yesterday!.auditCount} проверок звонков/чатов.</p>
+                        <p>• Среднее качество диалогов {reportData.yesterday!.avgScore} из 100 б.</p>
                       </>}
-                      alertInfo={reportData.yesterday.avgScore < 70 ? "Внимание: Средний балл контроля качества упал ниже 70. Проверьте отдел продаж." : undefined}
+                      alertInfo={reportData.yesterday!.avgScore < 70 ? "Внимание: Средний балл контроля качества упал ниже 70. Проверьте отдел продаж." : undefined}
                     />
                   </div>
                 </TabsContent>
@@ -508,37 +548,37 @@ export default function AiManagerPage() {
                     <ReportCard
                       title="ИИ-Таргетолог" icon={PieChart} dateLabel="За 7 дней"
                       metrics={[
-                        { label: "Расход", value: `${(reportData.week.spend / 1000).toFixed(1)}k ₸`, trend: "neutral" },
-                        { label: "Лидов", value: String(reportData.week.leads), trend: "up" },
-                        { label: "Стоимость (CPL)", value: `${reportData.week.cpl.toLocaleString("ru-RU")} ₸`, trend: "down" },
+                        { label: "Расход", value: `${(reportData.week!.spend / 1000).toFixed(1)}k ₸`, trend: "neutral" },
+                        { label: "Лидов", value: String(reportData.week!.leads), trend: "up" },
+                        { label: "Стоимость (CPL)", value: `${reportData.week!.cpl.toLocaleString("ru-RU")} ₸`, trend: "down" },
                       ]}
                       analysis={<>
-                        <p>• Протестировано несколько связок. Лучшая показывает CPL в пределах {reportData.week.cpl}₸.</p>
-                        <p>• Расход составил {reportData.week.spend.toLocaleString("ru-RU")}₸.</p>
+                        <p>• Протестировано несколько связок. Лучшая показывает CPL в пределах {reportData.week!.cpl}₸.</p>
+                        <p>• Расход составил {reportData.week!.spend.toLocaleString("ru-RU")}₸.</p>
                       </>}
                     />
                     <ReportCard
                       title="Сквозная Аналитика" icon={BarChart} dateLabel="За 7 дней"
                       metrics={[
-                        { label: "Диагностики", value: String(reportData.week.visits), trend: "up" },
-                        { label: "Продажи", value: String(reportData.week.sales), trend: "up" },
-                        { label: "ROMI", value: `${reportData.week.romi}%`, trend: "up" },
+                        { label: "Диагностики", value: String(reportData.week!.visits), trend: "up" },
+                        { label: "Продажи", value: String(reportData.week!.sales), trend: "up" },
+                        { label: "ROMI", value: `${reportData.week!.romi}%`, trend: "up" },
                       ]}
                       analysis={<>
-                        <p>• Выручка за 7 дней составила <strong>{reportData.week.revenue.toLocaleString("ru-RU")} ₸</strong>.</p>
-                        <p>• Продажи: {reportData.week.sales} (CR из диагностики в продажу требует внимания при низких значениях).</p>
+                        <p>• Выручка за 7 дней составила <strong>{reportData.week!.revenue.toLocaleString("ru-RU")} ₸</strong>.</p>
+                        <p>• Продажи: {reportData.week!.sales} (CR из диагностики в продажу требует внимания при низких значениях).</p>
                       </>}
                     />
                     <ReportCard
                       title="AI РОП (Контроль)" icon={Users} dateLabel="За 7 дней"
                       metrics={[
-                        { label: "Аудитов", value: String(reportData.week.auditCount), trend: "up" },
-                        { label: "Оценка", value: `${reportData.week.avgScore}/100`, trend: "neutral" },
+                        { label: "Аудитов", value: String(reportData.week!.auditCount), trend: "up" },
+                        { label: "Оценка", value: `${reportData.week!.avgScore}/100`, trend: "neutral" },
                         { label: "Тренд", value: "Рост", trend: "up" },
                       ]}
                       analysis={<>
-                        <p>• Отдел продаж прошел {reportData.week.auditCount} проверок за неделю.</p>
-                        <p>• Суммарный рейтинг: {reportData.week.avgScore}/100.</p>
+                        <p>• Отдел продаж прошел {reportData.week!.auditCount} проверок за неделю.</p>
+                        <p>• Суммарный рейтинг: {reportData.week!.avgScore}/100.</p>
                       </>}
                     />
                   </div>
@@ -549,38 +589,38 @@ export default function AiManagerPage() {
                     <ReportCard
                       title="ИИ-Таргетолог" icon={PieChart} dateLabel="За 30 дней"
                       metrics={[
-                        { label: "Расход", value: `${(reportData.month.spend / 1000000).toFixed(2)}M ₸`, trend: "up" },
-                        { label: "Лидов", value: String(reportData.month.leads), trend: "up" },
-                        { label: "Стоимость (CPL)", value: `${reportData.month.cpl.toLocaleString("ru-RU")} ₸`, trend: "neutral" },
+                        { label: "Расход", value: `${(reportData.month!.spend / 1000000).toFixed(2)}M ₸`, trend: "up" },
+                        { label: "Лидов", value: String(reportData.month!.leads), trend: "up" },
+                        { label: "Стоимость (CPL)", value: `${reportData.month!.cpl.toLocaleString("ru-RU")} ₸`, trend: "neutral" },
                       ]}
                       analysis={<>
-                        <p>• Месячный расход: {reportData.month.spend.toLocaleString("ru-RU")}₸. Привлечено {reportData.month.leads} лидов.</p>
-                        <p>• ИИ проводит постоянную ротацию бюджета для удержания CPL на уровне {reportData.month.cpl}₸.</p>
+                        <p>• Месячный расход: {reportData.month!.spend.toLocaleString("ru-RU")}₸. Привлечено {reportData.month!.leads} лидов.</p>
+                        <p>• ИИ проводит постоянную ротацию бюджета для удержания CPL на уровне {reportData.month!.cpl}₸.</p>
                       </>}
                     />
                     <ReportCard
                       title="Сквозная Аналитика" icon={BarChart} dateLabel="За 30 дней"
                       metrics={[
-                        { label: "Визиты", value: String(reportData.month.visits), trend: "up" },
-                        { label: "Продажи", value: String(reportData.month.sales), trend: "up" },
-                        { label: "Выручка", value: `${(reportData.month.revenue / 1000000).toFixed(2)}M ₸`, trend: "up" },
+                        { label: "Визиты", value: String(reportData.month!.visits), trend: "up" },
+                        { label: "Продажи", value: String(reportData.month!.sales), trend: "up" },
+                        { label: "Выручка", value: `${(reportData.month!.revenue / 1000000).toFixed(2)}M ₸`, trend: "up" },
                       ]}
                       analysis={<>
-                        <p>• Воронка продаж сгенерировала выручку в размере <strong>{reportData.month.revenue.toLocaleString("ru-RU")} ₸</strong>.</p>
-                        <p>• ROMI за месяц: {reportData.month.romi}%.</p>
+                        <p>• Воронка продаж сгенерировала выручку в размере <strong>{reportData.month!.revenue.toLocaleString("ru-RU")} ₸</strong>.</p>
+                        <p>• ROMI за месяц: {reportData.month!.romi}%.</p>
                       </>}
-                      alertInfo={reportData.month.romi < 300 ? "ROMI ниже 300% означает слабую окупаемость рекламных вложений. Стоит аудировать продажи." : undefined}
+                      alertInfo={reportData.month!.romi < 300 ? "ROMI ниже 300% означает слабую окупаемость рекламных вложений. Стоит аудировать продажи." : undefined}
                     />
                     <ReportCard
                       title="AI РОП (Контроль)" icon={Users} dateLabel="За 30 дней"
                       metrics={[
-                        { label: "Аудитов", value: String(reportData.month.auditCount), trend: "up" },
-                        { label: "Оценка", value: `${reportData.month.avgScore}/100`, trend: "up" },
+                        { label: "Аудитов", value: String(reportData.month!.auditCount), trend: "up" },
+                        { label: "Оценка", value: `${reportData.month!.avgScore}/100`, trend: "up" },
                         { label: "NPS Средн.", value: "9.2", trend: "up" },
                       ]}
                       analysis={<>
-                        <p>• За месяц оценено {reportData.month.auditCount} коммуникаций.</p>
-                        <p>• Формируется устойчивая оценка качества: {reportData.month.avgScore} баллов.</p>
+                        <p>• За месяц оценено {reportData.month!.auditCount} коммуникаций.</p>
+                        <p>• Формируется устойчивая оценка качества: {reportData.month!.avgScore} баллов.</p>
                       </>}
                     />
                   </div>

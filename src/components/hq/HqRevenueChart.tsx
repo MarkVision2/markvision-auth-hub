@@ -23,7 +23,7 @@ function aggregateByDate(rows: DailyRow[]) {
     byDate[r.date].spend += Number(r.spend) || 0;
     byDate[r.date].leads += Number(r.leads) || 0;
   }
-  const result = [];
+  const result: { day: string; date: string; spend: number; leads: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const dateStr = format(subDays(new Date(), i), "yyyy-MM-dd");
     const dayLabel = format(parseISO(dateStr), "EE", { locale: ru });
@@ -48,13 +48,26 @@ export default function HqRevenueChart({ projectId }: Props) {
       const from = format(subDays(new Date(), 6), "yyyy-MM-dd");
       const to = format(new Date(), "yyyy-MM-dd");
 
-      const { data } = await (supabase as any)
+      // Fetch all visible client IDs for this project to get aggregate data
+      let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true);
+      cQuery = cQuery.eq("project_id", projectId);
+      const { data: configs } = await cQuery;
+      const ids = (configs || []).map((c: any) => c.id);
+
+      let query = (supabase as any)
         .from("daily_data")
         .select("date, spend, leads")
-        .eq("project_id", projectId)
         .gte("date", from)
         .lte("date", to)
         .order("date", { ascending: true });
+
+      if (ids.length > 0) {
+        query = query.in("client_config_id", ids);
+      } else {
+        query = query.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+      }
+
+      const { data } = await query;
 
       setRows(data || []);
     }

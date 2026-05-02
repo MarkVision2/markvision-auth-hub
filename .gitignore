@@ -69,3 +69,4 @@ skills-lock.json
 meta-ads-mcp-extended/
 n8n-knowledge-base.json
 .vercel
+.env*.local

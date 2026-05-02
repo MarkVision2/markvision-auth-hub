@@ -70,21 +70,24 @@ export function useAnalyticsData() {
 
       prevLeadsQ = prevLeadsQ.eq("project_id", active.id).gte("created_at", prevStart).lte("created_at", prevEnd);
 
-      // Data Isolation Fix: Get client_config_ids specific to this project
-      const { data: shared } = await (supabase as any)
-        .from("client_config_visibility")
-        .select("client_config_id")
-        .eq("project_id", active.id);
-      const sharedIds = (shared || []).map((s: any) => s.client_config_id);
-
       let query = (supabase as any)
         .from("clients_config")
         .select("id");
 
-      if (sharedIds.length > 0) {
-        query = query.or(`project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`);
+      if (isAgency) {
+        // Agency project sees everything
       } else {
-        query = query.eq("project_id", active.id);
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", active.id);
+        const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+
+        if (sharedIds.length > 0) {
+          query = query.or(`project_id.eq.${active.id},id.in.(${sharedIds.join(",")})`);
+        } else {
+          query = query.eq("project_id", active.id);
+        }
       }
 
       const { data: configs } = await query;

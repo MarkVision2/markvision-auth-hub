@@ -38,19 +38,19 @@ export function useScoreboardData(year: number, monthIndex: number) {
     async function fetch() {
       setLoading(true);
       try {
+        const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
         const startDate = `${year}-${String(monthIndex + 1).padStart(2, "0")}-01`;
         const endMonth = monthIndex === 11 ? `${year + 1}-01-01` : `${year}-${String(monthIndex + 2).padStart(2, "0")}-01`;
 
         const [planRes, factsRes] = await Promise.all([
           supabase
-            .from("scoreboard_plans")
-            .select("spend, impressions, clicks, leads, followers, visits, sales, revenue")
-            .eq("year", year)
-            .eq("month_index", monthIndex)
+            .from("monthly_plans")
+            .select("plan_spend, plan_leads, plan_visits, plan_sales, plan_revenue")
+            .eq("month_year", monthYear)
             .limit(1)
             .maybeSingle(),
           supabase
-            .from("scoreboard_daily_facts")
+            .from("daily_data")
             .select("date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
             .gte("date", startDate)
             .lt("date", endMonth)
@@ -62,14 +62,14 @@ export function useScoreboardData(year: number, monthIndex: number) {
         if (cancelled) return;
 
         setPlan(planRes.data ? {
-          spend: Number(planRes.data.spend),
-          impressions: planRes.data.impressions,
-          clicks: planRes.data.clicks,
-          leads: planRes.data.leads,
-          followers: planRes.data.followers,
-          visits: planRes.data.visits,
-          sales: planRes.data.sales,
-          revenue: Number(planRes.data.revenue),
+          spend: Number(planRes.data.plan_spend) || 0,
+          impressions: 0,
+          clicks: 0,
+          leads: Number(planRes.data.plan_leads) || 0,
+          followers: 0,
+          visits: Number(planRes.data.plan_visits) || 0,
+          sales: Number(planRes.data.plan_sales) || 0,
+          revenue: Number(planRes.data.plan_revenue) || 0,
         } : emptyPlan);
 
         setDailyFacts((factsRes.data || []).map((r: Record<string, unknown>) => ({

@@ -173,7 +173,7 @@ export default function ScoreboardPage() {
   const [rows, setRows] = useState<DailyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [planValues, setPlanValues] = useState<PlanValues>({ ...EMPTY_PLAN });
-  const { active } = useWorkspace();
+  const { active, isAgency } = useWorkspace();
 
   // Ad Account filter
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
@@ -204,17 +204,21 @@ export default function ScoreboardPage() {
         if (!active) return;
         const currentActiveId = active.id;
 
-        // Strict project filtering (no HQ exception)
-        const { data: shared } = await (supabase as any)
-          .from("client_config_visibility")
-          .select("client_config_id")
-          .eq("project_id", currentActiveId);
-        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
-
-        if (sharedCabIds.length > 0) {
-          query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
+        if (isAgency) {
+          // Agency project sees everything
         } else {
-          query = query.eq("project_id", currentActiveId);
+          // Strict project filtering
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", currentActiveId);
+          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+
+          if (sharedCabIds.length > 0) {
+            query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
+          } else {
+            query = query.eq("project_id", currentActiveId);
+          }
         }
 
         const { data, error } = await query.order("client_name");
