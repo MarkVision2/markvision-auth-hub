@@ -31,7 +31,7 @@ interface DailyRow {
   followers: number; visits: number; sales: number; revenue: number;
 }
 
-interface ClientAccount { id: string; client_name: string; }
+interface ClientAccount { id: string; client_name: string; project_id?: string | null; }
 
 type PlanKey = "spend" | "leads" | "followers" | "visits" | "sales" | "revenue";
 type MetricKey = "spend" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
@@ -197,17 +197,20 @@ export default function ScoreboardPage() {
 
     async function fetchAccounts() {
       try {
+        console.log("Scoreboard: Starting fetchAccounts. isAgency:", isAgency, "activeId:", active?.id);
+        
         let query = (supabase as any).from("clients_config")
-          .select("id, client_name, project_id, spend, meta_leads, visits, sales, revenue")
-          .eq("is_active", true);
-
-        if (!active) return;
-        const currentActiveId = active.id;
+          .select("id, client_name, project_id, is_active");
 
         if (isAgency) {
-          // Agency project sees everything
+          console.log("Scoreboard: Agency mode, fetching all accounts");
+          // Agency sees everything, but we can still filter by is_active if we want.
+          // Let's remove is_active for now to debug why it's empty.
         } else {
-          // Strict project filtering
+          const currentActiveId = active?.id;
+          if (!currentActiveId) return;
+
+          console.log("Scoreboard: Client mode, filtering by project:", currentActiveId);
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")
             .select("client_config_id")
@@ -222,20 +225,37 @@ export default function ScoreboardPage() {
         }
 
         const { data, error } = await query.order("client_name");
-        if (error) throw error;
+        if (error) {
+          console.error("Scoreboard: fetchAccounts DB error:", error);
+          throw error;
+        }
 
-        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts for project ${currentActiveId}`, data);
+        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts`, data);
 
-        const accs = (data || []) as (ClientAccount & { spend: number; meta_leads: number; visits: number; sales: number; revenue: number })[];
-        setAccounts(accs);
+        // Filter active only if we have many, otherwise show what we have
+        let filteredData = (data || []).filter(a => a.is_active !== false);
+        if (filteredData.length === 0 && (data || []).length > 0) {
+          console.warn("Scoreboard: No active accounts found, showing inactive ones for debug");
+          filteredData = data || [];
+        }
 
-        if (accs.length > 0) {
-          const first = accs[0];
-          console.log("Scoreboard: Auto-selecting first account:", first.client_name);
-          setSelectedAccountId(first.id);
+        const accs = filteredData as ClientAccount[];
+        if (isAgency && accs.length > 0) {
+          const allOption: ClientAccount = { id: "all", client_name: "Все кабинеты", project_id: null };
+          const finalAccs = [allOption, ...accs];
+          setAccounts(finalAccs);
+          if (selectedAccountId === "__none__" || !finalAccs.find(a => a.id === selectedAccountId)) {
+            setSelectedAccountId("all");
+          }
         } else {
-          console.log("Scoreboard: No accounts found for this project.");
-          setSelectedAccountId("__none__");
+          setAccounts(accs);
+          if (accs.length > 0) {
+            if (selectedAccountId === "__none__" || !accs.find(a => a.id === selectedAccountId)) {
+              setSelectedAccountId(accs[0].id);
+            }
+          } else {
+            setSelectedAccountId("__none__");
+          }
         }
       } catch (err) {
         console.error("Scoreboard: fetchAccounts error:", err);
@@ -259,14 +279,22 @@ export default function ScoreboardPage() {
     if (selectedAccountId === "__none__") { setRows([]); setLoading(false); return; }
     setLoading(true);
     try {
-      let query = (supabase as any)
-        .from("daily_data").select("*")
-        .gte("date", dateFrom).lte("date", dateTo)
-        .eq("client_config_id", selectedAccountId);
+        let query = (supabase as any)
+          .from("daily_data")
+          .select("id, date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
+          .gte("date", dateFrom)
+          .lte("date", dateTo);
 
-      // Data Isolation Fix: We must NOT filter by project_id here. 
-      // The `selectedAccountId` correctly identifies the exact ad cabinet (client_config_id).
-      // If we add .eq("project_id", active.id) randomly, it breaks if the rows have null project_ids or another project's shared id.
+        if (selectedAccountId === "all") {
+          const allIds = accounts.filter(a => a.id !== "all").map(a => a.id);
+          if (allIds.length > 0) {
+            query = query.in("client_config_id", allIds);
+          } else {
+            query = query.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+          }
+        } else {
+          query = query.eq("client_config_id", selectedAccountId);
+        }
 
       query = query.order("date", { ascending: true });
 

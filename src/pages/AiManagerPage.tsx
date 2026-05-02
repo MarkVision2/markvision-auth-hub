@@ -191,7 +191,7 @@ export default function AiManagerPage() {
         const { count: clientsCount } = await supabase
           .from("clients_config")
           .select("*", { count: 'exact', head: true })
-          .eq("is_active", true)
+          .neq("is_active", false)
           .neq("is_agency", true);
 
         setActiveClients(clientsCount || 0);
@@ -292,11 +292,11 @@ export default function AiManagerPage() {
         const weekStart = new Date(todayStart);
         weekStart.setDate(weekStart.getDate() - 7);
 
-        const monthStart = new Date(todayStart);
+const monthStart = new Date(todayStart);
         monthStart.setDate(monthStart.getDate() - 30);
 
-        // Get all visible client configs for this project
-        let cQuery = supabase.from("clients_config").select("id").eq("is_active", true);
+        // Get all visible client configs
+        let cQuery = supabase.from("clients_config").select("id").neq("is_active", false);
         if (!isAgency) {
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")

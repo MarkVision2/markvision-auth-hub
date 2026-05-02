@@ -169,8 +169,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveId,
     createProject,
     refreshProjects,
-    isAgency: !!active && active.type === "agency",
-  }), [workspaces, active, createProject, refreshProjects]);
+    isAgency: isSuperadmin || (!!active && active.type === "agency"),
+  }), [workspaces, active, createProject, refreshProjects, isSuperadmin]);
 
   return (
     <WorkspaceContext.Provider value={contextValue}>
