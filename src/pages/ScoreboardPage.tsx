@@ -376,24 +376,33 @@ export default function ScoreboardPage() {
   }, [rows, year, monthIndex]);
 
   // Aggregated fact
-  const fact = useMemo(() => rows.reduce(
-    (acc, d) => ({
-      spend: acc.spend + d.spend,
-      leads: acc.leads + d.leads,
-      followers: acc.followers + d.followers,
-      visits: acc.visits + d.visits,
-      sales: acc.sales + d.sales,
-      revenue: acc.revenue + d.revenue,
-    }),
-    {
-      spend: 0,
-      leads: 0,
-      followers: 0,
-      visits: 0,
-      sales: 0,
-      revenue: 0
-    }
-  ), [rows]);
+  const fact = useMemo(() => {
+    // Ultimate Visibility Fix: 
+    // If no specific account is selected or 'all' is selected, 
+    // use EVERY record from useScoreboardData (dailyFacts) for the fact row.
+    const source = (selectedAccountId === "all" || selectedAccountId === "__none__") 
+      ? dailyFacts 
+      : rows;
+
+    return source.reduce(
+      (acc, d) => ({
+        spend: acc.spend + d.spend,
+        leads: acc.leads + d.leads,
+        followers: acc.followers + d.followers,
+        visits: acc.visits + d.visits,
+        sales: acc.sales + d.sales,
+        revenue: acc.revenue + d.revenue,
+      }),
+      {
+        spend: 0,
+        leads: 0,
+        followers: 0,
+        visits: 0,
+        sales: 0,
+        revenue: 0
+      }
+    );
+  }, [rows, dailyFacts, selectedAccountId]);
 
   const getVal = (src: Record<string, number>, key: MetricKey): number => {
     if (key === "cpl") return cplCalc(src.spend, src.leads);
