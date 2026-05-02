@@ -500,7 +500,7 @@ export default function AnalyticsPage() {
             <KpiCard icon={<DollarSign className="h-4 w-4" />} label="Расход" value={formatMoney(totalSpend)} sub="за период" trend={trends.spend} />
             <KpiCard icon={<Users className="h-4 w-4" />} label="Лиды" value={formatNum(totalLeads)} sub={`${totalLeadsFromCrm} в CRM`} trend={trends.leads} />
             <KpiCard icon={<Target className="h-4 w-4" />} label="CPL" value={cpl > 0 ? formatMoney(cpl) : "—"} sub="стоимость лида" accent={cpl > 0} />
-            <KpiCard icon={<Eye className="h-4 w-4" />} label="Визиты" value={formatNum(totalVisits)} sub={cpv > 0 ? `CPV: ${formatMoney(cpv)}` : "нет данных"} trend={trends.visits} />
+            <KpiCard icon={<Eye className="h-4 w-4" />} label="Диагностики" value={formatNum(totalVisits)} sub={cpv > 0 ? `CPD: ${formatMoney(cpv)}` : "нет данных"} trend={trends.visits} />
             <KpiCard icon={<ShoppingCart className="h-4 w-4" />} label="Продажи" value={formatNum(totalSales)} sub={cac > 0 ? `CAC: ${formatMoney(cac)}` : "нет данных"} trend={trends.sales} />
             <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Выручка" value={formatMoney(totalRevenue)} trend={trends.revenue} />
             <KpiCard icon={<BarChart3 className="h-4 w-4" />} label="ROMI" value={totalSpend > 0 ? `${globalRomi}%` : "—"} sub={topChannel ? `Топ: ${topChannel.name}` : ""} accent={globalRomi > 0} trend={trends.romi} />
@@ -545,7 +545,7 @@ export default function AnalyticsPage() {
                         <TableHead className="text-[11px]">Клики</TableHead>
                         <TableHead className="text-[11px]">Лиды</TableHead>
                         <TableHead className="text-[11px]">CPL</TableHead>
-                        <TableHead className="text-[11px]">Визиты</TableHead>
+                        <TableHead className="text-[11px]">Диагностики</TableHead>
                         <TableHead className="text-[11px]">Продажи</TableHead>
                         <TableHead className="text-[11px]">Выручка</TableHead>
                         <TableHead className="text-[11px]">ROMI</TableHead>

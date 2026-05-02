@@ -245,7 +245,7 @@ export function useAnalyticsData() {
       { stage: "Показы", value: totalImpressions, label: "" },
       { stage: "Клики", value: totalClicks, label: "" },
       { stage: "Лиды", value: totalLeads, label: "" },
-      { stage: "Визиты", value: totalVisits, label: "" },
+      { stage: "Диагностики", value: totalVisits, label: "" },
       { stage: "Продажи", value: totalSales, label: "" },
     ].map((d) => ({ ...d, label: new Intl.NumberFormat("ru-RU").format(Math.round(d.value)) }));
     const channelChartData = channels.map((ch) => ({

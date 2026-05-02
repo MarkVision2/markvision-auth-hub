@@ -347,7 +347,7 @@ export default function DashboardTarget() {
   };
 
   const handleExport = () => {
-    const headers = ["Клиент", "Расход", "CPL", "Лиды", "Визиты", "Продажи", "Выручка", "ROMI"];
+    const headers = ["Клиент", "Расход", "CPL", "Лиды", "Диаг.", "Продажи", "Выручка", "ROMI"];
     const rows = filteredClients.map(c => [
       c.name, c.totalSpend, c.cpl, c.totalLeads, c.totalVisits, c.totalSales, c.totalRevenue, `${c.romi}%`
     ]);
@@ -681,7 +681,7 @@ export default function DashboardTarget() {
                                 <span className="text-right">Расход</span>
                                 <span className="text-right">Лиды</span>
                                 <span className="text-right">CPL</span>
-                                <span className="text-right">Визиты</span>
+                                <span className="text-right">Диаг.</span>
                                 <span className="text-right">Продажи</span>
                               </div>
                               <div className="max-h-[300px] overflow-y-auto divide-y divide-border/10">

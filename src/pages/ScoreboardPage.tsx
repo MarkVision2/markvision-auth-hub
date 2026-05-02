@@ -43,7 +43,7 @@ const columns: { key: "date" | MetricKey; label: string; align: "left" | "right"
   { key: "leads", label: "Лиды", align: "right" },
   { key: "cpl", label: "CPL", align: "right" },
   { key: "followers", label: "Подписч.", align: "right" },
-  { key: "visits", label: "Визиты", align: "right" },
+  { key: "visits", label: "Диагностики", align: "right" },
   { key: "sales", label: "Оплаты", align: "right" },
   { key: "revenue", label: "Выручка", align: "right" },
 ];
@@ -416,10 +416,10 @@ export default function ScoreboardPage() {
 
   const topCards = useMemo(() => [
     { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
-    { label: "CPV", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Визиты", icon: Eye },
     { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
-    { label: "CR Лид→Визит", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Визиты / Лиды", icon: ArrowRightLeft },
-    { label: "CR Визит→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Визиты", icon: TrendingUp },
+    { label: "CPD", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Диагностики", icon: Eye },
+    { label: "CR Лид→Диаг.", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Диагностики / Лиды", icon: ArrowRightLeft },
+    { label: "CR Диаг.→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Диагностики", icon: TrendingUp },
   ], [fact]);
 
   const daysWithData = rows.length;
