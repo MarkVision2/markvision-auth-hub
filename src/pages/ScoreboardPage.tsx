@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
+import { useScoreboardData } from "@/hooks/useScoreboardData";
 
 /* ── helpers ── */
 const fmt = (v: number) => Math.round(v).toLocaleString("ru-RU");
@@ -178,6 +179,8 @@ export default function ScoreboardPage() {
   // Ad Account filter
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
+
+  const { plan, dailyFacts, loading: dataLoading, refetch: refetchData } = useScoreboardData(year, monthIndex);
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
