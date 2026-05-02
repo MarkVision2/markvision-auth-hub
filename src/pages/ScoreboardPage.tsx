@@ -180,7 +180,7 @@ export default function ScoreboardPage() {
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
 
-  const { plan, dailyFacts, loading: dataLoading, refetch: refetchData } = useScoreboardData(year, monthIndex);
+  const { plan, dailyFacts, loading: dataLoading } = useScoreboardData(year, monthIndex);
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
