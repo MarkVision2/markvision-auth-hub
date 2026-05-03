@@ -220,7 +220,7 @@ export default function ScoreboardPage() {
         return acc;
       }, {} as Record<string, DailyRow>);
 
-      setRows(Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date)));
+      setRows(Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date)) as DailyRow[]);
 
       if (planRes.data) {
         const p = planRes.data;
