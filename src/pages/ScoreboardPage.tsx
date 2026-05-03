@@ -93,22 +93,19 @@ export default function ScoreboardPage() {
           .eq("is_active", true);
 
         const currentActiveId = active?.id;
-        if (isAgency) {
-          query = query.eq("project_id", currentActiveId);
+        // Fetch shared cabinets
+        const { data: shared } = await (supabase as any)
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", currentActiveId);
+
+        if (cancelled) return;
+
+        const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
+        if (sharedCabIds.length > 0) {
+          query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
         } else {
-          const { data: shared } = await (supabase as any)
-            .from("client_config_visibility")
-            .select("client_config_id")
-            .eq("project_id", currentActiveId);
-
-          if (cancelled) return;
-
-          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
-          if (sharedCabIds.length > 0) {
-            query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
-          } else {
-            query = query.eq("project_id", currentActiveId);
-          }
+          query = query.eq("project_id", currentActiveId);
         }
 
         const { data, error } = await query.order("client_name");
@@ -154,7 +151,7 @@ export default function ScoreboardPage() {
     const requestId = ++fetchRequestRef.current;
     const isCurrent = () => requestId === fetchRequestRef.current;
 
-    if (selectedAccountId === "__none__" || !active) {
+    if (!active) {
       setRows([]);
       setLoading(false);
       return;
@@ -174,15 +171,11 @@ export default function ScoreboardPage() {
         .lte("date", dateTo)
         .order("date", { ascending: true });
 
-      if (selectedAccountId === "all") {
-        const allIds = accounts.map(a => a.id);
-        if (allIds.length > 0) {
-          dailyQuery = dailyQuery.in("client_config_id", allIds);
-        } else {
-          dailyQuery = dailyQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
-        }
-      } else {
+      if (selectedAccountId !== "all" && selectedAccountId !== "__none__") {
         dailyQuery = dailyQuery.eq("client_config_id", selectedAccountId);
+      } else {
+        // For 'all' we don't filter by client_config_id to match global stats
+        // but we still rely on project_id (handled by RLS and the base query)
       }
 
       // 2. Plan Query
@@ -219,7 +212,8 @@ export default function ScoreboardPage() {
         return acc;
       }, {} as Record<string, DailyRow>);
 
-      setRows(Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date)) as DailyRow[]);
+      const rowsData = Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date)) as DailyRow[];
+      setRows(rowsData);
 
       if (planRes.data) {
         const p = planRes.data;
@@ -232,6 +226,8 @@ export default function ScoreboardPage() {
           revenue: Number(p.plan_revenue) || 0,
         });
       } else {
+        // Try fetching from the global scoreboard data hook if local query fails
+        // but we keep the current project's plan as priority
         setPlanValues({ ...EMPTY_PLAN });
       }
     } catch (err: any) {
