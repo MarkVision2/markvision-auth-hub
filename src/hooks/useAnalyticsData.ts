@@ -169,7 +169,17 @@ export function useAnalyticsData() {
         ...ch,
         campaigns: campaignsByChannel.get(ch.id) || []
       })));
-      setOrganicPosts(rawOrganic);
+      setOrganicPosts(rawOrganic.map(op => ({
+        id: op.id,
+        thumbnail: op.thumbnail || "",
+        caption: op.caption,
+        triggerWord: op.trigger_word || "",
+        dms: op.dms,
+        leads: op.leads,
+        sales: op.sales,
+        revenue: op.revenue,
+        ltv: op.ltv
+      })));
 
     } catch (e: unknown) {
       if (isCurrent()) {
