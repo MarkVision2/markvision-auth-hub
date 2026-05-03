@@ -174,8 +174,13 @@ export default function ScoreboardPage() {
       if (selectedAccountId !== "all" && selectedAccountId !== "__none__") {
         dailyQuery = dailyQuery.eq("client_config_id", selectedAccountId);
       } else {
-        // For 'all' we don't filter by client_config_id to match global stats
-        // but we still rely on project_id (handled by RLS and the base query)
+        // For 'all' we filter by the same visible accounts we fetched
+        const visibleIds = accounts.map(a => a.id);
+        if (visibleIds.length > 0) {
+          dailyQuery = dailyQuery.or(`project_id.eq.${active.id},client_config_id.in.(${visibleIds.join(",")})`);
+        } else {
+          dailyQuery = dailyQuery.eq("project_id", active.id);
+        }
       }
 
       // 2. Plan Query
@@ -419,6 +424,18 @@ export default function ScoreboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* ── Plan Row ── */}
+                {hasPlan && (
+                  <TableRow className="bg-secondary/20 hover:bg-secondary/30 border-b border-border/50">
+                    <TableCell className="px-6 py-4 font-bold text-muted-foreground uppercase text-[11px] tracking-tight">ПЛАН</TableCell>
+                    {columns.slice(1).map(col => (
+                      <TableCell key={col.key} className="px-6 py-4 text-right font-bold text-muted-foreground/80 tabular-nums text-sm">
+                        {col.key === "cpl" ? "—" : fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )}
+
                 {/* ── Fact Row ── */}
                 <TableRow className="bg-primary/[0.03] hover:bg-primary/[0.05] border-b-2 border-primary/20">
                   <TableCell className="px-6 py-4 font-black text-primary uppercase text-[12px] tracking-tight">ФАКТ (ВСЕГО)</TableCell>
@@ -429,15 +446,20 @@ export default function ScoreboardPage() {
                   ))}
                 </TableRow>
 
-                {/* ── Plan Row ── */}
+                {/* ── Execution % Row ── */}
                 {hasPlan && (
-                  <TableRow className="bg-secondary/20 hover:bg-secondary/30 border-b border-border/50">
-                    <TableCell className="px-6 py-4 font-bold text-muted-foreground uppercase text-[11px] tracking-tight">ПЛАН</TableCell>
-                    {columns.slice(1).map(col => (
-                      <TableCell key={col.key} className="px-6 py-4 text-right font-bold text-muted-foreground/80 tabular-nums text-sm">
-                        {col.key === "cpl" ? "—" : fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))}
-                      </TableCell>
-                    ))}
+                  <TableRow className="bg-emerald-500/[0.05] hover:bg-emerald-500/[0.08] border-b border-border/50">
+                    <TableCell className="px-6 py-4 font-bold text-emerald-600 uppercase text-[11px] tracking-tight">% ВЫПОЛНЕНИЯ</TableCell>
+                    {columns.slice(1).map(col => {
+                      const p = getVal(planValues as unknown as Record<string, number>, col.key as MetricKey);
+                      const f = getVal(fact as unknown as Record<string, number>, col.key as MetricKey);
+                      const pct = p > 0 ? Math.round((f / p) * 100) : 0;
+                      return (
+                        <TableCell key={col.key} className="px-6 py-4 text-right font-black text-emerald-600 tabular-nums text-sm">
+                          {col.key === "cpl" ? "—" : `${pct}%`}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 )}
 

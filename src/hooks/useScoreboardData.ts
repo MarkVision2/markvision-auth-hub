@@ -55,24 +55,42 @@ export function useScoreboardData(year: number, monthIndex: number, activeProjec
         const startDate = `${year}-${String(monthIndex + 1).padStart(2, "0")}-01`;
         const endMonth = monthIndex === 11 ? `${year + 1}-01-01` : `${year}-${String(monthIndex + 2).padStart(2, "0")}-01`;
 
-        const [planRes, factsRes] = await Promise.all([
-          supabase
-            .from("monthly_plans")
-            .select("plan_spend, plan_leads, plan_visits, plan_sales, plan_revenue")
-            .eq("month_year", monthYear)
-            .eq("project_id", pid)
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from("daily_data")
-            .select("date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
-            .eq("project_id", pid)
-            .gte("date", startDate)
-            .lt("date", endMonth)
-            .order("date"),
-        ]);
+        // 1. Fetch Plan
+        const planQuery = supabase
+          .from("monthly_plans")
+          .select("plan_spend, plan_leads, plan_visits, plan_sales, plan_revenue")
+          .eq("month_year", monthYear)
+          .eq("project_id", pid)
+          .limit(1)
+          .maybeSingle();
 
+        // 2. Fetch Shared Visibility
+        const sharedQuery = supabase
+          .from("client_config_visibility")
+          .select("client_config_id")
+          .eq("project_id", pid);
+
+        const [planRes, sharedRes] = await Promise.all([planQuery, sharedQuery]);
+        
         if (planRes.error) throw planRes.error;
+        if (sharedRes.error) throw sharedRes.error;
+        if (cancelled) return;
+
+        // 3. Fetch Daily Data (with shared cabinets support)
+        const sharedIds = (sharedRes.data || []).map((s: any) => s.client_config_id);
+        let dailyQuery = supabase
+          .from("daily_data")
+          .select("date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
+          .gte("date", startDate)
+          .lt("date", endMonth);
+
+        if (sharedIds.length > 0) {
+          dailyQuery = dailyQuery.or(`project_id.eq.${pid},client_config_id.in.(${sharedIds.join(",")})`);
+        } else {
+          dailyQuery = dailyQuery.eq("project_id", pid);
+        }
+
+        const factsRes = await dailyQuery.order("date");
         if (factsRes.error) throw factsRes.error;
         if (cancelled) return;
 
