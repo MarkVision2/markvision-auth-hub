@@ -263,7 +263,7 @@ export default function AiManagerPage() {
         setTodayActions((bridgeCount || 0) + (auditCount || 0));
 
         // Format system logs
-        const logs: SystemLog[] = [];
+        const logs: LogEntry[] = [];
 
         if (bridgeData) {
           bridgeData.forEach(item => {
@@ -272,13 +272,12 @@ export default function AiManagerPage() {
             const isError = item.status === "error";
             logs.push({
               id: `bridge-${item.id}`,
-              time: format(date, "HH:mm"),
-              entity: "AI Bridge",
-              action: isError 
+              type: isError ? "fix" : "action",
+              text: isError 
                 ? `Ошибка webhook: ${item.prompt.slice(0, 40)}...` 
                 : `Обработан запрос интеграции: ${item.prompt.slice(0, 40)}...`,
-              status: (isError ? "error" : "success") as any,
-              raw: item
+              time: format(date, "HH:mm"),
+              timestamp: date.getTime(),
             });
           });
         }
@@ -289,11 +288,10 @@ export default function AiManagerPage() {
             const date = new Date(item.created_at);
             logs.push({
               id: `audit-${item.id}`,
+              type: "audit",
+              text: `Аудит: ${item.manager_name} (Оценка: ${item.ai_score || 0}/100)`,
               time: format(date, "HH:mm"),
-              entity: "ROP Audit",
-              action: `Аудит: ${item.manager_name} (${item.interaction_type})`,
-              status: (item.ai_score >= 80 ? "success" : item.ai_score >= 50 ? "warning" : "error") as any,
-              raw: item
+              timestamp: date.getTime(),
             });
           });
         }
@@ -302,14 +300,14 @@ export default function AiManagerPage() {
         if (logs.length === 0) {
           logs.push({
             id: "sys-healthy",
+            type: "action",
+            text: "Система в норме. Ожидание событий.",
             time: format(new Date(), "HH:mm"),
-            entity: "System",
-            action: "Система в норме. Ожидание событий.",
-            status: "success",
+            timestamp: new Date().getTime(),
           });
         }
 
-        setSystemLogs(logs.sort((a, b) => b.id.localeCompare(a.id)).slice(0, 20));
+        setSystemLogs(logs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 30));
 
         // --- REPORT DATA FETCHING ---
         const now = new Date();
