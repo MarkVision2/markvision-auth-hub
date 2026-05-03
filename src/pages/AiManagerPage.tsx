@@ -194,7 +194,7 @@ export default function AiManagerPage() {
 
         const pid = active?.id;
 
-        // 1. Fetch active clients
+        // 1. Fetch active clients count
         let cQueryTotal = supabase
           .from("clients_config")
           .select("*", { count: 'exact', head: true })
@@ -210,17 +210,43 @@ export default function AiManagerPage() {
 
         setActiveClients(clientsCount || 0);
 
+        // Get all visible client configs for accurate data fetching (including shared ones)
+        let cQuery = supabase.from("clients_config").select("id").neq("is_active", false);
+        if (pid) {
+          if (!isAgency) {
+            const { data: shared } = await (supabase as any)
+              .from("client_config_visibility")
+              .select("client_config_id")
+              .eq("project_id", pid as string);
+            if (cancelled) return;
+            const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+            if (sharedIds.length > 0) {
+              cQuery = cQuery.or(`project_id.eq.${pid},id.in.(${sharedIds.join(",")})`);
+            } else {
+              cQuery = (cQuery as any).eq("project_id", pid as string);
+            }
+          } else {
+            cQuery = cQuery.eq("project_id", pid as string);
+          }
+        }
+        const { data: visibleConfigs } = await cQuery;
+        if (cancelled) return;
+        const visibleIds = (visibleConfigs || []).map(c => c.id);
+
         // Fetch last sync time
         let lastSyncQuery = supabase
           .from("daily_data")
-          .select("created_at")
-          .order("created_at", { ascending: false });
+          .select("created_at");
         
-        if (pid) {
+        if (visibleIds.length > 0) {
+          lastSyncQuery = lastSyncQuery.in("client_config_id", visibleIds);
+        } else if (pid && !isAgency) {
+          lastSyncQuery = lastSyncQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+        } else if (pid) {
           lastSyncQuery = lastSyncQuery.eq("project_id", pid as string);
         }
 
-        const { data: lastMetric } = await lastSyncQuery.limit(1);
+        const { data: lastMetric } = await lastSyncQuery.order("created_at", { ascending: false }).limit(1);
         if (cancelled) return;
 
         if (lastMetric && lastMetric[0]?.created_at) {
@@ -320,29 +346,6 @@ export default function AiManagerPage() {
 
         const monthStart = new Date(todayStart);
         monthStart.setDate(monthStart.getDate() - 30);
-
-        // Get all visible client configs
-        let cQuery = supabase.from("clients_config").select("id").neq("is_active", false);
-        if (pid) {
-          if (!isAgency) {
-            const { data: shared } = await (supabase as any)
-              .from("client_config_visibility")
-              .select("client_config_id")
-              .eq("project_id", pid as string);
-            if (cancelled) return;
-            const sharedIds = (shared || []).map((s: any) => s.client_config_id);
-            if (sharedIds.length > 0) {
-              cQuery = cQuery.or(`project_id.eq.${pid},id.in.(${sharedIds.join(",")})`);
-            } else {
-              cQuery = (cQuery as any).eq("project_id", pid as string);
-            }
-          } else {
-            cQuery = cQuery.eq("project_id", pid as string);
-          }
-        }
-        const { data: visibleConfigs } = await cQuery;
-        if (cancelled) return;
-        const visibleIds = (visibleConfigs || []).map(c => c.id);
 
         const fetchFacts = async (startDate: Date, endDate: Date) => {
           let q = supabase

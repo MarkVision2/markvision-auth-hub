@@ -181,6 +181,7 @@ export default function AiReportsPage() {
     };
     load();
     return () => { cancelled = true; };
+  }, [active?.id, weekStart, weekEnd, prevWeekStart, prevWeekEnd, selectedClient]);
 
   const cur = useMemo(() => {
     const sum = (key: keyof DailyRow) => curMetrics.reduce((s, r) => s + (Number(r[key]) || 0), 0);

@@ -170,7 +170,6 @@ export default function ScoreboardPage() {
       let dailyQuery = (supabase as any)
         .from("daily_data")
         .select("id, date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
-        .eq("project_id", active.id)
         .gte("date", dateFrom)
         .lte("date", dateTo)
         .order("date", { ascending: true });
