@@ -451,8 +451,8 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const ownerId = user?.id;
       if (!ownerId) throw new Error("Нет авторизации");
 
-      const metadata = videoMeta ?? {};
-      const insertPayload: Database["public"]["Tables"]["ai_edit_projects"]["Insert"] = {
+      const metadata = videoMeta || { durationSec: 0, width: 0, height: 0 };
+      const insertPayload: any = {
         project_id: active.id,
         owner_id: ownerId,
         source_video_url: pub.publicUrl,
@@ -503,10 +503,10 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       // Достаём analysis_json из БД
       const { data: project } = await supabase
         .from("ai_edit_projects")
-        .select("analysis_json")
+        .select("*")
         .eq("id", inserted.id)
         .single();
-      const words = (project?.analysis_json as { words?: TranscriptWord[] } | null)?.words || [];
+      const words = ((project as any)?.analysis_json as { words?: TranscriptWord[] } | null)?.words || [];
       setTranscriptWords(words);
       setTranscribeStatus("ready");
       toast({
@@ -532,7 +532,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
     try {
       setIsSubmitting(true);
       // Сохраняем отредактированные титры и все параметры размещения
-      await supabase
+      await (supabase
         .from("ai_edit_projects")
         .update({
           analysis_json: { words: transcriptWords, segments: [], summary: "" },
@@ -545,7 +545,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
           stage: "upload",
           progress: 10,
           progress_text: "Задача поставлена в очередь",
-        })
+        } as any) as any)
         .eq("id", draftProjectId);
 
       setProjectId(draftProjectId);
@@ -645,7 +645,7 @@ export const AiEditBlock: React.FC<AiEditBlockProps> = ({ onTaskCreated }) => {
       const { data: userData } = await supabase.auth.getUser();
       const ownerId = userData?.user?.id ?? null;
 
-      const insertPayload: Database["public"]["Tables"]["ai_edit_projects"]["Insert"] = {
+      const insertPayload: any = {
         project_id: active?.id ?? null,
         owner_id: ownerId,
         source_video_url: videoUrl,

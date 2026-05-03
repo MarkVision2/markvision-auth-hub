@@ -119,10 +119,10 @@ export default function DecompositionTab() {
                     mode === "revenue"
                         ? { label: "🎯 Целевая выручка", value: targetRevenue, onChange: setTargetRevenue, suffix: "₸", step: 100000 }
                         : { label: "🎯 Бюджет на рекламу", value: targetBudget, onChange: setTargetBudget, suffix: "₸", step: 100000 },
-                    { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
+                    { label: "💵 Стоимость лида (CPL)", value: cpl, onChange: setCpl, suffix: "₸", step: 100 },
                     { label: "📈 CR лид → диагностика", value: crLeadToDiag, onChange: setCrLeadToDiag, suffix: "%", step: 1 },
                     { label: "📊 CR диагностика → продажа", value: crDiagToSale, onChange: setCrDiagToSale, suffix: "%", step: 1 },
-                    { label: "💵 Стоимость лида (CPL)", value: cpl, onChange: setCpl, suffix: "₸", step: 100 },
+                    { label: "💰 Средний чек", value: avgCheck, onChange: setAvgCheck, suffix: "₸", step: 10000 },
                 ].map((field) => (
                     <div key={field.label} className="rounded-xl border border-border bg-card p-4 flex flex-col justify-between min-h-[88px]">
                         <label className="text-[11px] text-muted-foreground font-medium leading-tight line-clamp-2 min-h-[28px]">{field.label}</label>
@@ -202,8 +202,8 @@ export default function DecompositionTab() {
             {/* KPI Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 <KpiCard icon={Wallet} label="Расходы" value={fmtCurrency(calc.adBudget)} sub={`${calc.leads} лидов × ${fmt(cpl)} ₸`} />
-                <KpiCard icon={UserPlus} label="Лиды" value={String(calc.leads)} sub={`CR ${crLeadToDiag}% → визит`} />
                 <KpiCard icon={DollarSign} label="CPL" value={`${fmt(cpl)} ₸`} sub="Стоимость лида" />
+                <KpiCard icon={UserPlus} label="Лиды" value={String(calc.leads)} sub={`CR ${crLeadToDiag}% → визит`} />
                 <KpiCard icon={Users} label="Визиты" value={String(calc.diagnostics)} sub={`CR ${crDiagToSale}% → продажа`} />
                 <KpiCard icon={Target} label="Оплаты" value={String(calc.sales)} sub="Стоимость CAC" />
                 <KpiCard icon={Coins} label="Выручка" value={fmtCurrency(calc.revenue)} valueClass="text-primary" sub="Прогноз по чеку и продажам" />
