@@ -262,15 +262,23 @@ export default function AiManagerPage() {
 
         setTodayActions((bridgeCount || 0) + (auditCount || 0));
 
+        // Format system logs
+        const logs: SystemLog[] = [];
+
+        if (bridgeData) {
+          bridgeData.forEach(item => {
+            if (!item.created_at) return;
+            const date = new Date(item.created_at);
             const isError = item.status === "error";
             logs.push({
               id: `bridge-${item.id}`,
-              type: isError ? "fix" : "action",
-              text: isError
-                ? `Ошибка webhook, попытка авто-лечения: ${item.prompt.slice(0, 40)}...`
-                : `Обработан запрос интеграции (статус: ${item.status || "ok"})`,
               time: format(date, "HH:mm"),
-              timestamp: date.getTime(),
+              entity: "AI Bridge",
+              action: isError 
+                ? `Ошибка webhook: ${item.prompt.slice(0, 40)}...` 
+                : `Обработан запрос интеграции: ${item.prompt.slice(0, 40)}...`,
+              status: (isError ? "error" : "success") as any,
+              raw: item
             });
           });
         }
@@ -281,10 +289,11 @@ export default function AiManagerPage() {
             const date = new Date(item.created_at);
             logs.push({
               id: `audit-${item.id}`,
-              type: "audit",
-              text: `AI РОП провел аудит. Оценка: ${item.ai_score || 0}/100. Тип: ${item.interaction_type}.`,
               time: format(date, "HH:mm"),
-              timestamp: date.getTime(),
+              entity: "ROP Audit",
+              action: `Аудит: ${item.manager_name} (${item.interaction_type})`,
+              status: (item.ai_score >= 80 ? "success" : item.ai_score >= 50 ? "warning" : "error") as any,
+              raw: item
             });
           });
         }
@@ -293,31 +302,25 @@ export default function AiManagerPage() {
         if (logs.length === 0) {
           logs.push({
             id: "sys-healthy",
-            type: "action",
-            text: "Система успешно инициализована. Ожидание событий.",
             time: format(new Date(), "HH:mm"),
-            timestamp: new Date().getTime(),
+            entity: "System",
+            action: "Система в норме. Ожидание событий.",
+            status: "success",
           });
         }
 
-        // Sort descending by time
-        const sortedLogs = [...logs].sort((a, b) => b.timestamp - a.timestamp);
-
-        setSystemLogs(sortedLogs.slice(0, 30)); // Keep top 30
-
+        setSystemLogs(logs.sort((a, b) => b.id.localeCompare(a.id)).slice(0, 20));
 
         // --- REPORT DATA FETCHING ---
-        // todayStart is already defined above
         const now = new Date();
-
-        const yesterdayStart = new Date(todayStart);
+        const yesterdayEnd = new Date(todayStart);
+        const yesterdayStart = new Date(yesterdayEnd);
         yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-        const yesterdayEnd = new Date(todayStart); // End of yesterday is start of today
 
         const weekStart = new Date(todayStart);
         weekStart.setDate(weekStart.getDate() - 7);
 
-const monthStart = new Date(todayStart);
+        const monthStart = new Date(todayStart);
         monthStart.setDate(monthStart.getDate() - 30);
 
         // Get all visible client configs
@@ -328,6 +331,7 @@ const monthStart = new Date(todayStart);
               .from("client_config_visibility")
               .select("client_config_id")
               .eq("project_id", pid as string);
+            if (cancelled) return;
             const sharedIds = (shared || []).map((s: any) => s.client_config_id);
             if (sharedIds.length > 0) {
               cQuery = cQuery.or(`project_id.eq.${pid},id.in.(${sharedIds.join(",")})`);
@@ -335,85 +339,79 @@ const monthStart = new Date(todayStart);
               cQuery = (cQuery as any).eq("project_id", pid as string);
             }
           } else {
-            // Even in agency mode, we filter by the current project to avoid cross-project leakage
             cQuery = cQuery.eq("project_id", pid as string);
           }
         }
         const { data: visibleConfigs } = await cQuery;
+        if (cancelled) return;
         const visibleIds = (visibleConfigs || []).map(c => c.id);
 
-        // Fetch daily data for visible clients
-        let factsQ = supabase
-          .from("daily_data")
-          .select("date, spend, leads, visits, sales, revenue")
-          .gte("date", format(monthStart, "yyyy-MM-dd"));
-        
-        if (visibleIds.length > 0) {
-          factsQ = factsQ.in("client_config_id", visibleIds);
-        } else if (!isAgency) {
-          factsQ = factsQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
-        }
-
-        const { data: allFacts } = await factsQ;
-
-        let ropAuditsQuery = supabase
-          .from("ai_rop_audits")
-          .select("created_at, ai_score")
-          .gte("created_at", monthStart.toISOString());
-        
-        if (pid) {
-          ropAuditsQuery = ropAuditsQuery.eq("project_id", pid as string);
-        }
-
-        const { data: allAudits } = await ropAuditsQuery;
-
-        const calcPeriod = (startDate: Date, endDate: Date) => {
-          let spend = 0; let leads = 0; let visits = 0; let sales = 0; let revenue = 0;
-          let auditCount = 0; let auditScoreSum = 0;
-
-          if (allFacts) {
-            allFacts.forEach(f => {
-              const factDate = new Date(f.date);
-              // Ensure factDate is within the period [startDate, endDate)
-              if (factDate >= startDate && factDate < endDate) {
-                spend += Number(f.spend || 0);
-                leads += Number(f.leads || 0);
-                visits += Number(f.visits || 0);
-                sales += Number(f.sales || 0);
-                revenue += Number(f.revenue || 0);
-              }
-            });
+        const fetchFacts = async (startDate: Date, endDate: Date) => {
+          let q = supabase
+            .from("daily_data")
+            .select("spend, leads, visits, sales, revenue")
+            .gte("date", format(startDate, "yyyy-MM-dd"))
+            .lt("date", format(endDate, "yyyy-MM-dd"));
+          
+          if (visibleIds.length > 0) {
+            q = q.in("client_config_id", visibleIds);
+          } else if (!isAgency) {
+            q = q.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
           }
-          if (allAudits) {
-            allAudits.forEach(a => {
-              if (!a.created_at) return;
-              const aDate = new Date(a.created_at);
-              // Ensure aDate is within the period [startDate, endDate)
-              if (aDate >= startDate && aDate < endDate) {
-                auditCount++;
-                auditScoreSum += Number(a.ai_score || 0);
-              }
-            });
-          }
+          const { data } = await q;
+          return data || [];
+        };
 
-          const cpl = leads > 0 ? Math.round(spend / leads) : 0;
-          const avgScore = auditCount > 0 ? Math.round(auditScoreSum / auditCount) : 0;
-          const crDiag = leads > 0 ? Math.round((visits / leads) * 100) : 0; // Assuming visits are diagnostic visits
+        const fetchAudits = async (startDate: Date, endDate: Date) => {
+          let q = supabase
+            .from("ai_rop_audits")
+            .select("ai_score")
+            .gte("created_at", startDate.toISOString())
+            .lt("created_at", endDate.toISOString());
+          
+          if (pid) q = q.eq("project_id", pid as string);
+          const { data } = await q;
+          return data || [];
+        };
+
+        const [yFacts, wFacts, mFacts, yAudits, wAudits, mAudits] = await Promise.all([
+          fetchFacts(yesterdayStart, yesterdayEnd),
+          fetchFacts(weekStart, now),
+          fetchFacts(monthStart, now),
+          fetchAudits(yesterdayStart, yesterdayEnd),
+          fetchAudits(weekStart, now),
+          fetchAudits(monthStart, now)
+        ]);
+        if (cancelled) return;
+
+        const calcPeriod = (facts: any[], audits: any[]) => {
+          const spend = facts.reduce((s, r) => s + (Number(r.spend) || 0), 0);
+          const leads = facts.reduce((s, r) => s + (Number(r.leads) || 0), 0);
+          const visits = facts.reduce((s, r) => s + (Number(r.visits) || 0), 0);
+          const sales = facts.reduce((s, r) => s + (Number(r.sales) || 0), 0);
+          const revenue = facts.reduce((s, r) => s + (Number(r.revenue) || 0), 0);
+          
+          const auditCount = audits.length;
+          const avgScore = auditCount > 0 ? Math.round(audits.reduce((s, a) => s + (Number(a.ai_score) || 0), 0) / auditCount) : 0;
+          const crDiag = leads > 0 ? Math.round((visits / leads) * 100) : 0;
           const romi = spend > 0 ? Math.round(((revenue - spend) / spend) * 100) : 0;
+          const cpl = leads > 0 ? Math.round(spend / leads) : 0;
 
           return { spend, leads, cpl, visits, sales, revenue, auditCount, avgScore, crDiag, romi };
         };
 
         setReportData({
-          yesterday: calcPeriod(yesterdayStart, yesterdayEnd),
-          week: calcPeriod(weekStart, now), // Up to now
-          month: calcPeriod(monthStart, now), // Up to now
+          yesterday: calcPeriod(yFacts, yAudits),
+          week: calcPeriod(wFacts, wAudits),
+          month: calcPeriod(mFacts, mAudits),
         });
 
       } catch (err) {
-        console.error("Error fetching AI manager data", err);
+        if (!cancelled) {
+          console.error("Error fetching AI manager data", err);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
