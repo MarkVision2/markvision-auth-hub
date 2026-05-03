@@ -27,7 +27,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   Rocket, ChevronDown, MoreHorizontal, Copy, Pencil, Megaphone, Search,
   AlertTriangle, TrendingDown, CreditCard, Download, Loader2, RefreshCw,
-  ChevronLeft, ChevronRight, Calendar, DollarSign, Users, Eye, ShoppingCart,
+  ChevronLeft, ChevronRight, Calendar, DollarSign, Target, ArrowRightLeft, Eye, ShoppingCart,
   ExternalLink, TrendingUp, Plus, Trash2, BarChart3,
 } from "lucide-react";
 import {
@@ -360,7 +360,11 @@ export default function DashboardTarget() {
   const toggleAccount = (name: string) => {
     setExpandedAccounts((prev) => {
       const next = new Set(prev);
-      next.has(name) ? next.delete(name) : next.add(name);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
       return next;
     });
   };

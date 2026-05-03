@@ -309,11 +309,11 @@ export default function ScoreboardPage() {
   const hasPlan = Object.values(planValues).some(v => v > 0);
 
   const topCards = useMemo(() => [
-    { label: \"CAC\", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : \"—\", sub: \"Расходы / Продажи\", icon: DollarSign },
-    { label: \"CPL\", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : \"—\", sub: \"Расходы / Лиды\", icon: Target },
-    { label: \"CPD\", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : \"—\", sub: \"Расходы / Диагностики\", icon: Eye },
-    { label: \"CR Лид→Диаг.\", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : \"—\", sub: \"Диагностики / Лиды\", icon: ArrowRightLeft },
-    { label: \"CR Диаг.→Продажа\", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : \"—\", sub: \"Продажи / Диагностики\", icon: TrendingUp },
+    { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
+    { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
+    { label: "CPD", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Диагностики", icon: Eye },
+    { label: "CR Лид→Диаг.", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Диагностики / Лиды", icon: ArrowRightLeft },
+    { label: "CR Диаг.→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Диагностики", icon: TrendingUp },
   ], [fact]);
 
   const daysWithData = rows.length;
@@ -332,27 +332,27 @@ export default function ScoreboardPage() {
   };
 
   return (
-    <DashboardLayout breadcrumb=\"Таблица показателей\">
-      <div className=\"space-y-4 md:space-y-5\">
+    <DashboardLayout breadcrumb="Таблица показателей">
+      <div className="space-y-4 md:space-y-5">
         {/* Header */}
-        <div className=\"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3\">
-          <div className=\"flex items-center gap-3\">
-            <div className=\"h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center\">
-              <Calendar className=\"h-5 w-5 text-primary\" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className=\"text-xl md:text-2xl font-bold text-foreground tracking-tight\">Таблица показателей</h1>
-              <p className=\"text-xs text-muted-foreground mt-0.5\">
-                {daysWithData > 0 ? `${daysWithData} дней с данными из ${totalDaysInMonth}` : \"Ежедневная сводка метрик по кабинету\"}
+              <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {daysWithData > 0 ? `${daysWithData} дней с данными из ${totalDaysInMonth}` : "Ежедневная сводка метрик по кабинету"}
               </p>
             </div>
           </div>
           {daysWithData > 0 && (
-            <div className=\"flex items-center gap-2\">
-              <div className=\"w-20\">
-                <Progress value={dayProgress} className=\"h-1.5 bg-secondary\" />
+            <div className="flex items-center gap-2">
+              <div className="w-20">
+                <Progress value={dayProgress} className="h-1.5 bg-secondary" />
               </div>
-              <Badge variant=\"outline\" className=\"text-[10px] font-semibold tabular-nums bg-primary/5 text-primary border-primary/15\">
+              <Badge variant="outline" className="text-[10px] font-semibold tabular-nums bg-primary/5 text-primary border-primary/15">
                 {dayProgress}% месяца
               </Badge>
             </div>
@@ -360,30 +360,30 @@ export default function ScoreboardPage() {
         </div>
 
         {/* Filters */}
-        <div className=\"flex flex-wrap items-center gap-2 md:gap-3 p-1.5 md:p-2 bg-card border border-border rounded-2xl shadow-sm\">
-          <div className=\"flex items-center gap-1.5\">
-            <Button variant=\"ghost\" size=\"icon\" className=\"h-8 w-8\" onClick={() => { if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); } else setMonthIndex(m => m - 1); }}>
-              <ChevronLeft className=\"h-4 w-4\" />
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 p-1.5 md:p-2 bg-card border border-border rounded-2xl shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); } else setMonthIndex(m => m - 1); }}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className=\"px-3 py-1.5 text-sm font-bold bg-secondary/50 rounded-lg min-w-[140px] text-center\">
+            <div className="px-3 py-1.5 text-sm font-bold bg-secondary/50 rounded-lg min-w-[140px] text-center">
               {MONTHS[monthIndex]} {year}
             </div>
-            <Button variant=\"ghost\" size=\"icon\" className=\"h-8 w-8\" onClick={() => { if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); } else setMonthIndex(m => m + 1); }}>
-              <ChevronRight className=\"h-4 w-4\" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); } else setMonthIndex(m => m + 1); }}>
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className=\"h-6 w-[1px] bg-border/60 mx-1\" />
+          <div className="h-6 w-[1px] bg-border/60 mx-1" />
 
           <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-            <SelectTrigger className=\"w-[220px] h-9 text-[13px] border-none bg-secondary/30 hover:bg-secondary/50 transition-colors rounded-xl font-medium\">
-              <SelectValue placeholder=\"Выберите кабинет\" />
+            <SelectTrigger className="w-[220px] h-9 text-[13px] border-none bg-secondary/30 hover:bg-secondary/50 transition-colors rounded-xl font-medium">
+              <SelectValue placeholder="Выберите кабинет" />
             </SelectTrigger>
-            <SelectContent className=\"rounded-xl\">
-              <SelectItem value=\"__none__\">Нет кабинетов</SelectItem>
+            <SelectContent className="rounded-xl">
+              <SelectItem value="__none__">Нет кабинетов</SelectItem>
               {accounts.length > 0 && (
                 <>
-                  <SelectItem value=\"all\" className=\"font-semibold\">Все кабинеты ({accounts.length})</SelectItem>
+                  <SelectItem value="all" className="font-semibold">Все кабинеты ({accounts.length})</SelectItem>
                   {accounts.map(acc => (
                     <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
                   ))}
@@ -392,40 +392,40 @@ export default function ScoreboardPage() {
             </SelectContent>
           </Select>
 
-          <div className=\"ml-auto flex items-center gap-2\">
-            <Button variant=\"outline\" size=\"sm\" onClick={handleExport} disabled={loading || rows.length === 0} className=\"h-9 gap-2 rounded-xl border-border hover:bg-secondary/50 transition-colors\">
-              <Download className=\"h-3.5 w-3.5\" />
-              <span className=\"hidden sm:inline\">Экспорт</span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={loading || rows.length === 0} className="h-9 gap-2 rounded-xl border-border hover:bg-secondary/50 transition-colors">
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Экспорт</span>
             </Button>
           </div>
         </div>
 
         {/* KPI Cards */}
-        <div className=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3\">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {topCards.map((card, i) => (
-            <Card key={i} className=\"border-border bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all group\">
-              <CardContent className=\"p-4 flex flex-col gap-1.5\">
-                <div className=\"flex items-center justify-between\">
-                  <span className=\"text-[10px] font-bold text-muted-foreground uppercase tracking-widest\">{card.label}</span>
-                  <card.icon className=\"h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors\" />
+            <Card key={i} className="border-border bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all group">
+              <CardContent className="p-4 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{card.label}</span>
+                  <card.icon className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
                 </div>
-                <div className=\"flex items-baseline gap-1\">
-                  <span className=\"text-lg font-black text-foreground tabular-nums font-mono\">{card.value}</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-black text-foreground tabular-nums font-mono">{card.value}</span>
                 </div>
-                <p className=\"text-[10px] text-muted-foreground/60 font-medium\">{card.sub}</p>
+                <p className="text-[10px] text-muted-foreground/60 font-medium">{card.sub}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Main Table */}
-        <div className=\"rounded-2xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5\">
-          <div className=\"overflow-x-auto\">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5">
+          <div className="overflow-x-auto">
             <Table>
-              <TableHeader className=\"bg-muted/30\">
-                <TableRow className=\"hover:bg-transparent border-b border-border/50\">
+              <TableHeader className="bg-muted/30">
+                <TableRow className="hover:bg-transparent border-b border-border/50">
                   {columns.map(col => (
-                    <TableHead key={col.key} className={`h-12 px-6 text-[10px] font-black text-muted-foreground uppercase tracking-wider ${col.key === \"date\" ? \"text-left\" : \"text-right\"}`}>
+                    <TableHead key={col.key} className={`h-12 px-6 text-[10px] font-black text-muted-foreground uppercase tracking-wider ${col.key === "date" ? "text-left" : "text-right"}`}>
                       {col.label}
                     </TableHead>
                   ))}
@@ -433,10 +433,10 @@ export default function ScoreboardPage() {
               </TableHeader>
               <TableBody>
                 {/* ── Fact Row ── */}
-                <TableRow className=\"bg-primary/[0.03] hover:bg-primary/[0.05] border-b-2 border-primary/20\">
-                  <TableCell className=\"px-6 py-4 font-black text-primary uppercase text-[12px] tracking-tight\">ФАКТ (ВСЕГО)</TableCell>
+                <TableRow className="bg-primary/[0.03] hover:bg-primary/[0.05] border-b-2 border-primary/20">
+                  <TableCell className="px-6 py-4 font-black text-primary uppercase text-[12px] tracking-tight">ФАКТ (ВСЕГО)</TableCell>
                   {columns.slice(1).map(col => (
-                    <TableCell key={col.key} className=\"px-6 py-4 text-right font-black text-foreground tabular-nums text-sm\">
+                    <TableCell key={col.key} className="px-6 py-4 text-right font-black text-foreground tabular-nums text-sm">
                       {fmt(getVal(fact as unknown as Record<string, number>, col.key as MetricKey))}
                     </TableCell>
                   ))}
@@ -444,11 +444,11 @@ export default function ScoreboardPage() {
 
                 {/* ── Plan Row ── */}
                 {hasPlan && (
-                  <TableRow className=\"bg-secondary/20 hover:bg-secondary/30 border-b border-border/50\">
-                    <TableCell className=\"px-6 py-4 font-bold text-muted-foreground uppercase text-[11px] tracking-tight\">ПЛАН</TableCell>
+                  <TableRow className="bg-secondary/20 hover:bg-secondary/30 border-b border-border/50">
+                    <TableCell className="px-6 py-4 font-bold text-muted-foreground uppercase text-[11px] tracking-tight">ПЛАН</TableCell>
                     {columns.slice(1).map(col => (
-                      <TableCell key={col.key} className=\"px-6 py-4 text-right font-bold text-muted-foreground/80 tabular-nums text-sm\">
-                        {col.key === \"cpl\" ? \"—\" : fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))}
+                      <TableCell key={col.key} className="px-6 py-4 text-right font-bold text-muted-foreground/80 tabular-nums text-sm">
+                        {col.key === "cpl" ? "—" : fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -457,9 +457,9 @@ export default function ScoreboardPage() {
                 {/* ── Loading ── */}
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className=\"text-center py-12\">
-                      <Loader2 className=\"h-5 w-5 animate-spin mx-auto text-muted-foreground\" />
-                      <p className=\"text-xs text-muted-foreground mt-2\">Загрузка данных…</p>
+                    <TableCell colSpan={columns.length} className="text-center py-12">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground mt-2">Загрузка данных…</p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -469,7 +469,7 @@ export default function ScoreboardPage() {
                   const isToday = row.date === todayIso;
                   const isFuture = row.date > todayIso;
                   const isWeekend = (() => {
-                    const d = new Date(row.date + \"T00:00:00\");
+                    const d = new Date(row.date + "T00:00:00");
                     return d.getDay() === 0 || d.getDay() === 6;
                   })();
 
@@ -477,38 +477,38 @@ export default function ScoreboardPage() {
                     <TableRow
                       key={row.id}
                       className={`border-b border-border/30 transition-all duration-200 ${isToday
-                        ? \"bg-primary/[0.04] border-l-[3px] border-l-primary\"
+                        ? "bg-primary/[0.04] border-l-[3px] border-l-primary"
                         : isWeekend && !isFuture
-                          ? \"bg-muted/[0.03]\"
-                          : \"\"
-                        } ${isFuture ? \"opacity-40\" : \"hover:bg-accent/30\"}`}
+                          ? "bg-muted/[0.03]"
+                          : ""
+                        } ${isFuture ? "opacity-40" : "hover:bg-accent/30"}`}
                     >
                       {columns.map(col => (
-                        <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[14px] tabular-nums ${col.key === \"date\"
-                          ? `text-left font-semibold ${isToday ? \"text-primary\" : isWeekend ? \"text-muted-foreground/50\" : \"text-muted-foreground/80\"}`
-                          : \"text-right text-foreground/70\"
+                        <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[14px] tabular-nums ${col.key === "date"
+                          ? `text-left font-semibold ${isToday ? "text-primary" : isWeekend ? "text-muted-foreground/50" : "text-muted-foreground/80"}`
+                          : "text-right text-foreground/70"
                           }`}>
-                          {col.key === \"date\" ? (
-                            <div className=\"flex items-center gap-2\">
-                              <span className=\"tracking-tight\">{row.date.split('-')[2]} {MONTHS[monthIndex].slice(0, 3)}</span>
+                          {col.key === "date" ? (
+                            <div className="flex items-center gap-2">
+                              <span className="tracking-tight">{row.date.split('-')[2]} {MONTHS[monthIndex].slice(0, 3)}</span>
                               {isToday && (
-                                <span className=\"h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]\" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
                               )}
                             </div>
                           ) : isFuture ? (
-                            <span className=\"text-muted-foreground/10\">—</span>
-                          ) : col.key === \"cpl\" ? (
+                            <span className="text-muted-foreground/10">—</span>
+                          ) : col.key === "cpl" ? (
                             row.leads > 0 ? (
-                              <span className=\"font-medium\">{fmt(cplCalc(row.spend, row.leads))}</span>
+                              <span className="font-medium">{fmt(cplCalc(row.spend, row.leads))}</span>
                             ) : (
-                              <span className=\"text-muted-foreground/20\">—</span>
+                              <span className="text-muted-foreground/20">—</span>
                             )
                           ) : ((row as unknown as Record<string, number>)[col.key] ?? 0) > 0 ? (
-                            <span className={col.key === \"revenue\" && (row as unknown as Record<string, number>)[col.key] > 0 ? \"text-primary font-bold\" : \"font-medium\"}>
+                            <span className={col.key === "revenue" && (row as unknown as Record<string, number>)[col.key] > 0 ? "text-primary font-bold" : "font-medium"}>
                               {fmt((row as unknown as Record<string, number>)[col.key])}
                             </span>
                           ) : (
-                            <span className=\"text-muted-foreground/20\">—</span>
+                            <span className="text-muted-foreground/20">—</span>
                           )}
                         </TableCell>
                       ))}
