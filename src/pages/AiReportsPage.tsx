@@ -86,6 +86,11 @@ export default function AiReportsPage() {
     const load = async () => {
       try {
         setLoading(true);
+        setMetrics(null);
+        setLeads([]);
+        setChannels([]);
+        setCreatives([]);
+
         const curStart = format(weekStart, "yyyy-MM-dd");
         const curEnd = format(weekEnd, "yyyy-MM-dd");
         const pStart = format(prevWeekStart, "yyyy-MM-dd");

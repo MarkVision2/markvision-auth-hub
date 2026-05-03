@@ -167,6 +167,8 @@ export default function DashboardTarget() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setRawClients([]);
+    setClients([]);
     try {
       let clientsQuery = (supabase as any)
         .from("clients_config")

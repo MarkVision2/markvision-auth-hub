@@ -44,6 +44,10 @@ export function useScoreboardData(year: number, monthIndex: number, activeProjec
     const pid = activeProjectId as string;
     let cancelled = false;
 
+    // Reset data immediately when project changes to avoid stale data leakage
+    setPlan(emptyPlan);
+    setDailyFacts([]);
+
     async function fetch() {
       setLoading(true);
       try {

@@ -186,6 +186,10 @@ export default function AiManagerPage() {
     async function fetchData() {
       try {
         setLoading(true);
+        setActiveClients(0);
+        setTodayActions(0);
+        setSystemLogs([]);
+        setReportData({ yesterday: null, week: null, month: null });
 
         const pid = active?.id;
 

@@ -272,6 +272,7 @@ export default function ScoreboardPage() {
     setSelectedAccountId("__none__");
     setAccounts([]);
     setRows([]);
+    setPlanValues({ ...EMPTY_PLAN });
 
     fetchAccounts();
   }, [active?.id]);
