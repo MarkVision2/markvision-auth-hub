@@ -86,7 +86,8 @@ export default function AiReportsPage() {
     const load = async () => {
       try {
         setLoading(true);
-        setMetrics(null);
+        setCurMetrics([]);
+        setPrevMetrics([]);
         setLeads([]);
         setChannels([]);
         setCreatives([]);
