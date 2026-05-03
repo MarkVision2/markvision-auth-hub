@@ -72,10 +72,10 @@ export default function DecompositionTab() {
         { label: "Бюджет на рекламу", value: `${fmt(calc.adBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
     ] : [
         { label: "Бюджет на рекламу", value: `${fmt(targetBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
-        { label: "Прогноз лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CR ${crLeadToDiag}% → диагностика` },
-        { label: "Прогноз диагностик", value: String(calc.diagnostics), icon: Users, accent: false, sub: `CR ${crDiagToSale}% → продажа` },
-        { label: "Прогноз продаж", value: String(calc.sales), icon: Target, accent: false, sub: `чек ${fmt(avgCheck)} ₸` },
-        { label: "Прогноз выручки", value: `${fmt(calc.revenue)} ₸`, icon: DollarSign, accent: true, sub: null },
+        { label: "Стоимость лида", value: `${fmt(cpl)} ₸`, icon: Coins, accent: false, sub: `${calc.leads} лидов прогноз` },
+        { label: "Конверсия лид → диаг", value: `${crLeadToDiag}%`, icon: Users, accent: false, sub: `${calc.diagnostics} диагностик прогноз` },
+        { label: "Конверсия диаг → продажа", value: `${crDiagToSale}%`, icon: UserPlus, accent: false, sub: `${calc.sales} продаж прогноз` },
+        { label: "Прогноз выручки", value: `${fmt(calc.revenue)} ₸`, icon: DollarSign, accent: true, sub: `При чеке ${fmt(avgCheck)} ₸` },
     ];
 
     const summaryRows: SummaryRow[] = [
@@ -246,12 +246,7 @@ export default function DecompositionTab() {
                                     project_id: active?.id
                                 };
 
-                                const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear);
-                                if (isAgency) {
-                                    query.is("project_id", null);
-                                } else {
-                                    query.eq("project_id", active?.id);
-                                }
+                                const query = (supabase as any).from("monthly_plans").select("id").eq("month_year", monthYear).eq("project_id", active?.id);
 
                                 const { data: existing } = await query.limit(1);
 

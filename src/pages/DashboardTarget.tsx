@@ -165,134 +165,145 @@ export default function DashboardTarget() {
 
   const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setRawClients([]);
-    setClients([]);
-    try {
-      let clientsQuery = (supabase as any)
-        .from("clients_config")
-        .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
-        .order("client_name");
+  useEffect(() => {
+    let cancelled = false;
 
-      if (active) {
-        const currentActiveId = active.id;
-        
-        if (isAgency) {
-          // Even in agency mode, we scope to the current project
-          clientsQuery = (clientsQuery as any).eq("project_id", currentActiveId);
-        } else {
-          const { data: shared } = await (supabase as any)
-            .from("client_config_visibility")
-            .select("client_config_id")
-            .eq("project_id", currentActiveId);
-          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+    const fetchData = async () => {
+      setLoading(true);
+      setRawClients([]);
+      setClients([]);
+      try {
+        let clientsQuery = (supabase as any)
+          .from("clients_config")
+          .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
+          .order("client_name");
 
-          const orParts = [`project_id.eq.${currentActiveId}`];
-          if (sharedIds.length > 0) {
-            orParts.push(`id.in.(${sharedIds.join(",")})`);
+        if (active) {
+          const currentActiveId = active.id;
+          
+          if (isAgency) {
+            // Even in agency mode, we scope to the current project
+            clientsQuery = (clientsQuery as any).eq("project_id", currentActiveId);
+          } else {
+            const { data: shared } = await (supabase as any)
+              .from("client_config_visibility")
+              .select("client_config_id")
+              .eq("project_id", currentActiveId);
+            
+            if (cancelled) return;
+
+            const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+
+            const orParts = [`project_id.eq.${currentActiveId}`];
+            if (sharedIds.length > 0) {
+              orParts.push(`id.in.(${sharedIds.join(",")})`);
+            }
+            clientsQuery = (clientsQuery as any).or(orParts.join(","));
           }
-          clientsQuery = (clientsQuery as any).or(orParts.join(","));
+        } else {
+          setLoading(false);
+          return;
         }
-      } else {
-        setLoading(false);
-        return;
-      }
 
-      const { data: clientsData, error: cErr } = await (clientsQuery as any);
-      if (cErr) throw cErr;
-      setRawClients(clientsData || []);
+        const { data: clientsData, error: cErr } = await (clientsQuery as any);
+        if (cancelled) return;
+        if (cErr) throw cErr;
+        setRawClients(clientsData || []);
 
-      const { start, end } = getMonthRange(selectedYear, selectedMonth);
+        const { start, end } = getMonthRange(selectedYear, selectedMonth);
 
-      let metricsQuery = (supabase as any)
-        .from("daily_data")
-        .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue, followers")
-        .gte("date", start)
-        .lt("date", end)
-        .order("date", { ascending: true });
+        let metricsQuery = (supabase as any)
+          .from("daily_data")
+          .select("client_config_id, date, spend, impressions, clicks, leads, visits, sales, revenue, followers")
+          .gte("date", start)
+          .lt("date", end)
+          .order("date", { ascending: true });
 
-      const clientIds = (clientsData || []).map((c: any) => c.id);
-      if (clientIds.length > 0) {
-        metricsQuery = metricsQuery.in("client_config_id", clientIds);
-      } else {
-        metricsQuery = metricsQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
-      }
+        const clientIds = (clientsData || []).map((c: any) => c.id);
+        if (clientIds.length > 0) {
+          metricsQuery = metricsQuery.in("client_config_id", clientIds);
+        } else {
+          metricsQuery = metricsQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+        }
 
-      const { data: metricsData, error: mErr } = await metricsQuery;
-      if (mErr) throw mErr;
+        const { data: metricsData, error: mErr } = await metricsQuery;
+        if (cancelled) return;
+        if (mErr) throw mErr;
 
-      const metricsMap = new Map<string, DailyMetric[]>();
-      (metricsData || []).forEach((m: any) => {
-        if (!m.client_config_id) return;
-        if (!metricsMap.has(m.client_config_id)) metricsMap.set(m.client_config_id, []);
-        metricsMap.get(m.client_config_id)!.push({
-          date: m.date,
-          spend: Number(m.spend) || 0,
-          impressions: Number(m.impressions) || 0,
-          clicks: Number(m.clicks) || 0,
-          leads: Number(m.leads) || 0,
-          visits: Number(m.visits) || 0,
-          sales: Number(m.sales) || 0,
-          revenue: Number(m.revenue) || 0,
+        const metricsMap = new Map<string, DailyMetric[]>();
+        (metricsData || []).forEach((m: any) => {
+          if (!m.client_config_id) return;
+          if (!metricsMap.has(m.client_config_id)) metricsMap.set(m.client_config_id, []);
+          metricsMap.get(m.client_config_id)!.push({
+            date: m.date,
+            spend: Number(m.spend) || 0,
+            impressions: Number(m.impressions) || 0,
+            clicks: Number(m.clicks) || 0,
+            leads: Number(m.leads) || 0,
+            visits: Number(m.visits) || 0,
+            sales: Number(m.sales) || 0,
+            revenue: Number(m.revenue) || 0,
+          });
         });
-      });
 
-      const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
-        const metrics = metricsMap.get(c.id) || [];
-        
-        // Ошибка была здесь: мы суммировали daily_data и прибавляли общее значение из clients_config.
-        // Если есть ежедневные данные, используем их как основной источник.
-        const hasDaily = metrics.length > 0;
-        
-        const totalSpend = hasDaily ? metrics.reduce((s, m) => s + m.spend, 0) : (Number(c.spend) || 0);
-        const totalLeads = hasDaily ? metrics.reduce((s, m) => s + m.leads, 0) : (Number(c.meta_leads) || 0);
-        const totalVisits = hasDaily ? metrics.reduce((s, m) => s + m.visits, 0) : (Number(c.visits) || 0);
-        const totalSales = hasDaily ? metrics.reduce((s, m) => s + m.sales, 0) : (Number(c.sales) || 0);
-        const totalRevenue = hasDaily ? metrics.reduce((s, m) => s + m.revenue, 0) : (Number(c.revenue) || 0);
-        const totalClicks = hasDaily ? metrics.reduce((s, m) => s + m.clicks, 0) : (Number(c.clicks) || 0);
-        const totalImpressions = hasDaily ? metrics.reduce((s, m) => s + m.impressions, 0) : (Number(c.impressions) || 0);
+        const mapped: ClientWithMetrics[] = (clientsData || []).map((c: any) => {
+          const metrics = metricsMap.get(c.id) || [];
+          const hasDaily = metrics.length > 0;
+          
+          const totalSpend = hasDaily ? metrics.reduce((s, m) => s + m.spend, 0) : (Number(c.spend) || 0);
+          const totalLeads = hasDaily ? metrics.reduce((s, m) => s + m.leads, 0) : (Number(c.meta_leads) || 0);
+          const totalVisits = hasDaily ? metrics.reduce((s, m) => s + m.visits, 0) : (Number(c.visits) || 0);
+          const totalSales = hasDaily ? metrics.reduce((s, m) => s + m.sales, 0) : (Number(c.sales) || 0);
+          const totalRevenue = hasDaily ? metrics.reduce((s, m) => s + m.revenue, 0) : (Number(c.revenue) || 0);
+          const totalClicks = hasDaily ? metrics.reduce((s, m) => s + m.clicks, 0) : (Number(c.clicks) || 0);
+          const totalImpressions = hasDaily ? metrics.reduce((s, m) => s + m.impressions, 0) : (Number(c.impressions) || 0);
 
-        return {
-          id: c.id,
-          name: c.client_name,
-          ad_account_id: c.ad_account_id,
-          daily_budget: Number(c.daily_budget) || 0,
-          totalSpend,
-          totalLeads,
-          totalVisits,
-          totalSales,
-          totalRevenue,
-          totalClicks,
-          totalImpressions,
-          cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
-          romi: totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0,
-          hasData: hasDaily,
-          dailyMetrics: metrics,
-        };
-      });
+          return {
+            id: c.id,
+            name: c.client_name,
+            ad_account_id: c.ad_account_id,
+            daily_budget: Number(c.daily_budget) || 0,
+            totalSpend,
+            totalLeads,
+            totalVisits,
+            totalSales,
+            totalRevenue,
+            totalClicks,
+            totalImpressions,
+            cpl: totalLeads > 0 ? Math.round(totalSpend / totalLeads) : 0,
+            romi: totalSpend > 0 ? Math.round(((totalRevenue - totalSpend) / totalSpend) * 100) : 0,
+            hasData: hasDaily,
+            dailyMetrics: metrics,
+          };
+        });
 
-      setClients(mapped);
-      setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
+        setClients(mapped);
+        setExpandedAccounts(new Set(mapped.filter(c => c.hasData).map(c => c.name)));
 
-      // Fetch monthly plan for budget alerts
-      if (active) {
-        const { data: planData } = await (supabase as any)
-          .from("monthly_plans")
-          .select("plan_spend")
-          .eq(isAgency ? "project_id" : "project_id", active.id) // Scoped to active project
-          .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
-          .maybeSingle();
-        setMonthlyPlan(planData);
+        // Fetch monthly plan for budget alerts
+        if (active) {
+          const { data: planData } = await (supabase as any)
+            .from("monthly_plans")
+            .select("plan_spend")
+            .eq("project_id", active.id)
+            .eq("month_year", `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`)
+            .maybeSingle();
+          
+          if (cancelled) return;
+          setMonthlyPlan(planData);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err: any) {
-      toast({ title: "Ошибка загрузки", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedYear, selectedMonth, active?.id, isAgency]);
+    };
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    fetchData();
+    return () => { cancelled = true; };
+  }, [selectedYear, selectedMonth, active?.id, isAgency]);
 
   useEffect(() => {
     const ch = supabase

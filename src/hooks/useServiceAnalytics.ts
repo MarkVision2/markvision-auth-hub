@@ -29,6 +29,7 @@ export function useServiceAnalytics() {
     const fetchServiceAnalytics = useCallback(async () => {
         if (!active?.id) return;
         setLoading(true);
+        setData([]); // Clear old data immediately
         try {
             const startDate = format(period.from, 'yyyy-MM-dd');
             const endDate = format(period.to, 'yyyy-MM-dd');

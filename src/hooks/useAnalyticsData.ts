@@ -40,6 +40,12 @@ export function useAnalyticsData() {
       return;
     }
     setLoading(true);
+    // Clear old data immediately to avoid leakage
+    setChannels([]);
+    setOrganicPosts([]);
+    setTotalLeadsFromCrm(0);
+    setDailyAgg({ spend: 0, clicks: 0, impressions: 0, leads: 0, visits: 0, sales: 0, revenue: 0 });
+    
     try {
       const monthStart = format(period.from, 'yyyy-MM-dd');
       const monthEnd = format(period.to, 'yyyy-MM-dd');
@@ -75,7 +81,8 @@ export function useAnalyticsData() {
         .select("id");
 
       if (isAgency) {
-        // Agency project sees everything
+        // Even in agency mode, we scope to the current project
+        query = query.eq("project_id", active.id);
       } else {
         const { data: shared } = await (supabase as any)
           .from("client_config_visibility")

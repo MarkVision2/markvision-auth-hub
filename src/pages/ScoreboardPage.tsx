@@ -1,227 +1,110 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  ChevronLeft, ChevronRight, Download, DollarSign, Eye,
-  ArrowRightLeft, Target, TrendingUp, Loader2, BarChart3, Calendar,
-} from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useScoreboardData } from "@/hooks/useScoreboardData";
+import { exportToCsv } from "@/utils/exportUtils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Calendar, Download, TrendingUp, DollarSign, Target, Eye, ArrowRightLeft,
+  Loader2, MoreHorizontal, ChevronLeft, ChevronRight, LayoutDashboard, Share2
+} from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
 import { toast } from "@/hooks/use-toast";
-import { useScoreboardData } from "@/hooks/useScoreboardData";
-
-/* ── helpers ── */
-const fmt = (v: number) => Math.round(v).toLocaleString("ru-RU");
-const pct = (fact: number, plan: number) => (plan > 0 ? Math.round((fact / plan) * 100) : 0);
-const cplCalc = (spend: number, leads: number) => (leads > 0 ? Math.round(spend / leads) : 0);
 
 const MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 
-interface DailyRow {
-  id: string; date: string;
-  spend: number; impressions: number; clicks: number; leads: number;
-  followers: number; visits: number; sales: number; revenue: number;
+type MetricKey = "spend" | "impressions" | "clicks" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
+
+interface Column {
+  key: MetricKey | "date";
+  label: string;
 }
 
-interface ClientAccount { id: string; client_name: string; project_id?: string | null; }
-
-type PlanKey = "spend" | "leads" | "followers" | "visits" | "sales" | "revenue";
-type MetricKey = "spend" | "leads" | "cpl" | "followers" | "visits" | "sales" | "revenue";
-
-const columns: { key: "date" | MetricKey; label: string; align: "left" | "right" }[] = [
-  { key: "date", label: "Дата", align: "left" },
-  { key: "spend", label: "Расходы", align: "right" },
-  { key: "leads", label: "Лиды", align: "right" },
-  { key: "cpl", label: "CPL", align: "right" },
-  { key: "followers", label: "Подписч.", align: "right" },
-  { key: "visits", label: "Диагностики", align: "right" },
-  { key: "sales", label: "Оплаты", align: "right" },
-  { key: "revenue", label: "Выручка", align: "right" },
+const columns: Column[] = [
+  { key: "date", label: "Дата" },
+  { key: "spend", label: "Расход" },
+  { key: "leads", label: "Лиды" },
+  { key: "cpl", label: "CPL" },
+  { key: "followers", label: "Подписчики" },
+  { key: "visits", label: "Визиты" },
+  { key: "sales", label: "Оплаты" },
+  { key: "revenue", label: "Выручка" },
 ];
 
-const fmtDate = (iso: string) => {
-  const d = new Date(iso + "T00:00:00");
-  const day = String(d.getDate()).padStart(2, "0");
-  const wd = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"][d.getDay()];
-  return `${day} ${wd}`;
+interface Account {
+  id: string;
+  name: string;
+}
+
+interface DailyRow {
+  id: string;
+  date: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  leads: number;
+  followers: number;
+  visits: number;
+  sales: number;
+  revenue: number;
+}
+
+const EMPTY_PLAN = {
+  spend: 0,
+  leads: 0,
+  followers: 0,
+  visits: 0,
+  sales: 0,
+  revenue: 0,
 };
 
-/* ── KPI Card ── */
-function KpiCard({ label, value, sub, icon: Icon }: { label: string; value: string; sub: string; icon: React.ElementType }) {
-  return (
-    <div className="group relative rounded-2xl border border-border bg-card p-5 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_8px_30px_rgba(var(--primary-rgb),0.05)] overflow-hidden">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150 duration-500" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Icon className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground font-bold">{label}</span>
-        </div>
-        
-        <div className="flex items-baseline gap-1">
-          <p className="text-2xl md:text-3xl font-bold text-foreground tabular-nums tracking-tight">{value}</p>
-        </div>
-        <p className="text-[11px] text-muted-foreground mt-2 font-medium opacity-80">{sub}</p>
-      </div>
-    </div>
-  );
-}
-
-function PctCell({ value }: { value: number }) {
-  const hit = value >= 100;
-  const warn = value >= 70;
-  return (
-    <div className="flex flex-col items-end gap-1">
-      <span className={`text-xs font-bold font-mono tabular-nums ${hit ? "text-[hsl(var(--status-good))]" : warn ? "text-[hsl(var(--status-warning))]" : "text-destructive"
-        }`}>
-        {value}%
-      </span>
-      <div className="w-full h-1 rounded-full bg-muted/30 overflow-hidden max-w-[60px]">
-        <div
-          className={`h-full rounded-full transition-all ${hit ? "bg-[hsl(var(--status-good))]" : warn ? "bg-[hsl(var(--status-warning))]" : "bg-destructive"
-            }`}
-          style={{ width: `${Math.min(value, 100)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-/* ── CSV Export ── */
-function exportToCsv(
-  monthLabel: string,
-  columns: { key: string; label: string }[],
-  planValues: Record<string, number>,
-  fact: Record<string, number>,
-  fullMonth: (DailyRow & { hasData: boolean })[],
-  getVal: (src: Record<string, number>, key: MetricKey) => number,
-) {
-  const sep = ";";
-  const lines: string[] = [];
-
-  // Header
-  lines.push(columns.map(c => c.label).join(sep));
-
-  // Plan row
-  lines.push(columns.map(c => {
-    if (c.key === "date") return "ПЛАН";
-    const v = getVal(planValues, c.key as MetricKey);
-    return v > 0 ? String(Math.round(v)) : "";
-  }).join(sep));
-
-  // Fact row
-  lines.push(columns.map(c => {
-    if (c.key === "date") return "ФАКТ";
-    const v = getVal(fact, c.key as MetricKey);
-    return String(Math.round(v));
-  }).join(sep));
-
-  // % row
-  lines.push(columns.map(c => {
-    if (c.key === "date") return "% ВЫПОЛН.";
-    const planVal = getVal(planValues, c.key as MetricKey);
-    const factVal = getVal(fact, c.key as MetricKey);
-    return planVal > 0 ? `${pct(factVal, planVal)}%` : "";
-  }).join(sep));
-
-  // Empty separator
-  lines.push("");
-
-  // Daily rows
-  fullMonth.forEach(row => {
-    lines.push(columns.map(c => {
-      if (c.key === "date") return row.date;
-      if (c.key === "cpl") return row.leads > 0 ? String(cplCalc(row.spend, row.leads)) : "";
-      const v = (row as unknown as Record<string, number>)[c.key] ?? 0;
-      return v > 0 ? String(Math.round(v)) : "";
-    }).join(sep));
-  });
-
-  const bom = "\uFEFF";
-  const blob = new Blob([bom + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `scoreboard_${monthLabel}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  toast({ title: "✅ Экспорт готов", description: `Файл scoreboard_${monthLabel}.csv скачан` });
-}
-
-/* ══════════════════════════════════════════════
-   MAIN PAGE
-   ══════════════════════════════════════════════ */
-
-type PlanValues = Record<PlanKey, number>;
-const EMPTY_PLAN: PlanValues = { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
+const fmt = (v: number) => Math.round(v).toLocaleString("ru-RU");
+const cplCalc = (s: number, l: number) => (l > 0 ? Math.round(s / l) : 0);
 
 export default function ScoreboardPage() {
-  const now = new Date();
-  const [monthIndex, setMonthIndex] = useState(now.getMonth());
-  const [year, setYear] = useState(now.getFullYear());
-  const [rows, setRows] = useState<DailyRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [planValues, setPlanValues] = useState<PlanValues>({ ...EMPTY_PLAN });
   const { active, isAgency } = useWorkspace();
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [monthIndex, setMonthIndex] = useState(now.getMonth());
 
-  // Ad Account filter
-  const [accounts, setAccounts] = useState<ClientAccount[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
-
-  const { plan, dailyFacts, loading: dataLoading } = useScoreboardData(year, monthIndex, active?.id);
+  const [rows, setRows] = useState<DailyRow[]>([]);
+  const [planValues, setPlanValues] = useState(EMPTY_PLAN);
+  const [loading, setLoading] = useState(true);
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
-  const prev = () => { if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); } else setMonthIndex(i => i - 1); };
-  const next = () => { if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); } else setMonthIndex(i => i + 1); };
-
-  const dateFrom = `${monthYear}-01`;
-  const dateTo = useMemo(() => {
-    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-    return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  }, [year, monthIndex]);
-
-
+  // Initial accounts load and project sync
   useEffect(() => {
     if (!active) return;
+    let cancelled = false;
     console.log("Scoreboard: active.id changed to:", active.id);
 
     async function fetchAccounts() {
       try {
-        console.log("Scoreboard: Starting fetchAccounts. isAgency:", isAgency, "activeId:", active?.id);
-        
-        let query = (supabase as any).from("clients_config")
-          .select("id, client_name, project_id, is_active");
+        let query = (supabase as any)
+          .from("clients_config")
+          .select("id, client_name")
+          .eq("is_active", true);
 
         const currentActiveId = active?.id;
-        if (!currentActiveId) {
-          setAccounts([]);
-          return;
-        }
-
         if (isAgency) {
-          // Even in agency mode, we scope to the current project
           query = query.eq("project_id", currentActiveId);
         } else {
-          console.log("Scoreboard: Client mode, filtering by project:", currentActiveId);
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")
             .select("client_config_id")
             .eq("project_id", currentActiveId);
-          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
+          if (cancelled) return;
+
+          const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
           if (sharedCabIds.length > 0) {
             query = query.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
           } else {
@@ -230,139 +113,146 @@ export default function ScoreboardPage() {
         }
 
         const { data, error } = await query.order("client_name");
+        if (cancelled) return;
         if (error) {
           console.error("Scoreboard: fetchAccounts DB error:", error);
           throw error;
         }
 
-        console.log(`Scoreboard: fetchAccounts returned ${data?.length || 0} accounts`, data);
+        const finalAccs: Account[] = (data || []).map((d: any) => ({
+          id: d.id,
+          name: d.client_name,
+        }));
 
-        // Filter active only if we have many, otherwise show what we have
-        let filteredData = (data || []).filter(a => a.is_active !== false);
-        if (filteredData.length === 0 && (data || []).length > 0) {
-          console.warn("Scoreboard: No active accounts found, showing inactive ones for debug");
-          filteredData = data || [];
-        }
+        setAccounts(finalAccs);
 
-        const accs = filteredData as ClientAccount[];
-        if (isAgency && accs.length > 0) {
-          const allOption: ClientAccount = { id: "all", client_name: "Все кабинеты", project_id: null };
-          const finalAccs = [allOption, ...accs];
-          setAccounts(finalAccs);
+        if (finalAccs.length > 0) {
           if (selectedAccountId === "__none__" || !finalAccs.find(a => a.id === selectedAccountId)) {
             setSelectedAccountId("all");
           }
         } else {
-          setAccounts(accs);
-          if (accs.length > 0) {
-            if (selectedAccountId === "__none__" || !accs.find(a => a.id === selectedAccountId)) {
-              setSelectedAccountId(accs[0].id);
-            }
-          } else {
-            setSelectedAccountId("__none__");
-          }
+          setSelectedAccountId("__none__");
         }
       } catch (err) {
+        if (cancelled) return;
         console.error("Scoreboard: fetchAccounts error:", err);
         setAccounts([]);
       }
     }
 
-    // Reset EVERYTHING immediately when project changes
-    setSelectedAccountId("__none__");
-    setAccounts([]);
+    // Reset before loading new project data
     setRows([]);
     setPlanValues({ ...EMPTY_PLAN });
 
     fetchAccounts();
-  }, [active?.id]);
 
+    return () => { cancelled = true; };
+  }, [active?.id, isAgency]);
 
+  // Main data loader
+  useEffect(() => {
+    let cancelled = false;
 
+    const loadData = async () => {
+      if (selectedAccountId === "__none__" || !active) {
+        setRows([]);
+        setLoading(false);
+        return;
+      }
 
-  // Fetch daily facts — filtered by account
-  const fetchDaily = useCallback(async () => {
-    if (selectedAccountId === "__none__") { setRows([]); setLoading(false); return; }
-    setLoading(true);
-    try {
-        let query = (supabase as any)
+      setLoading(true);
+      try {
+        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        const dateFrom = `${monthYear}-01`;
+        const dateTo = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+        // 1. Daily Data Query
+        let dailyQuery = (supabase as any)
           .from("daily_data")
           .select("id, date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
+          .eq("project_id", active.id)
           .gte("date", dateFrom)
-          .lte("date", dateTo);
+          .lte("date", dateTo)
+          .order("date", { ascending: true });
 
         if (selectedAccountId === "all") {
-          const allIds = accounts.filter(a => a.id !== "all").map(a => a.id);
+          const allIds = accounts.map(a => a.id);
           if (allIds.length > 0) {
-            query = query.in("client_config_id", allIds);
+            dailyQuery = dailyQuery.in("client_config_id", allIds);
           } else {
-            query = query.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+            dailyQuery = dailyQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
           }
         } else {
-          query = query.eq("client_config_id", selectedAccountId);
+          dailyQuery = dailyQuery.eq("client_config_id", selectedAccountId);
         }
 
-      query = query.order("date", { ascending: true });
+        // 2. Plan Query
+        const planQuery = (supabase as any)
+          .from("monthly_plans")
+          .select("*")
+          .eq("project_id", active.id)
+          .eq("month_year", monthYear)
+          .maybeSingle();
 
+        const [dailyRes, planRes] = await Promise.all([dailyQuery, planQuery]);
 
+        if (cancelled) return;
 
+        if (dailyRes.error) throw dailyRes.error;
+        
+        // Group by date if multiple accounts are selected
+        const grouped = (dailyRes.data || []).reduce((acc: Record<string, DailyRow>, r: any) => {
+          if (!acc[r.date]) {
+            acc[r.date] = {
+              id: r.date,
+              date: r.date,
+              spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0
+            };
+          }
+          acc[r.date].spend += Number(r.spend) || 0;
+          acc[r.date].impressions += Number(r.impressions) || 0;
+          acc[r.date].clicks += Number(r.clicks) || 0;
+          acc[r.date].leads += Number(r.leads) || 0;
+          acc[r.date].followers += Number(r.followers) || 0;
+          acc[r.date].visits += Number(r.visits) || 0;
+          acc[r.date].sales += Number(r.sales) || 0;
+          acc[r.date].revenue += Number(r.revenue) || 0;
+          return acc;
+        }, {});
 
+        setRows(Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date)));
 
-      const { data, error } = await query;
-      if (error) throw error;
-      setRows((data || []).map((r: any) => ({
-        id: r.id, date: r.date,
-        spend: Number(r.spend) || 0, impressions: Number(r.impressions) || 0,
-        clicks: Number(r.clicks) || 0, leads: Number(r.leads) || 0,
-        followers: Number(r.followers) || 0, visits: Number(r.visits) || 0,
-        sales: Number(r.sales) || 0, revenue: Number(r.revenue) || 0,
-      })));
-    } catch (err: any) { setRows([]); }
-    finally { setLoading(false); }
-  }, [dateFrom, dateTo, selectedAccountId]);
-
-  // Fetch monthly plan
-  const fetchPlan = useCallback(async () => {
-    try {
-      if (!active) return;
-      let query = (supabase as any).from("monthly_plans").select("*")
-        .eq("project_id", active.id);
-
-      const { data } = await query.eq("month_year", monthYear).limit(1);
-      if (data && data.length > 0) {
-        const p = data[0];
-        setPlanValues({
-          spend: Number(p.plan_spend) || 0,
-          leads: Number(p.plan_leads) || 0,
-          followers: Number(p.plan_followers) || 0,
-          visits: Number(p.plan_visits) || 0,
-          sales: Number(p.plan_sales) || 0,
-          revenue: Number(p.plan_revenue) || 0,
-        });
-      } else {
-        setPlanValues({ ...EMPTY_PLAN });
+        if (planRes.data) {
+          const p = planRes.data;
+          setPlanValues({
+            spend: Number(p.plan_spend) || 0,
+            leads: Number(p.plan_leads) || 0,
+            followers: Number(p.plan_followers) || 0,
+            visits: Number(p.plan_visits) || 0,
+            sales: Number(p.plan_sales) || 0,
+            revenue: Number(p.plan_revenue) || 0,
+          });
+        } else {
+          setPlanValues({ ...EMPTY_PLAN });
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error("Scoreboard: loadData error:", err);
+          setRows([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } catch (err: any) { setPlanValues({ ...EMPTY_PLAN }); }
-  }, [monthYear, active?.id]);
+    };
 
-  useEffect(() => { fetchDaily(); fetchPlan(); }, [fetchDaily, fetchPlan]);
+    loadData();
+    return () => { cancelled = true; };
+  }, [year, monthIndex, selectedAccountId, accounts, active?.id]);
 
-  // Realtime
-  useEffect(() => {
-    const ch = supabase.channel("scoreboard_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_data" }, () => fetchDaily())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchDaily]);
+  // Global aggregate for comparisons
+  const { dailyFacts } = useScoreboardData(year, monthIndex, active?.id);
 
-  useEffect(() => {
-    const ch = supabase.channel("scoreboard_plan_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "monthly_plans" }, () => fetchPlan())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [fetchPlan]);
-
-  // Full month grid
+  // Full month grid construction
   const today = new Date();
   const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
@@ -381,11 +271,9 @@ export default function ScoreboardPage() {
     return result;
   }, [rows, year, monthIndex]);
 
-  // Aggregated fact
+  // Aggregated fact summary for top row
   const fact = useMemo(() => {
-    // Ultimate Visibility Fix: 
-    // If no specific account is selected or 'all' is selected, 
-    // use EVERY record from useScoreboardData (dailyFacts) for the fact row.
+    // If 'all' or no account is selected, use global stats for accuracy
     const source = (selectedAccountId === "all" || selectedAccountId === "__none__") 
       ? dailyFacts 
       : rows;
@@ -399,14 +287,7 @@ export default function ScoreboardPage() {
         sales: acc.sales + d.sales,
         revenue: acc.revenue + d.revenue,
       }),
-      {
-        spend: 0,
-        leads: 0,
-        followers: 0,
-        visits: 0,
-        sales: 0,
-        revenue: 0
-      }
+      { spend: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 }
     );
   }, [rows, dailyFacts, selectedAccountId]);
 
@@ -418,16 +299,16 @@ export default function ScoreboardPage() {
   const hasPlan = Object.values(planValues).some(v => v > 0);
 
   const topCards = useMemo(() => [
-    { label: "CAC", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : "—", sub: "Расходы / Продажи", icon: DollarSign },
-    { label: "CPL", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : "—", sub: "Расходы / Лиды", icon: Target },
-    { label: "CPD", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : "—", sub: "Расходы / Диагностики", icon: Eye },
-    { label: "CR Лид→Диаг.", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : "—", sub: "Диагностики / Лиды", icon: ArrowRightLeft },
-    { label: "CR Диаг.→Продажа", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : "—", sub: "Продажи / Диагностики", icon: TrendingUp },
+    { label: \"CAC\", value: fact.sales > 0 ? `${fmt(Math.round(fact.spend / fact.sales))} ₸` : \"—\", sub: \"Расходы / Продажи\", icon: DollarSign },
+    { label: \"CPL\", value: fact.leads > 0 ? `${fmt(cplCalc(fact.spend, fact.leads))} ₸` : \"—\", sub: \"Расходы / Лиды\", icon: Target },
+    { label: \"CPD\", value: fact.visits > 0 ? `${fmt(Math.round(fact.spend / fact.visits))} ₸` : \"—\", sub: \"Расходы / Диагностики\", icon: Eye },
+    { label: \"CR Лид→Диаг.\", value: fact.leads > 0 ? `${Math.round((fact.visits / fact.leads) * 100)}%` : \"—\", sub: \"Диагностики / Лиды\", icon: ArrowRightLeft },
+    { label: \"CR Диаг.→Продажа\", value: fact.visits > 0 ? `${Math.round((fact.sales / fact.visits) * 100)}%` : \"—\", sub: \"Продажи / Диагностики\", icon: TrendingUp },
   ], [fact]);
 
   const daysWithData = rows.length;
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const dayProgress = Math.round((daysWithData / daysInMonth) * 100);
+  const totalDaysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const dayProgress = Math.round((daysWithData / totalDaysInMonth) * 100);
 
   const handleExport = () => {
     exportToCsv(
@@ -441,188 +322,134 @@ export default function ScoreboardPage() {
   };
 
   return (
-    <DashboardLayout breadcrumb="Таблица показателей">
-      <div className="space-y-4 md:space-y-5">
+    <DashboardLayout breadcrumb=\"Таблица показателей\">
+      <div className=\"space-y-4 md:space-y-5\">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-primary" />
+        <div className=\"flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3\">
+          <div className=\"flex items-center gap-3\">
+            <div className=\"h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center\">
+              <Calendar className=\"h-5 w-5 text-primary\" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground tracking-tight">Таблица показателей</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {daysWithData > 0 ? `${daysWithData} дней с данными из ${daysInMonth}` : "Ежедневная сводка метрик по кабинету"}
+              <h1 className=\"text-xl md:text-2xl font-bold text-foreground tracking-tight\">Таблица показателей</h1>
+              <p className=\"text-xs text-muted-foreground mt-0.5\">
+                {daysWithData > 0 ? `${daysWithData} дней с данными из ${totalDaysInMonth}` : \"Ежедневная сводка метрик по кабинету\"}
               </p>
             </div>
           </div>
           {daysWithData > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-20">
-                <Progress value={dayProgress} className="h-1.5 bg-secondary" />
+            <div className=\"flex items-center gap-2\">
+              <div className=\"w-20\">
+                <Progress value={dayProgress} className=\"h-1.5 bg-secondary\" />
               </div>
-              <Badge variant="outline" className="text-[10px] font-semibold tabular-nums bg-primary/5 text-primary border-primary/15">
+              <Badge variant=\"outline\" className=\"text-[10px] font-semibold tabular-nums bg-primary/5 text-primary border-primary/15\">
                 {dayProgress}% месяца
               </Badge>
             </div>
           )}
         </div>
 
-
-
-        {/* KPI Cards */}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-          {loading
-            ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
-            : topCards.map(c => <KpiCard key={c.label} {...c} />)
-          }
-        </div>
-
-        {/* Controls Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Month Selector */}
-            <div className="flex items-center gap-0.5 rounded-xl border border-border bg-card p-1">
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px]" onClick={prev}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm font-semibold text-foreground px-3 select-none min-w-[130px] text-center tabular-nums">
-                {MONTHS[monthIndex]} {year}
-              </span>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px]" onClick={next}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+        {/* Filters */}
+        <div className=\"flex flex-wrap items-center gap-2 md:gap-3 p-1.5 md:p-2 bg-card border border-border rounded-2xl shadow-sm\">
+          <div className=\"flex items-center gap-1.5\">
+            <Button variant=\"ghost\" size=\"icon\" className=\"h-8 w-8\" onClick={() => { if (monthIndex === 0) { setMonthIndex(11); setYear(y => y - 1); } else setMonthIndex(m => m - 1); }}>
+              <ChevronLeft className=\"h-4 w-4\" />
+            </Button>
+            <div className=\"px-3 py-1.5 text-sm font-bold bg-secondary/50 rounded-lg min-w-[140px] text-center\">
+              {MONTHS[monthIndex]} {year}
             </div>
-
-            {/* Ad Account Selector */}
-            <Select
-              value={selectedAccountId}
-              onValueChange={(id) => {
-                setSelectedAccountId(id);
-              }}
-            >
-              <SelectTrigger className="h-10 min-h-[44px] w-full sm:w-[220px] text-xs bg-card border-border rounded-xl">
-                <div className="flex items-center gap-1.5">
-                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <SelectValue placeholder="Выберите кабинет" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.length === 0 ? (
-                  <SelectItem value="__none__" disabled>Нет кабинетов</SelectItem>
-                ) : (
-                  accounts.map(acc => (
-                    <SelectItem key={acc.id} value={acc.id}>{acc.client_name}</SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <Button variant=\"ghost\" size=\"icon\" className=\"h-8 w-8\" onClick={() => { if (monthIndex === 11) { setMonthIndex(0); setYear(y => y + 1); } else setMonthIndex(m => m + 1); }}>
+              <ChevronRight className=\"h-4 w-4\" />
+            </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {!hasPlan && (
-              <p className="text-[11px] text-muted-foreground/50 mr-2 hidden sm:block">План не задан</p>
-            )}
-            <Button
-              variant="outline"
-              className="gap-2 text-xs h-10 min-h-[44px] border-border rounded-xl hover:border-primary/20"
-              onClick={handleExport}
-            >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Экспорт CSV</span>
-              <span className="sm:hidden">CSV</span>
+          <div className=\"h-6 w-[1px] bg-border/60 mx-1\" />
+
+          <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+            <SelectTrigger className=\"w-[220px] h-9 text-[13px] border-none bg-secondary/30 hover:bg-secondary/50 transition-colors rounded-xl font-medium\">
+              <SelectValue placeholder=\"Выберите кабинет\" />
+            </SelectTrigger>
+            <SelectContent className=\"rounded-xl\">
+              <SelectItem value=\"__none__\">Нет кабинетов</SelectItem>
+              {accounts.length > 0 && (
+                <>
+                  <SelectItem value=\"all\" className=\"font-semibold\">Все кабинеты ({accounts.length})</SelectItem>
+                  {accounts.map(acc => (
+                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                  ))}
+                </>
+              )}
+            </SelectContent>
+          </Select>
+
+          <div className=\"ml-auto flex items-center gap-2\">
+            <Button variant=\"outline\" size=\"sm\" onClick={handleExport} disabled={loading || rows.length === 0} className=\"h-9 gap-2 rounded-xl border-border hover:bg-secondary/50 transition-colors\">
+              <Download className=\"h-3.5 w-3.5\" />
+              <span className=\"hidden sm:inline\">Экспорт</span>
             </Button>
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
-          <div className="overflow-x-auto max-h-[700px] scrollbar-thin scrollbar-thumb-muted-foreground/20">
+        {/* KPI Cards */}
+        <div className=\"grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3\">
+          {topCards.map((card, i) => (
+            <Card key={i} className=\"border-border bg-card/50 backdrop-blur-sm hover:border-primary/20 transition-all group\">
+              <CardContent className=\"p-4 flex flex-col gap-1.5\">
+                <div className=\"flex items-center justify-between\">
+                  <span className=\"text-[10px] font-bold text-muted-foreground uppercase tracking-widest\">{card.label}</span>
+                  <card.icon className=\"h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors\" />
+                </div>
+                <div className=\"flex items-baseline gap-1\">
+                  <span className=\"text-lg font-black text-foreground tabular-nums font-mono\">{card.value}</span>
+                </div>
+                <p className=\"text-[10px] text-muted-foreground/60 font-medium\">{card.sub}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Main Table */}
+        <div className=\"rounded-2xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5\">
+          <div className=\"overflow-x-auto\">
             <Table>
-              <TableHeader className="sticky top-0 z-20 bg-card backdrop-blur-md">
-                <TableRow className="border-b border-border/50 hover:bg-transparent">
+              <TableHeader className=\"bg-muted/30\">
+                <TableRow className=\"hover:bg-transparent border-b border-border/50\">
                   {columns.map(col => (
-                    <TableHead
-                      key={col.key}
-                      className={`text-[10px] uppercase tracking-widest font-black text-muted-foreground/70 px-6 py-4 ${col.align === "right" ? "text-right" : "text-left"
-                        }`}
-                    >
+                    <TableHead key={col.key} className={`h-12 px-6 text-[10px] font-black text-muted-foreground uppercase tracking-wider ${col.key === \"date\" ? \"text-left\" : \"text-right\"}`}>
                       {col.label}
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* ── PLAN ROW ── */}
-                <TableRow className="bg-primary/[0.02] border-b border-border/40 hover:bg-primary/[0.05] transition-colors">
-                  {columns.map(col => (
-                    <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-sm tabular-nums ${col.key === "date" ? "text-left" : "text-right"}`}>
-                      {col.key === "date" ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Target className="h-3.5 w-3.5 text-primary" />
-                          </div>
-                          <span className="font-bold text-primary tracking-tight text-[11px]">ПЛАН</span>
-                        </div>
-                      ) : (
-                        <span className="text-primary/90 font-bold">
-                          {getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
-                            ? fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))
-                            : "—"
-                          }
-                        </span>
-                      )}
+                {/* ── Fact Row ── */}
+                <TableRow className=\"bg-primary/[0.03] hover:bg-primary/[0.05] border-b-2 border-primary/20\">
+                  <TableCell className=\"px-6 py-4 font-black text-primary uppercase text-[12px] tracking-tight\">ФАКТ (ВСЕГО)</TableCell>
+                  {columns.slice(1).map(col => (
+                    <TableCell key={col.key} className=\"px-6 py-4 text-right font-black text-foreground tabular-nums text-sm\">
+                      {fmt(getVal(fact as unknown as Record<string, number>, col.key as MetricKey))}
                     </TableCell>
                   ))}
                 </TableRow>
 
-                {/* ── FACT ROW ── */}
-                <TableRow className="bg-foreground/[0.01] border-b border-border/40 hover:bg-foreground/[0.03] transition-colors">
-                  {columns.map(col => (
-                    <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[15px] tabular-nums font-black ${col.key === "date" ? "text-foreground text-left" : "text-right text-foreground"}`}>
-                      {col.key === "date" ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-lg bg-muted flex items-center justify-center">
-                            <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
-                          </div>
-                          <span className="font-bold text-foreground tracking-tight text-[11px]">ФАКТ</span>
-                        </div>
-                      ) : (
-                        getVal(fact as unknown as Record<string, number>, col.key as MetricKey) > 0
-                          ? fmt(getVal(fact as unknown as Record<string, number>, col.key as MetricKey))
-                          : "0"
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-
-                {/* ── PCT ROW ── */}
-                <TableRow className="border-b-[3px] border-border bg-muted/5 hover:bg-muted/10 transition-colors">
-                  {columns.map(col => (
-                    <TableCell key={col.key} className={`px-6 py-5 whitespace-nowrap text-sm ${col.key === "date" ? "text-left" : "text-right"}`}>
-                      {col.key === "date" ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                            <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
-                          </div>
-                          <span className="text-[11px] font-bold text-amber-500 tracking-tight">% ВЫПОЛН.</span>
-                        </div>
-                      ) : (
-                        getVal(planValues as unknown as Record<string, number>, col.key as MetricKey) > 0
-                          ? <PctCell value={pct(getVal(fact as unknown as Record<string, number>, col.key as MetricKey), getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))} />
-                          : <span className="text-xs text-muted-foreground/20">—</span>
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                {/* ── Plan Row ── */}
+                {hasPlan && (
+                  <TableRow className=\"bg-secondary/20 hover:bg-secondary/30 border-b border-border/50\">
+                    <TableCell className=\"px-6 py-4 font-bold text-muted-foreground uppercase text-[11px] tracking-tight\">ПЛАН</TableCell>
+                    {columns.slice(1).map(col => (
+                      <TableCell key={col.key} className=\"px-6 py-4 text-right font-bold text-muted-foreground/80 tabular-nums text-sm\">
+                        {col.key === \"cpl\" ? \"—\" : fmt(getVal(planValues as unknown as Record<string, number>, col.key as MetricKey))}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )}
 
                 {/* ── Loading ── */}
                 {loading && (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="text-center py-12">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground mt-2">Загрузка данных…</p>
+                    <TableCell colSpan={columns.length} className=\"text-center py-12\">
+                      <Loader2 className=\"h-5 w-5 animate-spin mx-auto text-muted-foreground\" />
+                      <p className=\"text-xs text-muted-foreground mt-2\">Загрузка данных…</p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -632,7 +459,7 @@ export default function ScoreboardPage() {
                   const isToday = row.date === todayIso;
                   const isFuture = row.date > todayIso;
                   const isWeekend = (() => {
-                    const d = new Date(row.date + "T00:00:00");
+                    const d = new Date(row.date + \"T00:00:00\");
                     return d.getDay() === 0 || d.getDay() === 6;
                   })();
 
@@ -640,38 +467,38 @@ export default function ScoreboardPage() {
                     <TableRow
                       key={row.id}
                       className={`border-b border-border/30 transition-all duration-200 ${isToday
-                        ? "bg-primary/[0.04] border-l-[3px] border-l-primary"
+                        ? \"bg-primary/[0.04] border-l-[3px] border-l-primary\"
                         : isWeekend && !isFuture
-                          ? "bg-muted/[0.03]"
-                          : ""
-                        } ${isFuture ? "opacity-40" : "hover:bg-accent/30"}`}
+                          ? \"bg-muted/[0.03]\"
+                          : \"\"
+                        } ${isFuture ? \"opacity-40\" : \"hover:bg-accent/30\"}`}
                     >
                       {columns.map(col => (
-                        <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[14px] tabular-nums ${col.key === "date"
-                          ? `text-left font-semibold ${isToday ? "text-primary" : isWeekend ? "text-muted-foreground/50" : "text-muted-foreground/80"}`
-                          : "text-right text-foreground/70"
+                        <TableCell key={col.key} className={`px-6 py-4 whitespace-nowrap font-sans text-[14px] tabular-nums ${col.key === \"date\"
+                          ? `text-left font-semibold ${isToday ? \"text-primary\" : isWeekend ? \"text-muted-foreground/50\" : \"text-muted-foreground/80\"}`
+                          : \"text-right text-foreground/70\"
                           }`}>
-                          {col.key === "date" ? (
-                            <div className="flex items-center gap-2">
-                              <span className="tracking-tight">{fmtDate(row.date)}</span>
+                          {col.key === \"date\" ? (
+                            <div className=\"flex items-center gap-2\">
+                              <span className=\"tracking-tight\">{row.date.split('-')[2]} {MONTHS[monthIndex].slice(0, 3)}</span>
                               {isToday && (
-                                <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                                <span className=\"h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]\" />
                               )}
                             </div>
                           ) : isFuture ? (
-                            <span className="text-muted-foreground/10">—</span>
-                          ) : col.key === "cpl" ? (
+                            <span className=\"text-muted-foreground/10\">—</span>
+                          ) : col.key === \"cpl\" ? (
                             row.leads > 0 ? (
-                              <span className="font-medium">{fmt(cplCalc(row.spend, row.leads))}</span>
+                              <span className=\"font-medium\">{fmt(cplCalc(row.spend, row.leads))}</span>
                             ) : (
-                              <span className="text-muted-foreground/20">—</span>
+                              <span className=\"text-muted-foreground/20\">—</span>
                             )
                           ) : ((row as unknown as Record<string, number>)[col.key] ?? 0) > 0 ? (
-                            <span className={col.key === "revenue" && (row as unknown as Record<string, number>)[col.key] > 0 ? "text-primary font-bold" : "font-medium"}>
+                            <span className={col.key === \"revenue\" && (row as unknown as Record<string, number>)[col.key] > 0 ? \"text-primary font-bold\" : \"font-medium\"}>
                               {fmt((row as unknown as Record<string, number>)[col.key])}
                             </span>
                           ) : (
-                            <span className="text-muted-foreground/20">—</span>
+                            <span className=\"text-muted-foreground/20\">—</span>
                           )}
                         </TableCell>
                       ))}
