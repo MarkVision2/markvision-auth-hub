@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useScoreboardData } from "@/hooks/useScoreboardData";
@@ -149,105 +149,115 @@ export default function ScoreboardPage() {
     return () => { cancelled = true; };
   }, [active?.id, isAgency]);
 
-  // Main data loader
-  useEffect(() => {
-    let cancelled = false;
+  const fetchRequestRef = useRef(0);
 
-    const loadData = async () => {
-      if (selectedAccountId === "__none__" || !active) {
+  const loadData = useCallback(async () => {
+    const requestId = ++fetchRequestRef.current;
+    const isCurrent = () => requestId === fetchRequestRef.current;
+
+    if (selectedAccountId === "__none__" || !active) {
+      setRows([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+      const dateFrom = `${monthYear}-01`;
+      const dateTo = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
+      // 1. Daily Data Query
+      let dailyQuery = (supabase as any)
+        .from("daily_data")
+        .select("id, date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
+        .eq("project_id", active.id)
+        .gte("date", dateFrom)
+        .lte("date", dateTo)
+        .order("date", { ascending: true });
+
+      if (selectedAccountId === "all") {
+        const allIds = accounts.map(a => a.id);
+        if (allIds.length > 0) {
+          dailyQuery = dailyQuery.in("client_config_id", allIds);
+        } else {
+          dailyQuery = dailyQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
+        }
+      } else {
+        dailyQuery = dailyQuery.eq("client_config_id", selectedAccountId);
+      }
+
+      // 2. Plan Query
+      const planQuery = (supabase as any)
+        .from("monthly_plans")
+        .select("*")
+        .eq("project_id", active.id)
+        .eq("month_year", monthYear)
+        .maybeSingle();
+
+      const [dailyRes, planRes] = await Promise.all([dailyQuery, planQuery]);
+
+      if (!isCurrent()) return;
+
+      if (dailyRes.error) throw dailyRes.error;
+      
+      // Group by date if multiple accounts are selected
+      const grouped = (dailyRes.data || []).reduce((acc: Record<string, DailyRow>, r: any) => {
+        if (!acc[r.date]) {
+          acc[r.date] = {
+            id: r.date,
+            date: r.date,
+            spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0
+          };
+        }
+        acc[r.date].spend += Number(r.spend) || 0;
+        acc[r.date].impressions += Number(r.impressions) || 0;
+        acc[r.date].clicks += Number(r.clicks) || 0;
+        acc[r.date].leads += Number(r.leads) || 0;
+        acc[r.date].followers += Number(r.followers) || 0;
+        acc[r.date].visits += Number(r.visits) || 0;
+        acc[r.date].sales += Number(r.sales) || 0;
+        acc[r.date].revenue += Number(r.revenue) || 0;
+        return acc;
+      }, {});
+
+      setRows(Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date)));
+
+      if (planRes.data) {
+        const p = planRes.data;
+        setPlanValues({
+          spend: Number(p.plan_spend) || 0,
+          leads: Number(p.plan_leads) || 0,
+          followers: Number(p.plan_followers) || 0,
+          visits: Number(p.plan_visits) || 0,
+          sales: Number(p.plan_sales) || 0,
+          revenue: Number(p.plan_revenue) || 0,
+        });
+      } else {
+        setPlanValues({ ...EMPTY_PLAN });
+      }
+    } catch (err: any) {
+      if (isCurrent()) {
+        console.error("Scoreboard: loadData error:", err);
         setRows([]);
-        setLoading(false);
-        return;
       }
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
+  }, [year, monthIndex, selectedAccountId, accounts, active?.id, monthYear]);
 
-      setLoading(true);
-      try {
-        const lastDay = new Date(year, monthIndex + 1, 0).getDate();
-        const dateFrom = `${monthYear}-01`;
-        const dateTo = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
-        // 1. Daily Data Query
-        let dailyQuery = (supabase as any)
-          .from("daily_data")
-          .select("id, date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
-          .eq("project_id", active.id)
-          .gte("date", dateFrom)
-          .lte("date", dateTo)
-          .order("date", { ascending: true });
-
-        if (selectedAccountId === "all") {
-          const allIds = accounts.map(a => a.id);
-          if (allIds.length > 0) {
-            dailyQuery = dailyQuery.in("client_config_id", allIds);
-          } else {
-            dailyQuery = dailyQuery.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
-          }
-        } else {
-          dailyQuery = dailyQuery.eq("client_config_id", selectedAccountId);
-        }
-
-        // 2. Plan Query
-        const planQuery = (supabase as any)
-          .from("monthly_plans")
-          .select("*")
-          .eq("project_id", active.id)
-          .eq("month_year", monthYear)
-          .maybeSingle();
-
-        const [dailyRes, planRes] = await Promise.all([dailyQuery, planQuery]);
-
-        if (cancelled) return;
-
-        if (dailyRes.error) throw dailyRes.error;
-        
-        // Group by date if multiple accounts are selected
-        const grouped = (dailyRes.data || []).reduce((acc: Record<string, DailyRow>, r: any) => {
-          if (!acc[r.date]) {
-            acc[r.date] = {
-              id: r.date,
-              date: r.date,
-              spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0
-            };
-          }
-          acc[r.date].spend += Number(r.spend) || 0;
-          acc[r.date].impressions += Number(r.impressions) || 0;
-          acc[r.date].clicks += Number(r.clicks) || 0;
-          acc[r.date].leads += Number(r.leads) || 0;
-          acc[r.date].followers += Number(r.followers) || 0;
-          acc[r.date].visits += Number(r.visits) || 0;
-          acc[r.date].sales += Number(r.sales) || 0;
-          acc[r.date].revenue += Number(r.revenue) || 0;
-          return acc;
-        }, {});
-
-        setRows(Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date)));
-
-        if (planRes.data) {
-          const p = planRes.data;
-          setPlanValues({
-            spend: Number(p.plan_spend) || 0,
-            leads: Number(p.plan_leads) || 0,
-            followers: Number(p.plan_followers) || 0,
-            visits: Number(p.plan_visits) || 0,
-            sales: Number(p.plan_sales) || 0,
-            revenue: Number(p.plan_revenue) || 0,
-          });
-        } else {
-          setPlanValues({ ...EMPTY_PLAN });
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          console.error("Scoreboard: loadData error:", err);
-          setRows([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
+  useEffect(() => {
     loadData();
-    return () => { cancelled = true; };
-  }, [year, monthIndex, selectedAccountId, accounts, active?.id]);
+  }, [loadData]);
+
+  // Realtime synchronization
+  useEffect(() => {
+    const ch = supabase.channel("scoreboard_rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_data" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "monthly_plans" }, () => loadData())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [loadData]);
 
   // Global aggregate for comparisons
   const { dailyFacts } = useScoreboardData(year, monthIndex, active?.id);

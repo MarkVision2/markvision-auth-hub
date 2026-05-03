@@ -183,6 +183,7 @@ export default function AiManagerPage() {
   const [lastSync, setLastSync] = useState<string>("—");
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchData() {
       try {
         setLoading(true);
@@ -205,6 +206,7 @@ export default function AiManagerPage() {
         }
 
         const { count: clientsCount } = await cQueryTotal;
+        if (cancelled) return;
 
         setActiveClients(clientsCount || 0);
 
@@ -219,6 +221,7 @@ export default function AiManagerPage() {
         }
 
         const { data: lastMetric } = await lastSyncQuery.limit(1);
+        if (cancelled) return;
 
         if (lastMetric && lastMetric[0]?.created_at) {
           setLastSync(format(new Date(lastMetric[0].created_at), "HH:mm", { locale: ru }));
@@ -241,6 +244,7 @@ export default function AiManagerPage() {
         }
 
         const { data: bridgeData, count: bridgeCount } = await bridgeQuery.limit(20);
+        if (cancelled) return;
 
         // 3. Fetch AI ROP Audits (today count + recent logs)
         let auditQuery = supabase
@@ -254,16 +258,10 @@ export default function AiManagerPage() {
         }
 
         const { data: auditData, count: auditCount } = await auditQuery.limit(20);
+        if (cancelled) return;
 
         setTodayActions((bridgeCount || 0) + (auditCount || 0));
 
-        // Format Logs
-        const logs: LogEntry[] = [];
-
-        if (bridgeData) {
-          bridgeData.forEach(item => {
-            if (!item.created_at) return;
-            const date = new Date(item.created_at);
             const isError = item.status === "error";
             logs.push({
               id: `bridge-${item.id}`,

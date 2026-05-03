@@ -83,6 +83,7 @@ export default function AiReportsPage() {
   }, [active?.id, isAgency]);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
         setLoading(true);
@@ -121,6 +122,9 @@ export default function AiReportsPage() {
             .from("client_config_visibility")
             .select("client_config_id")
             .eq("project_id", currentActiveId);
+          
+          if (cancelled) return;
+
           const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
           let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true).neq("is_agency", true);
@@ -137,6 +141,8 @@ export default function AiReportsPage() {
           }
 
           const { data: configData } = await cQuery;
+          if (cancelled) return;
+
           const clientIds = (configData || []).map((c: any) => c.id) as string[];
 
           if (clientIds.length > 0) {
@@ -158,6 +164,7 @@ export default function AiReportsPage() {
         }
 
         const [curRes, prevRes, leadsRes, chRes, crRes] = await Promise.all([curQ, prevQ, leadsQ, channelsQ, creativesQ]);
+        if (cancelled) return;
 
         setCurMetrics((curRes.data as DailyRow[]) || []);
         setPrevMetrics((prevRes.data as DailyRow[]) || []);
@@ -165,13 +172,15 @@ export default function AiReportsPage() {
         setChannels(chRes.data || []);
         setCreatives(crRes.data || []);
       } catch (err) {
-        console.error("AI Reports load fatal error:", err);
+        if (!cancelled) {
+          console.error("AI Reports load fatal error:", err);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
-  }, [active?.id, selectedClient, weekStart, weekEnd, prevWeekStart, prevWeekEnd]);
+    return () => { cancelled = true; };
 
   const cur = useMemo(() => {
     const sum = (key: keyof DailyRow) => curMetrics.reduce((s, r) => s + (Number(r[key]) || 0), 0);
