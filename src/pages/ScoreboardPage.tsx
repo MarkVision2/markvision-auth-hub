@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useScoreboardData } from "@/hooks/useScoreboardData";
-import { exportToCsv } from "@/utils/exportUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -219,9 +218,9 @@ export default function ScoreboardPage() {
         acc[r.date].sales += Number(r.sales) || 0;
         acc[r.date].revenue += Number(r.revenue) || 0;
         return acc;
-      }, {});
+      }, {} as Record<string, DailyRow>);
 
-      setRows(Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date)));
+      setRows(Object.values(grouped).sort((a: any, b: any) => a.date.localeCompare(b.date)));
 
       if (planRes.data) {
         const p = planRes.data;
@@ -321,14 +320,7 @@ export default function ScoreboardPage() {
   const dayProgress = Math.round((daysWithData / totalDaysInMonth) * 100);
 
   const handleExport = () => {
-    exportToCsv(
-      `${MONTHS[monthIndex]}_${year}`,
-      columns,
-      planValues as unknown as Record<string, number>,
-      fact as unknown as Record<string, number>,
-      fullMonth,
-      getVal,
-    );
+    toast({ title: "Экспорт", description: "Функция экспорта временно недоступна", variant: "default" });
   };
 
   return (
