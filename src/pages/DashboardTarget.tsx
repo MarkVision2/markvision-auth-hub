@@ -173,21 +173,25 @@ export default function DashboardTarget() {
         .select("id, client_name, ad_account_id, daily_budget, is_active, spend, meta_leads, visits, sales, revenue, impressions, clicks").eq("is_active", true)
         .order("client_name");
 
-      if (isAgency && active) {
-        // Main project sees everything
-      } else if (active) {
+      if (active) {
         const currentActiveId = active.id;
-        const { data: shared } = await (supabase as any)
-          .from("client_config_visibility")
-          .select("client_config_id")
-          .eq("project_id", currentActiveId);
-        const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+        
+        if (isAgency) {
+          // Even in agency mode, we scope to the current project
+          clientsQuery = (clientsQuery as any).eq("project_id", currentActiveId);
+        } else {
+          const { data: shared } = await (supabase as any)
+            .from("client_config_visibility")
+            .select("client_config_id")
+            .eq("project_id", currentActiveId);
+          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
 
-        const orParts = [`project_id.eq.${currentActiveId}`, `id.eq.${currentActiveId}`];
-        if (sharedIds.length > 0) {
-          orParts.push(`id.in.(${sharedIds.join(",")})`);
+          const orParts = [`project_id.eq.${currentActiveId}`];
+          if (sharedIds.length > 0) {
+            orParts.push(`id.in.(${sharedIds.join(",")})`);
+          }
+          clientsQuery = (clientsQuery as any).or(orParts.join(","));
         }
-        clientsQuery = (clientsQuery as any).or(orParts.join(","));
       } else {
         setLoading(false);
         return;

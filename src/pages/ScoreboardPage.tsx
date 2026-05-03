@@ -180,7 +180,7 @@ export default function ScoreboardPage() {
   const [accounts, setAccounts] = useState<ClientAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("__none__");
 
-  const { plan, dailyFacts, loading: dataLoading } = useScoreboardData(year, monthIndex);
+  const { plan, dailyFacts, loading: dataLoading } = useScoreboardData(year, monthIndex, active?.id);
 
   const monthYear = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
 
@@ -205,14 +205,16 @@ export default function ScoreboardPage() {
         let query = (supabase as any).from("clients_config")
           .select("id, client_name, project_id, is_active");
 
-        if (isAgency) {
-          console.log("Scoreboard: Agency mode, fetching all accounts");
-          // Agency sees everything, but we can still filter by is_active if we want.
-          // Let's remove is_active for now to debug why it's empty.
-        } else {
-          const currentActiveId = active?.id;
-          if (!currentActiveId) return;
+        const currentActiveId = active?.id;
+        if (!currentActiveId) {
+          setAccounts([]);
+          return;
+        }
 
+        if (isAgency) {
+          // Even in agency mode, we scope to the current project
+          query = query.eq("project_id", currentActiveId);
+        } else {
           console.log("Scoreboard: Client mode, filtering by project:", currentActiveId);
           const { data: shared } = await (supabase as any)
             .from("client_config_visibility")

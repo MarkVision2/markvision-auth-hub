@@ -101,11 +101,7 @@ export default function AiReportsPage() {
           .order("leads", { ascending: false })
           .limit(10);
 
-        if (!isAgency || !active) {
-          if (!active) {
-            setLoading(false);
-            return;
-          }
+        if (active) {
           const currentActiveId = active.id;
 
           // Client project: own
@@ -122,11 +118,18 @@ export default function AiReportsPage() {
           const sharedCabIds = (shared || []).map((s: any) => s.client_config_id);
 
           let cQuery = (supabase as any).from("clients_config").select("id").eq("is_active", true).neq("is_agency", true);
-          if (sharedCabIds.length > 0) {
-            cQuery = cQuery.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
-          } else {
+          
+          if (isAgency) {
+            // In agency mode, we still scope to the active project
             cQuery = cQuery.eq("project_id", currentActiveId);
+          } else {
+            if (sharedCabIds.length > 0) {
+              cQuery = cQuery.or(`project_id.eq.${currentActiveId},id.in.(${sharedCabIds.join(",")})`);
+            } else {
+              cQuery = cQuery.eq("project_id", currentActiveId);
+            }
           }
+
           const { data: configData } = await cQuery;
           const clientIds = (configData || []).map((c: any) => c.id) as string[];
 
@@ -137,6 +140,9 @@ export default function AiReportsPage() {
             curQ = curQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
             prevQ = prevQ.eq("client_config_id", "00000000-0000-0000-0000-000000000000");
           }
+        } else {
+          setLoading(false);
+          return;
         }
 
         if (selectedClient !== "all") {

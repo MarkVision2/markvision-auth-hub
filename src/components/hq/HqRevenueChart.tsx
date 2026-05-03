@@ -48,16 +48,12 @@ export default function HqRevenueChart({ projectId }: Props) {
       const from = format(subDays(new Date(), 6), "yyyy-MM-dd");
       const to = format(new Date(), "yyyy-MM-dd");
 
-      // Fetch all visible client IDs for this project to get aggregate data
-      // Fetch all visible client IDs for this project to get aggregate data
-      const { data: workspaces } = await (supabase as any).from("projects").select("id").order("created_at", { ascending: true });
-      const isMainProject = workspaces && workspaces[0]?.id === projectId;
-
-      let cQuery = (supabase as any).from("clients_config").select("id").neq("is_active", false);
-      if (!isMainProject) {
-        cQuery = cQuery.eq("project_id", projectId);
-      }
-      const { data: configs } = await cQuery;
+      // Only fetch clients associated with this project
+      const { data: configs } = await (supabase as any)
+        .from("clients_config")
+        .select("id")
+        .neq("is_active", false)
+        .eq("project_id", projectId);
       const ids = (configs || []).map((c: any) => c.id);
 
       let query = (supabase as any)

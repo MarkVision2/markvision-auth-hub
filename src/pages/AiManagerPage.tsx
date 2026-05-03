@@ -187,21 +187,34 @@ export default function AiManagerPage() {
       try {
         setLoading(true);
 
+        const pid = active?.id;
+
         // 1. Fetch active clients
-        const { count: clientsCount } = await supabase
+        let cQueryTotal = supabase
           .from("clients_config")
           .select("*", { count: 'exact', head: true })
           .neq("is_active", false)
           .neq("is_agency", true);
+        
+        if (pid) {
+          cQueryTotal = cQueryTotal.eq("project_id", pid as string);
+        }
+
+        const { count: clientsCount } = await cQueryTotal;
 
         setActiveClients(clientsCount || 0);
 
         // Fetch last sync time
-        const { data: lastMetric } = await supabase
+        let lastSyncQuery = supabase
           .from("daily_data")
           .select("created_at")
-          .order("created_at", { ascending: false })
-          .limit(1);
+          .order("created_at", { ascending: false });
+        
+        if (pid) {
+          lastSyncQuery = lastSyncQuery.eq("project_id", pid as string);
+        }
+
+        const { data: lastMetric } = await lastSyncQuery.limit(1);
 
         if (lastMetric && lastMetric[0]?.created_at) {
           setLastSync(format(new Date(lastMetric[0].created_at), "HH:mm", { locale: ru }));
@@ -213,20 +226,30 @@ export default function AiManagerPage() {
         const todayIso = todayStart.toISOString();
 
         // 2. Fetch AI Bridge Tasks (today count + recent logs)
-        const { data: bridgeData, count: bridgeCount } = await supabase
+        let bridgeQuery = supabase
           .from("ai_bridge_tasks")
           .select("id, prompt, response, status, created_at", { count: 'exact' })
           .gte("created_at", todayIso)
-          .order("created_at", { ascending: false })
-          .limit(20);
+          .order("created_at", { ascending: false });
+
+        if (pid) {
+          bridgeQuery = bridgeQuery.eq("project_id", pid as string);
+        }
+
+        const { data: bridgeData, count: bridgeCount } = await bridgeQuery.limit(20);
 
         // 3. Fetch AI ROP Audits (today count + recent logs)
-        const { data: auditData, count: auditCount } = await supabase
+        let auditQuery = supabase
           .from("ai_rop_audits")
           .select("id, manager_name, ai_score, interaction_type, created_at", { count: 'exact' })
           .gte("created_at", todayIso)
-          .order("created_at", { ascending: false })
-          .limit(20);
+          .order("created_at", { ascending: false });
+
+        if (pid) {
+          auditQuery = auditQuery.eq("project_id", pid as string);
+        }
+
+        const { data: auditData, count: auditCount } = await auditQuery.limit(20);
 
         setTodayActions((bridgeCount || 0) + (auditCount || 0));
 
@@ -297,16 +320,21 @@ const monthStart = new Date(todayStart);
 
         // Get all visible client configs
         let cQuery = supabase.from("clients_config").select("id").neq("is_active", false);
-        if (!isAgency) {
-          const { data: shared } = await (supabase as any)
-            .from("client_config_visibility")
-            .select("client_config_id")
-            .eq("project_id", active?.id);
-          const sharedIds = (shared || []).map((s: any) => s.client_config_id);
-          if (sharedIds.length > 0) {
-            cQuery = cQuery.or(`project_id.eq.${active?.id},id.in.(${sharedIds.join(",")})`);
+        if (pid) {
+          if (!isAgency) {
+            const { data: shared } = await (supabase as any)
+              .from("client_config_visibility")
+              .select("client_config_id")
+              .eq("project_id", pid as string);
+            const sharedIds = (shared || []).map((s: any) => s.client_config_id);
+            if (sharedIds.length > 0) {
+              cQuery = cQuery.or(`project_id.eq.${pid},id.in.(${sharedIds.join(",")})`);
+            } else {
+              cQuery = (cQuery as any).eq("project_id", pid as string);
+            }
           } else {
-            cQuery = (cQuery as any).eq("project_id", active?.id);
+            // Even in agency mode, we filter by the current project to avoid cross-project leakage
+            cQuery = cQuery.eq("project_id", pid as string);
           }
         }
         const { data: visibleConfigs } = await cQuery;
@@ -326,10 +354,16 @@ const monthStart = new Date(todayStart);
 
         const { data: allFacts } = await factsQ;
 
-        const { data: allAudits } = await supabase
+        let ropAuditsQuery = supabase
           .from("ai_rop_audits")
           .select("created_at, ai_score")
           .gte("created_at", monthStart.toISOString());
+        
+        if (pid) {
+          ropAuditsQuery = ropAuditsQuery.eq("project_id", pid as string);
+        }
+
+        const { data: allAudits } = await ropAuditsQuery;
 
         const calcPeriod = (startDate: Date, endDate: Date) => {
           let spend = 0; let leads = 0; let visits = 0; let sales = 0; let revenue = 0;
@@ -382,7 +416,7 @@ const monthStart = new Date(todayStart);
     }
 
     fetchData();
-  }, []);
+  }, [active?.id, isAgency]);
 
   return (
     <DashboardLayout breadcrumb="AI Управляющий">

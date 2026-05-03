@@ -27,14 +27,23 @@ interface DailyFact {
 
 const emptyPlan: PlanRow = { spend: 0, impressions: 0, clicks: 0, leads: 0, followers: 0, visits: 0, sales: 0, revenue: 0 };
 
-export function useScoreboardData(year: number, monthIndex: number) {
+export function useScoreboardData(year: number, monthIndex: number, activeProjectId?: string | null) {
   const { toast } = useToast();
   const [plan, setPlan] = useState<PlanRow>(emptyPlan);
   const [dailyFacts, setDailyFacts] = useState<DailyFact[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!activeProjectId) {
+      setPlan(emptyPlan);
+      setDailyFacts([]);
+      setLoading(false);
+      return;
+    }
+
+    const pid = activeProjectId as string;
     let cancelled = false;
+
     async function fetch() {
       setLoading(true);
       try {
@@ -47,11 +56,13 @@ export function useScoreboardData(year: number, monthIndex: number) {
             .from("monthly_plans")
             .select("plan_spend, plan_leads, plan_visits, plan_sales, plan_revenue")
             .eq("month_year", monthYear)
+            .eq("project_id", pid)
             .limit(1)
             .maybeSingle(),
           supabase
             .from("daily_data")
             .select("date, spend, impressions, clicks, leads, followers, visits, sales, revenue")
+            .eq("project_id", pid)
             .gte("date", startDate)
             .lt("date", endMonth)
             .order("date"),
@@ -92,7 +103,7 @@ export function useScoreboardData(year: number, monthIndex: number) {
     }
     fetch();
     return () => { cancelled = true; };
-  }, [year, monthIndex]);
+  }, [year, monthIndex, activeProjectId]);
 
   const fact = useMemo<PlanRow>(() => {
     return dailyFacts.reduce((acc, d) => ({
