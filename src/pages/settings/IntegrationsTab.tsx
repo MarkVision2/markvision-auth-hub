@@ -187,12 +187,12 @@ function MetaAdsCard() {
         async function load() {
             const { data } = await (supabase as any)
                 .from("clients_config")
-                .select("project_id, fb_token, ad_account_id")
+                .select("project_id, ad_account_id")
                 .eq("project_id", SETTINGS_PROJECT_ID)
                 .limit(1)
                 .maybeSingle();
             if (data) {
-                setToken((data as any).fb_token || "");
+                // setToken((data as any).fb_token || "");
                 setAccountId((data as any).ad_account_id || "");
             }
             setLoaded(true);
@@ -205,7 +205,7 @@ function MetaAdsCard() {
         const { error } = await (supabase as any)
             .from("clients_config")
             .update({ 
-                fb_token: token.trim(), 
+                // fb_token: token.trim(), 
                 ad_account_id: accountId.trim() 
             })
             .eq("project_id", SETTINGS_PROJECT_ID);

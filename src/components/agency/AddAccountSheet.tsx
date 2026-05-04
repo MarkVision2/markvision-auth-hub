@@ -142,7 +142,7 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     if (form.pixel_event) row.pixel_event = form.pixel_event;
     if (form.website_url) row.website_url = form.website_url;
     // Default FB token (shared across all accounts)
-    row.fb_token = "EAANaVrGsWLYBQx2zJZCYxaz16KSfXDHFwIZA5xuZACh8fXnWD1gHcu4YryOs5lCcydaQ0f0D0EhDteeIZBMpD99QBy2a5BEB6JULlKi81zgQIjqnXo46dixFo1NB0BdHo1wAQkJ1fwdiZAqtg5AY2DY8XLDDPIMsJJbUkkhtswZCt48Vw8WuU5Ml5es1X9egMK";
+    // row.fb_token = "EAANaVrGsWLYBQx2zJZCYxaz16KSfXDHFwIZA5xuZACh8fXnWD1gHcu4YryOs5lCcydaQ0f0D0EhDteeIZBMpD99QBy2a5BEB6JULlKi81zgQIjqnXo46dixFo1NB0BdHo1wAQkJ1fwdiZAqtg5AY2DY8XLDDPIMsJJbUkkhtswZCt48Vw8WuU5Ml5es1X9egMK";
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let res;

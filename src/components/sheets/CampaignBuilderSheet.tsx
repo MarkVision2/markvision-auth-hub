@@ -141,7 +141,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange, initialCreati
     const loadClients = async () => {
       let query = (supabase as any)
         .from("clients_config")
-        .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, fb_token, city, region_key")
+        .select("id, client_name, whatsapp_number, fb_pixel_id, pixel_event, website_url, ad_account_id, page_id, page_name, instagram_user_id, city, region_key")
         .eq("is_active", true)
         .neq("is_agency", true)
         .order("client_name");
@@ -404,7 +404,7 @@ export default function CampaignBuilderSheet({ open, onOpenChange, initialCreati
           page_id: activePage.page_id,
           page_name: activePage.page_name,
           instagram_user_id: activePage.instagram_user_id || "",
-          fb_token: selectedClient.fb_token || "",
+          fb_token: "", // Omitted as per user request
           city: selectedClient.city || "",
           region_key: selectedClient.region_key || "",
           whatsapp_number: selectedClient.whatsapp_number || "",
