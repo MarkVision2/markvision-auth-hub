@@ -147,9 +147,9 @@ export default function AddAccountSheet({ open, onOpenChange, onSaved, account }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let res;
     if (account?.id) {
-      res = await (supabase as any).from("clients_config").update(row).eq("id", account.id).select().single();
+      res = await (supabase as any).from("clients_config").update(row).eq("id", account.id).select("id").single();
     } else {
-      res = await (supabase as any).from("clients_config").insert(row).select().single();
+      res = await (supabase as any).from("clients_config").insert(row).select("id").single();
     }
     const { data: cab, error } = res;
 
