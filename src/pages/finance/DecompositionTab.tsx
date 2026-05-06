@@ -71,10 +71,10 @@ export default function DecompositionTab() {
         { label: "Нужно лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CR ${crLeadToDiag}% → диагностика` },
         { label: "Бюджет на рекламу", value: `${fmt(calc.adBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
     ] : [
-        { label: "Бюджет на рекламу", value: `${fmt(targetBudget)} ₸`, icon: Wallet, accent: true, sub: `CPL ${fmt(cpl)} ₸` },
-        { label: "Стоимость лида", value: `${fmt(cpl)} ₸`, icon: Coins, accent: false, sub: `${calc.leads} лидов прогноз` },
-        { label: "Конверсия лид → диаг", value: `${crLeadToDiag}%`, icon: Users, accent: false, sub: `${calc.diagnostics} диагностик прогноз` },
-        { label: "Конверсия диаг → продажа", value: `${crDiagToSale}%`, icon: UserPlus, accent: false, sub: `${calc.sales} продаж прогноз` },
+        { label: "Бюджет на рекламу", value: `${fmt(targetBudget)} ₸`, icon: Wallet, accent: true, sub: null },
+        { label: "Прогноз лидов", value: String(calc.leads), icon: UserPlus, accent: false, sub: `CPL ${fmt(cpl)} ₸` },
+        { label: "Прогноз диагностик", value: String(calc.diagnostics), icon: Users, accent: false, sub: `CR ${crLeadToDiag}%` },
+        { label: "Прогноз продаж", value: String(calc.sales), icon: Target, accent: false, sub: `CR ${crDiagToSale}%` },
         { label: "Прогноз выручки", value: `${fmt(calc.revenue)} ₸`, icon: DollarSign, accent: true, sub: `При чеке ${fmt(avgCheck)} ₸` },
     ];
 
