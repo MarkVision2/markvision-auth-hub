@@ -23,6 +23,7 @@ const __dirname = path.dirname(__filename);
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+const COVERR_API_KEY = process.env.COVERR_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const RENDER_BUCKET = "ai-edit-renders";
@@ -210,6 +211,24 @@ const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords =
     if (f) return { id: v.id, url: f.link, slug };
   }
   return null; // ничего строго по теме — пропускаем (без бирола)
+};
+
+// Второй источник — Coverr. Релевантность по must-словам в title/тегах/слаге.
+const pickCoverrVideo = async (query, used = new Set(), mustWords = []) => {
+  if (!COVERR_API_KEY) return null;
+  const must = (mustWords || []).map((w) => String(w).toLowerCase()).filter(Boolean);
+  const url = `https://api.coverr.co/videos?query=${encodeURIComponent(query)}&page_size=20&urls=true`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${COVERR_API_KEY}` } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  for (const v of data.hits || []) {
+    if (used.has("c" + v.id)) continue;
+    const hay = `${v.title || ""} ${(v.tags || []).join(" ")} ${(v.urls && v.urls.mp4) || ""}`.toLowerCase();
+    if (must.length && !must.some((w) => hay.includes(w))) continue;
+    const link = v.urls && (v.urls.mp4_download || v.urls.mp4);
+    if (link) return { id: "c" + v.id, url: link, slug: String(v.title || "").toLowerCase() };
+  }
+  return null;
 };
 
 const tc = (sec) => {
@@ -443,8 +462,12 @@ export default async function handler(req, res) {
         if (!q || seg.end - seg.start < 2) continue;
         const must = Array.isArray(seg.broll_must) && seg.broll_must.length ? seg.broll_must : ["eye"];
         let pick = null;
-        try { pick = await pickPexelsVideo(q, orientation, usedIds, must); } catch (e) { log("pexels err", q, e.message); }
-        brollDbg.picks.push({ q, must, slug: pick ? pick.slug.split("/video/")[1] || "ok" : "SKIP" });
+        let src = "";
+        try { pick = await pickPexelsVideo(q, orientation, usedIds, must); if (pick) src = "pexels"; } catch (e) { log("pexels err", q, e.message); }
+        if (!pick) {
+          try { pick = await pickCoverrVideo(q, usedIds, must); if (pick) src = "coverr"; } catch (e) { log("coverr err", q, e.message); }
+        }
+        brollDbg.picks.push({ q, must, src: pick ? src : "SKIP", slug: pick ? (pick.slug.split("/video/")[1] || pick.slug).slice(0, 50) : "" });
         if (!pick) continue; // нет строго релевантного клипа — без бирола
         usedIds.add(pick.id);
         const p = path.join(workDir, `broll_${bi}.mp4`);
