@@ -267,7 +267,9 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
       if (en <= st) continue;
       const text = line
         .map((w, k) =>
-          k === j ? `{\\1c${accent}\\fscx116\\fscy116\\b1}${w.txt}{\\r}` : w.txt,
+          k === j
+            ? `{\\1c${accent}\\b1\\fscx100\\fscy100\\t(0,110,\\fscx119\\fscy119)}${w.txt}{\\r}`
+            : w.txt,
         )
         .join(" ");
       dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${text}`);
@@ -358,7 +360,7 @@ export default async function handler(req, res) {
   const scriptHint = body.scriptHint || "";
   const autoBroll = body.autoBroll !== false;
   const intensity = (body.intensity || "medium").toLowerCase();
-  const intensityCap = intensity === "low" ? 1 : intensity === "high" ? 5 : 3;
+  const intensityCap = intensity === "low" ? 2 : intensity === "high" ? 8 : 4;
   const telegramChatId = body.telegramChatId || body.telegram_chat_id || null;
   // expert-монтаж: фоновая музыка + SFX-вжухи на склейках
   const musicUrl = body.musicUrl || null;
@@ -455,6 +457,19 @@ export default async function handler(req, res) {
       sfxPath = path.join(workDir, "sfx.mp3");
       try { await downloadTo(sfxUrl, sfxPath); } catch (e) { log("sfx dl fail:", e.message); sfxPath = null; }
     }
+    // если SFX не задан, но есть биролы — генерируем whoosh (звук перехода на склейке)
+    if (!sfxPath && body.sfx !== false && pickedOverlaySegs.length) {
+      const wp = path.join(workDir, "whoosh.wav");
+      try {
+        await runFfmpeg(
+          ["-y", "-f", "lavfi", "-i", "anoisesrc=d=0.45:c=pink:a=0.7",
+           "-af", "afade=t=in:d=0.06,afade=t=out:st=0.18:d=0.27,highpass=f=250,lowpass=f=5500,volume=1.4",
+           wp],
+          { label: "whoosh" },
+        );
+        sfxPath = wp;
+      } catch (e) { log("whoosh gen fail:", e.message); }
+    }
 
     const srt = buildSrtFromWords(analysis.words || [], { chunkWords: 3 });
     if (srt) await fs.writeFile(srtPath, srt);
@@ -510,6 +525,22 @@ export default async function handler(req, res) {
     );
     let cur = "base0";
     const autoZoom = body.autoZoom !== false;
+
+    // Динамика: непрерывный плавный зум (Ken Burns) + зум-панчи на началах фраз/склейках.
+    if (autoZoom) {
+      const punchTimes = [];
+      for (const s of segments) if (Number.isFinite(Number(s.start))) punchTimes.push(Number(s.start));
+      for (const ov of pickedOverlaySegs) punchTimes.push(ov.start);
+      if (Array.isArray(body.zooms)) for (const z of body.zooms) if (Number.isFinite(Number(z.at))) punchTimes.push(Number(z.at));
+      const frames = [...new Set(punchTimes.map((t) => Math.round(t * 30)).filter((f) => f > 5))].slice(0, 14);
+      const bumps = frames.map((f) => `0.10*exp(-pow((on-${f})/6.5\\,2))`).join("+");
+      const zexpr = `min(1.30\\,1.05+0.03*sin(on/70)${bumps ? "+" + bumps : ""})`;
+      filter.push(
+        `[base0]zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${outW}x${outH}:fps=30[basez]`,
+      );
+      cur = "basez";
+    }
+
     pickedOverlaySegs.forEach((ov, i) => {
       const inIdx = i + 1;
       const od = Math.max(0.6, ov.end - ov.start);
