@@ -26,6 +26,12 @@ const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const RENDER_BUCKET = "ai-edit-renders";
+// Библиотека фоновой музыки (CC-BY, Kevin MacLeod) в нашей Supabase — берётся по умолчанию.
+const DEFAULT_MUSIC = [
+  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track0.mp3",
+  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track1.mp3",
+  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track2.mp3",
+];
 // Отдельное хранилище для результатов (чтобы не зависеть от квоты основного проекта)
 const RENDER_SUPABASE_URL = process.env.RENDER_SUPABASE_URL;
 const RENDER_SUPABASE_KEY = process.env.RENDER_SUPABASE_SERVICE_KEY;
@@ -363,9 +369,11 @@ export default async function handler(req, res) {
   const intensityCap = intensity === "low" ? 2 : intensity === "high" ? 8 : 4;
   const telegramChatId = body.telegramChatId || body.telegram_chat_id || null;
   // expert-монтаж: фоновая музыка + SFX-вжухи на склейках
-  const musicUrl = body.musicUrl || null;
-  const musicVolume = Number.isFinite(Number(body.musicVolume)) ? Number(body.musicVolume) : 0.1;
-  const sfxUrl = body.sfxUrl || null; // короткий whoosh, проигрывается на каждой склейке broll
+  const musicUrl =
+    body.musicUrl ||
+    (body.music === false ? null : DEFAULT_MUSIC[Math.floor(Math.random() * DEFAULT_MUSIC.length)]);
+  const musicVolume = Number.isFinite(Number(body.musicVolume)) ? Number(body.musicVolume) : 0.05;
+  const sfxUrl = body.sfxUrl || null; // SFX только если явно задан (авто-whoosh отключён)
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
@@ -457,19 +465,7 @@ export default async function handler(req, res) {
       sfxPath = path.join(workDir, "sfx.mp3");
       try { await downloadTo(sfxUrl, sfxPath); } catch (e) { log("sfx dl fail:", e.message); sfxPath = null; }
     }
-    // если SFX не задан, но есть биролы — генерируем whoosh (звук перехода на склейке)
-    if (!sfxPath && body.sfx !== false && pickedOverlaySegs.length) {
-      const wp = path.join(workDir, "whoosh.wav");
-      try {
-        await runFfmpeg(
-          ["-y", "-f", "lavfi", "-i", "anoisesrc=d=0.45:c=pink:a=0.7",
-           "-af", "afade=t=in:d=0.06,afade=t=out:st=0.18:d=0.27,highpass=f=250,lowpass=f=5500,volume=1.4",
-           wp],
-          { label: "whoosh" },
-        );
-        sfxPath = wp;
-      } catch (e) { log("whoosh gen fail:", e.message); }
-    }
+    // авто-whoosh отключён по просьбе — звук перехода не добавляем
 
     const srt = buildSrtFromWords(analysis.words || [], { chunkWords: 3 });
     if (srt) await fs.writeFile(srtPath, srt);
