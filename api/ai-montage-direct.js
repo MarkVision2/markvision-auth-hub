@@ -181,16 +181,17 @@ const geminiTranscribe = async (videoPath, options = {}) => {
   return result;
 };
 
-// Возвращает {id, url} непросмотренного клипа (used — Set уже использованных pexels id),
-// чтобы не было повторяющихся вставок.
-const pickPexelsVideo = async (query, orientation, used = new Set()) => {
+// Подбор клипа со СТРОГОЙ релевантностью: в слаге URL Pexels (он описывает содержимое,
+// напр. "a-woman-putting-eye-drops") должно встречаться хотя бы одно из must-слов.
+// Иначе клип отбрасывается (лучше без бирола, чем не по теме). used — дедуп по id.
+const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords = []) => {
   if (!PEXELS_API_KEY) return null;
-  const url = `https://api.pexels.com/videos/search?per_page=15&orientation=${orientation}&query=${encodeURIComponent(query)}`;
+  const must = (mustWords || []).map((w) => String(w).toLowerCase()).filter(Boolean);
+  const url = `https://api.pexels.com/videos/search?per_page=20&orientation=${orientation}&query=${encodeURIComponent(query)}`;
   const res = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
   if (!res.ok) return null;
   const data = await res.json();
-  for (const v of data.videos || []) {
-    if (used.has(v.id)) continue;
+  const pickFile = (v) => {
     const files = (v.video_files || [])
       .filter((f) =>
         orientation === "portrait"
@@ -198,9 +199,17 @@ const pickPexelsVideo = async (query, orientation, used = new Set()) => {
           : f.width >= 1280 && f.width <= 1920 && f.height >= 720,
       )
       .sort((a, b) => a.width - b.width);
-    if (files[0]) return { id: v.id, url: files[0].link };
+    return files[0] || null;
+  };
+  // 1-й проход: требуем совпадение must-слова в слаге
+  for (const v of data.videos || []) {
+    if (used.has(v.id)) continue;
+    const slug = String(v.url || "").toLowerCase();
+    if (must.length && !must.some((w) => slug.includes(w))) continue;
+    const f = pickFile(v);
+    if (f) return { id: v.id, url: f.link, slug };
   }
-  return null;
+  return null; // ничего строго по теме — пропускаем (без бирола)
 };
 
 const tc = (sec) => {
@@ -422,34 +431,29 @@ export default async function handler(req, res) {
     const segSource = Array.isArray(body.segments) && body.segments.length ? body.segments : analysis.segments || [];
     const segments = segSource.filter((s) => s && Number(s.end) > Number(s.start));
 
-    // подбор B-roll из Pexels
+    // подбор B-roll из Pexels: по каждому сегменту, со строгой проверкой must-слов в слаге.
     const pickedOverlaySegs = [];
-    const brollDbg = { key: Boolean(PEXELS_API_KEY), segs: segments.length, queries: [], found: 0, urls: [] };
+    const brollDbg = { key: Boolean(PEXELS_API_KEY), segs: segments.length, picks: [] };
     if (autoBroll) {
-      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, intensityCap + 3);
-      brollDbg.queries = uniqueQueries;
-      const brollByQuery = new Map();
       const usedIds = new Set();
-      for (const q of uniqueQueries) {
-        let pick = null;
-        try { pick = await pickPexelsVideo(q, orientation, usedIds); } catch (e) { log("pexels err", q, e.message); }
-        brollDbg.urls.push({ q, url: pick ? "ok" : "none" });
-        if (pick) {
-          usedIds.add(pick.id); // дедуп: один и тот же клип не повторяется
-          const p = path.join(workDir, `broll_${brollByQuery.size}.mp4`);
-          try { await downloadTo(pick.url, p); brollByQuery.set(q, p); }
-          catch (e) { log("broll dl fail", q, e.message); }
-        }
-      }
-      brollDbg.found = brollByQuery.size;
+      let bi = 0;
       for (let i = 0; i < segments.length && pickedOverlaySegs.length < intensityCap; i += 1) {
         const seg = segments[i];
-        if (seg.end - seg.start < 2) continue;
-        const p = brollByQuery.get(seg.broll_query);
-        if (p) {
-          const overlayDur = Math.min(3.5, Math.max(1.5, seg.end - seg.start - 0.3));
-          pickedOverlaySegs.push({ path: p, start: seg.start + 0.2, end: seg.start + 0.2 + overlayDur });
-        }
+        const q = seg.broll_query;
+        if (!q || seg.end - seg.start < 2) continue;
+        const must = Array.isArray(seg.broll_must) && seg.broll_must.length ? seg.broll_must : ["eye"];
+        let pick = null;
+        try { pick = await pickPexelsVideo(q, orientation, usedIds, must); } catch (e) { log("pexels err", q, e.message); }
+        brollDbg.picks.push({ q, must, slug: pick ? pick.slug.split("/video/")[1] || "ok" : "SKIP" });
+        if (!pick) continue; // нет строго релевантного клипа — без бирола
+        usedIds.add(pick.id);
+        const p = path.join(workDir, `broll_${bi}.mp4`);
+        bi += 1;
+        try {
+          await downloadTo(pick.url, p);
+          const overlayDur = Math.min(3.2, Math.max(1.6, seg.end - seg.start - 0.4));
+          pickedOverlaySegs.push({ path: p, start: seg.start + 0.25, end: seg.start + 0.25 + overlayDur });
+        } catch (e) { log("broll dl fail", q, e.message); }
       }
     }
     log("overlays:", pickedOverlaySegs.length, "brollDbg:", JSON.stringify(brollDbg));
@@ -526,11 +530,16 @@ export default async function handler(req, res) {
     if (autoZoom) {
       const punchTimes = [];
       for (const s of segments) if (Number.isFinite(Number(s.start))) punchTimes.push(Number(s.start));
-      for (const ov of pickedOverlaySegs) punchTimes.push(ov.start);
+      for (const ov of pickedOverlaySegs) { punchTimes.push(ov.start); punchTimes.push(ov.end); }
       if (Array.isArray(body.zooms)) for (const z of body.zooms) if (Number.isFinite(Number(z.at))) punchTimes.push(Number(z.at));
-      const frames = [...new Set(punchTimes.map((t) => Math.round(t * 30)).filter((f) => f > 5))].slice(0, 14);
-      const bumps = frames.map((f) => `0.10*exp(-pow((on-${f})/6.5\\,2))`).join("+");
-      const zexpr = `min(1.30\\,1.05+0.03*sin(on/70)${bumps ? "+" + bumps : ""})`;
+      // плюс ритмичные панчи каждые ~2.6с для постоянной динамики
+      for (let t = 2.6; t < sourceDur - 0.5; t += 2.6) punchTimes.push(t);
+      const frames = [...new Set(punchTimes.map((t) => Math.round(t * 30)).filter((f) => f > 4))]
+        .sort((a, b) => a - b)
+        .slice(0, 24);
+      // более выраженные панчи (амплитуда 0.14, резче)
+      const bumps = frames.map((f) => `0.14*exp(-pow((on-${f})/5.5\\,2))`).join("+");
+      const zexpr = `min(1.34\\,1.06+0.04*sin(on/60)${bumps ? "+" + bumps : ""})`;
       filter.push(
         `[base0]zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${outW}x${outH}:fps=30[basez]`,
       );
@@ -541,7 +550,7 @@ export default async function handler(req, res) {
       const inIdx = i + 1;
       const od = Math.max(0.6, ov.end - ov.start);
       const fadeD = Math.min(0.3, od / 3);
-      const zoomFilter = autoZoom ? `,zoompan=z='min(zoom+0.0015,1.10)':d=1:s=${outW}x${outH}:fps=30` : "";
+      const zoomFilter = autoZoom ? `,zoompan=z='min(zoom+0.003,1.16)':d=1:s=${outW}x${outH}:fps=30` : "";
       // переход: trim до длины оверлея + fade in/out на склейках
       filter.push(
         `[${inIdx}:v]scale=${outW}:${outH}:force_original_aspect_ratio=increase,crop=${outW}:${outH}${zoomFilter},fps=30,trim=0:${od.toFixed(2)},` +
