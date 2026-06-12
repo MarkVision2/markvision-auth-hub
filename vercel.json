@@ -49,6 +49,10 @@
             "destination": "/api/ai-montage-render"
         },
         {
+            "source": "/api/ai-montage-direct",
+            "destination": "/api/ai-montage-direct"
+        },
+        {
             "source": "/api/ai-montage-transcribe",
             "destination": "/api/ai-montage-transcribe"
         },
@@ -59,6 +63,11 @@
     ],
     "functions": {
         "api/ai-montage-render.js": {
+            "maxDuration": 300,
+            "memory": 1024,
+            "includeFiles": "api/fonts/**"
+        },
+        "api/ai-montage-direct.js": {
             "maxDuration": 300,
             "memory": 1024,
             "includeFiles": "api/fonts/**"
