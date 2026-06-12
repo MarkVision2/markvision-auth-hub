@@ -399,28 +399,33 @@ export default async function handler(req, res) {
 
     // подбор B-roll из Pexels
     const pickedOverlaySegs = [];
+    const brollDbg = { key: Boolean(PEXELS_API_KEY), segs: segments.length, queries: [], found: 0, urls: [] };
     if (autoBroll) {
-      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, intensityCap + 2);
+      const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, intensityCap + 3);
+      brollDbg.queries = uniqueQueries;
       const brollByQuery = new Map();
       for (const q of uniqueQueries) {
-        const url = await pickPexelsVideo(q, orientation);
+        let url = null;
+        try { url = await pickPexelsVideo(q, orientation); } catch (e) { log("pexels err", q, e.message); }
+        brollDbg.urls.push({ q, url: url ? "ok" : "none" });
         if (url) {
           const p = path.join(workDir, `broll_${brollByQuery.size}.mp4`);
           try { await downloadTo(url, p); brollByQuery.set(q, p); }
           catch (e) { log("broll dl fail", q, e.message); }
         }
       }
-      for (let i = 1; i < segments.length - 1 && pickedOverlaySegs.length < intensityCap; i += 1) {
+      brollDbg.found = brollByQuery.size;
+      for (let i = 0; i < segments.length && pickedOverlaySegs.length < intensityCap; i += 1) {
         const seg = segments[i];
-        if (seg.end - seg.start < 2.5) continue;
+        if (seg.end - seg.start < 2) continue;
         const p = brollByQuery.get(seg.broll_query);
         if (p) {
-          const overlayDur = Math.min(3.5, seg.end - seg.start - 0.3);
+          const overlayDur = Math.min(3.5, Math.max(1.5, seg.end - seg.start - 0.3));
           pickedOverlaySegs.push({ path: p, start: seg.start + 0.2, end: seg.start + 0.2 + overlayDur });
         }
       }
     }
-    log("overlays:", pickedOverlaySegs.length);
+    log("overlays:", pickedOverlaySegs.length, "brollDbg:", JSON.stringify(brollDbg));
 
     // expert-монтаж: качаем музыку и SFX (если заданы)
     let musicPath = null;
@@ -612,7 +617,7 @@ export default async function handler(req, res) {
       overlays: pickedOverlaySegs.length,
       summary: analysis.summary || "",
       telegram_message_id: telegramMessageId,
-      debug: { hasFont, fontSrc, srtLen: srt.length, captionsDrawn },
+      debug: { hasFont, fontSrc, srtLen: srt.length, captionsDrawn, broll: brollDbg },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Render failed";
