@@ -272,12 +272,35 @@ export default async function handler(req, res) {
     const sourceDur = await ffprobeDuration(userPath);
     log("duration", sourceDur, "sec");
 
+    // Слова можно передать готовыми (например, из OpenAI Whisper в n8n) — тогда Gemini не нужен.
+    // Форматы: {t,d,w} | {word,start,end} | {w,start,end}.
+    const normalizeWord = (x) => {
+      if (!x || typeof x !== "object") return null;
+      const w = x.w ?? x.word ?? x.text;
+      const startRaw = x.t ?? x.start;
+      const t = Number(startRaw);
+      let d = x.d ?? (x.end != null && startRaw != null ? x.end - startRaw : undefined);
+      d = Number(d);
+      if (!w || !Number.isFinite(t)) return null;
+      return { w: String(w), t, d: Number.isFinite(d) && d > 0 ? d : 0.3 };
+    };
+    const providedWords = Array.isArray(body.words) ? body.words.map(normalizeWord).filter(Boolean) : [];
+
     let analysis = { words: [], segments: [], summary: "" };
-    try {
-      analysis = await geminiTranscribe(userPath, { language: captionLanguage, scriptHint });
-      log("gemini:", analysis.words?.length, "words", analysis.segments?.length, "segments");
-    } catch (e) {
-      log("Gemini failed, continuing without captions:", e.message);
+    if (providedWords.length) {
+      analysis = {
+        words: providedWords,
+        segments: Array.isArray(body.segments) ? body.segments : [],
+        summary: body.summary || "",
+      };
+      log("using provided words:", providedWords.length);
+    } else {
+      try {
+        analysis = await geminiTranscribe(userPath, { language: captionLanguage, scriptHint });
+        log("gemini:", analysis.words?.length, "words", analysis.segments?.length, "segments");
+      } catch (e) {
+        log("Gemini failed, continuing without captions:", e.message);
+      }
     }
 
     const segments = (analysis.segments || []).filter((s) => s && s.end > s.start);
