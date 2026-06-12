@@ -175,13 +175,16 @@ const geminiTranscribe = async (videoPath, options = {}) => {
   return result;
 };
 
-const pickPexelsVideo = async (query, orientation) => {
+// Возвращает {id, url} непросмотренного клипа (used — Set уже использованных pexels id),
+// чтобы не было повторяющихся вставок.
+const pickPexelsVideo = async (query, orientation, used = new Set()) => {
   if (!PEXELS_API_KEY) return null;
-  const url = `https://api.pexels.com/videos/search?per_page=5&orientation=${orientation}&query=${encodeURIComponent(query)}`;
+  const url = `https://api.pexels.com/videos/search?per_page=15&orientation=${orientation}&query=${encodeURIComponent(query)}`;
   const res = await fetch(url, { headers: { Authorization: PEXELS_API_KEY } });
   if (!res.ok) return null;
   const data = await res.json();
   for (const v of data.videos || []) {
+    if (used.has(v.id)) continue;
     const files = (v.video_files || [])
       .filter((f) =>
         orientation === "portrait"
@@ -189,7 +192,7 @@ const pickPexelsVideo = async (query, orientation) => {
           : f.width >= 1280 && f.width <= 1920 && f.height >= 720,
       )
       .sort((a, b) => a.width - b.width);
-    if (files[0]) return files[0].link;
+    if (files[0]) return { id: v.id, url: files[0].link };
   }
   return null;
 };
@@ -246,21 +249,29 @@ const tcAss = (sec) => {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
 };
 
+// Премиум-титры в стиле Reels: строка из 3 слов, текущее слово подсвечено жёлтым
+// и крупнее (karaoke word-by-word). Без подложки — толстый контур + тень. Шрифт вшит.
+const clean = (s) => String(s || "").toUpperCase().replace(/[{}\r\n]/g, "").replace(/\\/g, "").trim();
+
 const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => {
-  const primary = style === "calm" || style === "minimal" ? "&H00FFFFFF" : "&H0000FFFF";
-  const back = style === "calm" || style === "minimal" ? "&H60000000" : "&HA0000000";
-  const bold = style === "calm" || style === "minimal" ? 0 : 1;
-  const fontSize = Math.round(outH * 0.034);
-  const marginV = Math.round(outH * 0.20);
+  const accent = style === "calm" || style === "minimal" ? "&H00F5C842" : "&H0000E5FF"; // янтарный / насыщенный жёлтый
+  const fontSize = Math.round(outH * 0.052);
+  const marginV = Math.round(outH * 0.30);
   const dlg = [];
   for (let i = 0; i < words.length; i += chunkWords) {
-    const g = words.slice(i, i + chunkWords);
-    const st = g[0].t || 0;
-    const last = g[g.length - 1];
-    const en = (last.t || 0) + (last.d || 0.3);
-    const txt = g.map((w) => String(w.w || "").toUpperCase()).join(" ").replace(/[{}\r\n]/g, "").trim();
-    if (!txt || en <= st) continue;
-    dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${txt}`);
+    const line = words.slice(i, i + chunkWords).map((w) => ({ ...w, txt: clean(w.w) })).filter((w) => w.txt);
+    if (!line.length) continue;
+    for (let j = 0; j < line.length; j += 1) {
+      const st = line[j].t || 0;
+      const en = j + 1 < line.length ? line[j + 1].t || st + (line[j].d || 0.3) : st + (line[j].d || 0.3);
+      if (en <= st) continue;
+      const text = line
+        .map((w, k) =>
+          k === j ? `{\\1c${accent}\\fscx116\\fscy116\\b1}${w.txt}{\\r}` : w.txt,
+        )
+        .join(" ");
+      dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${text}`);
+    }
   }
   const header = [
     "[Script Info]",
@@ -268,10 +279,12 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
     "PlayResX: 1080",
     "PlayResY: 1920",
     "ScaledBorderAndShadow: yes",
+    "WrapStyle: 1",
     "",
     "[V4+ Styles]",
     "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
-    `Style: Default,Montserrat,${fontSize},${primary},&H000000FF,&H00000000,${back},${bold},0,0,0,100,100,0,0,3,4,0,2,40,40,${marginV},1`,
+    // BorderStyle=1 (контур+тень, без плашки), белый базовый, толстый контур, мягкая тень
+    `Style: Default,Montserrat,${fontSize},&H00FFFFFF,&H000000FF,&H00101010,&H66000000,1,0,0,0,100,100,1,0,1,6,3,2,60,60,${marginV},1`,
     "",
     "[Fonts]",
     "fontname: Montserrat0.ttf",
@@ -406,13 +419,15 @@ export default async function handler(req, res) {
       const uniqueQueries = [...new Set(segments.map((s) => s.broll_query).filter(Boolean))].slice(0, intensityCap + 3);
       brollDbg.queries = uniqueQueries;
       const brollByQuery = new Map();
+      const usedIds = new Set();
       for (const q of uniqueQueries) {
-        let url = null;
-        try { url = await pickPexelsVideo(q, orientation); } catch (e) { log("pexels err", q, e.message); }
-        brollDbg.urls.push({ q, url: url ? "ok" : "none" });
-        if (url) {
+        let pick = null;
+        try { pick = await pickPexelsVideo(q, orientation, usedIds); } catch (e) { log("pexels err", q, e.message); }
+        brollDbg.urls.push({ q, url: pick ? "ok" : "none" });
+        if (pick) {
+          usedIds.add(pick.id); // дедуп: один и тот же клип не повторяется
           const p = path.join(workDir, `broll_${brollByQuery.size}.mp4`);
-          try { await downloadTo(url, p); brollByQuery.set(q, p); }
+          try { await downloadTo(pick.url, p); brollByQuery.set(q, p); }
           catch (e) { log("broll dl fail", q, e.message); }
         }
       }
