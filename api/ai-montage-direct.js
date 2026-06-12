@@ -41,10 +41,13 @@ const downloadTo = async (url, destPath) => {
   return (await fs.stat(destPath)).size;
 };
 
-const runFfmpeg = (args, { label = "ffmpeg" } = {}) =>
+const runFfmpeg = (args, { label = "ffmpeg", env } = {}) =>
   new Promise((resolve, reject) => {
     log(label, "args:", args.slice(0, 12).join(" "), "...");
-    const proc = spawn(ffmpegPath, args, { stdio: ["ignore", "pipe", "pipe"] });
+    const proc = spawn(ffmpegPath, args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: env ? { ...process.env, ...env } : process.env,
+    });
     let stderr = "";
     proc.stderr.on("data", (c) => { stderr += c.toString(); });
     proc.on("error", reject);
@@ -414,38 +417,40 @@ export default async function handler(req, res) {
       cur = next;
     });
 
-    // Титры через drawtext (прямой fontfile, без fontconfig — надёжно на serverless,
-    // где у libass/subtitles нет системных шрифтов и текст не рисуется).
-    const capWords = analysis.words || [];
+    // Титры через subtitles/libass. На serverless fontconfig без writable-кэша
+    // и конфига не находит шрифт → текст не рисуется. Чиним: свой fonts.conf
+    // (папка со шрифтом + cachedir в /tmp) и env HOME/XDG_CACHE_HOME/FONTCONFIG_FILE.
+    const fontDir = path.dirname(fontRel);
+    const fontsConf = path.join(workDir, "fonts.conf");
+    const fcCache = path.join(workDir, "fc-cache");
+    await fs.mkdir(fcCache, { recursive: true }).catch(() => {});
+    await fs.writeFile(
+      fontsConf,
+      `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n` +
+        `<dir>${fontDir}</dir>\n<cachedir>${fcCache}</cachedir>\n` +
+        `<match target="pattern"><test name="family"><string>sans-serif</string></test>` +
+        `<edit name="family" mode="assign" binding="strong"><string>Montserrat</string></edit></match>\n` +
+        `</fontconfig>\n`,
+    );
+    const ffEnv = { HOME: workDir, XDG_CACHE_HOME: workDir, FONTCONFIG_FILE: fontsConf, FONTCONFIG_PATH: fontDir };
+
     let captionsDrawn = 0;
-    if (capWords.length && hasFont) {
-      const capColor = style === "calm" || style === "minimal" ? "white" : "yellow";
-      const fontsize = Math.round(outW * 0.062);
-      const capY = `h-${Math.round(outH * 0.26)}`;
-      const ffPath = fontRel.replace(/\\/g, "/").replace(/:/g, "\\:");
-      const dt = [];
-      for (let i = 0; i < capWords.length; i += 3) {
-        const g = capWords.slice(i, i + 3);
-        const st = g[0].t || 0;
-        const last = g[g.length - 1];
-        const en = (last.t || 0) + (last.d || 0.3);
-        const txt = g
-          .map((w) => String(w.w || "").toUpperCase())
-          .join(" ")
-          .replace(/[\\:'%,;[\]\r\n]/g, "")
-          .trim();
-        if (!txt || en <= st) continue;
-        dt.push(
-          `drawtext=fontfile='${ffPath}':text='${txt}':fontcolor=${capColor}:fontsize=${fontsize}:` +
-            `box=1:boxcolor=black@0.55:boxborderw=18:x=(w-text_w)/2:y=${capY}:` +
-            `enable='between(t,${st.toFixed(2)},${en.toFixed(2)})'`,
-        );
-      }
-      if (dt.length) {
-        filter.push(`[${cur}]${dt.join(",")}[vout]`);
-        cur = "vout";
-        captionsDrawn = dt.length;
-      }
+    if (srt && hasFont) {
+      const preset =
+        style === "calm" || style === "minimal"
+          ? { primary: "&H00FFFFFF", back: "&H60000000", outline: 2, bold: 0 }
+          : { primary: "&H0000FFFF", back: "&HA0000000", outline: 4, bold: 1 };
+      const fontSize = Math.round(outH * 0.034);
+      const marginV = Math.round(outH * 0.22);
+      const styled =
+        `FontName=Montserrat,FontSize=${fontSize},PrimaryColour=${preset.primary},` +
+        `OutlineColour=&H00000000,BackColour=${preset.back},BorderStyle=3,` +
+        `Outline=${preset.outline},Shadow=0,Alignment=2,MarginV=${marginV},Bold=${preset.bold}`;
+      const escSrt = srtPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
+      const fontsDir = fontDir.replace(/\\/g, "/").replace(/:/g, "\\:");
+      filter.push(`[${cur}]subtitles='${escSrt}':fontsdir='${fontsDir}':force_style='${styled}'[vout]`);
+      cur = "vout";
+      captionsDrawn = (srt.match(/-->/g) || []).length;
     }
 
     // ----- аудио-граф -----
@@ -484,7 +489,7 @@ export default async function handler(req, res) {
       "-t", String(sourceDur), outPath,
     );
 
-    await runFfmpeg(args, { label: "render" });
+    await runFfmpeg(args, { label: "render", env: ffEnv });
 
     const buffer = await fs.readFile(outPath);
     const storagePath = `direct/${Date.now()}.mp4`;
