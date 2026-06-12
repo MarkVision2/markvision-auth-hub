@@ -414,22 +414,38 @@ export default async function handler(req, res) {
       cur = next;
     });
 
-    if (srt && hasFont) {
-      const stylePreset =
-        style === "talking" || style === "talking_head"
-          ? { size: 16, primary: "&H00FFFFFF", back: "&H80000000", outline: 2, bold: 0 }
-          : style === "calm" || style === "minimal"
-            ? { size: 14, primary: "&H00FFFFFF", back: "&H60000000", outline: 1, bold: 0 }
-            : { size: 20, primary: "&H0000FFFF", back: "&HA0000000", outline: 3, bold: 1 };
-      const subtitleMarginV = Math.round(outH * 0.12);
-      const styled =
-        `FontName=Montserrat,FontSize=${stylePreset.size},PrimaryColour=${stylePreset.primary},` +
-        `OutlineColour=&H00000000,BackColour=${stylePreset.back},BorderStyle=3,` +
-        `Outline=${stylePreset.outline},Shadow=0,Alignment=2,MarginV=${subtitleMarginV},Bold=${stylePreset.bold}`;
-      const escSrt = srtPath.replace(/:/g, "\\:").replace(/'/g, "\\'");
-      const fontsDir = path.dirname(fontRel).replace(/:/g, "\\:");
-      filter.push(`[${cur}]subtitles='${escSrt}':fontsdir='${fontsDir}':force_style='${styled}'[vout]`);
-      cur = "vout";
+    // Титры через drawtext (прямой fontfile, без fontconfig — надёжно на serverless,
+    // где у libass/subtitles нет системных шрифтов и текст не рисуется).
+    const capWords = analysis.words || [];
+    let captionsDrawn = 0;
+    if (capWords.length && hasFont) {
+      const capColor = style === "calm" || style === "minimal" ? "white" : "yellow";
+      const fontsize = Math.round(outW * 0.062);
+      const capY = `h-${Math.round(outH * 0.26)}`;
+      const ffPath = fontRel.replace(/\\/g, "/").replace(/:/g, "\\:");
+      const dt = [];
+      for (let i = 0; i < capWords.length; i += 3) {
+        const g = capWords.slice(i, i + 3);
+        const st = g[0].t || 0;
+        const last = g[g.length - 1];
+        const en = (last.t || 0) + (last.d || 0.3);
+        const txt = g
+          .map((w) => String(w.w || "").toUpperCase())
+          .join(" ")
+          .replace(/[\\:'%,;[\]\r\n]/g, "")
+          .trim();
+        if (!txt || en <= st) continue;
+        dt.push(
+          `drawtext=fontfile='${ffPath}':text='${txt}':fontcolor=${capColor}:fontsize=${fontsize}:` +
+            `box=1:boxcolor=black@0.55:boxborderw=18:x=(w-text_w)/2:y=${capY}:` +
+            `enable='between(t,${st.toFixed(2)},${en.toFixed(2)})'`,
+        );
+      }
+      if (dt.length) {
+        filter.push(`[${cur}]${dt.join(",")}[vout]`);
+        cur = "vout";
+        captionsDrawn = dt.length;
+      }
     }
 
     // ----- аудио-граф -----
@@ -514,7 +530,7 @@ export default async function handler(req, res) {
       overlays: pickedOverlaySegs.length,
       summary: analysis.summary || "",
       telegram_message_id: telegramMessageId,
-      debug: { hasFont, fontSrc, srtLen: srt.length, captionsApplied: Boolean(srt && hasFont) },
+      debug: { hasFont, fontSrc, srtLen: srt.length, captionsDrawn },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Render failed";
