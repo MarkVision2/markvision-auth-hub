@@ -350,6 +350,155 @@ const sendTelegramVideo = async (chatId, videoPath, caption) => {
   return data.result.message_id;
 };
 
+// Аплоад рендера в Storage через REST (надёжно). Возвращает публичный URL или бросает.
+const uploadRender = async (buffer, name) => {
+  const stUrl = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_URL : SUPABASE_URL;
+  const stKey = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_KEY : SUPABASE_SERVICE_ROLE_KEY;
+  const stBucket = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_BUCKET_DIRECT : RENDER_BUCKET;
+  const up = await fetch(`${stUrl}/storage/v1/object/${stBucket}/${name}`, {
+    method: "POST",
+    headers: { apikey: stKey, Authorization: `Bearer ${stKey}`, "Content-Type": "video/mp4", "x-upsert": "true" },
+    body: buffer,
+  });
+  if (!up.ok) throw new Error(`${up.status} ${(await up.text()).slice(0, 200)}`);
+  return `${stUrl}/storage/v1/object/public/${stBucket}/${name}`;
+};
+
+const loadFont = async (workDir) => {
+  const candidates = [
+    path.resolve(__dirname, "fonts/Montserrat.ttf"),
+    path.resolve(__dirname, "../public/fonts/Montserrat.ttf"),
+  ];
+  for (const c of candidates) {
+    const sz = await fs.stat(c).then((s) => s.size).catch(() => 0);
+    if (sz > 50000) return { path: c, buf: await fs.readFile(c) };
+  }
+  const p = path.join(workDir, "Montserrat.ttf");
+  for (const u of [
+    "https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Bold.ttf",
+    "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf",
+  ]) {
+    try { await downloadTo(u, p); const sz = (await fs.stat(p)).size; if (sz > 50000) return { path: p, buf: await fs.readFile(p) }; } catch {}
+  }
+  return null;
+};
+
+// Подбор клипа с каскадом и фолбэками (для faceless — нужно заполнить весь таймлайн).
+const pickClipCascade = async (seg, orientation, used) => {
+  const must = Array.isArray(seg.broll_must) ? seg.broll_must : [];
+  let p = await pickPexelsVideo(seg.broll_query, orientation, used, must).catch(() => null);
+  if (!p) p = await pickPexelsVideo(seg.broll_query, orientation, used, []).catch(() => null);
+  if (!p) p = await pickCoverrVideo(seg.broll_query, used, []).catch(() => null);
+  if (!p) p = await pickPexelsVideo("abstract technology background motion", orientation, used, []).catch(() => null);
+  return p;
+};
+
+// РЕЖИМ 2 — faceless автосклейка: озвучка + клипы по сегментам + титры + музыка.
+const renderFaceless = async (body, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return res.status(500).json({ error: "Supabase credentials missing" });
+  const audioUrl = body.audioUrl;
+  if (!audioUrl) return res.status(400).json({ error: "audioUrl is required for faceless mode" });
+  const words = Array.isArray(body.words) ? body.words.map((w) => ({ w: w.w ?? w.word, t: Number(w.t ?? w.start), d: Number(w.d ?? 0.3) })).filter((w) => w.w && Number.isFinite(w.t)) : [];
+  const segments = (Array.isArray(body.segments) ? body.segments : []).filter((s) => Number(s.end) > Number(s.start));
+  const style = (body.style || "viral").toLowerCase();
+  const captionLanguage = body.captionLanguage || "ru";
+  const musicVolume = Number.isFinite(Number(body.musicVolume)) ? Number(body.musicVolume) : 0.05;
+  const musicUrl = body.musicUrl || (body.music === false ? null : DEFAULT_MUSIC[Math.floor(Math.random() * DEFAULT_MUSIC.length)]);
+  const telegramChatId = body.telegramChatId || body.telegram_chat_id || null;
+
+  const workDir = await fs.mkdtemp(path.join(tmpdir(), "fl-"));
+  const voicePath = path.join(workDir, "voice.mp3");
+  const outPath = path.join(workDir, "out.mp4");
+  try {
+    await downloadTo(audioUrl, voicePath);
+    const D = await ffprobeDuration(voicePath);
+    if (!segments.length) throw new Error("segments required");
+
+    // подбор клипов по сегментам (заполняем весь таймлайн)
+    const used = new Set();
+    const clips = [];
+    const dbg = [];
+    for (const seg of segments) {
+      const pick = await pickClipCascade(seg, "portrait", used);
+      if (pick) {
+        used.add(pick.id);
+        const p = path.join(workDir, `c${clips.length}.mp4`);
+        try {
+          await downloadTo(pick.url, p);
+          clips.push({ path: p, dur: Math.max(1.2, Number(seg.end) - Number(seg.start)) });
+          dbg.push({ q: seg.broll_query, slug: (pick.slug || "").slice(0, 40) });
+        } catch (e) { log("clip dl fail", e.message); }
+      } else dbg.push({ q: seg.broll_query, slug: "NONE" });
+    }
+    if (!clips.length) throw new Error("no clips found");
+
+    // музыка
+    let musicPath = null;
+    if (musicUrl) { musicPath = path.join(workDir, "m.mp3"); try { await downloadTo(musicUrl, musicPath); } catch { musicPath = null; } }
+
+    // шрифт + ASS-титры
+    const font = await loadFont(workDir);
+    const assPath = path.join(workDir, "cap.ass");
+    let hasCaps = false;
+    if (font && words.length) {
+      const ass = buildAss(words, { outW: 1080, outH: 1920, style, fontEncoded: assEncodeFont(font.buf) });
+      await fs.writeFile(assPath, ass);
+      hasCaps = true;
+    }
+
+    // ffmpeg: склейка клипов -> грейд -> титры; аудио: голос + музыка(duck)
+    const args = ["-y"];
+    for (const c of clips) args.push("-stream_loop", "-1", "-i", c.path);
+    const voiceIdx = clips.length;
+    args.push("-i", voicePath);
+    let musicIdx = -1;
+    if (musicPath) { args.push("-stream_loop", "-1", "-i", musicPath); musicIdx = voiceIdx + 1; }
+
+    const filter = [];
+    clips.forEach((c, i) => {
+      filter.push(
+        `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+      );
+    });
+    filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
+    filter.push(`[cat]eq=contrast=1.06:saturation=1.09,vignette=PI/5[gr]`);
+    let vlabel = "gr";
+    if (hasCaps) {
+      const escAss = assPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
+      filter.push(`[gr]ass='${escAss}'[vout]`);
+      vlabel = "vout";
+    }
+    // аудио
+    if (musicIdx >= 0) {
+      filter.push(`[${voiceIdx}:a]aresample=44100,asplit=2[va][vsc]`);
+      filter.push(`[${musicIdx}:a]aresample=44100,volume=${musicVolume}[mraw]`);
+      filter.push(`[mraw][vsc]sidechaincompress=threshold=0.05:ratio=8:attack=20:release=300[mduck]`);
+      filter.push(`[va][mduck]amix=inputs=2:normalize=0:dropout_transition=0,alimiter=limit=0.95[aout]`);
+    } else {
+      filter.push(`[${voiceIdx}:a]aresample=44100[aout]`);
+    }
+    const ffEnv = { HOME: workDir, XDG_CACHE_HOME: workDir };
+    args.push("-filter_complex", filter.join(";"), "-map", `[${vlabel}]`, "-map", "[aout]");
+    args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+      "-movflags", "+faststart", "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-t", String(D), outPath);
+    await runFfmpeg(args, { label: "faceless", env: ffEnv });
+
+    const buffer = await fs.readFile(outPath);
+    let outputUrl = null, uploadError = null;
+    try { outputUrl = await uploadRender(buffer, `faceless/${Date.now()}.mp4`); } catch (e) { uploadError = e.message; }
+
+    let tg = null;
+    if (body.sendTelegram !== false && telegramChatId) {
+      try { tg = await sendTelegramVideo(telegramChatId, outPath, `🎬 Авто-склейка готова (${Math.round(D)} сек, ${clips.length} клипов)`); } catch (e) { log("tg", e.message); }
+    }
+    return res.status(200).json({ success: true, output_url: outputUrl, upload_error: uploadError, duration_sec: D, clips: clips.length, words: words.length, debug: { clips: dbg } });
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : "faceless failed" });
+  } finally {
+    try { await fs.rm(workDir, { recursive: true, force: true }); } catch {}
+  }
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -378,6 +527,9 @@ export default async function handler(req, res) {
       filters: { drawtext: has("drawtext"), subtitles: has("subtitles"), ass: has("ass"), overlay: has("overlay"), zoompan: has("zoompan"), amix: has("amix"), sidechaincompress: has("sidechaincompress") },
     });
   }
+
+  // Режим 2 — автосклейка из озвучки + клипов (без говорящей головы)
+  if (body.mode === "faceless") return await renderFaceless(body, res);
 
   const videoUrl = body.videoUrl || body.source_video_url;
   if (!videoUrl) return res.status(400).json({ error: "videoUrl is required" });
