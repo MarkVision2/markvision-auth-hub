@@ -491,7 +491,7 @@ const renderFaceless = async (body, res) => {
     if (body.sendTelegram !== false && telegramChatId) {
       try { tg = await sendTelegramVideo(telegramChatId, outPath, `🎬 Авто-склейка готова (${Math.round(D)} сек, ${clips.length} клипов)`); } catch (e) { log("tg", e.message); }
     }
-    return res.status(200).json({ success: true, output_url: outputUrl, upload_error: uploadError, duration_sec: D, clips: clips.length, words: words.length, debug: { clips: dbg } });
+    return res.status(200).json({ success: true, output_url: outputUrl, upload_error: uploadError, duration_sec: D, clips: clips.length, words: words.length, debug: { clips: dbg, hasCaps, fontLoaded: Boolean(font), vlabel } });
   } catch (e) {
     return res.status(500).json({ error: e instanceof Error ? e.message : "faceless failed" });
   } finally {
