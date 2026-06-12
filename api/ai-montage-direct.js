@@ -436,13 +436,21 @@ const renderFaceless = async (body, res) => {
     let musicPath = null;
     if (musicUrl) { musicPath = path.join(workDir, "m.mp3"); try { await downloadTo(musicUrl, musicPath); } catch { musicPath = null; } }
 
-    // шрифт + ASS-титры
+    // шрифт + ASS-титры (+ fontconfig для libass на serverless)
     const font = await loadFont(workDir);
     const assPath = path.join(workDir, "cap.ass");
     let hasCaps = false;
+    let fcEnv = { HOME: workDir, XDG_CACHE_HOME: workDir };
     if (font && words.length) {
       const ass = buildAss(words, { outW: 1080, outH: 1920, style, fontEncoded: assEncodeFont(font.buf) });
       await fs.writeFile(assPath, ass);
+      const fontDir = path.dirname(font.path);
+      const fontsConf = path.join(workDir, "fonts.conf");
+      await fs.writeFile(
+        fontsConf,
+        `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n<dir>${fontDir}</dir>\n<cachedir>${path.join(workDir, "fc-cache")}</cachedir>\n</fontconfig>\n`,
+      );
+      fcEnv = { HOME: workDir, XDG_CACHE_HOME: workDir, FONTCONFIG_FILE: fontsConf, FONTCONFIG_PATH: fontDir };
       hasCaps = true;
     }
 
@@ -477,11 +485,10 @@ const renderFaceless = async (body, res) => {
     } else {
       filter.push(`[${voiceIdx}:a]aresample=44100[aout]`);
     }
-    const ffEnv = { HOME: workDir, XDG_CACHE_HOME: workDir };
     args.push("-filter_complex", filter.join(";"), "-map", `[${vlabel}]`, "-map", "[aout]");
     args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
       "-movflags", "+faststart", "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-t", String(D), outPath);
-    await runFfmpeg(args, { label: "faceless", env: ffEnv });
+    await runFfmpeg(args, { label: "faceless", env: fcEnv });
 
     const buffer = await fs.readFile(outPath);
     let outputUrl = null, uploadError = null;
