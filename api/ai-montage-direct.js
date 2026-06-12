@@ -241,6 +241,28 @@ export default async function handler(req, res) {
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+
+  // Диагностика сборки ffmpeg: какие фильтры доступны на этом рантайме.
+  if (body.diag) {
+    const capture = (a) =>
+      new Promise((resolve) => {
+        const p = spawn(ffmpegPath, a, { stdio: ["ignore", "pipe", "pipe"] });
+        let out = "";
+        p.stdout.on("data", (c) => (out += c));
+        p.stderr.on("data", (c) => (out += c));
+        p.on("close", () => resolve(out));
+        p.on("error", (e) => resolve("ERR " + e.message));
+      });
+    const ver = (await capture(["-hide_banner", "-version"])).split("\n")[0];
+    const filtersOut = await capture(["-hide_banner", "-filters"]);
+    const has = (name) => new RegExp(`\\b${name}\\b`).test(filtersOut);
+    return res.status(200).json({
+      ffmpeg_version: ver,
+      ffmpegPath,
+      filters: { drawtext: has("drawtext"), subtitles: has("subtitles"), ass: has("ass"), overlay: has("overlay"), zoompan: has("zoompan"), amix: has("amix"), sidechaincompress: has("sidechaincompress") },
+    });
+  }
+
   const videoUrl = body.videoUrl || body.source_video_url;
   if (!videoUrl) return res.status(400).json({ error: "videoUrl is required" });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY)
