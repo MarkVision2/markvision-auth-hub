@@ -26,6 +26,10 @@ const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const RENDER_BUCKET = "ai-edit-renders";
+// Отдельное хранилище для результатов (чтобы не зависеть от квоты основного проекта)
+const RENDER_SUPABASE_URL = process.env.RENDER_SUPABASE_URL;
+const RENDER_SUPABASE_KEY = process.env.RENDER_SUPABASE_SERVICE_KEY;
+const RENDER_BUCKET_DIRECT = process.env.RENDER_BUCKET_DIRECT || "renders";
 const GEMINI_MODEL = "gemini-1.5-flash";
 
 const log = (...a) => console.log("[ai-montage-direct]", ...a);
@@ -432,14 +436,31 @@ export default async function handler(req, res) {
 
     const buffer = await fs.readFile(outPath);
     const storagePath = `direct/${Date.now()}.mp4`;
-    const { error: uploadError } = await supabase.storage
-      .from(RENDER_BUCKET)
-      .upload(storagePath, buffer, { contentType: "video/mp4", upsert: false });
-    if (uploadError) throw new Error(`Upload: ${uploadError.message}`);
-    const { data: publicUrl } = supabase.storage.from(RENDER_BUCKET).getPublicUrl(storagePath);
 
+    // Хранилище рендеров: предпочитаем выделенный проект (RENDER_SUPABASE_*),
+    // иначе основной. Сбой аплоада не должен ронять весь монтаж.
+    const storageClient =
+      RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY
+        ? createClient(RENDER_SUPABASE_URL, RENDER_SUPABASE_KEY, { auth: { persistSession: false } })
+        : supabase;
+    const storageBucket = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_BUCKET_DIRECT : RENDER_BUCKET;
+
+    let outputUrl = null;
+    let uploadError = null;
+    try {
+      const { error } = await storageClient.storage
+        .from(storageBucket)
+        .upload(storagePath, buffer, { contentType: "video/mp4", upsert: true });
+      if (error) throw new Error(error.message);
+      outputUrl = storageClient.storage.from(storageBucket).getPublicUrl(storagePath).data.publicUrl;
+    } catch (e) {
+      uploadError = e.message;
+      log("upload failed (non-fatal):", e.message);
+    }
+
+    // Telegram отправляем из локального файла — работает даже если хранилище недоступно
     let telegramMessageId = null;
-    if (body.sendTelegram && telegramChatId) {
+    if (body.sendTelegram !== false && telegramChatId) {
       try {
         telegramMessageId = await sendTelegramVideo(
           telegramChatId, outPath,
@@ -450,7 +471,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      output_url: publicUrl.publicUrl,
+      output_url: outputUrl,
+      upload_error: uploadError,
       duration_sec: sourceDur,
       words: analysis.words?.length || 0,
       overlays: pickedOverlaySegs.length,
