@@ -352,15 +352,28 @@ export default async function handler(req, res) {
     ];
     let fontRel = path.join(workDir, "Montserrat.ttf");
     let hasFont = false;
+    let fontSrc = "none";
     for (const candidate of fontCandidates) {
-      if (await fs.access(candidate).then(() => true).catch(() => false)) {
-        fontRel = candidate; hasFont = true; break;
-      }
+      const sz = await fs.stat(candidate).then((s) => s.size).catch(() => 0);
+      if (sz > 50000) { fontRel = candidate; hasFont = true; fontSrc = "bundled:" + candidate; break; }
     }
     if (!hasFont) {
-      try { await downloadTo("https://www.markvision.kz/fonts/Montserrat.ttf", fontRel); hasFont = true; }
-      catch (e) { log("font CDN failed:", e.message); }
+      // надёжный фолбэк: статический Montserrat с GitHub google/fonts (валидный ttf, libass его ест)
+      const fontUrls = [
+        "https://github.com/google/fonts/raw/main/ofl/montserrat/static/Montserrat-Bold.ttf",
+        "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf",
+        "https://www.markvision.kz/fonts/Montserrat.ttf",
+      ];
+      for (const u of fontUrls) {
+        try {
+          await downloadTo(u, fontRel);
+          const sz = await fs.stat(fontRel).then((s) => s.size).catch(() => 0);
+          if (sz > 50000) { hasFont = true; fontSrc = "cdn:" + u + " (" + sz + "b)"; break; }
+          log("font too small from", u, sz);
+        } catch (e) { log("font dl failed:", u, e.message); }
+      }
     }
+    log("font:", fontSrc, "hasFont:", hasFont, "srtLen:", srt.length);
 
     // ===== ffmpeg: видео (zoom-fill + биролы с переходами) + аудио (голос+музыка+SFX) =====
     const args = ["-y", "-i", userPath];
@@ -501,6 +514,7 @@ export default async function handler(req, res) {
       overlays: pickedOverlaySegs.length,
       summary: analysis.summary || "",
       telegram_message_id: telegramMessageId,
+      debug: { hasFont, fontSrc, srtLen: srt.length, captionsApplied: Boolean(srt && hasFont) },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Render failed";
