@@ -289,10 +289,12 @@ const clean = (s) => String(s || "").toUpperCase().replace(/[{}\r\n]/g, "").repl
 
 // Стильные ненавязчивые титры: чистый белый, активное слово — ярко-белое,
 // остальные мягко приглушены; тонкий контур + мягкая тень; без жёлтого и без скачков масштаба.
+// Кино-титры Reels: по центру (выше зоны кнопок), крупный жирный белый, активное слово —
+// янтарный акцент с лёгким увеличением; контур + мягкая тень; шрифт вшит.
 const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => {
-  const dim = "&H00BFBFBF"; // приглушённый светло-серый для неактивных слов
-  const fontSize = Math.round(outH * 0.039);
-  const marginV = Math.round(outH * 0.16); // ближе к низу, ненавязчиво
+  const accent = style === "calm" || style === "minimal" ? "&H00F5C842" : "&H0057C8FF"; // амбер (BGR)
+  const fontSize = Math.round(outH * 0.046);
+  const marginV = Math.round(outH * 0.40); // ~58% от верха — выше нижнего UI Reels
   const dlg = [];
   for (let i = 0; i < words.length; i += chunkWords) {
     const line = words.slice(i, i + chunkWords).map((w) => ({ ...w, txt: clean(w.w) })).filter((w) => w.txt);
@@ -301,9 +303,10 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
       const st = line[j].t || 0;
       const en = j + 1 < line.length ? line[j + 1].t || st + (line[j].d || 0.3) : st + (line[j].d || 0.3);
       if (en <= st) continue;
-      // активное слово — чистый белый (по стилю), неактивные — приглушённые
-      const text = line.map((w, k) => (k === j ? w.txt : `{\\1c${dim}&}${w.txt}{\\r}`)).join(" ");
-      const fade = j === 0 ? "{\\fad(120,0)}" : "";
+      const text = line
+        .map((w, k) => (k === j ? `{\\1c${accent}\\fscx112\\fscy112}${w.txt}{\\r}` : w.txt))
+        .join(" ");
+      const fade = j === 0 ? "{\\fad(110,0)}" : "";
       dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${fade}${text}`);
     }
   }
@@ -317,8 +320,7 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
     "",
     "[V4+ Styles]",
     "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
-    // чистый белый, тонкий контур (2), мягкая тень (2), полужирный, без плашки
-    `Style: Default,Montserrat,${fontSize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0.4,0,1,2,2,2,80,80,${marginV},1`,
+    `Style: Default,Montserrat,${fontSize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0.6,0,1,3,2,2,90,90,${marginV},1`,
     "",
     "[Fonts]",
     "fontname: Montserrat0.ttf",
@@ -542,16 +544,21 @@ export default async function handler(req, res) {
     const zoomW = Math.round(outW * 1.18);
     const zoomH = Math.round(outH * 1.18);
     filter.push(
-      `[0:v]scale=${zoomW}:${zoomH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1[base0]`,
+      // кино-грейд: лёгкий контраст/сатурация + виньетка
+      `[0:v]scale=${zoomW}:${zoomH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,eq=contrast=1.06:saturation=1.09,vignette=PI/5[base0]`,
     );
     let cur = "base0";
     const autoZoom = body.autoZoom !== false;
 
-    // Динамика: мягкий, спокойный медленный наезд (Ken Burns) на весь ролик — без частых панчей.
+    // Динамика: спокойный медленный наезд + умеренные панчи ТОЛЬКО на началах фраз и склейках
     if (autoZoom) {
       const totalFrames = Math.max(1, Math.round(sourceDur * 30));
-      // плавно 1.0 → ~1.07 за весь ролик, без резких бампов
-      const zexpr = `min(1.08\\,1.0+0.08*on/${totalFrames})`;
+      const punchTimes = [];
+      for (const s of segments) if (Number.isFinite(Number(s.start)) && s.start > 0.3) punchTimes.push(Number(s.start));
+      for (const ov of pickedOverlaySegs) punchTimes.push(ov.start);
+      const pf = [...new Set(punchTimes.map((t) => Math.round(t * 30)).filter((f) => f > 4))].sort((a, b) => a - b).slice(0, 12);
+      const bumps = pf.map((f) => `0.07*exp(-pow((on-${f})/7\\,2))`).join("+");
+      const zexpr = `min(1.16\\,1.0+0.06*on/${totalFrames}${bumps ? "+" + bumps : ""})`;
       filter.push(
         `[base0]zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${outW}x${outH}:fps=30[basez]`,
       );
