@@ -513,6 +513,17 @@ export default async function handler(req, res) {
       cur = next;
     });
 
+    // Переходы: короткая вспышка (brightness pop) на каждой склейке бирола (вход и выход).
+    if (pickedOverlaySegs.length) {
+      const flashes = [];
+      for (const ov of pickedOverlaySegs) {
+        flashes.push(`between(t,${ov.start.toFixed(2)},${(ov.start + 0.08).toFixed(2)})`);
+        flashes.push(`between(t,${ov.end.toFixed(2)},${(ov.end + 0.08).toFixed(2)})`);
+      }
+      filter.push(`[${cur}]eq=brightness=0.45:enable='${flashes.join("+")}'[fl]`);
+      cur = "fl";
+    }
+
     // Титры через ASS со ВШИТЫМ шрифтом (libass читает [Fonts] напрямую, без fontconfig —
     // надёжно на johnvansickle-сборке, где drawtext отсутствует, а fontconfig не находит шрифт).
     const fontDir = path.dirname(fontRel);
