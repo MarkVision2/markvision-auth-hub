@@ -395,7 +395,9 @@ export default async function handler(req, res) {
       }
     }
 
-    const segments = (analysis.segments || []).filter((s) => s && s.end > s.start);
+    // сегменты для биролов: из тела (n8n GPT) или из анализа (Gemini) — независимо от наличия words
+    const segSource = Array.isArray(body.segments) && body.segments.length ? body.segments : analysis.segments || [];
+    const segments = segSource.filter((s) => s && Number(s.end) > Number(s.start));
 
     // подбор B-roll из Pexels
     const pickedOverlaySegs = [];
