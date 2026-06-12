@@ -635,22 +635,26 @@ export default async function handler(req, res) {
     const buffer = await fs.readFile(outPath);
     const storagePath = `direct/${Date.now()}.mp4`;
 
-    // Хранилище рендеров: предпочитаем выделенный проект (RENDER_SUPABASE_*),
-    // иначе основной. Сбой аплоада не должен ронять весь монтаж.
-    const storageClient =
-      RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY
-        ? createClient(RENDER_SUPABASE_URL, RENDER_SUPABASE_KEY, { auth: { persistSession: false } })
-        : supabase;
-    const storageBucket = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_BUCKET_DIRECT : RENDER_BUCKET;
+    // Аплоад напрямую через Storage REST (надёжнее supabase-js на больших файлах).
+    const stUrl = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_URL : SUPABASE_URL;
+    const stKey = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_KEY : SUPABASE_SERVICE_ROLE_KEY;
+    const stBucket = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_BUCKET_DIRECT : RENDER_BUCKET;
 
     let outputUrl = null;
     let uploadError = null;
     try {
-      const { error } = await storageClient.storage
-        .from(storageBucket)
-        .upload(storagePath, buffer, { contentType: "video/mp4", upsert: true });
-      if (error) throw new Error(error.message);
-      outputUrl = storageClient.storage.from(storageBucket).getPublicUrl(storagePath).data.publicUrl;
+      const up = await fetch(`${stUrl}/storage/v1/object/${stBucket}/${storagePath}`, {
+        method: "POST",
+        headers: {
+          apikey: stKey,
+          Authorization: `Bearer ${stKey}`,
+          "Content-Type": "video/mp4",
+          "x-upsert": "true",
+        },
+        body: buffer,
+      });
+      if (!up.ok) throw new Error(`${up.status} ${(await up.text()).slice(0, 200)}`);
+      outputUrl = `${stUrl}/storage/v1/object/public/${stBucket}/${storagePath}`;
     } catch (e) {
       uploadError = e.message;
       log("upload failed (non-fatal):", e.message);
