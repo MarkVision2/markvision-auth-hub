@@ -216,6 +216,73 @@ const buildSrtFromWords = (words, { chunkWords = 3 } = {}) => {
   return lines.join("\n");
 };
 
+// ASS-кодировка бинарника шрифта (6-бит группы +33, перенос на 80 символов).
+// Нужна, чтобы ВШИТЬ шрифт прямо в .ass — тогда libass рисует текст без fontconfig
+// (на serverless/johnvansickle-сборке fontconfig не находит шрифт и титры пустые).
+const assEncodeFont = (data) => {
+  const out = [];
+  let written = 0;
+  for (let pos = 0; pos < data.length; pos += 3) {
+    const rem = data.length - pos;
+    const b0 = data[pos];
+    const b1 = rem > 1 ? data[pos + 1] : 0;
+    const b2 = rem > 2 ? data[pos + 2] : 0;
+    const groups = [b0 >> 2, ((b0 & 3) << 4) | (b1 >> 4), ((b1 & 15) << 2) | (b2 >> 6), b2 & 63];
+    const n = rem >= 3 ? 4 : rem + 1;
+    for (let i = 0; i < n; i += 1) {
+      out.push(String.fromCharCode(groups[i] + 33));
+      written += 1;
+      if (written % 80 === 0) out.push("\n");
+    }
+  }
+  return out.join("");
+};
+
+const tcAss = (sec) => {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const cs = Math.floor((sec - Math.floor(sec)) * 100);
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(cs).padStart(2, "0")}`;
+};
+
+const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => {
+  const primary = style === "calm" || style === "minimal" ? "&H00FFFFFF" : "&H0000FFFF";
+  const back = style === "calm" || style === "minimal" ? "&H60000000" : "&HA0000000";
+  const bold = style === "calm" || style === "minimal" ? 0 : 1;
+  const fontSize = Math.round(outH * 0.034);
+  const marginV = Math.round(outH * 0.20);
+  const dlg = [];
+  for (let i = 0; i < words.length; i += chunkWords) {
+    const g = words.slice(i, i + chunkWords);
+    const st = g[0].t || 0;
+    const last = g[g.length - 1];
+    const en = (last.t || 0) + (last.d || 0.3);
+    const txt = g.map((w) => String(w.w || "").toUpperCase()).join(" ").replace(/[{}\r\n]/g, "").trim();
+    if (!txt || en <= st) continue;
+    dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${txt}`);
+  }
+  const header = [
+    "[Script Info]",
+    "ScriptType: v4.00+",
+    "PlayResX: 1080",
+    "PlayResY: 1920",
+    "ScaledBorderAndShadow: yes",
+    "",
+    "[V4+ Styles]",
+    "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
+    `Style: Default,Montserrat,${fontSize},${primary},&H000000FF,&H00000000,${back},${bold},0,0,0,100,100,0,0,3,4,0,2,40,40,${marginV},1`,
+    "",
+    "[Fonts]",
+    "fontname: Montserrat0.ttf",
+    fontEncoded,
+    "",
+    "[Events]",
+    "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+  ].join("\n");
+  return `${header}\n${dlg.join("\n")}\n`;
+};
+
 const sendTelegramVideo = async (chatId, videoPath, caption) => {
   if (!TELEGRAM_BOT_TOKEN || !chatId) return null;
   const { Blob } = await import("node:buffer");
@@ -439,40 +506,28 @@ export default async function handler(req, res) {
       cur = next;
     });
 
-    // Титры через subtitles/libass. На serverless fontconfig без writable-кэша
-    // и конфига не находит шрифт → текст не рисуется. Чиним: свой fonts.conf
-    // (папка со шрифтом + cachedir в /tmp) и env HOME/XDG_CACHE_HOME/FONTCONFIG_FILE.
+    // Титры через ASS со ВШИТЫМ шрифтом (libass читает [Fonts] напрямую, без fontconfig —
+    // надёжно на johnvansickle-сборке, где drawtext отсутствует, а fontconfig не находит шрифт).
     const fontDir = path.dirname(fontRel);
     const fontsConf = path.join(workDir, "fonts.conf");
-    const fcCache = path.join(workDir, "fc-cache");
-    await fs.mkdir(fcCache, { recursive: true }).catch(() => {});
     await fs.writeFile(
       fontsConf,
       `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>\n` +
-        `<dir>${fontDir}</dir>\n<cachedir>${fcCache}</cachedir>\n` +
-        `<match target="pattern"><test name="family"><string>sans-serif</string></test>` +
-        `<edit name="family" mode="assign" binding="strong"><string>Montserrat</string></edit></match>\n` +
-        `</fontconfig>\n`,
+        `<dir>${fontDir}</dir>\n<cachedir>${path.join(workDir, "fc-cache")}</cachedir>\n</fontconfig>\n`,
     );
     const ffEnv = { HOME: workDir, XDG_CACHE_HOME: workDir, FONTCONFIG_FILE: fontsConf, FONTCONFIG_PATH: fontDir };
 
+    const assPath = path.join(workDir, "captions.ass");
     let captionsDrawn = 0;
-    if (srt && hasFont) {
-      const preset =
-        style === "calm" || style === "minimal"
-          ? { primary: "&H00FFFFFF", back: "&H60000000", outline: 2, bold: 0 }
-          : { primary: "&H0000FFFF", back: "&HA0000000", outline: 4, bold: 1 };
-      const fontSize = Math.round(outH * 0.034);
-      const marginV = Math.round(outH * 0.22);
-      const styled =
-        `FontName=Montserrat,FontSize=${fontSize},PrimaryColour=${preset.primary},` +
-        `OutlineColour=&H00000000,BackColour=${preset.back},BorderStyle=3,` +
-        `Outline=${preset.outline},Shadow=0,Alignment=2,MarginV=${marginV},Bold=${preset.bold}`;
-      const escSrt = srtPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
-      const fontsDir = fontDir.replace(/\\/g, "/").replace(/:/g, "\\:");
-      filter.push(`[${cur}]subtitles='${escSrt}':fontsdir='${fontsDir}':force_style='${styled}'[vout]`);
+    const capWords = analysis.words || [];
+    if (capWords.length && hasFont) {
+      const fontBuf = await fs.readFile(fontRel);
+      const ass = buildAss(capWords, { outW, outH, style, fontEncoded: assEncodeFont(fontBuf) });
+      await fs.writeFile(assPath, ass);
+      const escAss = assPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
+      filter.push(`[${cur}]ass='${escAss}'[vout]`);
       cur = "vout";
-      captionsDrawn = (srt.match(/-->/g) || []).length;
+      captionsDrawn = (ass.match(/^Dialogue:/gm) || []).length;
     }
 
     // ----- аудио-граф -----
