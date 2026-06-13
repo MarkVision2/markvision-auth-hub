@@ -376,16 +376,15 @@ const uploadRender = async (buffer, name, contentType = "video/mp4") => {
 
 // Оживление фото через FAL Kling image-to-video: тонкое естественное ДВИЖЕНИЕ
 // (лёгкое движение головы/тела, дыхание) — без лип-синка и пляшущих губ.
+// LTX-Video: самая дешёвая i2v на FAL (~$0.02/клип), native 9:16, движение без лип-синка
 const animatePhoto = async (photoUrl) => {
   if (!FAL_KEY) throw new Error("FAL_KEY missing");
-  const sub = await fetch("https://queue.fal.run/fal-ai/kling-video/v1.6/standard/image-to-video", {
+  const sub = await fetch("https://queue.fal.run/fal-ai/ltx-video-13b-distilled/image-to-video", {
     method: "POST",
     headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      prompt: "subtle natural movement, slight head and body motion, person breathing calmly, professional cinematic, static camera, realistic, no talking",
+      prompt: "person subtly moving, slight head turn, natural breathing, blinking, professional, static camera, no talking",
       image_url: photoUrl,
-      duration: "5",
-      aspect_ratio: "9:16",
     }),
   });
   if (!sub.ok) throw new Error(`fal submit ${sub.status}: ${(await sub.text()).slice(0, 200)}`);
