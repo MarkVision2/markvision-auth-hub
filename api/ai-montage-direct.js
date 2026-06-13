@@ -28,11 +28,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
 const RENDER_BUCKET = "ai-edit-renders";
 // Библиотека фоновой музыки (CC-BY, Kevin MacLeod) в нашей Supabase — берётся по умолчанию.
-const DEFAULT_MUSIC = [
-  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track0.mp3",
-  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track1.mp3",
-  "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music/track2.mp3",
-];
+const MUSIC_BASE = "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music";
+// энергичные треки по умолчанию (драйв для рекламы); спокойные — track0..2
+const DEFAULT_MUSIC = [`${MUSIC_BASE}/energetic0.mp3`, `${MUSIC_BASE}/energetic1.mp3`, `${MUSIC_BASE}/energetic2.mp3`];
+const CALM_MUSIC = [`${MUSIC_BASE}/track0.mp3`, `${MUSIC_BASE}/track1.mp3`, `${MUSIC_BASE}/track2.mp3`];
 // Отдельное хранилище для результатов (чтобы не зависеть от квоты основного проекта)
 const RENDER_SUPABASE_URL = process.env.RENDER_SUPABASE_URL;
 const RENDER_SUPABASE_KEY = process.env.RENDER_SUPABASE_SERVICE_KEY;
@@ -185,6 +184,8 @@ const geminiTranscribe = async (videoPath, options = {}) => {
 // Подбор клипа со СТРОГОЙ релевантностью: в слаге URL Pexels (он описывает содержимое,
 // напр. "a-woman-putting-eye-drops") должно встречаться хотя бы одно из must-слов.
 // Иначе клип отбрасывается (лучше без бирола, чем не по теме). used — дедуп по id.
+// слова-исключения в слаге (нерелевантная демография/контент для локального рынка)
+const AVOID_SLUG = ["african", "afro", "afro-american", "black-man", "black-woman", "dark-skinned"];
 const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords = []) => {
   if (!PEXELS_API_KEY) return null;
   const must = (mustWords || []).map((w) => String(w).toLowerCase()).filter(Boolean);
@@ -202,10 +203,10 @@ const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords =
       .sort((a, b) => a.width - b.width);
     return files[0] || null;
   };
-  // 1-й проход: требуем совпадение must-слова в слаге
   for (const v of data.videos || []) {
     if (used.has(v.id)) continue;
     const slug = String(v.url || "").toLowerCase();
+    if (AVOID_SLUG.some((w) => slug.includes(w))) continue; // фильтр демографии
     if (must.length && !must.some((w) => slug.includes(w))) continue;
     const f = pickFile(v);
     if (f) return { id: v.id, url: f.link, slug };
@@ -402,8 +403,9 @@ const renderFaceless = async (body, res) => {
   const segments = (Array.isArray(body.segments) ? body.segments : []).filter((s) => Number(s.end) > Number(s.start));
   const style = (body.style || "viral").toLowerCase();
   const captionLanguage = body.captionLanguage || "ru";
-  const musicVolume = Number.isFinite(Number(body.musicVolume)) ? Number(body.musicVolume) : 0.05;
-  const musicUrl = body.musicUrl || (body.music === false ? null : DEFAULT_MUSIC[Math.floor(Math.random() * DEFAULT_MUSIC.length)]);
+  const musicVolume = Number.isFinite(Number(body.musicVolume)) ? Number(body.musicVolume) : 0.08;
+  const pool = body.musicMood === "calm" ? CALM_MUSIC : DEFAULT_MUSIC;
+  const musicUrl = body.musicUrl || (body.music === false ? null : pool[Math.floor(Math.random() * pool.length)]);
   const telegramChatId = body.telegramChatId || body.telegram_chat_id || null;
 
   const workDir = await fs.mkdtemp(path.join(tmpdir(), "fl-"));
@@ -419,14 +421,17 @@ const renderFaceless = async (body, res) => {
     const clips = [];
     const dbg = [];
     for (const seg of segments) {
-      const pick = await pickClipCascade(seg, "portrait", used);
-      if (pick) {
-        used.add(pick.id);
+      // приоритет — свой клип (clip_url), иначе подбор из стоков
+      let chosen = null;
+      if (seg.clip_url) chosen = { id: "own:" + seg.clip_url, url: seg.clip_url, slug: "own-clip" };
+      else chosen = await pickClipCascade(seg, "portrait", used);
+      if (chosen) {
+        used.add(chosen.id);
         const p = path.join(workDir, `c${clips.length}.mp4`);
         try {
-          await downloadTo(pick.url, p);
+          await downloadTo(chosen.url, p);
           clips.push({ path: p, dur: Math.max(1.2, Number(seg.end) - Number(seg.start)) });
-          dbg.push({ q: seg.broll_query, slug: (pick.slug || "").slice(0, 40) });
+          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", slug: (chosen.slug || "").slice(0, 40) });
         } catch (e) { log("clip dl fail", e.message); }
       } else dbg.push({ q: seg.broll_query, slug: "NONE" });
     }
