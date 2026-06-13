@@ -185,7 +185,12 @@ const geminiTranscribe = async (videoPath, options = {}) => {
 // напр. "a-woman-putting-eye-drops") должно встречаться хотя бы одно из must-слов.
 // Иначе клип отбрасывается (лучше без бирола, чем не по теме). used — дедуп по id.
 // слова-исключения в слаге (нерелевантная демография/контент для локального рынка)
-const AVOID_SLUG = ["african", "afro", "afro-american", "black-man", "black-woman", "dark-skinned"];
+const AVOID_SLUG = [
+  "african", "afro", "afro-american", "black-man", "black-woman", "dark-skinned",
+  "elderly", "old-woman", "old-man", "senior", "grandmother", "grandfather", "grandma", "grandpa",
+  "disabled", "disability", "amputee", "wheelchair", "prosthetic",
+  "child", "children", "kid", "baby", "toddler",
+];
 const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords = []) => {
   if (!PEXELS_API_KEY) return null;
   const must = (mustWords || []).map((w) => String(w).toLowerCase()).filter(Boolean);
