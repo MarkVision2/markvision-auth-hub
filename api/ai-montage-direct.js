@@ -301,10 +301,10 @@ const clean = (s) => String(s || "").toUpperCase().replace(/[{}\r\n]/g, "").repl
 // остальные мягко приглушены; тонкий контур + мягкая тень; без жёлтого и без скачков масштаба.
 // Кино-титры Reels: по центру (выше зоны кнопок), крупный жирный белый, активное слово —
 // янтарный акцент с лёгким увеличением; контур + мягкая тень; шрифт вшит.
-const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => {
+const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 2 }) => {
   const accent = style === "calm" || style === "minimal" ? "&H00F5C842" : "&H0057C8FF"; // амбер (BGR)
-  const fontSize = Math.round(outH * 0.046);
-  const marginV = Math.round(outH * 0.40); // ~58% от верха — выше нижнего UI Reels
+  const fontSize = Math.round(outH * 0.058); // крупнее — вирусный стиль
+  const marginV = Math.round(outH * 0.26); // нижняя треть, над UI Reels
   const dlg = [];
   for (let i = 0; i < words.length; i += chunkWords) {
     const line = words.slice(i, i + chunkWords).map((w) => ({ ...w, txt: clean(w.w) })).filter((w) => w.txt);
@@ -313,10 +313,12 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
       const st = line[j].t || 0;
       const en = j + 1 < line.length ? line[j + 1].t || st + (line[j].d || 0.3) : st + (line[j].d || 0.3);
       if (en <= st) continue;
+      // активное слово: цветной акцент + поп (резкий заброс масштаба → оседание)
+      const pop = `{\\1c${accent}\\fscx128\\fscy128\\t(0,90,\\fscx110\\fscy110)}`;
       const text = line
-        .map((w, k) => (k === j ? `{\\1c${accent}\\fscx112\\fscy112}${w.txt}{\\r}` : w.txt))
+        .map((w, k) => (k === j ? `${pop}${w.txt}{\\r}` : w.txt))
         .join(" ");
-      const fade = j === 0 ? "{\\fad(110,0)}" : "";
+      const fade = j === 0 ? "{\\fad(90,0)}" : "";
       dlg.push(`Dialogue: 0,${tcAss(st)},${tcAss(en)},Default,,0,0,0,,${fade}${text}`);
     }
   }
@@ -330,7 +332,7 @@ const buildAss = (words, { outW, outH, style, fontEncoded, chunkWords = 3 }) => 
     "",
     "[V4+ Styles]",
     "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
-    `Style: Default,Montserrat,${fontSize},&H00FFFFFF,&H000000FF,&H00000000,&H00000000,1,0,0,0,100,100,0.6,0,1,3,2,2,90,90,${marginV},1`,
+    `Style: Default,Montserrat,${fontSize},&H00FFFFFF,&H000000FF,&H00000000,&HB0000000,1,0,0,0,100,100,0.4,0,1,5,3,2,80,80,${marginV},1`,
     "",
     "[Fonts]",
     "fontname: Montserrat0.ttf",
@@ -555,8 +557,13 @@ const renderFaceless = async (body, res) => {
           `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else {
+        // динамика: плавный наезд/отъезд по очереди (как Ken Burns, но для видео)
+        const zin = i % 2 === 0;
+        const zexpr = zin ? "min(1.0+0.0018*on,1.16)" : "max(1.16-0.0018*on,1.0)";
         filter.push(
-          `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `[${i}:v]scale=1188:2112:force_original_aspect_ratio=increase,crop=1188:2112,setsar=1,` +
+          `zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       }
     });
