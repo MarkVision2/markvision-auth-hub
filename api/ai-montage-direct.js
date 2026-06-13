@@ -435,11 +435,12 @@ const renderFaceless = async (body, res) => {
       else chosen = await pickClipCascade(seg, "portrait", used);
       if (chosen) {
         used.add(chosen.id);
-        const p = path.join(workDir, `c${clips.length}.mp4`);
+        const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(chosen.url);
+        const p = path.join(workDir, `c${clips.length}.${isImg ? "img" : "mp4"}`);
         try {
           await downloadTo(chosen.url, p);
-          clips.push({ path: p, dur: Math.max(1.2, Number(seg.end) - Number(seg.start)) });
-          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", slug: (chosen.slug || "").slice(0, 40) });
+          clips.push({ path: p, dur: Math.max(1.2, Number(seg.end) - Number(seg.start)), isImg });
+          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", img: isImg, slug: (chosen.slug || "").slice(0, 40) });
         } catch (e) { log("clip dl fail", e.message); }
       } else dbg.push({ q: seg.broll_query, slug: "NONE" });
     }
@@ -469,7 +470,10 @@ const renderFaceless = async (body, res) => {
 
     // ffmpeg: склейка клипов -> грейд -> титры; аудио: голос + музыка(duck)
     const args = ["-y"];
-    for (const c of clips) args.push("-stream_loop", "-1", "-i", c.path);
+    for (const c of clips) {
+      if (c.isImg) args.push("-loop", "1", "-t", c.dur.toFixed(2), "-i", c.path); // фото → статичный вход
+      else args.push("-stream_loop", "-1", "-i", c.path);
+    }
     const voiceIdx = clips.length;
     args.push("-i", voicePath);
     let musicIdx = -1;
@@ -477,9 +481,19 @@ const renderFaceless = async (body, res) => {
 
     const filter = [];
     clips.forEach((c, i) => {
-      filter.push(
-        `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
-      );
+      if (c.isImg) {
+        // фото оживляем медленным наездом Ken Burns
+        const fr = Math.max(1, Math.round(c.dur * 30));
+        filter.push(
+          `[${i}:v]scale=1300:2310:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,` +
+          `zoompan=z='min(1.0+0.0012*on,1.18)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+        );
+      } else {
+        filter.push(
+          `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+        );
+      }
     });
     filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
     filter.push(`[cat]eq=brightness=0.05:contrast=1.04:saturation=1.12:gamma=1.08,unsharp=5:5:0.7:5:5:0.0[gr]`);
