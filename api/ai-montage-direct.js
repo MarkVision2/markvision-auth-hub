@@ -26,6 +26,7 @@ const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
 const COVERR_API_KEY = process.env.COVERR_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_AI_MONTAGE_BOT_TOKEN;
+const FAL_KEY = process.env.FAL_KEY;
 const RENDER_BUCKET = "ai-edit-renders";
 // Библиотека фоновой музыки (CC-BY, Kevin MacLeod) в нашей Supabase — берётся по умолчанию.
 const MUSIC_BASE = "https://szfgdruhlebfvcmlvxdk.supabase.co/storage/v1/object/public/music";
@@ -360,17 +361,40 @@ const sendTelegramVideo = async (chatId, videoPath, caption) => {
 };
 
 // Аплоад рендера в Storage через REST (надёжно). Возвращает публичный URL или бросает.
-const uploadRender = async (buffer, name) => {
+const uploadRender = async (buffer, name, contentType = "video/mp4") => {
   const stUrl = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_URL : SUPABASE_URL;
   const stKey = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_SUPABASE_KEY : SUPABASE_SERVICE_ROLE_KEY;
   const stBucket = RENDER_SUPABASE_URL && RENDER_SUPABASE_KEY ? RENDER_BUCKET_DIRECT : RENDER_BUCKET;
   const up = await fetch(`${stUrl}/storage/v1/object/${stBucket}/${name}`, {
     method: "POST",
-    headers: { apikey: stKey, Authorization: `Bearer ${stKey}`, "Content-Type": "video/mp4", "x-upsert": "true" },
+    headers: { apikey: stKey, Authorization: `Bearer ${stKey}`, "Content-Type": contentType, "x-upsert": "true" },
     body: buffer,
   });
   if (!up.ok) throw new Error(`${up.status} ${(await up.text()).slice(0, 200)}`);
   return `${stUrl}/storage/v1/object/public/${stBucket}/${name}`;
+};
+
+// Оживление фото через FAL VEED Fabric: фото + аудио → говорящее/двигающееся видео (лип-синк).
+const animatePhoto = async (photoUrl, audioUrl) => {
+  if (!FAL_KEY) throw new Error("FAL_KEY missing");
+  const sub = await fetch("https://queue.fal.run/veed/fabric-1.0", {
+    method: "POST",
+    headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: photoUrl, audio_url: audioUrl, resolution: "480p" }),
+  });
+  if (!sub.ok) throw new Error(`fal submit ${sub.status}: ${(await sub.text()).slice(0, 200)}`);
+  const j = await sub.json();
+  const statusUrl = j.status_url, respUrl = j.response_url;
+  for (let i = 0; i < 40; i += 1) {
+    await new Promise((r) => setTimeout(r, 5000));
+    const st = await (await fetch(statusUrl, { headers: { Authorization: `Key ${FAL_KEY}` } })).json();
+    if (st.status === "COMPLETED") break;
+    if (st.status === "FAILED" || st.status === "ERROR") throw new Error("fal failed");
+  }
+  const res = await (await fetch(respUrl, { headers: { Authorization: `Key ${FAL_KEY}` } })).json();
+  const url = res?.video?.url || res?.url || res?.output?.url;
+  if (!url) throw new Error("fal: no video url " + JSON.stringify(res).slice(0, 200));
+  return url;
 };
 
 const loadFont = async (workDir) => {
@@ -428,21 +452,47 @@ const renderFaceless = async (body, res) => {
     const used = new Set();
     const clips = [];
     const dbg = [];
+    const animateMax = body.animate === false ? 0 : (Number.isFinite(Number(body.animateMax)) ? Number(body.animateMax) : 2);
+    let animated = 0;
+    const animateJobs = [];
     for (const seg of segments) {
-      // приоритет — свой клип (clip_url), иначе подбор из стоков
       let chosen = null;
       if (seg.clip_url) chosen = { id: "own:" + seg.clip_url, url: seg.clip_url, slug: "own-clip" };
       else chosen = await pickClipCascade(seg, "portrait", used);
-      if (chosen) {
-        used.add(chosen.id);
-        const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(chosen.url);
-        const p = path.join(workDir, `c${clips.length}.${isImg ? "img" : "mp4"}`);
+      if (!chosen) { dbg.push({ q: seg.broll_query, slug: "NONE" }); continue; }
+      used.add(chosen.id);
+      const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(chosen.url);
+      const idx = clips.length;
+      const dur = Math.max(1.2, Number(seg.end) - Number(seg.start));
+      if (isImg && FAL_KEY && animated < animateMax) {
+        // ФОТО ОЖИВЛЯЕМ через VEED: озвучка сегмента → говорящее видео
+        animated += 1;
+        clips.push({ path: path.join(workDir, `c${idx}.mp4`), dur, isImg: false });
+        dbg.push({ q: seg.broll_query, src: "animated-photo" });
+        animateJobs.push({ idx, photo: chosen.url, start: Number(seg.start), end: Number(seg.end) });
+      } else {
+        const p = path.join(workDir, `c${idx}.${isImg ? "img" : "mp4"}`);
         try {
           await downloadTo(chosen.url, p);
-          clips.push({ path: p, dur: Math.max(1.2, Number(seg.end) - Number(seg.start)), isImg });
-          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", img: isImg, slug: (chosen.slug || "").slice(0, 40) });
+          clips.push({ path: p, dur, isImg });
+          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", img: isImg });
         } catch (e) { log("clip dl fail", e.message); }
-      } else dbg.push({ q: seg.broll_query, slug: "NONE" });
+      }
+    }
+    // оживляем фото параллельно (FAL VEED)
+    if (animateJobs.length) {
+      await Promise.all(animateJobs.map(async (job) => {
+        try {
+          const slice = path.join(workDir, `slice${job.idx}.mp3`);
+          await runFfmpeg(["-y", "-i", voicePath, "-ss", String(job.start), "-to", String(job.end), "-c", "copy", slice], { label: "slice" });
+          const aurl = await uploadRender(await fs.readFile(slice), `voiceslice/${job.idx}-${Math.floor(job.start)}.mp3`, "audio/mpeg");
+          const vurl = await animatePhoto(job.photo, aurl);
+          await downloadTo(vurl, clips[job.idx].path);
+        } catch (e) {
+          log("animate fail", job.idx, e.message);
+          try { const ip = path.join(workDir, `c${job.idx}.img`); await downloadTo(job.photo, ip); clips[job.idx] = { path: ip, dur: clips[job.idx].dur, isImg: true }; } catch {}
+        }
+      }));
     }
     if (!clips.length) throw new Error("no clips found");
 
@@ -486,7 +536,7 @@ const renderFaceless = async (body, res) => {
         const fr = Math.max(1, Math.round(c.dur * 30));
         filter.push(
           `[${i}:v]scale=1300:2310:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,` +
-          `zoompan=z='min(1.0+0.0012*on,1.18)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `zoompan=z='min(1.0+0.0005*on,1.08)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
           `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else {
