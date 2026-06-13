@@ -474,7 +474,7 @@ const renderFaceless = async (body, res) => {
       );
     });
     filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
-    filter.push(`[cat]eq=contrast=1.06:saturation=1.09,vignette=PI/5[gr]`);
+    filter.push(`[cat]eq=brightness=0.05:contrast=1.04:saturation=1.12:gamma=1.08,unsharp=5:5:0.7:5:5:0.0[gr]`);
     let vlabel = "gr";
     if (hasCaps) {
       const escAss = assPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
@@ -709,7 +709,7 @@ export default async function handler(req, res) {
     const zoomH = Math.round(outH * 1.18);
     filter.push(
       // кино-грейд: лёгкий контраст/сатурация + виньетка
-      `[0:v]scale=${zoomW}:${zoomH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,eq=contrast=1.06:saturation=1.09,vignette=PI/5[base0]`,
+      `[0:v]scale=${zoomW}:${zoomH}:force_original_aspect_ratio=increase,crop=${outW}:${outH},fps=30,setsar=1,eq=brightness=0.05:contrast=1.04:saturation=1.12:gamma=1.08,unsharp=5:5:0.7:5:5:0.0[base0]`,
     );
     let cur = "base0";
     const autoZoom = body.autoZoom !== false;
