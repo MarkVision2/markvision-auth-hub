@@ -395,7 +395,7 @@ const pickClipCascade = async (seg, orientation, used) => {
   let p = await pickPexelsVideo(seg.broll_query, orientation, used, must).catch(() => null);
   if (!p) p = await pickPexelsVideo(seg.broll_query, orientation, used, []).catch(() => null);
   if (!p) p = await pickCoverrVideo(seg.broll_query, used, []).catch(() => null);
-  if (!p) p = await pickPexelsVideo("abstract technology background motion", orientation, used, []).catch(() => null);
+  if (!p) p = await pickPexelsVideo("modern office business workspace", orientation, used, []).catch(() => null);
   return p;
 };
 
