@@ -557,13 +557,14 @@ const renderFaceless = async (body, res) => {
           `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else {
-        // динамика: плавный наезд/отъезд по очереди (как Ken Burns, но для видео)
-        const zin = i % 2 === 0;
-        const zexpr = zin ? "min(1.0+0.0018*on,1.16)" : "max(1.16-0.0018*on,1.0)";
+        // динамика: лёгкий пред-зум (1.2x) + медленный пан по очереди (crop, без буферизации = не жрёт память)
+        const dur = c.dur.toFixed(2);
+        const cropExpr = i % 2 === 0
+          ? `crop=1080:1920:x='(iw-1080)/2 + (t/${dur}-0.5)*160':y='(ih-1920)/2'`
+          : `crop=1080:1920:x='(iw-1080)/2':y='(ih-1920)/2 + (t/${dur}-0.5)*220'`;
         filter.push(
-          `[${i}:v]scale=1188:2112:force_original_aspect_ratio=increase,crop=1188:2112,setsar=1,` +
-          `zoompan=z='${zexpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
-          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `[${i}:v]scale=1296:2304:force_original_aspect_ratio=increase,crop=1296:2304,setsar=1,` +
+          `${cropExpr},fps=30,trim=0:${dur},setpts=PTS-STARTPTS[c${i}]`,
         );
       }
     });
