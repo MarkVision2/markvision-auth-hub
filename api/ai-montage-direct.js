@@ -376,15 +376,17 @@ const uploadRender = async (buffer, name, contentType = "video/mp4") => {
 
 // Оживление фото через FAL Kling image-to-video: тонкое естественное ДВИЖЕНИЕ
 // (лёгкое движение головы/тела, дыхание) — без лип-синка и пляшущих губ.
-// LTX-Video: самая дешёвая i2v на FAL (~$0.02/клип), native 9:16, движение без лип-синка
-const animatePhoto = async (photoUrl) => {
+// Kling text-to-video: генерируем бирол ровно под смысл фразы (native 9:16, ~$0.10/клип)
+const generateBroll = async (prompt) => {
   if (!FAL_KEY) throw new Error("FAL_KEY missing");
-  const sub = await fetch("https://queue.fal.run/fal-ai/ltx-video-13b-distilled/image-to-video", {
+  const full = `${prompt}, young european or central asian person, modern bright office, cinematic, realistic, smooth camera, no on-screen text`;
+  const sub = await fetch("https://queue.fal.run/fal-ai/kling-video/v1.6/standard/text-to-video", {
     method: "POST",
     headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      prompt: "person subtly moving, slight head turn, natural breathing, blinking, professional, static camera, no talking",
-      image_url: photoUrl,
+      prompt: full,
+      duration: "5",
+      aspect_ratio: "9:16",
     }),
   });
   if (!sub.ok) throw new Error(`fal submit ${sub.status}: ${(await sub.text()).slice(0, 200)}`);
@@ -457,42 +459,50 @@ const renderFaceless = async (body, res) => {
     const used = new Set();
     const clips = [];
     const dbg = [];
-    const animateMax = body.animate === false ? 0 : (Number.isFinite(Number(body.animateMax)) ? Number(body.animateMax) : 2);
-    let animated = 0;
-    const animateJobs = [];
+    // ГИБРИД: сток от Vision (clip_url) скачиваем; пустые сегменты генерим Kling t2v по gen_prompt
+    const genMax = body.generate === false ? 0 : (Number.isFinite(Number(body.genMax)) ? Number(body.genMax) : 4);
+    let generated = 0;
+    const genJobs = [];
     for (const seg of segments) {
-      let chosen = null;
-      if (seg.clip_url) chosen = { id: "own:" + seg.clip_url, url: seg.clip_url, slug: "own-clip" };
-      else chosen = await pickClipCascade(seg, "portrait", used);
+      const idx = clips.length;
+      const dur = Math.max(1.2, Number(seg.end) - Number(seg.start));
+      // 1) готовый клип от Vision (сток) или own-видео
+      if (seg.clip_url) {
+        const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(seg.clip_url);
+        const p = path.join(workDir, `c${idx}.${isImg ? "img" : "mp4"}`);
+        try { await downloadTo(seg.clip_url, p); clips.push({ path: p, dur, isImg }); dbg.push({ src: "stock/own", q: seg.broll_query }); }
+        catch (e) { log("clip dl fail", e.message); }
+        continue;
+      }
+      // 2) нет стока по теме → генерим бирол под смысл фразы (Kling t2v)
+      if (seg.gen_prompt && FAL_KEY && generated < genMax) {
+        generated += 1;
+        clips.push({ path: path.join(workDir, `c${idx}.mp4`), dur, isImg: false });
+        dbg.push({ src: "generated", prompt: String(seg.gen_prompt).slice(0, 60) });
+        genJobs.push({ idx, prompt: seg.gen_prompt });
+        continue;
+      }
+      // 3) крайний фолбэк — сток-каскад по объекту
+      const chosen = await pickClipCascade(seg, "portrait", used);
       if (!chosen) { dbg.push({ q: seg.broll_query, slug: "NONE" }); continue; }
       used.add(chosen.id);
       const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(chosen.url);
-      const idx = clips.length;
-      const dur = Math.max(1.2, Number(seg.end) - Number(seg.start));
-      if (isImg && FAL_KEY && animated < animateMax) {
-        // ФОТО ОЖИВЛЯЕМ через VEED: озвучка сегмента → говорящее видео
-        animated += 1;
-        clips.push({ path: path.join(workDir, `c${idx}.mp4`), dur, isImg: false });
-        dbg.push({ q: seg.broll_query, src: "animated-photo" });
-        animateJobs.push({ idx, photo: chosen.url, start: Number(seg.start), end: Number(seg.end) });
-      } else {
-        const p = path.join(workDir, `c${idx}.${isImg ? "img" : "mp4"}`);
-        try {
-          await downloadTo(chosen.url, p);
-          clips.push({ path: p, dur, isImg });
-          dbg.push({ q: seg.broll_query, src: seg.clip_url ? "own" : "stock", img: isImg });
-        } catch (e) { log("clip dl fail", e.message); }
-      }
+      const p = path.join(workDir, `c${idx}.${isImg ? "img" : "mp4"}`);
+      try { await downloadTo(chosen.url, p); clips.push({ path: p, dur, isImg }); dbg.push({ src: "stock-fallback", q: seg.broll_query }); }
+      catch (e) { log("clip dl fail", e.message); }
     }
-    // оживляем фото параллельно (FAL VEED)
-    if (animateJobs.length) {
-      await Promise.all(animateJobs.map(async (job) => {
+    // генерируем биролы параллельно (Kling t2v), фолбэк на сток если упало
+    if (genJobs.length) {
+      await Promise.all(genJobs.map(async (job) => {
         try {
-          const vurl = await animatePhoto(job.photo); // Kling: движение без лип-синка
+          const vurl = await generateBroll(job.prompt);
           await downloadTo(vurl, clips[job.idx].path);
         } catch (e) {
-          log("animate fail", job.idx, e.message);
-          try { const ip = path.join(workDir, `c${job.idx}.img`); await downloadTo(job.photo, ip); clips[job.idx] = { path: ip, dur: clips[job.idx].dur, isImg: true }; } catch {}
+          log("gen fail", job.idx, e.message);
+          try {
+            const ch = await pickClipCascade({ broll_query: job.prompt, broll_must: [] }, "portrait", used);
+            if (ch) await downloadTo(ch.url, clips[job.idx].path);
+          } catch {}
         }
       }));
     }
