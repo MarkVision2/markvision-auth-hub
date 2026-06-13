@@ -190,6 +190,9 @@ const AVOID_SLUG = [
   "elderly", "old-woman", "old-man", "senior", "grandmother", "grandfather", "grandma", "grandpa",
   "disabled", "disability", "amputee", "wheelchair", "prosthetic",
   "child", "children", "kid", "baby", "toddler",
+  "stock-market", "stock-exchange", "stock-mar", "trading", "trader", "crypto", "cryptocurrency",
+  "bitcoin", "forex", "candlestick", "investment", "dynamic-sto", "dynamic-tra",
+  "robot-toy", "toy", "drone",
 ];
 const pickPexelsVideo = async (query, orientation, used = new Set(), mustWords = []) => {
   if (!PEXELS_API_KEY) return null;
