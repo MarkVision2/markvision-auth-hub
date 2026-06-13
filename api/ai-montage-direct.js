@@ -374,18 +374,24 @@ const uploadRender = async (buffer, name, contentType = "video/mp4") => {
   return `${stUrl}/storage/v1/object/public/${stBucket}/${name}`;
 };
 
-// Оживление фото через FAL VEED Fabric: фото + аудио → говорящее/двигающееся видео (лип-синк).
-const animatePhoto = async (photoUrl, audioUrl) => {
+// Оживление фото через FAL Kling image-to-video: тонкое естественное ДВИЖЕНИЕ
+// (лёгкое движение головы/тела, дыхание) — без лип-синка и пляшущих губ.
+const animatePhoto = async (photoUrl) => {
   if (!FAL_KEY) throw new Error("FAL_KEY missing");
-  const sub = await fetch("https://queue.fal.run/veed/fabric-1.0", {
+  const sub = await fetch("https://queue.fal.run/fal-ai/kling-video/v1.6/standard/image-to-video", {
     method: "POST",
     headers: { Authorization: `Key ${FAL_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: photoUrl, audio_url: audioUrl, resolution: "480p" }),
+    body: JSON.stringify({
+      prompt: "subtle natural movement, slight head and body motion, person breathing calmly, professional cinematic, static camera, realistic, no talking",
+      image_url: photoUrl,
+      duration: "5",
+      aspect_ratio: "9:16",
+    }),
   });
   if (!sub.ok) throw new Error(`fal submit ${sub.status}: ${(await sub.text()).slice(0, 200)}`);
   const j = await sub.json();
   const statusUrl = j.status_url, respUrl = j.response_url;
-  for (let i = 0; i < 40; i += 1) {
+  for (let i = 0; i < 50; i += 1) {
     await new Promise((r) => setTimeout(r, 5000));
     const st = await (await fetch(statusUrl, { headers: { Authorization: `Key ${FAL_KEY}` } })).json();
     if (st.status === "COMPLETED") break;
@@ -483,10 +489,7 @@ const renderFaceless = async (body, res) => {
     if (animateJobs.length) {
       await Promise.all(animateJobs.map(async (job) => {
         try {
-          const slice = path.join(workDir, `slice${job.idx}.mp3`);
-          await runFfmpeg(["-y", "-i", voicePath, "-ss", String(job.start), "-to", String(job.end), "-c", "copy", slice], { label: "slice" });
-          const aurl = await uploadRender(await fs.readFile(slice), `voiceslice/${job.idx}-${Math.floor(job.start)}.mp3`, "audio/mpeg");
-          const vurl = await animatePhoto(job.photo, aurl);
+          const vurl = await animatePhoto(job.photo); // Kling: движение без лип-синка
           await downloadTo(vurl, clips[job.idx].path);
         } catch (e) {
           log("animate fail", job.idx, e.message);
@@ -495,6 +498,9 @@ const renderFaceless = async (body, res) => {
       }));
     }
     if (!clips.length) throw new Error("no clips found");
+    // покрываем всю длину озвучки, чтобы титры в концовке не пропадали
+    const totalDur = clips.reduce((a, c) => a + c.dur, 0);
+    if (D > 0 && totalDur < D - 0.15) clips[clips.length - 1].dur += (D - totalDur);
 
     // музыка
     let musicPath = null;
