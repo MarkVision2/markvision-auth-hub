@@ -15,7 +15,7 @@ import { Readable } from "node:stream";
 import ffmpegPath from "ffmpeg-static";
 import { createClient } from "@supabase/supabase-js";
 
-export const config = { maxDuration: 300, memory: 1024 };
+export const config = { maxDuration: 300, memory: 3008 };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
