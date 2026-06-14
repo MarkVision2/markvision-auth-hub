@@ -69,7 +69,7 @@
         },
         "api/ai-montage-direct.js": {
             "maxDuration": 300,
-            "memory": 3008,
+            "memory": 2048,
             "includeFiles": "api/fonts/**"
         },
         "api/ai-montage-transcribe.js": {
