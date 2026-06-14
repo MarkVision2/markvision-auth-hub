@@ -616,7 +616,7 @@ const renderFaceless = async (body, res) => {
       filter.push(`[${voiceIdx}:a]aresample=44100[aout]`);
     }
     args.push("-filter_complex", filter.join(";"), "-map", `[${vlabel}]`, "-map", "[aout]");
-    args.push("-c:v", "libx264", "-preset", "medium", "-crf", "22", "-maxrate", "4000k", "-bufsize", "8000k", "-pix_fmt", "yuv420p",
+    args.push("-c:v", "libx264", "-preset", "medium", "-crf", "23", "-maxrate", "2700k", "-bufsize", "5400k", "-pix_fmt", "yuv420p",
       "-movflags", "+faststart", "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-t", String(D), outPath);
     await runFfmpeg(args, { label: "faceless", env: fcEnv });
 
