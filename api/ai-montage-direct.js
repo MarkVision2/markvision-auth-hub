@@ -548,39 +548,52 @@ const renderFaceless = async (body, res) => {
     if (musicPath) { args.push("-stream_loop", "-1", "-i", musicPath); musicIdx = voiceIdx + 1; }
 
     const filter = [];
+    // переходы: xfade между клипами (нужен запас по длине = T на склейку)
+    const T = (body.transitions === false || clips.length < 2) ? 0 : 0.35;
     clips.forEach((c, i) => {
+      const L = (c.dur + T).toFixed(2); // длина клипа с запасом на переход
       if (c.isImg) {
-        // фото оживляем медленным наездом Ken Burns
-        const fr = Math.max(1, Math.round(c.dur * 30));
+        // фото — наезд Ken Burns
         filter.push(
           `[${i}:v]scale=1300:2310:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,` +
-          `zoompan=z='min(1.0+0.0005*on,1.08)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
-          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `zoompan=z='min(1.0+0.0006*on,1.10)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `trim=0:${L},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else if (c.fit) {
-        // СКРИНКАСТ: показываем целиком (вписать) + размытый фон, без кропа краёв
+        // СКРИНКАСТ: целиком + размытый фон, лёгкий наезд на фон для жизни
         filter.push(
           `[${i}:v]split=2[bg${i}][fg${i}];` +
           `[bg${i}]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:3,eq=brightness=-0.12[bgb${i}];` +
           `[fg${i}]scale=1080:1920:force_original_aspect_ratio=decrease[fgs${i}];` +
-          `[bgb${i}][fgs${i}]overlay=(W-w)/2:(H-h)/2,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `[bgb${i}][fgs${i}]overlay=(W-w)/2:(H-h)/2,fps=30,setsar=1,trim=0:${L},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else if (body.motion === false) {
         filter.push(
-          `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${L},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else {
-        // ЛЮДИ/ЛАЙФСТАЙЛ: заполнение 9:16 + медленный наезд/отъезд на всю длину клипа
-        const rate = (0.13 / Math.max(1, Math.round(c.dur * 30))).toFixed(6);
-        const z = i % 2 === 0 ? `min(1.0+${rate}*on,1.13)` : `max(1.13-${rate}*on,1.0)`;
+        // ЛЮДИ/ЛАЙФСТАЙЛ: заполнение 9:16 + СИЛЬНЫЙ наезд/отъезд (динамика)
+        const rate = (0.20 / Math.max(1, Math.round(c.dur * 30))).toFixed(6);
+        const z = i % 2 === 0 ? `min(1.0+${rate}*on,1.20)` : `max(1.20-${rate}*on,1.0)`;
         filter.push(
-          `[${i}:v]scale=1188:2112:force_original_aspect_ratio=increase,crop=1188:2112,setsar=1,` +
+          `[${i}:v]scale=1296:2304:force_original_aspect_ratio=increase,crop=1296:2304,setsar=1,` +
           `zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
-          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+          `trim=0:${L},setpts=PTS-STARTPTS[c${i}]`,
         );
       }
     });
-    filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
+    if (T > 0) {
+      // цепочка xfade с чередованием типов переходов
+      const TR = ["fade", "slideleft", "slideright", "smoothup", "circleopen", "wipeleft", "fadeblack", "smoothright"];
+      let prev = "c0", acc = clips[0].dur;
+      for (let i = 1; i < clips.length; i += 1) {
+        const out = i === clips.length - 1 ? "cat" : `xf${i}`;
+        filter.push(`[${prev}][c${i}]xfade=transition=${TR[(i - 1) % TR.length]}:duration=${T}:offset=${acc.toFixed(2)}[${out}]`);
+        prev = out; acc += clips[i].dur;
+      }
+    } else {
+      filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
+    }
     // грейд опционален: grade:false → чистая резкая картинка (без цветных/тёмных наложений)
     if (body.grade === false) {
       filter.push(`[cat]unsharp=3:3:0.5:3:3:0.0[gr]`);
