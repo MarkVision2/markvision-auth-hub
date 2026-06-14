@@ -472,7 +472,7 @@ const renderFaceless = async (body, res) => {
       if (seg.clip_url) {
         const isImg = /\.(png|jpe?g|webp)(\?|$)/i.test(seg.clip_url);
         const p = path.join(workDir, `c${idx}.${isImg ? "img" : "mp4"}`);
-        try { await downloadTo(seg.clip_url, p); clips.push({ path: p, dur, isImg }); dbg.push({ src: "stock/own", q: seg.broll_query }); }
+        try { await downloadTo(seg.clip_url, p); clips.push({ path: p, dur, isImg, fit: seg.fit === true, in: Number(seg.in) || 0 }); dbg.push({ src: "stock/own", q: seg.broll_query, fit: seg.fit === true }); }
         catch (e) { log("clip dl fail", e.message); }
         continue;
       }
@@ -539,6 +539,7 @@ const renderFaceless = async (body, res) => {
     const args = ["-y"];
     for (const c of clips) {
       if (c.isImg) args.push("-loop", "1", "-t", c.dur.toFixed(2), "-i", c.path); // фото → статичный вход
+      else if (c.in > 0) args.push("-stream_loop", "-1", "-ss", c.in.toFixed(2), "-i", c.path); // seek к нужному моменту
       else args.push("-stream_loop", "-1", "-i", c.path);
     }
     const voiceIdx = clips.length;
@@ -556,10 +557,26 @@ const renderFaceless = async (body, res) => {
           `zoompan=z='min(1.0+0.0005*on,1.08)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
           `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
-      } else {
-        // простой быстрый ассемблинг (движение запекается в клип заранее, либо тут статично)
+      } else if (c.fit) {
+        // СКРИНКАСТ: показываем целиком (вписать) + размытый фон, без кропа краёв
+        filter.push(
+          `[${i}:v]split=2[bg${i}][fg${i}];` +
+          `[bg${i}]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=24:3,eq=brightness=-0.12[bgb${i}];` +
+          `[fg${i}]scale=1080:1920:force_original_aspect_ratio=decrease[fgs${i}];` +
+          `[bgb${i}][fgs${i}]overlay=(W-w)/2:(H-h)/2,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+        );
+      } else if (body.motion === false) {
         filter.push(
           `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
+        );
+      } else {
+        // ЛЮДИ/ЛАЙФСТАЙЛ: заполнение 9:16 + медленный наезд/отъезд на всю длину клипа
+        const rate = (0.13 / Math.max(1, Math.round(c.dur * 30))).toFixed(6);
+        const z = i % 2 === 0 ? `min(1.0+${rate}*on,1.13)` : `max(1.13-${rate}*on,1.0)`;
+        filter.push(
+          `[${i}:v]scale=1188:2112:force_original_aspect_ratio=increase,crop=1188:2112,setsar=1,` +
+          `zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,` +
+          `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       }
     });
