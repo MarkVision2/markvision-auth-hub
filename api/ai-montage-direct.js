@@ -564,7 +564,12 @@ const renderFaceless = async (body, res) => {
       }
     });
     filter.push(`${clips.map((_, i) => `[c${i}]`).join("")}concat=n=${clips.length}:v=1:a=0[cat]`);
-    filter.push(`[cat]eq=brightness=0.05:contrast=1.04:saturation=1.12:gamma=1.08,unsharp=5:5:0.7:5:5:0.0[gr]`);
+    // грейд опционален: grade:false → чистая резкая картинка (без цветных/тёмных наложений)
+    if (body.grade === false) {
+      filter.push(`[cat]unsharp=3:3:0.5:3:3:0.0[gr]`);
+    } else {
+      filter.push(`[cat]eq=brightness=0.05:contrast=1.04:saturation=1.12:gamma=1.08,unsharp=5:5:0.7:5:5:0.0[gr]`);
+    }
     let vlabel = "gr";
     if (hasCaps) {
       const escAss = assPath.replace(/\\/g, "/").replace(/:/g, "\\:").replace(/'/g, "\\'");
@@ -581,8 +586,8 @@ const renderFaceless = async (body, res) => {
       filter.push(`[${voiceIdx}:a]aresample=44100[aout]`);
     }
     args.push("-filter_complex", filter.join(";"), "-map", `[${vlabel}]`, "-map", "[aout]");
-    args.push("-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
-      "-movflags", "+faststart", "-c:a", "aac", "-b:a", "160k", "-ar", "44100", "-t", String(D), outPath);
+    args.push("-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+      "-movflags", "+faststart", "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-t", String(D), outPath);
     await runFfmpeg(args, { label: "faceless", env: fcEnv });
 
     const buffer = await fs.readFile(outPath);
