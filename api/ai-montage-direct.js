@@ -557,14 +557,9 @@ const renderFaceless = async (body, res) => {
           `trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       } else {
-        // динамика: лёгкий пред-зум (1.2x) + медленный пан по очереди (crop, без буферизации = не жрёт память)
-        const dur = c.dur.toFixed(2);
-        const cropExpr = i % 2 === 0
-          ? `crop=1080:1920:x='(iw-1080)/2 + (t/${dur}-0.5)*160':y='(ih-1920)/2'`
-          : `crop=1080:1920:x='(iw-1080)/2':y='(ih-1920)/2 + (t/${dur}-0.5)*220'`;
+        // простой быстрый ассемблинг (движение запекается в клип заранее, либо тут статично)
         filter.push(
-          `[${i}:v]scale=1296:2304:force_original_aspect_ratio=increase,crop=1296:2304,setsar=1,` +
-          `${cropExpr},fps=30,trim=0:${dur},setpts=PTS-STARTPTS[c${i}]`,
+          `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,trim=0:${c.dur.toFixed(2)},setpts=PTS-STARTPTS[c${i}]`,
         );
       }
     });
